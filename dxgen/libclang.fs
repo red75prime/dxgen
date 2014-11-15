@@ -3,9 +3,6 @@
 open System
 open System.Runtime.InteropServices
 
-type Index = IntPtr
-type TranslationUnit = IntPtr
-
 [<Flags>]
 type TranslationUnitFlags =
     | None = 0x00
@@ -180,6 +177,63 @@ type CursorKind =
     | FirstPreprocessing = 500
     | LastPreprocessing = 503
 
+type TypeKind =
+    | Invalid = 0
+    | Unexposed = 1
+    | Void = 2
+    | Bool = 3
+    | Char_U = 4
+    | UChar = 5
+    | Char16 = 6
+    | Char32 = 7
+    | UShort = 8
+    | UInt = 9
+    | ULong = 10
+    | ULongLong = 11
+    | UInt128 = 12
+    | Char_S = 13
+    | SChar = 14
+    | WChar = 15
+    | Short = 16
+    | Int = 17
+    | Long = 18
+    | LongLong = 19
+    | Int128 = 20
+    | Float = 21
+    | Double = 22
+    | LongDouble = 23
+    | NullPtr = 24
+    | Overload = 25
+    | Dependent = 26
+    | ObjCId = 27
+    | ObjCClass = 28
+    | ObjCSel = 29
+    | FirstBuiltin = 2
+    | LastBuiltin = 29
+    | Complex = 100
+    | Pointer = 101
+    | BlockPointer = 102
+    | LValueReference = 103
+    | RValueReference = 104
+    | Record = 105
+    | Enum = 106
+    | Typedef = 107
+    | ObjCInterface = 108
+    | ObjCObjectPointer = 109
+    | FunctionNoProto = 110
+    | FunctionProto = 111
+    | ConstantArray = 112
+    | Vector = 113
+    | IncompleteArray = 114
+    | VariableArray = 115
+    | DependentSizedArray = 116
+    | MemberPointer = 117
+
+type ChildVisitResult =
+    | Break = 0
+    | Continue = 1
+    | Recurse = 2
+
 #nowarn "9"
 [<StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)>]
 type UnsavedFile =
@@ -200,21 +254,56 @@ type Cursor =
     end
 
 [<StructLayout(LayoutKind.Sequential)>]
-type ClangString =
+type Type =
+    struct
+        val public kind: TypeKind
+        val public data0: IntPtr
+        val public data1: IntPtr
+    end
+
+[<StructLayout(LayoutKind.Sequential)>]
+type String =
     struct
         val data: IntPtr
         val private_flags: uint32
     end
 
+type Index = IntPtr
+type TranslationUnit = IntPtr
+type ClientData = IntPtr
 
-[<DllImport("libclang", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern Index clang_createIndex(int excludeDeclarationsFromPch, int displayDiagnostics)
+[<UnmanagedFunctionPointer(CallingConvention.Cdecl)>]
+type CursorVisitor = delegate of Cursor * Cursor * ClientData -> ChildVisitResult
 
-[<DllImport("libclang", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern void clang_disposeIndex(Index translationUnit)
+[<DllImport("libclang", EntryPoint = "clang_createIndex", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Index createIndex(int excludeDeclarationsFromPch, int displayDiagnostics)
 
-[<DllImport("libclang", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern TranslationUnit clang_parseTranslationUnit(Index index, string fileName, string[] args, int numArgs, UnsavedFile[] unsavedFiles, uint32 numUnsavedFiles, TranslationUnitFlags flags)
+[<DllImport("libclang", EntryPoint = "clang_disposeIndex", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern void disposeIndex(Index translationUnit)
 
-[<DllImport("libclang", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern void clang_disposeTranslationUnit(TranslationUnit translationUnit)
+[<DllImport("libclang", EntryPoint = "clang_parseTranslationUnit", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern TranslationUnit parseTranslationUnit(Index index, string fileName, string[] args, int numArgs, UnsavedFile[] unsavedFiles, uint32 numUnsavedFiles, TranslationUnitFlags flags)
+
+[<DllImport("libclang", EntryPoint = "clang_disposeTranslationUnit", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern void disposeTranslationUnit(TranslationUnit translationUnit)
+
+[<DllImport("libclang", EntryPoint = "clang_getTranslationUnitCursor", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Cursor getTranslationUnitCursor(TranslationUnit translationUnit)
+
+[<DllImport("libclang", EntryPoint = "clang_visitChildren", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern uint32 visitChildren(Cursor cursor, CursorVisitor visitor, ClientData clientData)
+
+[<DllImport("libclang", EntryPoint = "clang_getCursorKind", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern CursorKind getCursorKind(Cursor cursor)
+
+[<DllImport("libclang", EntryPoint = "clang_getCursorSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern String getCursorSpelling(Cursor cursor)
+
+[<DllImport("libclang", EntryPoint = "clang_getCursorType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Type getCursorType(Cursor cursor)
+
+[<DllImport("libclang", EntryPoint = "clang_getTypeSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern String getTypeSpelling(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_disposeString", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern void disposeString(String str)

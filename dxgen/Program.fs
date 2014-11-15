@@ -3,6 +3,7 @@
 
 [<EntryPoint>]
 let main argv = 
-
+    let index = libclang.createIndex(0, 0)
+    libclang.disposeIndex(index)
 
     0 // return an integer exit code
