@@ -189,7 +189,7 @@ type UnsavedFile =
         val public length: uint64
     end
 
-[<StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)>]
+[<StructLayout(LayoutKind.Sequential)>]
 type Cursor =
     struct
         val public kind: CursorKind
@@ -198,6 +198,14 @@ type Cursor =
         val public data1: IntPtr
         val public data2: IntPtr
     end
+
+[<StructLayout(LayoutKind.Sequential)>]
+type ClangString =
+    struct
+        val data: IntPtr
+        val private_flags: uint32
+    end
+
 
 [<DllImport("libclang", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern Index clang_createIndex(int excludeDeclarationsFromPch, int displayDiagnostics)
