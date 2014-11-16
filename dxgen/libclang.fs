@@ -287,6 +287,12 @@ extern TranslationUnit parseTranslationUnit(Index index, string fileName, string
 [<DllImport("libclang", EntryPoint = "clang_disposeTranslationUnit", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern void disposeTranslationUnit(TranslationUnit translationUnit)
 
+[<DllImport("libclang", EntryPoint = "clang_saveTranslationUnit", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern void saveTranslationUnit(TranslationUnit translationUnit, string fileName, uint32 options)
+
+[<DllImport("libclang", EntryPoint = "clang_defaultSaveOptions", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern uint32 defaultSaveOptions(TranslationUnit translationUnit)
+
 [<DllImport("libclang", EntryPoint = "clang_getTranslationUnitCursor", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern Cursor getTranslationUnitCursor(TranslationUnit translationUnit)
 
