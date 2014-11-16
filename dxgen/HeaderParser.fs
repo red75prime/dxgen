@@ -31,19 +31,34 @@ let private buildNode cursor =
 let rec private visitChildren (cursor: Cursor) (parent: Cursor) (clientData: ClientData): ChildVisitResult =
     let mutable handle = clientData |> GCHandle.FromIntPtr
     let childrenHandle = ([]: ASTNode list) |> GCHandle.Alloc
-
-    (cursor, new CursorVisitor(visitChildren), childrenHandle |> GCHandle.ToIntPtr) |> libclang.visitChildren |> ignore
  
-    let result = { (cursor |> buildNode) with Children = (childrenHandle.Target :?> list<ASTNode>) } 
+    try
+        (cursor, new CursorVisitor(visitChildren), childrenHandle |> GCHandle.ToIntPtr) |> libclang.visitChildren |> ignore
+        let result = { (cursor |> buildNode) with Children = (childrenHandle.Target :?> list<ASTNode>) } 
     
-
-    handle.Target <- match handle.Target with
-                     | :? list<ASTNode> as siblings ->
-                        result :: siblings :> obj
-                     | :? ASTNode as root ->
-                        { root with Children = result :: root.Children } :> obj
-                     | _ -> failwith("Unexpected type in node traversal.")
+        handle.Target <- match handle.Target with
+                         | :? list<ASTNode> as siblings ->
+                            result :: siblings :> obj
+                         | :? ASTNode as root ->
+                            { root with Children = result :: root.Children } :> obj
+                         | _ -> failwith("Unexpected type in node traversal.")
     
-    childrenHandle.Free()
+        ChildVisitResult.Continue
+    finally
+        childrenHandle.Free()
 
-    ChildVisitResult.Continue
+let buildAST pchLocation headerLocation =
+    let options = [| "-x"; "c++"; "-std=c++11"; "-fms-extensions"; "-fms-compatiblity"; "-fmsc-version=1800" |]
+    let index = libclang.createIndex(0, 0)
+    let translationUnit = libclang.parseTranslationUnit(index, headerLocation, options, options.Length, [||], 0u, libclang.TranslationUnitFlags.None)
+    let cursor = libclang.getTranslationUnitCursor(translationUnit)
+    let nodesHandle = (cursor |> buildNode) |> GCHandle.Alloc
+
+    libclang.visitChildren(cursor, new libclang.CursorVisitor(visitChildren), nodesHandle |> GCHandle.ToIntPtr) |> ignore
+
+    try
+        nodesHandle.Target :?> ASTNode
+    finally
+        nodesHandle.Free()
+        libclang.disposeTranslationUnit(translationUnit)
+        libclang.disposeIndex(index)
