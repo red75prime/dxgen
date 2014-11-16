@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="libclang.fs" />
+    <Compile Include="HeaderParser.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
   </ItemGroup>
