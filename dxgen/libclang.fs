@@ -305,6 +305,9 @@ extern CursorKind getCursorKind(Cursor cursor)
 [<DllImport("libclang", EntryPoint = "clang_getCursorSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern String getCursorSpelling(Cursor cursor)
 
+[<DllImport("libclang", EntryPoint = "clang_getEnumConstantDeclValue", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern int64 getEnumConstantDeclValue(Cursor cursor)
+
 [<DllImport("libclang", EntryPoint = "clang_getCursorType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern Type getCursorType(Cursor cursor)
 
