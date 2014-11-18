@@ -262,6 +262,23 @@ type Type =
     end
 
 [<StructLayout(LayoutKind.Sequential)>]
+type SourceRange =
+    struct
+        val public data0: IntPtr
+        val public data1: IntPtr
+        val public ptr_begin: uint32
+        val public ptr_end: uint32
+    end
+
+[<StructLayout(LayoutKind.Sequential)>]
+type SourceLocation =
+    struct
+        val public data0: IntPtr
+        val public data1: IntPtr
+        val public int_data: uint32
+    end
+
+[<StructLayout(LayoutKind.Sequential)>]
 type String =
     struct
         val data: IntPtr
@@ -271,6 +288,7 @@ type String =
 type Index = IntPtr
 type TranslationUnit = IntPtr
 type ClientData = IntPtr
+type File = IntPtr
 
 [<UnmanagedFunctionPointer(CallingConvention.Cdecl)>]
 type CursorVisitor = delegate of Cursor * Cursor * ClientData -> ChildVisitResult
@@ -302,14 +320,26 @@ extern uint32 visitChildren(Cursor cursor, CursorVisitor visitor, ClientData cli
 [<DllImport("libclang", EntryPoint = "clang_getCursorKind", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern CursorKind getCursorKind(Cursor cursor)
 
+[<DllImport("libclang", EntryPoint = "clang_getCursorType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Type getCursorType(Cursor cursor)
+
 [<DllImport("libclang", EntryPoint = "clang_getCursorSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern String getCursorSpelling(Cursor cursor)
 
+[<DllImport("libclang", EntryPoint = "clang_getCursorExtent", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern SourceRange getCursorExtent(Cursor cursor)
+
+[<DllImport("libclang", EntryPoint = "clang_getRangeStart", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern SourceLocation getRangeStart(SourceRange range)
+
+[<DllImport("libclang", EntryPoint = "clang_getExpansionLocation", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern void getExpansionLocation(SourceLocation source, File& file, uint32& line, uint32& column, uint32& offset)
+
+[<DllImport("libclang", EntryPoint = "clang_getFileName", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern String getFileName(File file)
+
 [<DllImport("libclang", EntryPoint = "clang_getEnumConstantDeclValue", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern int64 getEnumConstantDeclValue(Cursor cursor)
-
-[<DllImport("libclang", EntryPoint = "clang_getCursorType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern Type getCursorType(Cursor cursor)
 
 [<DllImport("libclang", EntryPoint = "clang_getTypeSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern String getTypeSpelling(Type ty)

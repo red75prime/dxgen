@@ -3,6 +3,9 @@
 open System.Runtime.InteropServices
 open libclang
 
+//TODO: Get the value of any literals (pack this with enum values?)
+//TODO: Turn Kind/Name and TypeKind/TypeName into pairs/discriminated unions
+//TODO: Try to extact defines?
 type ASTNode = {
     Kind: CursorKind
     Name: string
@@ -10,6 +13,8 @@ type ASTNode = {
     TypeName: string option
     Children: ASTNode list
     EnumValue: int64 option
+    LiteralValue: int64 option
+    FilePath: string
 }
 
 let private extractString (str: String) =
@@ -17,6 +22,17 @@ let private extractString (str: String) =
     libclang.disposeString(str)
     result
 
+let private getCursorFilePath cursor =
+    let range = cursor |> getCursorExtent |> getRangeStart
+    let mutable file: File = File.Zero
+    let mutable line = 0ul
+    let mutable column = 0ul
+    let mutable offset = 0ul
+
+    getExpansionLocation(range, &file, &line, &column, &offset)
+
+    file |> getFileName |> extractString
+   
 let private buildNode cursor = 
     let typeInfo = cursor 
                    |> getCursorType 
@@ -31,6 +47,8 @@ let private buildNode cursor =
       TypeKind = typeInfo |> Option.map (fun o -> o.kind)
       TypeName = typeInfo |> Option.map (getTypeSpelling >> extractString)
       EnumValue = if cursorKind = CursorKind.EnumConstantDecl then Some(cursor |> getEnumConstantDeclValue) else None
+      LiteralValue = None
+      FilePath = cursor |> getCursorFilePath |> System.IO.Path.GetFileName
       Children = [] }
 
 let rec private childVisitor (cursor: Cursor) (parent: Cursor) (clientData: ClientData): ChildVisitResult =
