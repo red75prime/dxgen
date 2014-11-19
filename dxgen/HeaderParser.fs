@@ -3,26 +3,43 @@
 open System.Runtime.InteropServices
 open libclang
 
+
+type NodeInfo = NodeInfo of kind: CursorKind * name: string 
+type NodeType = NodeType of kind: TypeKind * name: string
+
+type NodeLiteralValue =
+| EnumValue of int64
+| LiteralValue of string
+
 //TODO: Get the value of any literals (pack this with enum values?)
-//TODO: Turn Kind/Name and TypeKind/TypeName into pairs/discriminated unions
-//TODO: Try to extact defines?
+//TODO: Try to extract defines?
 type ASTNode = {
-    Kind: CursorKind
-    Name: string
-    TypeKind: TypeKind option
-    TypeName: string option
+    Info: NodeInfo
+    Type: NodeType option
+    NodeValue: NodeLiteralValue option
+    SourceFile: string
     Children: ASTNode list
-    EnumValue: int64 option
-    LiteralValue: int64 option
-    FilePath: string
 }
 
-let private extractString (str: String) =
+let private toString (str: String) =
     let result = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(str.data)
     libclang.disposeString(str)
     result
 
-let private getCursorFilePath cursor =
+let private getNodeInfo cursor =
+    (cursor |> getCursorKind, cursor |> getCursorSpelling |> toString) |> NodeInfo
+
+let private getNodeType cursor =
+     cursor |> getCursorType 
+            |> (fun ty -> if ty.kind = TypeKind.Invalid then None else Some(ty))
+            |> Option.map (fun ti -> (ti.kind, ti |> getTypeSpelling |> toString) |> NodeType)
+
+let private getNodeValue cursor =
+//    EnumValue = if cursorKind = CursorKind.EnumConstantDecl then Some(cursor |> getEnumConstantDeclValue) else None
+//    LiteralValue = None
+    None
+
+let private getNodeSourceFile cursor =
     let range = cursor |> getCursorExtent |> getRangeStart
     let mutable file: File = File.Zero
     let mutable line = 0ul
@@ -31,24 +48,13 @@ let private getCursorFilePath cursor =
 
     getExpansionLocation(range, &file, &line, &column, &offset)
 
-    file |> getFileName |> extractString
+    file |> getFileName |> toString |> System.IO.Path.GetFileName
    
 let private buildNode cursor = 
-    let typeInfo = cursor 
-                   |> getCursorType 
-                   |> (fun ty -> if ty.kind = TypeKind.Invalid 
-                                 then None 
-                                 else Some(ty))
-
-    let cursorKind = cursor |> getCursorKind
-
-    { Kind = cursorKind
-      Name = cursor |> getCursorSpelling |> extractString
-      TypeKind = typeInfo |> Option.map (fun o -> o.kind)
-      TypeName = typeInfo |> Option.map (getTypeSpelling >> extractString)
-      EnumValue = if cursorKind = CursorKind.EnumConstantDecl then Some(cursor |> getEnumConstantDeclValue) else None
-      LiteralValue = None
-      FilePath = cursor |> getCursorFilePath |> System.IO.Path.GetFileName
+    { Info = cursor |> getNodeInfo
+      Type = cursor |> getNodeType
+      NodeValue = cursor |> getNodeValue
+      SourceFile = cursor |> getNodeSourceFile
       Children = [] }
 
 let rec private childVisitor (cursor: Cursor) (parent: Cursor) (clientData: ClientData): ChildVisitResult =
@@ -68,6 +74,7 @@ let rec private childVisitor (cursor: Cursor) (parent: Cursor) (clientData: Clie
     finally
         childrenHandle.Free()
 
+//TODO: Compile and use the pre-compiled header file.
 let buildAST pchLocation headerLocation =
     let options = [| "-x"; "c++"; "-std=c++11"; "-fms-extensions"; "-fms-compatiblity"; "-fmsc-version=1800" |]
     let index = createIndex(0, 0)
