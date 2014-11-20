@@ -279,6 +279,16 @@ type SourceLocation =
     end
 
 [<StructLayout(LayoutKind.Sequential)>]
+type Token =
+    struct
+        val public int_data0: uint32
+        val public int_data1: uint32
+        val public int_data2: uint32
+        val public int_data3: uint32
+        val public ptr_data: IntPtr
+    end
+
+[<StructLayout(LayoutKind.Sequential)>]
 type String =
     struct
         val data: IntPtr
@@ -343,6 +353,15 @@ extern int64 getEnumConstantDeclValue(Cursor cursor)
 
 [<DllImport("libclang", EntryPoint = "clang_getTypeSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern String getTypeSpelling(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_tokenize", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern void tokenize(TranslationUnit translationUnit, SourceRange range, Token* & tokens, uint32& tokenCount)
+
+[<DllImport("libclang", EntryPoint = "clang_disposeTokens", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern void disposeTokens(TranslationUnit translationUnit, Token* tokens, uint32 tokenCount)
+
+[<DllImport("libclang", EntryPoint = "clang_getTokenSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern String getTokenSpelling(TranslationUnit translationUnit, Token token)
 
 [<DllImport("libclang", EntryPoint = "clang_disposeString", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern void disposeString(String str)
