@@ -11,8 +11,8 @@ type NodeLiteralValue =
 | EnumValue of int64
 | LiteralValue of string
 
-//TODO: Get the value of any literals (pack this with enum values?)
-//TODO: Try to extract defines?
+//TODO: May need to exact the value of string and float literals; TBD.
+//TODO: Extract macro definitions.
 type ASTNode = {
     Info: NodeInfo
     Type: NodeType option
@@ -21,7 +21,6 @@ type ASTNode = {
     Children: ASTNode list
 }
 
-//TODO: Compile and use the pre-compiled header file.
 let buildAST pchLocation headerLocation =
     let options = [| "-x"; "c++"; "-std=c++11"; "-fms-extensions"; "-fms-compatiblity"; "-fmsc-version=1800" |]
     let index = createIndex(0, 0)
@@ -116,4 +115,3 @@ let buildAST pchLocation headerLocation =
         disposeTranslationUnit(translationUnit)
         disposeIndex(index)
         pchTempLocation |> System.IO.File.Delete
-  
