@@ -3,8 +3,9 @@
 
 [<EntryPoint>]
 let main argv = 
-    let result = HeaderParser.buildAST "" @"C:\Program Files (x86)\Windows Kits\8.1\Include\shared\dxgi.h"
+    let result = HeaderParser.buildAST @".\PCH\DXGI_PCH.h" @"C:\Program Files (x86)\Windows Kits\8.1\Include\shared\dxgi.h"
 
-    printfn "%A" result
+    use file = System.IO.File.CreateText("test.txt")
+    fprintfn file "%A" result
 
     0 // return an integer exit code

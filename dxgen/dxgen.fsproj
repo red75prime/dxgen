@@ -51,6 +51,9 @@
     <Compile Include="HeaderParser.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
+    <None Include="PCH\DXGI_PCH.h">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

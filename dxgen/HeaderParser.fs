@@ -25,8 +25,19 @@ type ASTNode = {
 let buildAST pchLocation headerLocation =
     let options = [| "-x"; "c++"; "-std=c++11"; "-fms-extensions"; "-fms-compatiblity"; "-fmsc-version=1800" |]
     let index = createIndex(0, 0)
+
+    let pchTempLocation =
+        let translationUnit = parseTranslationUnit(index, pchLocation, options, options.Length, [||], 0u, TranslationUnitFlags.None)
+        try
+            let fileLocation = System.IO.Path.GetTempFileName()
+            saveTranslationUnit(translationUnit, fileLocation, 0u)
+            fileLocation
+        finally
+            translationUnit |> disposeTranslationUnit
+
+    let options = Array.concat [options; [| "-include-pch"; pchTempLocation |]]
     let translationUnit = parseTranslationUnit(index, headerLocation, options, options.Length, [||], 0u, TranslationUnitFlags.None)
-  
+
     let toString (str: String) =
         let result = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(str.data)
         disposeString(str)
@@ -77,7 +88,7 @@ let buildAST pchLocation headerLocation =
           SourceFile = cursor |> getNodeSourceFile
           Children = [] }
 
-    let rec childVisitor (cursor: Cursor) (parent: Cursor) (clientData: ClientData): ChildVisitResult =
+    let rec childVisitor (cursor: Cursor) (_: Cursor) (clientData: ClientData): ChildVisitResult =
         let mutable handle = clientData |> GCHandle.FromIntPtr
         let childrenHandle = ([]: ASTNode list) |> GCHandle.Alloc
  
@@ -104,3 +115,5 @@ let buildAST pchLocation headerLocation =
         nodesHandle.Free()
         disposeTranslationUnit(translationUnit)
         disposeIndex(index)
+        pchTempLocation |> System.IO.File.Delete
+  
