@@ -21,21 +21,28 @@ type ASTNode = {
     Children: ASTNode list
 }
 
-let buildAST pchLocation headerLocation =
+let buildAST (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) =
     let options = [| "-x"; "c++"; "-std=c++11"; "-fms-extensions"; "-fms-compatiblity"; "-fmsc-version=1800" |]
     let index = createIndex(0, 0)
 
     let pchTempLocation =
-        let translationUnit = parseTranslationUnit(index, pchLocation, options, options.Length, [||], 0u, TranslationUnitFlags.None)
-        try
-            let fileLocation = System.IO.Path.GetTempFileName()
-            saveTranslationUnit(translationUnit, fileLocation, 0u)
-            fileLocation
-        finally
-            translationUnit |> disposeTranslationUnit
+        let compilePch (pch: System.IO.FileInfo) =
+            let translationUnit = parseTranslationUnit(index, pch.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.None)
+            try
+                let fileLocation = System.IO.Path.GetTempFileName()
+                saveTranslationUnit(translationUnit, fileLocation, 0u)
+                System.IO.FileInfo(fileLocation)
+            finally
+                translationUnit |> disposeTranslationUnit
 
-    let options = Array.concat [options; [| "-include-pch"; pchTempLocation |]]
-    let translationUnit = parseTranslationUnit(index, headerLocation, options, options.Length, [||], 0u, TranslationUnitFlags.None)
+        pchLocation |> Option.map compilePch
+
+    let options = if pchTempLocation.IsSome then 
+                      Array.concat [options; [| "-include-pch"; pchTempLocation.Value.FullName |]]
+                  else 
+                      options
+
+    let translationUnit = parseTranslationUnit(index, headerLocation.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.None)
 
     let toString (str: String) =
         let result = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(str.data)
@@ -114,4 +121,4 @@ let buildAST pchLocation headerLocation =
         nodesHandle.Free()
         disposeTranslationUnit(translationUnit)
         disposeIndex(index)
-        pchTempLocation |> System.IO.File.Delete
+        pchTempLocation |> Option.iter (fun pch -> pch.Delete())
