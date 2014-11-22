@@ -2,6 +2,7 @@
 
 open System.Runtime.InteropServices
 open Microsoft.FSharp.NativeInterop
+open FSharpx
 open libclang
 
 type NodeInfo = NodeInfo of kind: CursorKind * name: string 
@@ -21,26 +22,26 @@ type ASTNode = {
     Children: ASTNode list
 }
 
+#nowarn "9"
 let buildAST (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) =
     let options = [| "-x"; "c++"; "-std=c++11"; "-fms-extensions"; "-fms-compatiblity"; "-fmsc-version=1800" |]
     let index = createIndex(0, 0)
 
-    let pchTempLocation =
-        let compilePch (pch: System.IO.FileInfo) =
-            let translationUnit = parseTranslationUnit(index, pch.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.None)
-            try
-                let fileLocation = System.IO.Path.GetTempFileName()
-                saveTranslationUnit(translationUnit, fileLocation, 0u)
-                System.IO.FileInfo(fileLocation)
-            finally
-                translationUnit |> disposeTranslationUnit
+    let pchTempLocation = Option.maybe {
+        let! pchLocation = pchLocation
+        let translationUnit = parseTranslationUnit(index, pchLocation.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.None)
 
-        pchLocation |> Option.map compilePch
+        return try
+                   let fileLocation = System.IO.Path.GetTempFileName()
+                   saveTranslationUnit(translationUnit, fileLocation, 0u)
+                   System.IO.FileInfo(fileLocation)
+               finally
+                   translationUnit |> disposeTranslationUnit
+    }
 
-    let options = if pchTempLocation.IsSome then 
-                      Array.concat [options; [| "-include-pch"; pchTempLocation.Value.FullName |]]
-                  else 
-                      options
+
+    let options = Array.concat [options
+                                pchTempLocation |> Option.map (fun pch -> [| "-include-pch"; pch.FullName |]) |> Option.getOrElse [||]]
 
     let translationUnit = parseTranslationUnit(index, headerLocation.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.None)
 
@@ -73,7 +74,6 @@ let buildAST (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileIn
                 (translationUnit, NativePtr.get tokens 0) |> getTokenSpelling |> toString |> LiteralValue |> Some
             finally
                 disposeTokens(translationUnit, tokens, tokenCount)
-
         | _ -> None
 
     let getNodeSourceFile cursor =
@@ -121,4 +121,8 @@ let buildAST (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileIn
         nodesHandle.Free()
         disposeTranslationUnit(translationUnit)
         disposeIndex(index)
-        pchTempLocation |> Option.iter (fun pch -> pch.Delete())
+        
+        Option.maybe {
+            let! pch = pchTempLocation
+            pch.Delete()
+        } |> ignore
