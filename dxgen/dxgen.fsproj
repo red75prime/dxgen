@@ -53,8 +53,11 @@
   <ItemGroup>
     <Compile Include="libclang.fs" />
     <Compile Include="HeaderParser.fs" />
+    <Compile Include="HeaderAST.fs" />
+    <Compile Include="HeaderConverter.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
+    <None Include="PCH\Common_PCH.h" />
     <None Include="PCH\DXGI_PCH.h">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

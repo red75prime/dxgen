@@ -31,14 +31,14 @@ let buildAST (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileIn
         let! pchLocation = pchLocation
         let translationUnit = parseTranslationUnit(index, pchLocation.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.None)
 
-        return try
-                   let fileLocation = System.IO.Path.GetTempFileName()
-                   saveTranslationUnit(translationUnit, fileLocation, 0u)
-                   System.IO.FileInfo(fileLocation)
-               finally
-                   translationUnit |> disposeTranslationUnit
+        return 
+            try
+                let fileLocation = System.IO.Path.GetTempFileName()
+                saveTranslationUnit(translationUnit, fileLocation, 0u)
+                System.IO.FileInfo(fileLocation)
+            finally
+                translationUnit |> disposeTranslationUnit
     }
-
 
     let options = Array.concat [options
                                 pchTempLocation |> Option.map (fun pch -> [| "-include-pch"; pch.FullName |]) |> Option.getOrElse [||]]
