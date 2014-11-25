@@ -5,7 +5,7 @@ open System.IO
 
 [<EntryPoint>]
 let main argv = 
-    let result = HeaderParser.buildAST (FileInfo(@"C:\Program Files (x86)\Windows Kits\8.1\Include\shared\dxgi.h")) (Some(FileInfo(@".\PCH\DXGI_PCH.h")))
+    let result = HeaderLoader.loadHeader (FileInfo(@"C:\Program Files (x86)\Windows Kits\8.1\Include\shared\dxgi.h")) (Some(FileInfo(@".\PCH\DXGI_PCH.h")))
 
     use file = System.IO.File.CreateText("test.txt")
     fprintfn file "%A" result

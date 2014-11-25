@@ -52,8 +52,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="libclang.fs" />
-    <Compile Include="HeaderParser.fs" />
-    <Compile Include="HeaderAST.fs" />
+    <Compile Include="HeaderLoader.fs" />
+    <Compile Include="CodeGenTree.fs" />
     <Compile Include="HeaderConverter.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />

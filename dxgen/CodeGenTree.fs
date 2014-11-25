@@ -1,4 +1,4 @@
-﻿module HeaderAST
+﻿module CodeGenTree
 
 type Enum = Enum of name: string * value: int64
 
@@ -21,7 +21,7 @@ and ParameterAnnotation =
     | OutWritesBytes of string
     | OutWritesOpt of string * string
 
-type Header = {
+type CodeGenTree = {
     Name: string
     Enums: Enum list
     Structs: Struct list

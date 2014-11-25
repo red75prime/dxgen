@@ -1,4 +1,4 @@
-﻿module HeaderParser
+﻿module HeaderLoader
 
 open System.Runtime.InteropServices
 open Microsoft.FSharp.NativeInterop
@@ -12,18 +12,18 @@ type NodeLiteralValue =
 | EnumValue of int64
 | LiteralValue of string
 
-//TODO: May need to exact the value of string and float literals; TBD.
+//TODO: May need to extract the value of string and float literals; TBD.
 //TODO: Extract macro definitions.
-type ASTNode = {
+type Node = {
     Info: NodeInfo
     Type: NodeType option
     NodeValue: NodeLiteralValue option
     SourceFile: string
-    Children: ASTNode list
+    Children: Node list
 }
 
 #nowarn "9"
-let buildAST (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) =
+let loadHeader (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) =
     let options = [| "-x"; "c++"; "-std=c++11"; "-fms-extensions"; "-fms-compatiblity"; "-fmsc-version=1800" |]
     let index = createIndex(0, 0)
 
@@ -96,15 +96,15 @@ let buildAST (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileIn
 
     let rec childVisitor (cursor: Cursor) (_: Cursor) (clientData: ClientData): ChildVisitResult =
         let mutable handle = clientData |> GCHandle.FromIntPtr
-        let childrenHandle = ([]: ASTNode list) |> GCHandle.Alloc
+        let childrenHandle = ([]: Node list) |> GCHandle.Alloc
  
         try
             (cursor, new CursorVisitor(childVisitor), childrenHandle |> GCHandle.ToIntPtr) |> libclang.visitChildren |> ignore
-            let result = { (cursor |> buildNode) with Children = (childrenHandle.Target :?> list<ASTNode>) |> List.rev } 
+            let result = { (cursor |> buildNode) with Children = (childrenHandle.Target :?> list<Node>) |> List.rev } 
     
             handle.Target <- match handle.Target with
-                             | :? list<ASTNode> as siblings -> result :: siblings :> obj
-                             | :? ASTNode as root -> { root with Children = result :: root.Children } :> obj
+                             | :? list<Node> as siblings -> result :: siblings :> obj
+                             | :? Node as root -> { root with Children = result :: root.Children } :> obj
                              | _ -> failwith("Unexpected type in node traversal.")
     
             ChildVisitResult.Continue
@@ -116,7 +116,7 @@ let buildAST (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileIn
     visitChildren(cursor, new CursorVisitor(childVisitor), nodesHandle |> GCHandle.ToIntPtr) |> ignore
 
     try
-        nodesHandle.Target :?> ASTNode
+        nodesHandle.Target :?> Node
     finally
         nodesHandle.Free()
         disposeTranslationUnit(translationUnit)
