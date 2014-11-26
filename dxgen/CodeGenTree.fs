@@ -6,7 +6,7 @@ type Struct = Struct of fields: StructField list
 and StructField = StructField of ty: string * name: string * arrayBounds: ArrayBound list option
 and ArrayBound = ArrayBound of uint64
 
-type Interface = Interface of methods: Method list * iid: string
+type Interface = Interface of name: string * baseName: string * methods: Method list * iid: string
 and Method = Method of returnType: string * parameters: Parameter
 and Parameter = MethodParameter of ty: string * name: string * annotation: ParameterAnnotation
 and ParameterAnnotation =
