@@ -1,6 +1,7 @@
 ﻿module CodeGenTree
 
-type Enum = Enum of name: string * value: int64
+type Enum = Enum of name: string * variants: EnumVariant list
+and EnumVariant = EnumVariant of name: string * value: int64
 
 type Struct = Struct of fields: StructField list
 and StructField = StructField of ty: string * name: string * arrayBounds: ArrayBound list option
@@ -8,7 +9,7 @@ and ArrayBound = ArrayBound of uint64
 
 type Interface = Interface of name: string * baseName: string * methods: Method list * iid: string
 and Method = Method of returnType: string * parameters: Parameter
-and Parameter = MethodParameter of ty: string * name: string * annotation: ParameterAnnotation
+and Parameter = Parameter of ty: string * name: string * annotation: ParameterAnnotation
 and ParameterAnnotation =
     | In
     | InOptional
@@ -20,6 +21,7 @@ and ParameterAnnotation =
     | OutWrites of string
     | OutWritesBytes of string
     | OutWritesOpt of string * string
+    //This will potentially need expanded.
 
 type CodeGenTree = {
     Name: string
