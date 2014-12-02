@@ -24,8 +24,9 @@ and ParameterAnnotation =
     //This will potentially need expanded.
 
 type CodeGenTree = {
-    Name: string
     Enums: Enum list
     Structs: Struct list
     Interfaces: Interface list
 }
+with
+    member this.Default with get() = { Enums = []; Structs = []; Interfaces = [] }
