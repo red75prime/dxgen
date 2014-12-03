@@ -5,6 +5,8 @@ VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "dxgen", "dxgen\dxgen.fsproj", "{8893FBE4-8429-408A-B68B-AA5B9F63D743}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "dxgen.test", "dxgen.test\dxgen.test.fsproj", "{48483A2F-3FD6-4F74-B633-93B32CF8AA27}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{8893FBE4-8429-408A-B68B-AA5B9F63D743}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8893FBE4-8429-408A-B68B-AA5B9F63D743}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8893FBE4-8429-408A-B68B-AA5B9F63D743}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48483A2F-3FD6-4F74-B633-93B32CF8AA27}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48483A2F-3FD6-4F74-B633-93B32CF8AA27}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48483A2F-3FD6-4F74-B633-93B32CF8AA27}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48483A2F-3FD6-4F74-B633-93B32CF8AA27}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
