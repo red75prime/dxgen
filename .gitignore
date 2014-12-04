@@ -12,6 +12,7 @@
 [Rr]elease/
 x64/
 build/
+test/
 [Bb]in/
 [Oo]bj/
 [Pp]ackages/
