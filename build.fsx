@@ -20,17 +20,24 @@ Target "BuildDxgenTest" (fun _ ->
         |> Log "Dxgen Test Build Output: "
 )
 
-//Target "Test" (fun _ ->
-//    !! (testDir + "/*.test.dll")
-//        |> NUnit (fun p -> 
-//                    { p with
-//                        DisableShadowCopy = true
-//                        OutputFile = testDir + "TestResults.xml" })
-//)
+Target "Test" (fun _ ->
+    let nunitRunner = findToolInSubPath "nunit-console-x86.exe" "./packages/NUnit.Runners/"
+
+    !! (testDir + "/*.test.dll")
+        |> NUnit (fun p -> 
+                    { p with
+                        DisableShadowCopy = true
+                        OutputFile = testDir + "TestResults.xml"
+                        ToolPath = ""
+                        ToolName = nunitRunner })
+)
+
+Target "Default" (fun _ -> ())
 
 "Clean"
  ==> "BuildDxgen"
  ==> "BuildDxgenTest"
-// ==> "Test"
+ ==> "Test"
+ ==> "Default"
 
-RunTargetOrDefault "BuildDxgenTest"
+RunTargetOrDefault "Default"
