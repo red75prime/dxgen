@@ -53,6 +53,9 @@
     <None Include="packages.config" />
     <None Include="app.config" />
     <Compile Include="HeaderConverterTests.fs" />
+    <None Include="Data\enums.h">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsUnit.NUnit">

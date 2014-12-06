@@ -29,4 +29,4 @@ type CodeGenTree = {
     Interfaces: Interface list
 }
 with
-    member this.Default with get() = { Enums = []; Structs = []; Interfaces = [] }
+    static member Default with get() = { Enums = []; Structs = []; Interfaces = [] }
