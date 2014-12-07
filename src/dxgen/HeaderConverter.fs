@@ -20,12 +20,12 @@ let toCodeGenTree (headerRoot: Node): CodeGenTree =
         let (NodeInfo(_, name)) = enumParent.Info
         Enum(name, enumParent.Children |> parseVariants [])
 
-    let rec toCodeGenTree (nodes: Node list) (accum: CodeGenTree) =
+    let rec toCodeGenTree (accum: CodeGenTree) (nodes: Node list) =
         match nodes with
         | [] -> accum
         | node :: nodes -> 
             match node.Info with
-            | NodeInfo(libclang.CursorKind.EnumDecl, _) -> toCodeGenTree nodes { accum with Enums = (parseEnum node) :: accum.Enums }
-            | _ -> toCodeGenTree nodes accum
+            | NodeInfo(libclang.CursorKind.EnumDecl, _) -> nodes |> toCodeGenTree { accum with Enums = (parseEnum node) :: accum.Enums }
+            | _ -> nodes |> toCodeGenTree accum
 
-    toCodeGenTree headerRoot.Children CodeGenTree.Default
+    headerRoot.Children |> toCodeGenTree CodeGenTree.Default
