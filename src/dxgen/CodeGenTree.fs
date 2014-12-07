@@ -30,3 +30,5 @@ type CodeGenTree = {
 }
 with
     static member Default with get() = { Enums = []; Structs = []; Interfaces = [] }
+
+    override this.ToString() = sprintf "%A" this
