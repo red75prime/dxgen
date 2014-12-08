@@ -17,7 +17,7 @@ type NodeLiteralValue =
 type Node = {
     Info: NodeInfo
     Type: NodeType option
-    NodeValue: NodeLiteralValue option
+    Value: NodeLiteralValue option
     SourceFile: string
     Children: Node list
 }
@@ -90,7 +90,7 @@ let loadHeader (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.File
     let buildNode cursor = 
         { Info = cursor |> getNodeInfo
           Type = cursor |> getNodeType
-          NodeValue = cursor |> getNodeValue
+          Value = cursor |> getNodeValue
           SourceFile = cursor |> getNodeSourceFile
           Children = [] }
 

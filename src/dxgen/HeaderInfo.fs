@@ -1,9 +1,9 @@
-﻿module CodeGenTree
+﻿module HeaderInfo
 
 type Enum = Enum of name: string * variants: EnumVariant list
 and EnumVariant = EnumVariant of name: string * value: int64
 
-type Struct = Struct of fields: StructField list
+type Struct = Struct of name: string * fields: StructField list
 and StructField = StructField of ty: string * name: string * arrayBounds: ArrayBound list option
 and ArrayBound = ArrayBound of uint64
 
@@ -23,7 +23,7 @@ and ParameterAnnotation =
     | OutWritesOpt of string * string
     //This will potentially need expanded.
 
-type CodeGenTree = {
+type HeaderTypeInfo = {
     Enums: Enum list
     Structs: Struct list
     Interfaces: Interface list

@@ -53,7 +53,7 @@
   <ItemGroup>
     <Compile Include="libclang.fs" />
     <Compile Include="HeaderLoader.fs" />
-    <Compile Include="CodeGenTree.fs" />
+    <Compile Include="HeaderInfo.fs" />
     <Compile Include="HeaderConverter.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
