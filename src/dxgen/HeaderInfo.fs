@@ -4,8 +4,7 @@ type Enum = Enum of name: string * variants: EnumVariant list
 and EnumVariant = EnumVariant of name: string * value: int64
 
 type Struct = Struct of name: string * fields: StructField list
-and StructField = StructField of ty: string * name: string * arrayBounds: ArrayBound list option
-and ArrayBound = ArrayBound of uint64
+and StructField = StructField of ty: string * name: string * arrayBounds: uint64 list option
 
 type Interface = Interface of name: string * baseName: string * methods: Method list * iid: string
 and Method = Method of returnType: string * parameters: Parameter

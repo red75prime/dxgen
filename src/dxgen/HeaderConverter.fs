@@ -19,12 +19,20 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
         Enum(name, enumParent.Children |> parseVariants [])
 
     let parseStruct (structParent: Node) =
-        printfn "%A" structParent
+        let parseArrayBounds (nodes: Node list) =
+            if nodes.IsEmpty then
+                None
+            else
+                nodes 
+                |> List.map (fun node -> match node with
+                                         | { Info = NodeInfo(libclang.CursorKind.IntegerLiteral, _); Value = Some(LiteralValue(value)) } -> value |> System.Convert.ToUInt64
+                                         | _ -> failwith "Unexpected literal value.") 
+                |> Some
 
         let rec parseFields (accum: StructField list) (nodes: Node list) =
             let parseField (node: Node) =
                 match node with
-                | { Info = NodeInfo(libclang.CursorKind.FieldDecl, name); Type = Some(NodeType(_, typeName)) } -> StructField(typeName, name, None)
+                | { Info = NodeInfo(libclang.CursorKind.FieldDecl, name); Type = Some(NodeType(tu, typeName)) } -> StructField(typeName, name, node.Children |> parseArrayBounds)
                 | _ -> failwith "Unexpected struct field."
 
             match nodes with
