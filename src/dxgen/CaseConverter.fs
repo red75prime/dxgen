@@ -4,8 +4,8 @@ open System
 open System.Text.RegularExpressions
 open FSharpx
 
-type private PascalCaseMatcher = Regex< @"^(?!.*_)(?<Identifier>[A-Z0-9][a-z0-9]*)+" >
-type private EnumCaseMatcher = Regex< @"^(?![A-Z0-9]*[a-z])((?<Identifier>[A-Z0-9]+)_?)+" >
+type private PascalCaseMatcher = Regex< @"^(?!.*_)(?<Identifier>[A-Z][a-z0-9]*)(?<Identifier>[A-Z0-9][a-z0-9]*)*" >
+type private EnumCaseMatcher = Regex< @"^(?![A-Z0-9]*_?[^A-Z0-9_])((?<Identifier>[A-Z0-9]+)_?)+" >
     
 let private getIdentifierParts ident  =
     let matchGroup = 
