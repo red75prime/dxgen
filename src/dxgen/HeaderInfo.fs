@@ -6,8 +6,8 @@ and EnumVariant = EnumVariant of name: string * value: int64
 type Struct = Struct of name: string * fields: StructField list
 and StructField = StructField of ty: string * name: string * arrayBounds: uint64 list option
 
-type Interface = Interface of name: string * baseName: string * methods: Method list * iid: string
-and Method = Method of returnType: string * parameters: Parameter
+type Interface = Interface of name: string * baseName: string option * methods: Method list * iid: string
+and Method = Method of name: string * parameters: Parameter list * returnType: string
 and Parameter = Parameter of ty: string * name: string * annotation: ParameterAnnotation
 and ParameterAnnotation =
     | In

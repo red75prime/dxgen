@@ -113,14 +113,17 @@ let loadHeader (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.File
 
     let cursor = getTranslationUnitCursor(translationUnit)
     let nodesHandle = (cursor |> buildNode) |> GCHandle.Alloc
-    visitChildren(cursor, new CursorVisitor(childVisitor), nodesHandle |> GCHandle.ToIntPtr) |> ignore
 
     try
-        nodesHandle.Target :?> Node
+        visitChildren(cursor, new CursorVisitor(childVisitor), nodesHandle |> GCHandle.ToIntPtr) |> ignore
+
+        let result = nodesHandle.Target :?> Node
+        { result with Children = result.Children |> List.rev }
+
     finally
         nodesHandle.Free()
-        disposeTranslationUnit(translationUnit)
-        disposeIndex(index)
+        translationUnit |> disposeTranslationUnit
+        index |> disposeIndex
         
         Option.maybe {
             let! pch = pchTempLocation

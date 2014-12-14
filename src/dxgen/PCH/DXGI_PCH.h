@@ -38,7 +38,7 @@ using LARGE_INTEGER = long long;
 //Override several macros to be more clean.
 #define WINAPI __stdcall
 #define STDMETHODCALLTYPE __stdcall
-#define MIDL_INTERFACE(x) class          __attribute__((annotate("GUID(\"" ## x ##"\")")))
+#define MIDL_INTERFACE(x) class __attribute__((annotate("GUID(\"" ## x ##"\")")))
 
 #define _In_                             __attribute__((annotate("In")))
 #define _In_opt_                         __attribute__((annotate("In_Optional")))
