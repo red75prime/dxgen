@@ -43,7 +43,18 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
         Struct(name, structParent.Children |> parseFields [])
 
     let rec parseInterface (interfaceParent: Node) =
-        ()
+        let parseMethod =
+            function
+            | _ -> failwith "Not implemented."
+
+        let rec parseMethods (accum: Method list) =
+            function
+            | [] -> accum |> List.rev
+            | ({ Info = NodeInfo(libclang.CursorKind.CxxMethod, _) } as node) :: nodes -> nodes |> parseMethods ((node |> parseMethod) :: accum)
+            | _ :: nodes -> nodes |> parseMethods accum
+
+        let (NodeInfo(_, name)) = interfaceParent.Info
+        Interface(name, None, interfaceParent.Children |> parseMethods [], "")
 
     let rec toHeaderTypeInfo (accum: HeaderTypeInfo) =
         function
@@ -52,6 +63,7 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
             match node.Info with
             | NodeInfo(libclang.CursorKind.EnumDecl, _) -> nodes |> toHeaderTypeInfo { accum with Enums = (parseEnum node) :: accum.Enums }
             | NodeInfo(libclang.CursorKind.StructDecl, _) -> nodes |> toHeaderTypeInfo { accum with Structs = (parseStruct node) :: accum.Structs }
+            | NodeInfo(libclang.CursorKind.ClassDecl, _) -> nodes |> toHeaderTypeInfo { accum with Interfaces = (parseInterface node) :: accum.Interfaces }
             | _ -> nodes |> toHeaderTypeInfo accum
 
     headerRoot.Children |> toHeaderTypeInfo HeaderTypeInfo.Default
