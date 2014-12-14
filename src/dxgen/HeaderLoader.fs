@@ -17,6 +17,7 @@ type NodeLiteralValue =
 type Node = {
     Info: NodeInfo
     Type: NodeType option
+    ResultType: NodeType option
     Value: NodeLiteralValue option
     SourceFile: string
     Children: Node list
@@ -53,11 +54,17 @@ let loadHeader (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.File
     let getNodeInfo cursor =
         (cursor |> getCursorKind, cursor |> getCursorSpelling |> toString) |> NodeInfo
 
-    let getNodeType cursor =
-        let typeInfo = cursor |> getCursorType
+    let getNodeTypeInfo cursorFunc cursor =
+        let typeInfo: Type = cursor |> cursorFunc
         match typeInfo.kind with
         | TypeKind.Invalid -> None
         | _ -> (typeInfo.kind, typeInfo |> getTypeSpelling |> toString) |> NodeType |> Some
+
+    let getNodeType cursor =
+        cursor |> getNodeTypeInfo getCursorType
+
+    let getNodeResultType cursor =
+        cursor |> getNodeTypeInfo getCursorResultType
 
     //TODO: Handle string literals differently.
     let getNodeValue cursor =
@@ -90,6 +97,7 @@ let loadHeader (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.File
     let buildNode cursor = 
         { Info = cursor |> getNodeInfo
           Type = cursor |> getNodeType
+          ResultType = cursor |> getNodeResultType
           Value = cursor |> getNodeValue
           SourceFile = cursor |> getNodeSourceFile
           Children = [] }
