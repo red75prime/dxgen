@@ -2,6 +2,9 @@
 
 open HeaderInfo
 open HeaderLoader
+open FSharpx
+
+type private GuidRegex = Regex< @"GUID\(""(?<Guid>([^""]+))""\)">
 
 let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
     let parseEnum (enumParent: Node) =
@@ -43,9 +46,36 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
         Struct(name, structParent.Children |> parseFields [])
 
     let rec parseInterface (interfaceParent: Node) =
+        let rec getParameterAnnotation =
+            function
+            | [] -> In
+            | { Info = NodeInfo(libclang.CursorKind.AnnotateAttr, name) } :: _ -> 
+                match name with
+                | "In" -> In
+                | "Out" -> Out
+                //TODO: Parse the remainder of the annotations.
+                | _ -> failwith "Unsupported annotation."
+
+            | _ :: nodes -> nodes |> getParameterAnnotation
+
+        let parseParamter =
+            function
+            | { Info = NodeInfo(libclang.CursorKind.ParmDecl, parameterName) 
+                Type = Some(NodeType(_, parameterTypeName)) } as node -> Parameter(parameterName, parameterTypeName, node.Children |> getParameterAnnotation)
+            | _ -> failwith "Unexpected parameter node."
+
+        let rec parseParameters (accum: Parameter list) =
+            function
+            | [] -> accum
+            | ({ Info = NodeInfo(libclang.CursorKind.ParmDecl, _) } as node) :: nodes ->
+                nodes |> parseParameters ((node |> parseParamter) :: accum)
+            | _ :: nodes -> nodes |> parseParameters accum
+
         let parseMethod =
             function
-            | _ -> failwith "Not implemented."
+            | { Info = NodeInfo(libclang.CursorKind.CxxMethod, name); Children = parameters; ResultType = Some(NodeType(_, returnTypeName)) } ->
+                Method(name, parameters |> parseParameters [] |> List.rev, returnTypeName)
+            | _ -> failwith "Unexpected method node."
 
         let rec parseMethods (accum: Method list) =
             function
@@ -53,8 +83,18 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
             | ({ Info = NodeInfo(libclang.CursorKind.CxxMethod, _) } as node) :: nodes -> nodes |> parseMethods ((node |> parseMethod) :: accum)
             | _ :: nodes -> nodes |> parseMethods accum
 
+        let rec parseInterfaceId =
+            function
+            | [] -> failwith "No inteface id found."
+            | { Info = NodeInfo(libclang.CursorKind.AnnotateAttr, attributeName) } :: _ when GuidRegex().IsMatch(attributeName, 0) ->
+                match System.Guid.TryParse(GuidRegex().Match(attributeName).Guid.Value) with
+                | (true, guidValue) -> guidValue.ToString().ToUpper()
+                | _ -> failwith "Failed to parse GUID value for interface."
+
+            | _ :: nodes -> nodes |> parseInterfaceId
+
         let (NodeInfo(_, name)) = interfaceParent.Info
-        Interface(name, None, interfaceParent.Children |> parseMethods [], "")
+        Interface(name, None, interfaceParent.Children |> parseMethods [], interfaceParent.Children |> parseInterfaceId)
 
     let rec toHeaderTypeInfo (accum: HeaderTypeInfo) =
         function

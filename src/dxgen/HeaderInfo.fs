@@ -7,8 +7,10 @@ type Struct = Struct of name: string * fields: StructField list
 and StructField = StructField of ty: string * name: string * arrayBounds: uint64 list option
 
 type Interface = Interface of name: string * baseName: string option * methods: Method list * iid: string
+with override this.ToString() = sprintf "%A" this
+
 and Method = Method of name: string * parameters: Parameter list * returnType: string
-and Parameter = Parameter of ty: string * name: string * annotation: ParameterAnnotation
+and Parameter = Parameter of name: string * parameterType: string * annotation: ParameterAnnotation
 and ParameterAnnotation =
     | In
     | InOptional

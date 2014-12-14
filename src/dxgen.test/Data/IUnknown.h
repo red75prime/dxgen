@@ -9,7 +9,7 @@ class __attribute__((annotate("GUID(\"00000000-0000-0000-C000-000000000046\")"))
 public:
 	virtual HRESULT QueryInterface(
 		__attribute__((annotate("In"))) const IID& riid,
-		__attirubte__((annotate("Out"))) void **ppbObject
+		__attribute__((annotate("Out"))) void **ppvObject
 		) = 0;
 };
 

@@ -28,12 +28,12 @@ let ``Converting a header containing a struct with array members should produce 
 
 [<Test>]
 let ``Converting a header containing an IUnknown definition should produce a HeaderTypeInfo with the contents of the interface`` (): unit =
-    loadHeader (FileInfo("./Data/IUnknown.h")) None
-    |> toHeaderTypeInfo
-    |> should equal { HeaderTypeInfo.Default with Interfaces = [Interface("IUnknown",
-                                                                          None,
-                                                                          [Method("IUnknown",
-                                                                                  [Parameter("const IID &", "riid", In)
-                                                                                   Parameter("void * *", "ppvObject", Out)], 
-                                                                                  "HRESULT")], 
-                                                                          "00000000-0000-0000-C000-000000000046")]}
+    (loadHeader (FileInfo("./Data/IUnknown.h")) None
+     |> toHeaderTypeInfo).Interfaces
+    |> should contain (Interface("IUnknown",
+                                 None,
+                                 [Method("QueryInterface",
+                                         [Parameter("riid", "const IID &", In)
+                                          Parameter("ppvObject", "void **", Out)], 
+                                         "HRESULT")], 
+                                 "00000000-0000-0000-C000-000000000046"))
