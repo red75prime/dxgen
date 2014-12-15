@@ -90,11 +90,16 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
                 match System.Guid.TryParse(GuidRegex().Match(attributeName).Guid.Value) with
                 | (true, guidValue) -> guidValue.ToString().ToUpper()
                 | _ -> failwith "Failed to parse GUID value for interface."
-
             | _ :: nodes -> nodes |> parseInterfaceId
 
+        let rec parseBaseInterface =
+            function
+            | [] -> None
+            | { Info = NodeInfo(libclang.CursorKind.CxxBaseSpecifier, _); Type = Some(NodeType(_, baseName)) } :: _ -> Some(baseName)
+            | _ :: nodes -> nodes |> parseBaseInterface
+
         let (NodeInfo(_, name)) = interfaceParent.Info
-        Interface(name, None, interfaceParent.Children |> parseMethods [], interfaceParent.Children |> parseInterfaceId)
+        Interface(name, interfaceParent.Children |> parseBaseInterface, interfaceParent.Children |> parseMethods [], interfaceParent.Children |> parseInterfaceId)
 
     let rec toHeaderTypeInfo (accum: HeaderTypeInfo) =
         function
@@ -106,4 +111,5 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
             | NodeInfo(libclang.CursorKind.ClassDecl, _) -> nodes |> toHeaderTypeInfo { accum with Interfaces = (parseInterface node) :: accum.Interfaces }
             | _ -> nodes |> toHeaderTypeInfo accum
 
-    headerRoot.Children |> toHeaderTypeInfo HeaderTypeInfo.Default
+    let result = headerRoot.Children |> toHeaderTypeInfo HeaderTypeInfo.Default
+    { result with Enums = result.Enums |> List.rev; Structs = result.Structs |> List.rev; Interfaces = result.Interfaces |> List.rev }
