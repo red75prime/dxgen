@@ -27,7 +27,7 @@ let ``Converting a header containing a struct with array members should produce 
     |> should equal { HeaderTypeInfo.Default with Structs = [Struct("Test", [StructField("int [64]", "foo", Some([64UL])); StructField("int [8][8]", "bar", Some([8UL; 8UL]))])] }
 
 [<Test>]
-let ``Converting a header containing an IUnknown definition should produce a HeaderTypeInfo with the contents of the interface`` (): unit =
+let ``An IUnknown interface definition should produce a HeaderTypeInfo with the contents of the interface`` (): unit =
     (loadHeader (FileInfo("./Data/IUnknown.h")) None
     |> toHeaderTypeInfo).Interfaces
     |> should contain (Interface("IUnknown",
@@ -39,7 +39,13 @@ let ``Converting a header containing an IUnknown definition should produce a Hea
                                  "00000000-0000-0000-C000-000000000046"))
 
 [<Test>]
-let ``A header with an interface definition that derives from IUnknown should produce a HeaderTypeInfo containing that interface`` (): unit =
+let ``An interface definition that derives from IUnknown should produce a HeaderTypeInfo containing that interface with an IUknown base specifier`` (): unit =
     (loadHeader (FileInfo("./Data/IUnknown.h")) None
     |> toHeaderTypeInfo).Interfaces
     |> should contain (Interface("ITest", Some("IUnknown"), [], "32A3615B-3D98-48AA-A648-3EC4BD2E0440"))
+
+[<Test>]
+let ``A free function should produce a HeaderTypeInfo containing the definition for that free function`` (): unit =
+    (loadHeader (FileInfo("./Data/IUnknown.h")) None
+    |> toHeaderTypeInfo).Functions
+    |> should contain (Method("CreateTest", [Parameter("ppvTest", "ITest **", Out)], "HRESULT"))

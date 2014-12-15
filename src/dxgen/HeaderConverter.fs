@@ -45,7 +45,7 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
         let (NodeInfo(_, name)) = structParent.Info
         Struct(name, structParent.Children |> parseFields [])
 
-    let rec parseInterface (interfaceParent: Node) =
+    let parseMethod (methodParent: Node) =
         let rec getParameterAnnotation =
             function
             | [] -> In
@@ -71,12 +71,13 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
                 nodes |> parseParameters ((node |> parseParamter) :: accum)
             | _ :: nodes -> nodes |> parseParameters accum
 
-        let parseMethod =
-            function
-            | { Info = NodeInfo(libclang.CursorKind.CxxMethod, name); Children = parameters; ResultType = Some(NodeType(_, returnTypeName)) } ->
-                Method(name, parameters |> parseParameters [] |> List.rev, returnTypeName)
-            | _ -> failwith "Unexpected method node."
+        match methodParent with
+        | { Info = NodeInfo(libclang.CursorKind.CxxMethod, name); Children = parameters; ResultType = Some(NodeType(_, returnTypeName)) } 
+        | { Info = NodeInfo(libclang.CursorKind.FunctionDecl, name); Children = parameters; ResultType = Some(NodeType(_, returnTypeName)) } ->
+            Method(name, parameters |> parseParameters [] |> List.rev, returnTypeName)
+        | _ -> failwith "Unexpected method node."
 
+    let rec parseInterface (interfaceParent: Node) =
         let rec parseMethods (accum: Method list) =
             function
             | [] -> accum |> List.rev
@@ -109,7 +110,8 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
             | NodeInfo(libclang.CursorKind.EnumDecl, _) -> nodes |> toHeaderTypeInfo { accum with Enums = (parseEnum node) :: accum.Enums }
             | NodeInfo(libclang.CursorKind.StructDecl, _) -> nodes |> toHeaderTypeInfo { accum with Structs = (parseStruct node) :: accum.Structs }
             | NodeInfo(libclang.CursorKind.ClassDecl, _) -> nodes |> toHeaderTypeInfo { accum with Interfaces = (parseInterface node) :: accum.Interfaces }
+            | NodeInfo(libclang.CursorKind.FunctionDecl, _) -> nodes |> toHeaderTypeInfo { accum with Functions = (parseMethod node) :: accum.Functions }
             | _ -> nodes |> toHeaderTypeInfo accum
 
     let result = headerRoot.Children |> toHeaderTypeInfo HeaderTypeInfo.Default
-    { result with Enums = result.Enums |> List.rev; Structs = result.Structs |> List.rev; Interfaces = result.Interfaces |> List.rev }
+    { result with Enums = result.Enums |> List.rev; Structs = result.Structs |> List.rev; Interfaces = result.Interfaces |> List.rev; Functions = result.Functions |> List.rev }

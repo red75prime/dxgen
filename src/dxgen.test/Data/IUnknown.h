@@ -17,4 +17,6 @@ public:
 class __attribute__((annotate("GUID(\"32A3615B-3D98-48AA-A648-3EC4BD2E0440\")"))) ITest : IUnknown
 {
 };
+
+HRESULT CreateTest(__attribute__((annotate("Out"))) ITest **ppvTest);
 #endif

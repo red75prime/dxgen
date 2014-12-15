@@ -28,8 +28,9 @@ type HeaderTypeInfo = {
     Enums: Enum list
     Structs: Struct list
     Interfaces: Interface list
+    Functions: Method list
 }
 with
-    static member Default with get() = { Enums = []; Structs = []; Interfaces = [] }
+    static member Default with get() = { Enums = []; Structs = []; Interfaces = []; Functions = [] }
 
     override this.ToString() = sprintf "%A" this
