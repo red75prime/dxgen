@@ -6,7 +6,7 @@ open FSharpx
 
 type private GuidRegex = Regex< @"GUID\(""(?<Guid>([^""]+))""\)">
 
-let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
+let toHeaderTypeInfo (sourceFile: string) (headerRoot: Node): HeaderTypeInfo =
     let parseEnum (enumParent: Node) =
         let parseVariant =                
             function
@@ -105,13 +105,14 @@ let toHeaderTypeInfo (headerRoot: Node): HeaderTypeInfo =
     let rec toHeaderTypeInfo (accum: HeaderTypeInfo) =
         function
         | [] -> accum
-        | node :: nodes -> 
+        | { SourceFile = nodeSourceFile } as node :: nodes when nodeSourceFile = sourceFile -> 
             match node.Info with
             | NodeInfo(libclang.CursorKind.EnumDecl, _) -> nodes |> toHeaderTypeInfo { accum with Enums = (parseEnum node) :: accum.Enums }
             | NodeInfo(libclang.CursorKind.StructDecl, _) -> nodes |> toHeaderTypeInfo { accum with Structs = (parseStruct node) :: accum.Structs }
             | NodeInfo(libclang.CursorKind.ClassDecl, _) -> nodes |> toHeaderTypeInfo { accum with Interfaces = (parseInterface node) :: accum.Interfaces }
             | NodeInfo(libclang.CursorKind.FunctionDecl, _) -> nodes |> toHeaderTypeInfo { accum with Functions = (parseMethod node) :: accum.Functions }
             | _ -> nodes |> toHeaderTypeInfo accum
+        | _ :: nodes -> nodes |> toHeaderTypeInfo accum
 
     let result = headerRoot.Children |> toHeaderTypeInfo HeaderTypeInfo.Default
     { result with Enums = result.Enums |> List.rev; Structs = result.Structs |> List.rev; Interfaces = result.Interfaces |> List.rev; Functions = result.Functions |> List.rev }
