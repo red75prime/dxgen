@@ -1,0 +1,2 @@
+﻿module SDKLocator
+    let findSDKRootDirectory () = ()
