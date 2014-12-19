@@ -60,12 +60,14 @@
     <Compile Include="HeaderInfo.fs" />
     <Compile Include="HeaderConverter.fs" />
     <Compile Include="CaseConverter.fs" />
+    <Compile Include="SDKLocator.fs" />
+    <Compile Include="ModuleBuilder.fs" />
     <Compile Include="Program.fs" />
-    <None Include="App.config" />
     <None Include="PCH\Common_PCH.h" />
     <None Include="PCH\DXGI_PCH.h">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <PropertyGroup>

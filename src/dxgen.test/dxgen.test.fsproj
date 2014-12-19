@@ -55,6 +55,7 @@
     <None Include="app.config" />
     <Compile Include="HeaderConverterTests.fs" />
     <Compile Include="CaseConverterTests.fs" />
+    <Compile Include="SDKLocatorTests.fs" />
     <None Include="Data\enums.h">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
