@@ -1,6 +1,5 @@
 ﻿module SDKLocatorTests
 
-open CaseConverter
 open NUnit.Framework
 open FsUnit
 
