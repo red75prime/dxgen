@@ -10,8 +10,11 @@ type Module = {
     [<YamlMember("headers")>]
     Headers : string seq
 
-    [<YamlMember("output-location")>]
-    OutputLocation : string
+    [<YamlMember("output-path")>]
+    OutputPath : string
+
+    [<YamlMember("include-path")>]
+    IncludePath : string
 
     [<YamlMember("precompiled-header")>]
     PrecompileHeader : string

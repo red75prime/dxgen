@@ -1,9 +1,26 @@
 ﻿---
 modules:
     - name: dx_dxgi
-      output-location: ../../dx_dxgi/src/
+      output-path: ../../dx_dxgi/src/
+      include-path: ./Include/shared/
       precompiled-header: ./PCH/DXGI_PCH.h
       headers:
           - dxgitype.h
           - dxgiformat.h
           - dxgi.h
+
+    - name: dx_d3d11
+      output-path: ../../dx_dxgi/src/
+      include-path: ./Include/um/
+      precompiled-header: ./PCH/DXGI_PCH.h
+      headers:
+          - d3d11.h
+
+    - name: dx_d3dcompiler
+      output-path: ../../dx_dxgi/src/
+      include-path: ./Include/um/
+      precompiled-header: ./PCH/DXGI_PCH.h
+      headers:
+          - d3dcommon.h
+          - d3d11shader.h
+          - d3dcompiler.h

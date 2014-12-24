@@ -39,7 +39,7 @@ let main argv =
                 if header.Exists then Some(header) else None
 
             for header in codeModule.Headers do
-                let headerPath = (FileInfo(Path.Combine(sdkLocation, header)))
+                let headerPath = (FileInfo(Path.Combine(sdkLocation, codeModule.IncludePath, header)))
                 let headerInfo = HeaderLoader.loadHeader headerPath precompiledHeader
                                  |> HeaderConverter.toHeaderTypeInfo header
 
