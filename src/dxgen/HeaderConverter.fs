@@ -53,9 +53,12 @@ let toHeaderTypeInfo (sourceFile: string) (headerRoot: Node): HeaderTypeInfo =
             | { Info = NodeInfo(libclang.CursorKind.AnnotateAttr, name) } :: _ -> 
                 match name with
                 | "In" -> In
+                | "In_Optional" -> InOptional
                 | "Out" -> Out
-                //TODO: Parse the remainder of the annotations.
-                | _ -> failwith "Unsupported annotation."
+                | "Out_Optional" -> OutOptional
+                | "In_Out" -> InOut
+                | annotation -> printfn "Warning: Unexpected parameter annotation (%s)." annotation
+                                In
 
             | _ :: nodes -> nodes |> getParameterAnnotation
 
@@ -112,8 +115,10 @@ let toHeaderTypeInfo (sourceFile: string) (headerRoot: Node): HeaderTypeInfo =
             | NodeInfo(libclang.CursorKind.StructDecl, _) -> nodes |> toHeaderTypeInfo { accum with Structs = (parseStruct node) :: accum.Structs }
             | NodeInfo(libclang.CursorKind.ClassDecl, _) -> nodes |> toHeaderTypeInfo { accum with Interfaces = (parseInterface node) :: accum.Interfaces }
             | NodeInfo(libclang.CursorKind.FunctionDecl, _) -> nodes |> toHeaderTypeInfo { accum with Functions = (parseMethod node) :: accum.Functions }
+            | NodeInfo(libclang.CursorKind.UnexposedDecl, _) -> node.Children |> toHeaderTypeInfo accum
             | _ -> nodes |> toHeaderTypeInfo accum
         | _ :: nodes -> nodes |> toHeaderTypeInfo accum
 
+    //TODO: Handle the case where things are nested?  Why is there an UnexposedDecl with all the DXGI in it?
     let result = headerRoot.Children |> toHeaderTypeInfo HeaderTypeInfo.Default
     { result with Enums = result.Enums |> List.rev; Structs = result.Structs |> List.rev; Interfaces = result.Interfaces |> List.rev; Functions = result.Functions |> List.rev }

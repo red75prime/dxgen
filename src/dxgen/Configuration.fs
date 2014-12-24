@@ -12,6 +12,9 @@ type Module = {
 
     [<YamlMember("output-location")>]
     OutputLocation : string
+
+    [<YamlMember("precompiled-header")>]
+    PrecompileHeader : string
 }
 
 [<CLIMutable>]

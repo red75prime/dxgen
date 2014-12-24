@@ -34,12 +34,16 @@ let main argv =
         for codeModule in config.Modules do
             printfn "Processing module %s:" codeModule.Name
 
+            let precompiledHeader = 
+                let header = FileInfo(codeModule.PrecompileHeader)
+                if header.Exists then Some(header) else None
+
             for header in codeModule.Headers do
                 let headerPath = (FileInfo(Path.Combine(sdkLocation, header)))
-                let headerInfo = HeaderLoader.loadHeader headerPath None
+                let headerInfo = HeaderLoader.loadHeader headerPath precompiledHeader
                                  |> HeaderConverter.toHeaderTypeInfo header
 
-                printfn "Processing header %s" headerPath.FullName
+                printfn "Processing header %s..." headerPath.FullName
 
     | None -> failwith "Invalid options."
 
