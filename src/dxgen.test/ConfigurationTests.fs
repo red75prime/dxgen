@@ -29,8 +29,23 @@ let ``loadConfiguration should contain a module with the expected name`` () =
                  |> (fun s -> new System.IO.StringReader(s))
                  |> loadConfiguration
 
-    (config.Modules 
-     |> Seq.exactlyOne).Name
+    (config.Modules |> Seq.exactlyOne).Name
     |> should equal "dx_dxgi"
    
-   
+[<Test>]  
+let ``loadConfiguration should contain a module with the expected output location`` () =
+    let config = testConfig
+                 |> (fun s -> new System.IO.StringReader(s))
+                 |> loadConfiguration
+
+    (config.Modules |> Seq.exactlyOne).OutputLocation
+    |> should equal @"../test/"
+
+[<Test>]  
+let ``loadConfiguration should contain a module with the expected headers`` () =
+    let config = testConfig
+                 |> (fun s -> new System.IO.StringReader(s))
+                 |> loadConfiguration
+
+    (config.Modules |> Seq.exactlyOne).Headers
+    |> should equal ["dxgi_types.h"; "dxgi.h"]    
