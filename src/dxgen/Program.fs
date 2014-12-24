@@ -3,12 +3,44 @@
 module Program
 
 open System.IO
+open CommandLine
 
+[<CLIMutable>]
+type Options = {
+    [<Option('c', "config", DefaultValue = "config.yaml", HelpText="Location of the input configuration file")>]
+    ConfigurationFile: string
+}
+with
+    static member Default with get() = { ConfigurationFile = "config.yaml" }
+
+    static member Parse args =
+        let options = Options.Default
+        
+        if Parser.Default.ParseArguments(args, options) then
+            Some(options)
+        else
+            None
+        
 [<EntryPoint>]
 let main argv = 
-    let result = HeaderLoader.loadHeader (FileInfo(@"C:\Program Files (x86)\Windows Kits\8.1\Include\shared\dxgi.h")) (Some(FileInfo(@".\PCH\DXGI_PCH.h")))
+    let options = Options.Parse argv
 
-    use file = System.IO.File.CreateText("test.txt")
-    fprintfn file "%A" result
+    match options with
+    | Some(opt) -> 
+        use fileStream = File.OpenText(opt.ConfigurationFile)
+        let config = fileStream |> Configuration.loadConfiguration
+        let sdkLocation = SDKLocator.findSDKRootDirectory ()
 
-    0 // return an integer exit code
+        for codeModule in config.Modules do
+            printfn "Processing module %s:" codeModule.Name
+
+            for header in codeModule.Headers do
+                let headerPath = (FileInfo(Path.Combine(sdkLocation, header)))
+                let headerInfo = HeaderLoader.loadHeader headerPath None
+                                 |> HeaderConverter.toHeaderTypeInfo header
+
+                printfn "Processing header %s" headerPath.FullName
+
+    | None -> failwith "Invalid options."
+
+    0 

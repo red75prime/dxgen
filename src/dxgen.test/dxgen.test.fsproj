@@ -56,6 +56,7 @@
     <Compile Include="HeaderConverterTests.fs" />
     <Compile Include="CaseConverterTests.fs" />
     <Compile Include="SDKLocatorTests.fs" />
+    <Compile Include="ConfigurationTests.fs" />
     <None Include="Data\enums.h">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -68,7 +69,6 @@
     <None Include="Data\IUnknown.h">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Compile Include="ConfigurationTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsUnit.NUnit">

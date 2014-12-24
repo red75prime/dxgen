@@ -26,9 +26,10 @@ let toHeaderTypeInfo (sourceFile: string) (headerRoot: Node): HeaderTypeInfo =
             function
             | [] -> None
             | nodes -> nodes 
+                       |> List.filter (fun { Info = NodeInfo(cursorKind, _) } -> cursorKind = libclang.CursorKind.IntegerLiteral)
                        |> List.map (function
                                     | { Info = NodeInfo(libclang.CursorKind.IntegerLiteral, _); Value = Some(LiteralValue(value)) } -> value |> System.Convert.ToUInt64
-                                    | _ -> failwith "Unexpected literal value.") 
+                                    | node -> failwith "Unexpected literal value.") 
                        |> Some
 
         let parseField =

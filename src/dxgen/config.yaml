@@ -1,0 +1,8 @@
+﻿---
+modules:
+    - name: dx_dxgi
+      output-location: ../../dx_dxgi/src/
+      headers:
+          - dxgitype.h
+          - dxgiformat.h
+          - dxgi.h
