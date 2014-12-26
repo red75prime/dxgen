@@ -43,7 +43,9 @@ let main argv =
                 let headerInfo = HeaderLoader.loadHeader headerPath precompiledHeader
                                  |> HeaderConverter.toHeaderTypeInfo header
 
-                printfn "Processing header %s..." headerPath.FullName
+                printfn "Processing header %s" headerPath.FullName
+
+            printfn "%s" (System.String('-', 80))
 
     | None -> failwith "Invalid options."
 

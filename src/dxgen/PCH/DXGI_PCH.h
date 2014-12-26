@@ -39,6 +39,7 @@ using LARGE_INTEGER = long long;
 #define WINAPI __stdcall
 #define STDMETHODCALLTYPE __stdcall
 #define MIDL_INTERFACE(x) class __attribute__((annotate("GUID(\"" ## x ##"\")")))
+#define interface ;\/\/
 
 #define _In_                             __attribute__((annotate("In")))
 #define _In_opt_                         __attribute__((annotate("In_Optional")))
@@ -52,18 +53,3 @@ using LARGE_INTEGER = long long;
 #define _Out_writes_to_opt_(size, count) __attribute__((annotate("Out_Writes_To_Opt(\"" #size ", " #count "\")")))
 
 #define DEFINE_GUID(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)
-#define __IDXGIObject_FWD_DEFINED__
-#define __IDXGIDeviceSubObject_FWD_DEFINED__
-#define __IDXGIResource_FWD_DEFINED__
-#define __IDXGIKeyedMutex_FWD_DEFINED__
-#define __IDXGISurface_FWD_DEFINED__
-#define __IDXGISurface1_FWD_DEFINED__
-#define __IDXGIAdapter_FWD_DEFINED__
-#define __IDXGIOutput_FWD_DEFINED__
-#define __IDXGISwapChain_FWD_DEFINED__
-#define __IDXGIFactory_FWD_DEFINED__
-#define __IDXGIDevice_FWD_DEFINED__
-#define __IDXGIDevice1_FWD_DEFINED__
-#define __IDXGIFactory1_FWD_DEFINED__
-#define __IDXGIAdapter1_FWD_DEFINED__
-#defome __IDXGIDevice1_FWD_DEFINED__

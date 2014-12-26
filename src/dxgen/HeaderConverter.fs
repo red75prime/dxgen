@@ -41,7 +41,10 @@ let toHeaderTypeInfo (sourceFile: string) (headerRoot: Node): HeaderTypeInfo =
         let rec parseFields (accum: StructField list) =
             function
             | [] -> accum |> List.rev
-            | node :: nodes -> nodes |> parseFields ((node |> parseField) :: accum)
+            | { Info = NodeInfo(libclang.CursorKind.FieldDecl, _) } as node :: nodes -> nodes |> parseFields ((node |> parseField) :: accum)
+            | { Info = NodeInfo(kind, name) } :: nodes ->
+                printfn "Warning: Encountered unexpected node in structure (%A : %s)." kind name
+                nodes |> parseFields accum
 
         let (NodeInfo(_, name)) = structParent.Info
         Struct(name, structParent.Children |> parseFields [])
@@ -115,7 +118,7 @@ let toHeaderTypeInfo (sourceFile: string) (headerRoot: Node): HeaderTypeInfo =
             | NodeInfo(libclang.CursorKind.StructDecl, _) -> nodes |> toHeaderTypeInfo { accum with Structs = (parseStruct node) :: accum.Structs }
             | NodeInfo(libclang.CursorKind.ClassDecl, _) -> nodes |> toHeaderTypeInfo { accum with Interfaces = (parseInterface node) :: accum.Interfaces }
             | NodeInfo(libclang.CursorKind.FunctionDecl, _) -> nodes |> toHeaderTypeInfo { accum with Functions = (parseMethod node) :: accum.Functions }
-            | NodeInfo(libclang.CursorKind.UnexposedDecl, _) -> node.Children |> toHeaderTypeInfo accum
+            | NodeInfo(libclang.CursorKind.UnexposedDecl, _) -> nodes |> toHeaderTypeInfo (node.Children |> toHeaderTypeInfo accum)
             | _ -> nodes |> toHeaderTypeInfo accum
         | _ :: nodes -> nodes |> toHeaderTypeInfo accum
 
