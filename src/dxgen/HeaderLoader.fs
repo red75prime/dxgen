@@ -5,7 +5,7 @@ open Microsoft.FSharp.NativeInterop
 open FSharpx
 open libclang
 
-type NodeInfo = NodeInfo of kind: CursorKind * name: string 
+type NodeKind = NodeInfo of kind: CursorKind * name: string 
 type NodeType = NodeType of kind: TypeKind * name: string
 
 type NodeLiteralValue =
@@ -15,7 +15,7 @@ type NodeLiteralValue =
 //TODO: May need to extract the value of string and float literals; TBD.
 //TODO: Extract macro definitions.
 type Node = {
-    Info: NodeInfo
+    Kind: NodeKind
     Type: NodeType option
     ResultType: NodeType option
     Value: NodeLiteralValue option
@@ -24,7 +24,7 @@ type Node = {
 }
 
 let (|Kind|) node =
-    let { Info = NodeInfo(kind, name)} = node
+    let { Kind = NodeInfo(kind, name)} = node
     (kind, name)
 
 let (|Type|_|) node =
@@ -121,7 +121,7 @@ let loadHeader (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.File
         file |> getFileName |> toString |> System.IO.Path.GetFileName
    
     let buildNode cursor = 
-        { Info = cursor |> getNodeInfo
+        { Kind = cursor |> getNodeInfo
           Type = cursor |> getNodeType
           ResultType = cursor |> getNodeResultType
           Value = cursor |> getNodeValue

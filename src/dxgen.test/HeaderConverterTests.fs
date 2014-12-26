@@ -1,9 +1,9 @@
 ﻿module HeaderConverterTests
 
 open System.IO
-open HeaderConverter
 open HeaderLoader
-open HeaderInfo
+open TypeInfoBuilder
+open TypeInfo
 
 open NUnit.Framework
 open FsUnit
@@ -12,19 +12,19 @@ open FsUnit
 let ``Converting a header containing an enum should produce a HeaderTypeInfo with the contents of the enum`` (): unit =
     loadHeader (FileInfo("./Data/enums.h")) None 
     |> toHeaderTypeInfo "enums.h"
-    |> should equal { HeaderTypeInfo.Default with Enums = [Enum("Test", [EnumVariant("A", 0L); EnumVariant("B", 1L) ; EnumVariant("C", 2L)])] }
+    |> should equal { TypeInfo.Default with Enums = [Enum("Test", [EnumVariant("A", 0L); EnumVariant("B", 1L) ; EnumVariant("C", 2L)])] }
 
 [<Test>]
 let ``Converting a header containing a struct should produce a HeaderTypeInfo with the contents of the struct`` (): unit =
     loadHeader (FileInfo("./Data/struct.h")) None 
     |> toHeaderTypeInfo "struct.h"
-    |> should equal { HeaderTypeInfo.Default with Structs = [Struct("Test", [StructField("int", "foo", None); StructField("const char *", "bar", None)])] }
+    |> should equal { TypeInfo.Default with Structs = [Struct("Test", [StructField("int", "foo", None); StructField("const char *", "bar", None)])] }
 
 [<Test>]
 let ``Converting a header containing a struct with array members should produce a HeaderTypeInfo with the contents of the struct`` (): unit =
     loadHeader (FileInfo("./Data/struct_arrays.h")) None 
     |> toHeaderTypeInfo "struct_arrays.h"
-    |> should equal { HeaderTypeInfo.Default with Structs = [Struct("Test", [StructField("int [64]", "foo", Some([64UL])); StructField("int [8][8]", "bar", Some([8UL; 8UL]))])] }
+    |> should equal { TypeInfo.Default with Structs = [Struct("Test", [StructField("int [64]", "foo", Some([64UL])); StructField("int [8][8]", "bar", Some([8UL; 8UL]))])] }
 
 [<Test>]
 let ``An IUnknown interface definition should produce a HeaderTypeInfo with the contents of the interface`` (): unit =

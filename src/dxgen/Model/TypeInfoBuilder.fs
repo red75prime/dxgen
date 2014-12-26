@@ -1,12 +1,12 @@
-﻿module HeaderConverter
+﻿module TypeInfoBuilder
 
-open HeaderInfo
+open TypeInfo
 open HeaderLoader
 open FSharpx
 
 type private GuidRegex = Regex< @"GUID\(""(?<Guid>([^""]+))""\)">
 
-let toHeaderTypeInfo (sourceFile: string) (headerRoot: Node): HeaderTypeInfo =
+let toHeaderTypeInfo (sourceFile: string) (headerRoot: Node): TypeInfo =
     let parseEnum (enumParent: Node) =
         let parseVariant =                
             function
@@ -107,19 +107,19 @@ let toHeaderTypeInfo (sourceFile: string) (headerRoot: Node): HeaderTypeInfo =
         let (Kind(_, name)) = interfaceParent
         Interface(name, interfaceParent.Children |> parseBaseInterface, interfaceParent.Children |> parseMethods [], interfaceParent.Children |> parseInterfaceId)
 
-    let rec toHeaderTypeInfo (accum: HeaderTypeInfo) =
+    let rec buildTypeInfo (accum: TypeInfo) =
         function
         | [] -> accum
         | { SourceFile = nodeSourceFile } as node :: nodes when nodeSourceFile = sourceFile -> 
             match node with
-            | Kind(libclang.CursorKind.EnumDecl, _) -> nodes |> toHeaderTypeInfo { accum with Enums = (parseEnum node) :: accum.Enums }
-            | Kind(libclang.CursorKind.StructDecl, _) -> nodes |> toHeaderTypeInfo { accum with Structs = (parseStruct node) :: accum.Structs }
-            | Kind(libclang.CursorKind.ClassDecl, _) -> nodes |> toHeaderTypeInfo { accum with Interfaces = (parseInterface node) :: accum.Interfaces }
-            | Kind(libclang.CursorKind.FunctionDecl, _) -> nodes |> toHeaderTypeInfo { accum with Functions = (parseMethod node) :: accum.Functions }
-            | Kind(libclang.CursorKind.UnexposedDecl, _) -> nodes |> toHeaderTypeInfo (node.Children |> toHeaderTypeInfo accum)
-            | _ -> nodes |> toHeaderTypeInfo accum
-        | _ :: nodes -> nodes |> toHeaderTypeInfo accum
+            | Kind(libclang.CursorKind.EnumDecl, _) -> nodes |> buildTypeInfo { accum with Enums = (parseEnum node) :: accum.Enums }
+            | Kind(libclang.CursorKind.StructDecl, _) -> nodes |> buildTypeInfo { accum with Structs = (parseStruct node) :: accum.Structs }
+            | Kind(libclang.CursorKind.ClassDecl, _) -> nodes |> buildTypeInfo { accum with Interfaces = (parseInterface node) :: accum.Interfaces }
+            | Kind(libclang.CursorKind.FunctionDecl, _) -> nodes |> buildTypeInfo { accum with Functions = (parseMethod node) :: accum.Functions }
+            | Kind(libclang.CursorKind.UnexposedDecl, _) -> nodes |> buildTypeInfo (node.Children |> buildTypeInfo accum)
+            | _ -> nodes |> buildTypeInfo accum
+        | _ :: nodes -> nodes |> buildTypeInfo accum
 
     //TODO: Handle the case where things are nested?  Why is there an UnexposedDecl with all the DXGI in it?
-    let result = headerRoot.Children |> toHeaderTypeInfo HeaderTypeInfo.Default
+    let result = headerRoot.Children |> buildTypeInfo TypeInfo.Default
     { result with Enums = result.Enums |> List.rev; Structs = result.Structs |> List.rev; Interfaces = result.Interfaces |> List.rev; Functions = result.Functions |> List.rev }

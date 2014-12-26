@@ -1,4 +1,4 @@
-﻿module HeaderInfo
+﻿module TypeInfo
 
 type Enum = Enum of name: string * variants: EnumVariant list
 and EnumVariant = EnumVariant of name: string * value: int64
@@ -24,7 +24,7 @@ and ParameterAnnotation =
     | OutWritesOpt of string * string
     //This will potentially need expanded.
 
-type HeaderTypeInfo = {
+type TypeInfo = {
     Enums: Enum list
     Structs: Struct list
     Interfaces: Interface list

@@ -1,6 +1,6 @@
 ﻿module ModuleBuilder
 
-open HeaderInfo
+open TypeInfo
 
 type EnumBuilder = Enum -> string
 type StructBuilder = Struct -> string

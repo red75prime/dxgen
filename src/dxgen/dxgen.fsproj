@@ -68,8 +68,8 @@
   <ItemGroup>
     <Compile Include="libclang.fs" />
     <Compile Include="HeaderLoader.fs" />
-    <Compile Include="HeaderInfo.fs" />
-    <Compile Include="HeaderConverter.fs" />
+    <Compile Include="Model\TypeInfo.fs" />
+    <Compile Include="Model\TypeInfoBuilder.fs" />
     <Compile Include="CaseConverter.fs" />
     <Compile Include="SDKLocator.fs" />
     <Compile Include="ModuleBuilder.fs" />
