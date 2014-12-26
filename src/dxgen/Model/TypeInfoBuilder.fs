@@ -6,7 +6,7 @@ open FSharpx
 
 type private GuidRegex = Regex< @"GUID\(""(?<Guid>([^""]+))""\)">
 
-let toHeaderTypeInfo (sourceFile: string) (headerRoot: Node): TypeInfo =
+let buildTypeInfo (sourceFile: string) (headerRoot: Node): TypeInfo =
     let parseEnum (enumParent: Node) =
         let parseVariant =                
             function

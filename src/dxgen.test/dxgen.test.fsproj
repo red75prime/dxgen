@@ -53,7 +53,7 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="app.config" />
-    <Compile Include="HeaderConverterTests.fs" />
+    <Compile Include="TypeInfoBuilderTests.fs" />
     <Compile Include="CaseConverterTests.fs" />
     <Compile Include="SDKLocatorTests.fs" />
     <Compile Include="ConfigurationTests.fs" />

@@ -41,7 +41,7 @@ let main argv =
             for header in codeModule.Headers do
                 let headerPath = (FileInfo(Path.Combine(sdkLocation, codeModule.IncludePath, header)))
                 let headerInfo = HeaderLoader.loadHeader headerPath precompiledHeader
-                                 |> TypeInfoBuilder.toHeaderTypeInfo header
+                                 |> TypeInfoBuilder.buildTypeInfo header
 
                 printfn "Processing header %s" headerPath.FullName
 
