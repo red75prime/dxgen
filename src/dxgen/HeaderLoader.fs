@@ -23,6 +23,32 @@ type Node = {
     Children: Node list
 }
 
+let (|Kind|) node =
+    let { Info = NodeInfo(kind, name)} = node
+    (kind, name)
+
+let (|Type|_|) node =
+    match node with
+    | { Type = Some(NodeType(nodeType, typeName)) } -> Some(nodeType, typeName)
+    | _ -> None
+
+let (|ResultType|_|) node =
+    match node with
+    | { ResultType = Some(NodeType(nodeType, typeName)) } -> Some(nodeType, typeName)
+    | _ -> None
+
+let (|Value|_|) node =
+    let { Value = value } = node
+    value
+
+let (|Children|) node =
+    let { Children = children } = node
+    children
+
+let (|UnknownNode|) node =
+    let (Kind(nodeType, name)) = node
+    printfn "Unknown node type (%A, %s)" nodeType name
+
 #nowarn "9"
 let loadHeader (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) =
     let options = [| "-x"; "c++"; "-std=c++11"; "-fms-extensions"; "-fms-compatiblity"; "-fmsc-version=1800" |]

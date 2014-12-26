@@ -9,7 +9,7 @@ let testConfig =
     """---
     modules:
         - name: dx_dxgi
-          output-location: ../test/
+          output-path: ../test/
           headers:
               - dxgi_types.h
               - dxgi.h
@@ -38,7 +38,7 @@ let ``loadConfiguration should contain a module with the expected output locatio
                  |> (fun s -> new System.IO.StringReader(s))
                  |> loadConfiguration
 
-    (config.Modules |> Seq.exactlyOne).OutputLocation
+    (config.Modules |> Seq.exactlyOne).OutputPath
     |> should equal @"../test/"
 
 [<Test>]  
