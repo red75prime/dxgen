@@ -40,8 +40,17 @@ let main argv =
 
             for header in codeModule.Headers do
                 let headerPath = (FileInfo(Path.Combine(sdkLocation, codeModule.IncludePath, header)))
-                let headerInfo = HeaderLoader.loadHeader headerPath precompiledHeader
-                                 |> TypeInfoBuilder.buildTypeInfo header
+                
+                let types = OnlyParse.parse headerPath precompiledHeader
+                let ptext = OnlyParse.codeGen types
+                use sw=new System.IO.StreamWriter(@".\d3d12_sys.rs")
+                sw.Write(ptext)
+                let atext = OnlyParse.emptyAnnotationsGen types
+                use swa=new System.IO.StreamWriter(@".\annotations_autogen.fs")
+                swa.Write(atext)
+                let rtext=OnlyParse.safeInterfaceGen types
+                use swsi=new System.IO.StreamWriter(@".\d3d12.rs")
+                swsi.Write(rtext)
 
                 printfn "Processing header %s" headerPath.FullName
 

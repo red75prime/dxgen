@@ -300,6 +300,23 @@ type TranslationUnit = IntPtr
 type ClientData = IntPtr
 type File = IntPtr
 
+type CallingConv=
+  |CXCallingConv_Default = 0
+  |CXCallingConv_C = 1
+  |X86StdCall = 2
+  |X86FastCall = 3
+  |X86ThisCall = 4
+  |X86Pascal = 5
+  |AAPCS = 6
+  |AAPCS_VFP = 7
+  // Value 8 was PnaclCall, but it was never used, so it could safely be re-used. 
+  |IntelOclBicc = 9
+  |X86_64Win64 = 10
+  |X86_64SysV = 11
+  |X86VectorCall = 12
+  |Invalid = 100
+  |Unexposed = 200
+
 [<UnmanagedFunctionPointer(CallingConvention.Cdecl)>]
 type CursorVisitor = delegate of Cursor * Cursor * ClientData -> ChildVisitResult
 
@@ -324,6 +341,9 @@ extern uint32 defaultSaveOptions(TranslationUnit translationUnit)
 [<DllImport("libclang", EntryPoint = "clang_getTranslationUnitCursor", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern Cursor getTranslationUnitCursor(TranslationUnit translationUnit)
 
+[<DllImport("libclang", EntryPoint = "clang_Cursor_getTranslationUnit", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern TranslationUnit getTranslationUnit(Cursor cursor)
+
 [<DllImport("libclang", EntryPoint = "clang_visitChildren", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern uint32 visitChildren(Cursor cursor, CursorVisitor visitor, ClientData clientData)
 
@@ -336,8 +356,17 @@ extern Type getCursorType(Cursor cursor)
 [<DllImport("libclang", EntryPoint = "clang_getCursorResultType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern Type getCursorResultType(Cursor cursor)
 
+[<DllImport("libclang", EntryPoint = "clang_getEnumDeclIntegerType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Type getEnumDeclIntegerType(Cursor cursor)
+
+[<DllImport("libclang", EntryPoint = "clang_getTypedefDeclUnderlyingType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Type getTypedefDeclUnderlyingType(Cursor cursor)
+
 [<DllImport("libclang", EntryPoint = "clang_getCursorSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern String getCursorSpelling(Cursor cursor)
+
+[<DllImport("libclang", EntryPoint = "clang_getCursorDisplayName", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern String getCursorDisplayName(Cursor cursor)
 
 [<DllImport("libclang", EntryPoint = "clang_getCursorExtent", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern SourceRange getCursorExtent(Cursor cursor)
@@ -354,8 +383,32 @@ extern String getFileName(File file)
 [<DllImport("libclang", EntryPoint = "clang_getEnumConstantDeclValue", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern int64 getEnumConstantDeclValue(Cursor cursor)
 
+[<DllImport("libclang", EntryPoint = "clang_getEnumConstantDeclUnsignedValue", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern uint64 getEnumConstantDeclUnsignedValue(Cursor cursor)
+
 [<DllImport("libclang", EntryPoint = "clang_getTypeSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern String getTypeSpelling(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_getTypeDeclaration", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Cursor getTypeDeclaration(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_getNumArgTypes", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern int getNumArgTypes(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_getArgType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Type getArgType(Type ty, uint32 i)
+
+[<DllImport("libclang", EntryPoint = "clang_getArrayElementType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Type getArrayElementType(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_getArraySize", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern int64 getArraySize(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_getFunctionTypeCallingConv", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern CallingConv getFunctionTypeCallingConv(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_getResultType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Type getResultType(Type ty)
 
 [<DllImport("libclang", EntryPoint = "clang_tokenize", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern void tokenize(TranslationUnit translationUnit, SourceRange range, Token* & tokens, uint32& tokenCount)
@@ -368,3 +421,57 @@ extern String getTokenSpelling(TranslationUnit translationUnit, Token token)
 
 [<DllImport("libclang", EntryPoint = "clang_disposeString", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern void disposeString(String str)
+
+[<DllImport("libclang", EntryPoint = "clang_Type_getSizeOf", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern int64 getSizeOfType(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_getPointeeType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Type getPointeeType(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_getCanonicalType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Type getCanonicalType(Type ty)
+
+[<DllImport("libclang", EntryPoint = "clang_Cursor_getNumArguments", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern int32 getNumArguments(Cursor ty)
+
+[<DllImport("libclang", EntryPoint = "clang_Cursor_isBitField", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern uint32 isBitField(Cursor c)
+
+let isBitFieldFS c=
+  isBitField c <> 0u
+
+[<DllImport("libclang", EntryPoint = "clang_getFieldDeclBitWidth", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern int32 getFieldDeclBitWidth(Cursor c)
+
+let toString (str: String) =
+    let result = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(str.data)
+    disposeString(str)
+    result
+
+
+let tokenizeFS cursor=
+  let translationUnit=getTranslationUnit cursor
+  let range = cursor |> getCursorExtent
+  let mutable tokens: nativeptr<Token> = Unchecked.defaultof<_>
+  let mutable tokenCount = 0u
+
+  tokenize(translationUnit, range, &tokens, &tokenCount)
+  try
+      [0.. int(tokenCount)-1] |> List.map (fun idx -> getTokenSpelling(translationUnit, Microsoft.FSharp.NativeInterop.NativePtr.get tokens idx) |> toString)
+  finally
+      disposeTokens(translationUnit, tokens, tokenCount)
+
+
+let visitChildrenFS<'t> (cursor:Cursor) (visitor: Cursor -> Cursor -> 't -> ChildVisitResult) (data:'t) =
+  let handle=GCHandle.Alloc data
+  let vis1=fun cursor parent param -> visitor cursor parent ((GCHandle.FromIntPtr param).Target :?> 't)
+  visitChildren(cursor,new CursorVisitor(vis1),GCHandle.ToIntPtr handle)
+
+let getCursorDisplayNameFS cursor=
+  getCursorDisplayName cursor |> toString
+
+let getTypeSpellingFS cursor=
+  getTypeSpelling cursor |> toString
+
+let getCursorSpellingFS cursor=
+  getCursorSpelling cursor |> toString

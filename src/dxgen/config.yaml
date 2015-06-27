@@ -1,26 +1,26 @@
 ﻿---
 modules:
-    - name: dx_dxgi
-      output-path: ../../dx_dxgi/src/
-      include-path: ./Include/shared/
-      precompiled-header: ./PCH/DXGI_PCH.h
-      headers:
-          - dxgitype.h
-          - dxgiformat.h
-          - dxgi.h
+#    - name: dx_dxgi
+#      output-path: ../../dx_dxgi/src/
+#      include-path: ./Include/10.0.10069.0/shared/
+#      precompiled-header: ./PCH/DXGI_PCH.h
+#      headers:
+#          - dxgitype.h
+#          - dxgiformat.h
+#          - dxgi.h
 
-    - name: dx_d3d11
+    - name: dx_d3d12
       output-path: ../../dx_dxgi/src/
-      include-path: ./Include/um/
+      include-path: ./Include/10.0.10069.0/um/
       precompiled-header: ./PCH/DXGI_PCH.h
       headers:
-          - d3d11.h
+          - d3d12.h
 
-    - name: dx_d3dcompiler
-      output-path: ../../dx_dxgi/src/
-      include-path: ./Include/um/
-      precompiled-header: ./PCH/DXGI_PCH.h
-      headers:
-          - d3dcommon.h
-          - d3d11shader.h
-          - d3dcompiler.h
+#    - name: dx_d3dcompiler
+#      output-path: ../../dx_dxgi/src/
+#      include-path: ./Include/10.0.10069.0/um/
+#      precompiled-header: ./PCH/DXGI_PCH.h
+#      headers:
+#          - d3dcommon.h
+#          - d3d12shader.h
+#          - d3dcompiler.h

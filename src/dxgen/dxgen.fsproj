@@ -69,11 +69,14 @@
     <Compile Include="libclang.fs" />
     <Compile Include="HeaderLoader.fs" />
     <Compile Include="Model\TypeInfo.fs" />
-    <Compile Include="Model\TypeInfoBuilder.fs" />
-    <Compile Include="CaseConverter.fs" />
+    <None Include="Model\TypeInfoBuilder.fs" />
+    <None Include="CaseConverter.fs" />
     <Compile Include="SDKLocator.fs" />
     <Compile Include="ModuleBuilder.fs" />
     <Compile Include="Configuration.fs" />
+    <Compile Include="annotations.fs" />
+    <Compile Include="annotations_autogen.fs" />
+    <Compile Include="OnlyParse.fs" />
     <Compile Include="Program.fs" />
     <None Include="PCH\Common_PCH.h" />
     <None Include="PCH\DXGI_PCH.h">
