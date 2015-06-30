@@ -6,7 +6,7 @@ let getPrivateData= // Low level method
       ("This",AThis);
       ("guid",ANone);
       ("pDataSize",InOutReturn);
-      ("pData",OutPointerToSizedType("T","pDataSize"));
+      ("pData",OutOfSize "pDataSize");
     ],MAUnsafe) 
 
 let setPrivateData=
@@ -14,7 +14,7 @@ let setPrivateData=
       ("This",AThis);
       ("guid",ANone);
       ("DataSize",ANone);
-      ("pData", InPointerToSizedType("T","DataSize"));
+      ("pData", InOfSize "DataSize");
     ],MANone)
 
 let setPrivateDataInterface=

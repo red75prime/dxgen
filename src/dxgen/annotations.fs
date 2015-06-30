@@ -10,8 +10,8 @@ type ParamAnnotation=
   |InOut
   |InOutReturn
   |InOutOfSize of string // Name of size parameter
-  |OutPointerToSizedType of string*string // name of generic type, name of size parameter
-  |InPointerToSizedType of string*string // name of generic type, name of size parameter
+  |OutOfSize of string // name of size parameter
+  |InOfSize of string // name of size parameter
   |OutReturn
   |OutReturnCombine of string*string // struct type, struct field
   |OutReturnInterface of string // parameter name of iid
