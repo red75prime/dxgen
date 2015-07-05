@@ -76,7 +76,7 @@
     <Compile Include="Configuration.fs" />
     <Compile Include="annotations.fs" />
     <Compile Include="annotations_autogen.fs" />
-    <Compile Include="OnlyParse.fs" />
+    <Compile Include="ParseAndGen.fs" />
     <Compile Include="Program.fs" />
     <None Include="PCH\Common_PCH.h" />
     <None Include="PCH\DXGI_PCH.h">

@@ -689,7 +689,7 @@ type NParmSource=
   |RustSelf // *(self.0) as *mut _ as *mut InterfaceVtbl
   |RustParameter of string*RustType // rustparameter as native type
   |RustParameterSizeOf of string // mem::size_of::<rust parameter type>()
-  |RustSliceLenghtOf of string // rustparameter.len()
+  |RustSliceLenghtOf of string list // multiple sources mean that all array lengths should be equal
   |RustIIDOf of string // rustparameter.iid()
   |RustLocalVar of string*RustType // local variable
   |RustStructField of string*string*RustType // (local var name, field name) &mut (tempstruct.field)
@@ -745,6 +745,7 @@ let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
         |RustStructField (name, _, rt) -> [(name,rt)]
         |RustSelf | RustParameter _ |RustParameterSizeOf _ | RustSliceLenghtOf _ | RustIIDOf _ | RustConst _ -> []
         ) |> Set.ofList
+  // TODO: generate local variables
   let locals=""
   // let's find rust method parameters and their types
   let rustParms=
@@ -756,17 +757,38 @@ let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
       ) |> List.map (fun (name, rtype) -> name+" : "+(rustTypeToString rtype))
   let parameters=System.String.Join(", ", rustParms)
   let unsafe=if mannot=MAUnsafe then "unsafe " else ""
+  // TODO: generate call to native function
   let nativeInvocation=""
+  // TODO: generate parameter check (array lenghts should be equal if there's just one native parameter for their length)
+  let constraints=""
+  // TODO: if there's parameter check, then modify return type and return expression
+  let rtype_constraint=rtype
+  let rexpr_constraint=rexpr
   // we are ready to generate method
   "
-"+unsafe+"fn "+mname+generics+"("+parameters+") -> "+rtype+" {
+"+unsafe+"fn "+mname+generics+"("+parameters+") -> "+rtype_constraint+" {
+"+constraints+"
 "+locals+"
   let hr=unsafe {
     "+nativeInvocation+"
   };
-  "+rexpr+"
+  "+rexpr_constraint+"
 }
 "
+
+let getReferencedParameter parameterAnnotation=
+  match parameterAnnotation with
+  |InOutOfSize p -> p
+  |OutOfSize p -> p
+  |InOfSize p -> p
+  |OutReturnInterface p -> p
+  |OutReturnKnownInterface (p,_) -> p
+  |InOptionalArrayOfSize p -> p
+  |InArrayOfSize p -> p
+  |InByteArrayOfSize p -> p
+  |TypeSelector (p,_) -> p
+  |_ -> ""
+
 
 let indentBy indentationString (source:System.String)=
   indentationString+source.Replace("\n","\n"+indentationString)
@@ -776,14 +798,39 @@ let generateMethod (mname, mannot, parms, rty)=
   if mannot=MAIUnknown || mannot=MADontImplement then
     ""
   else
-    let eparms=
-      parms |> List.map 
-        (fun (pname, pannot, ptype) -> 
-          let psource=
-            match pannot with
-              |AThis -> RustSelf
-              |_ -> RustParameter (toSnake pname, RType (tyToRust ptype))
-          (pname, pannot, ptype, psource))
+    // let's iterate list of parametes, filling list of local varibles,
+    // generic types, equipping parameter with source
+    let genNum=ref 1
+    let locNum=ref 1
+    let eqpParms=ref []
+    for (pname, pannot, pty) in parms do
+      let eqParm=
+        match pannot with
+        |AThis ->
+          (pname, pannot, pty, RustSelf)
+        |ANone ->
+          // let's find references to this parameter
+          let refs=parms |> List.filter (fun (_, pannot, _) -> getReferencedParameter pannot = pname)
+          match refs with
+          |[] ->
+            // No references. Just convert type
+            // TODO: Convert type
+            (pname, pannot, pty, RustParameter (toSnake pname, RType (tyToRust pty)))
+          |[rf] -> 
+            // one reference
+            // TODO: process
+            (pname, pannot, pty, RustParameter (toSnake pname, RType (tyToRust pty)))
+          |_ ->
+            // multiple references
+            // TODO: process
+            (pname, pannot, pty, RustParameter (toSnake pname, RType (tyToRust pty)))
+        | _ -> 
+          // TODO: Process other annotations
+          (pname, pannot, pty, RustParameter (toSnake pname, RType (tyToRust pty)))
+      eqpParms := eqParm :: !eqpParms
+
+    let eparms=List.rev !eqpParms
+
     let trivialEquip=(toSnake mname, mannot, eparms, rty, RVNative)
     generateMethodFromEquippedAnnotation trivialEquip |> indentBy "  "
 
