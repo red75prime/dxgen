@@ -464,8 +464,11 @@ let tokenizeFS cursor=
 
 let visitChildrenFS<'t> (cursor:Cursor) (visitor: Cursor -> Cursor -> 't -> ChildVisitResult) (data:'t) =
   let handle=GCHandle.Alloc data
-  let vis1=fun cursor parent param -> visitor cursor parent ((GCHandle.FromIntPtr param).Target :?> 't)
-  visitChildren(cursor,new CursorVisitor(vis1),GCHandle.ToIntPtr handle)
+  try
+    let vis1=fun cursor parent param -> visitor cursor parent ((GCHandle.FromIntPtr param).Target :?> 't)
+    visitChildren(cursor,new CursorVisitor(vis1),GCHandle.ToIntPtr handle)
+  finally
+    handle.Free()
 
 let getCursorDisplayNameFS cursor=
   getCursorDisplayName cursor |> toString
