@@ -70,7 +70,7 @@
     <Compile Include="HeaderLoader.fs" />
     <Compile Include="Model\TypeInfo.fs" />
     <None Include="Model\TypeInfoBuilder.fs" />
-    <None Include="CaseConverter.fs" />
+    <Compile Include="CaseConverter.fs" />
     <Compile Include="SDKLocator.fs" />
     <Compile Include="ModuleBuilder.fs" />
     <Compile Include="Configuration.fs" />

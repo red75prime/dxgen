@@ -1109,7 +1109,7 @@ let d3d12annotations=[
     ],MANone);
   ]);
   ("IUnknown",IAManual,[
-  ]);
+    ]);
   ("SECURITY_ATTRIBUTES",IAManual,[
-  ]);
+    ]);
   ]

@@ -26,7 +26,6 @@ type ParamAnnotation=
 type MethodAnnotation=
   |MANone
   |MAIUnknown // Method is a part of IUnknown interface. 
-  |MADirectSafe // Simple translation
   |MAUnsafe
   |MADontImplement
 

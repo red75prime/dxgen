@@ -151,6 +151,48 @@ let rec typeDesc (ty: Type)=
   |_ -> Unimplemented(getTypeSpellingFS ty)
   
 
+let rec tyToRust (ty:CTypeDesc)=
+  match ty with
+  |Primitive t ->
+    match t with
+    |Void -> "c_void"
+    |UInt16 -> "u16"
+    |UInt8 -> "u8"
+    |UInt32 -> "u32"
+    |UInt64 -> "u64"
+    |UIntPtr -> "usize" 
+    |Int16 -> "i16"
+    |Int32 -> "i32"
+    |Int64 -> "i64"
+    |Int8 -> "i8"
+    |IntPtr -> "isize"
+    |Float32 -> "f32"
+    |Float64 -> "f64"
+    |Float80 -> "f80"
+    |Bool -> "bool"
+    |Char8 -> "u8"
+    |Char16 -> "u16"
+    |Char32 -> "u32"
+  |Unimplemented v-> "Unimplemented("+v+")"
+  |Typedef uty -> tyToRust uty
+  |TypedefRef tyn-> tyn
+  |StructRef tyn -> tyn
+  |EnumRef tyn -> tyn
+  |Array(uty,size) -> "["+(tyToRust uty)+";"+size.ToString()+"]"
+  |Ptr(Const(uty)) -> "*const "+(tyToRust uty)
+  |Ptr(Function(CFuncDesc(args,rty,cc))) ->
+    "extern "+(ccToRust cc)+" fn ("+((List.map funcArgToRust args) |> String.concat(", "))+") -> "+(tyToRust rty)
+  |Ptr uty -> "*mut " + (tyToRust uty)
+  |Const(uty) -> tyToRust uty
+  |_ -> "NoRepresentationYet("+(sprintf "%A" ty)+")"
+and
+  funcArgToRust(name,ty,_) =
+              if name="type" then
+                "ty"+" : "+(tyToRust ty)
+              else if name="" then
+                "_ : "+(tyToRust ty)
+              else
+                name+" : "+(tyToRust ty)
 
 let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) =
   // Let's use clean C interface. Those fancy C++ classes with inheritance and whistles aren't good for rust codegen.
@@ -344,50 +386,6 @@ impl BitOr for {0} {{
       sb.AppendLine() |> ignore
       sb.AppendLine() |> ignore
 
-  let rec tyToRust (ty:CTypeDesc)=
-    match ty with
-    |Primitive t ->
-      match t with
-      |Void -> "c_void"
-      |UInt16 -> "u16"
-      |UInt8 -> "u8"
-      |UInt32 -> "u32"
-      |UInt64 -> "u64"
-      |UIntPtr -> "usize" 
-      |Int16 -> "i16"
-      |Int32 -> "i32"
-      |Int64 -> "i64"
-      |Int8 -> "i8"
-      |IntPtr -> "isize"
-      |Float32 -> "f32"
-      |Float64 -> "f64"
-      |Float80 -> "f80"
-      |Bool -> "bool"
-      |Char8 -> "u8"
-      |Char16 -> "u16"
-      |Char32 -> "u32"
-    |Unimplemented v-> "Unimplemented("+v+")"
-    |Typedef uty -> tyToRust uty
-    |TypedefRef tyn-> tyn
-    |StructRef tyn -> tyn
-    |EnumRef tyn -> tyn
-    |Array(uty,size) -> "["+(tyToRust uty)+";"+size.ToString()+"]"
-    |Ptr(Const(uty)) -> "*const "+(tyToRust uty)
-    |Ptr(Function(CFuncDesc(args,rty,cc))) ->
-      "extern "+(ccToRust cc)+" fn ("+((List.map funcArgToRust args) |> String.concat(", "))+") -> "+(tyToRust rty)
-    |Ptr uty -> "*mut " + (tyToRust uty)
-    |Const(uty) -> tyToRust uty
-    |_ -> "NoRepresentationYet("+(sprintf "%A" ty)+")"
-  and
-    funcArgToRust=
-      function (name,ty,_) -> 
-                if name="type" then
-                  "ty"+" : "+(tyToRust ty)
-                else if name="" then
-                  "_ : "+(tyToRust ty)
-                else
-                  name+" : "+(tyToRust ty)
-      
 
   let libcTypeNames=Set.ofList ["BOOL";"LPCWSTR";"HMODULE";"GUID";"LARGE_INTEGER";"LPVOID";"WCHAR";"BYTE";"LPCVOID";"LONG_PTR";"WORD";"SIZE_T";"SECURITY_ATTRIBUTES";"HANDLE";"DWORD";"LPCSTR";"LONG"]
   let createStructs (sb:System.Text.StringBuilder)=
@@ -481,9 +479,21 @@ let emptyAnnotationsGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>
 open annotations
 open annotations_autogen
 
+
+// returns Some(vs) iff for all (x1,x2) in xs1,xs2 (f x1 x2 = Some(v))
+// map2L : ('x1 -> 'x2 -> Option<'y>) -> ['x1] -> ['x2] -> Option<['y]>
+let map2L f xs1 xs2=
+  let ys=List.map2 f xs1 xs2 |> List.collect o2l 
+  if List.length ys = List.length xs1 then
+    Some(ys)
+  else
+    None
+  
+
 // This function performs generic list comparison, by checking that lists have equal set of keys, 
 //  lists have equal number of matching keys in the same order, 
-//  corrensponding list elements has (subMatch key e1 e2) = true
+//  corrensponding list elements has (subMatch key e1 e2) = Some _
+// Return Some([_]) or None
 let isListsMatch key1 name1 list1 key2 name2 list2 subMatch=
   let keys1=List.map key1 list1 |> Set.ofList
   let keys2=List.map key2 list2 |> Set.ofList
@@ -495,9 +505,9 @@ let isListsMatch key1 name1 list1 key2 name2 list2 subMatch=
         subMatch k1 e1 e2
       else
         printfn "%s has %s, while %s has %s"  name1 k1 name2 k2
-        false
+        None
     if List.length list1 = List.length list2 then
-      List.forall2 subCmp list1 list2
+      map2L subCmp list1 list2
     else
       // Set of keys are equal, but lists have different size. What it means? Key duplication
       let dup ls kf=ls |> Seq.countBy kf |> Seq.filter (fun (_,b) -> b>1) |> Seq.map fst
@@ -510,7 +520,7 @@ let isListsMatch key1 name1 list1 key2 name2 list2 subMatch=
       printdup dup1 name1
       let dup2=dup list2 key2
       printdup dup2 name2
-      false
+      None
   else
     // set of keys aren't equal. show the difference
     let diff1=Set.difference keys1 keys2
@@ -523,50 +533,77 @@ let isListsMatch key1 name1 list1 key2 name2 list2 subMatch=
       printfn "%s lack those keys:" name1
       for key in diff2 do
         printfn "  %s" key
-    false
+    None
 
+// merges annotation and description of native parameter
+// returns Some(parameterName, parameterAnnotation, parameterNativeType) or None
+// iname - interface name
+// mname - method name
+// parms - list of native parameters' descriptions
+// (parameterName, parameterType,parameterNativeAnnotation) - native parameter description
+// (parameterName, parameterAnnotation) - annotated parameter
+let mergeParameter iname mname parms pname (_,pty,_) (_,pan)=
+  let parameterExists p = 
+    let ret=List.exists (fun (pname,_,_) -> pname=p) parms
+    if not ret then
+      printfn "Error. Annotation of parameter %s of method %s::%s refers to absent parameter %s" pname iname mname p
+    ret
+  let parameterMatch= 
+    match pan with
+    |AThis|ANone|InOut|InOutReturn|OutReturn|InIUnknown|InOptional -> true
+    |InOutOfSize p -> parameterExists p
+    |OutOfSize p -> parameterExists p
+    |OutReturnCombine (_,_) -> true
+    |OutReturnInterface p -> parameterExists p // TODO: check for type of p
+    |OutReturnKnownInterface (p,_) -> parameterExists p // TODO: check for type of p
+    |InOfSize p -> parameterExists p
+    |InOptionalArrayOfSize p -> parameterExists p
+    |InArrayOfSize p -> parameterExists p
+    |InByteArrayOfSize p -> parameterExists p
+    |TypeSelector (p,_) -> 
+      parameterExists p // TODO: check constants and types
+  if parameterMatch then
+    Some(pname, pan, pty)
+  else
+    None
+
+// Recursively check if interfaces', methods', parameters' names are equal in native and annotated 
+// Returns Some(annotaded native) or None
 let sanityCheck vtbls annotations= 
-  // Recursively check if interfaces', methods', parameters' names are equal in native and annotated 
-  isListsMatch fst "Native interfaces" (Map.toList vtbls) (fun (name,_,_) -> name) "Annotated interfaces" annotations 
-    (fun iname (_, structElems) (_,interfaceAnnotation,methodAnnotations) -> 
-      // check if interface iname matches, by checking all methods
-      isListsMatch (fun (CStructElem(mname,_,_)) -> mname) (sprintf "Native methods of %s" iname) structElems 
-                    (fun (mname,_,_) -> mname) (sprintf "Annotated methods of %s" iname) methodAnnotations
-        (fun mname (CStructElem(_,Ptr(Function(CFuncDesc(parms, _, _))),_)) (_,aparms,methodAnnotation) ->
-          // check if method mname matches
-          if methodAnnotation=MAIUnknown then
-            // don't check parameters of IUnknown methods
-            true
-          else
-            // by checking all parameters
-            isListsMatch (fun (pname,_,_) -> pname) (sprintf "Parameters of native method %s::%s" iname mname) parms
-                       (fun (pname,_) -> pname) (sprintf "Parameters of annotated method %s::%s" iname mname) aparms 
-              (fun pname _ (_,pan) -> 
-                // let's check validity of method annotations also
-                let parameterExists p = 
-                  let ret=List.exists (fun (pname,_,_) -> pname=p) parms
-                  if not ret then
-                    printfn "Error. Annotation of parameter %s of method %s::%s refers to absent parameter %s" pname iname mname p
-                  ret
-                match pan with
-                |AThis|ANone|InOut|InOutReturn|OutReturn|InIUnknown|InOptional -> true
-                |InOutOfSize p -> parameterExists p
-                |OutOfSize p -> parameterExists p
-                |OutReturnCombine (_,_) -> true
-                |OutReturnInterface p -> parameterExists p // TODO: check for type of p
-                |OutReturnKnownInterface (p,_) -> parameterExists p // TODO: check for type of p
-                |InOfSize p -> parameterExists p
-                |InOptionalArrayOfSize p -> parameterExists p
-                |InArrayOfSize p -> parameterExists p
-                |InByteArrayOfSize p -> parameterExists p
-                |TypeSelector (p,_) -> 
-                  parameterExists p // TODO: check constants and types
-                )
-          )
-      )
+  isListsMatch fst "Native interfaces" vtbls (fun (name,_,_) -> name) "Annotated interfaces" annotations 
+    (fun inamevtbl (_, structElems) (_,interfaceAnnotation,methodAnnotations) -> 
+      // inamevtbl is in the form I***Vtbl, let's strip 'I' and 'Vtbl'
+      let iname=inamevtbl.Substring(1,inamevtbl.Length-5)
+      if interfaceAnnotation=IAManual then
+        // Don't bother matching interfaces marked for manual implementation
+        Some(iname, interfaceAnnotation, [])
+      else
+        // check if interface iname matches, by checking all methods
+        let mergedMethods=
+          isListsMatch (fun (CStructElem(mname,_,_)) -> mname) (sprintf "Native methods of %s" iname) structElems 
+                        (fun (mname,_,_) -> mname) (sprintf "Annotated methods of %s" iname) methodAnnotations
+            (fun mname (CStructElem(_,Ptr(Function(CFuncDesc(parms, rty, cc))),_)) (_,aparms,methodAnnotation) ->
+              // check if method mname matches
+              if methodAnnotation=MAIUnknown then
+                // don't check parameters of IUnknown methods
+                Some(mname, methodAnnotation, [], rty)
+              else
+                // by checking all parameters
+                let mergedParms=
+                  isListsMatch (fun (pname,_,_) -> pname) (sprintf "Parameters of native method %s::%s" iname mname) parms
+                                (fun (pname,_) -> pname) (sprintf "Parameters of annotated method %s::%s" iname mname) aparms 
+                                  (mergeParameter iname mname parms)
+                match mergedParms with
+                |Some(mp) -> Some(mname, methodAnnotation, mp, rty)
+                |None -> None
+              )
+        match mergedMethods with
+        |Some(mm) -> Some(iname, interfaceAnnotation, mm)
+        |None -> None
+    )
     
 // rust code generation
-// AThis : *(self.0)
+// AThis : self.0
 // ANone : depends on other annotations
 // InOut : mutable borrow, C-type should be a pointer. e.g.
 //    GetPrivateData(AThis ID3D* this, ANone REFGUID guid, InOut UINT* pDataSize) -> HRESULT =>  
@@ -602,7 +639,7 @@ let sanityCheck vtbls annotations=
 
 // InOfSize s : same as InOutOfSize s, but borrow is immutable
 
-// OutReturnCombine (StructName, fieldName) : return value will be StructName or HResult(StructName), e.g.
+// OutReturnCombine(StructName, fieldName) : return value will be StructName or HResult(StructName), e.g.
 //  GetClockCalibration(This : *mut ID3D12CommandQueue, OutReturnCombine(GPUCPUTimestamp,gpu) pGpuTimestamp : *mut UINT64, OutReturnCombine(GPUCPUTimestamp,cpu) pCpuTimestamp : *mut UINT64) -> HRESULT =>
 //  struct GPUCPUTimestamp { gpu : u64, cpu: u64, }
 //  fn get_clock_calibration(&self) -> HResult(GPUCPUTimestamp) {
@@ -612,12 +649,155 @@ let sanityCheck vtbls annotations=
 //  }
 // Maybe I should just drop it. 
 
+// OutReturnInterface riid : makes a function generic on T:HasIID, return type T or HResult<T>, routes HasIID::iid() to parameter riid
 
+// OutReturnKnownInterface(riid, InterfaceName) : InterfaceName should implement HasIID, return type InterfaceName or HResult<InterfaceName>, routes InterfaceName::iid() to parameter riid
+
+// InOptionalArrayOfSize s : *T => Option<&[T]>, routes param.map_or(0,|v|v.len()) to parameter s
+
+// InArrayOfSize s : *T => &[T], routes param.len() to parameter s
+
+// InByteArrayOfSize s : makes function generic over T, *c_void => &T, routes mem::size_of::<T>() to parameter s
+
+// TypeSelector(buf, [(suffix, const, type)]) : annotated parameter select type that native method accepts in void* buf, buf parameter should be annotated InOutOfSize s
+// suffix : rust function suffix for type
+// const : const value for type
+// type : accepted type
+// 
+// For each tuple (suffix, const, type) in list create method "native_method_<suffix>", route const to annotated parameter, route type to buf type
+//
+
+// ------------------
+// Using annotations, we should determine source of each native parameter, source of Rust's function return value, presence of generic parameters
+
+type RustType=
+  |RType of string
+  |RBorrow of RustType
+  |RMutBorrow of RustType
+  |RGeneric of string
+  |RHResult of RustType
+
+let rec rustTypeToString rt=
+  match rt with
+  |RType s -> s
+  |RBorrow t -> "&" + (rustTypeToString t)
+  |RMutBorrow t-> "&mut " + (rustTypeToString t)
+  |RGeneric s -> s
+  |RHResult t -> "HResult<" + (rustTypeToString t) + ">"
+
+type NParmSource=
+  |RustSelf // *(self.0) as *mut _ as *mut InterfaceVtbl
+  |RustParameter of string*RustType // rustparameter as native type
+  |RustParameterSizeOf of string // mem::size_of::<rust parameter type>()
+  |RustSliceLenghtOf of string // rustparameter.len()
+  |RustIIDOf of string // rustparameter.iid()
+  |RustLocalVar of string*RustType // local variable
+  |RustStructField of string*string*RustType // (local var name, field name) &mut (tempstruct.field)
+  |RustConst of string // some constant
+
+
+type ReturnValueSource=
+  |RVNative // use native return type (void -> (), HRESULT -> HResult<()>, type -> rust_type)
+  |RVLocalVar of string*RustType // local variable (default initialized). Uninitialized is better, but there's no stable support for this yet.
+
+
+
+// parms is list of tuples (parameterName, parameterAnnotation, nativeParameterType, parameterSource)
+let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
+  // let's find return type and return expression
+  let (rrt,rexpr)=
+    match rvsource with
+      |RVNative ->
+        match rty with
+        |Primitive Void -> (RType "()", "hr")
+        |TypedefRef name when name="HRESULT" -> (RHResult(RType "()"), "hr")
+        | _ -> (RType (tyToRust rty), "hr")
+      |RVLocalVar(name,rtype) -> 
+        match rty with
+        |Primitive Void -> (rtype, name)
+        |TypedefRef name when name="HRESULT" -> (RHResult rtype, "hr2ret(hr,"+name+")")
+        |_ -> // error. native return type is incompatible with annotated.
+          let err=sprintf "Native return type is %s, but annotated is %A" (tyToRust rty) rtype
+          printfn "%s" err
+          raise <| new System.Exception(err)
+          (rtype, name)
+  let rtype=rustTypeToString rrt
+  // let's find generic types
+  let genericTypes=
+    parms |> List.collect 
+      (fun (_,_,_,psource) -> 
+        match psource with 
+        |RustParameter(_,RGeneric g) -> [g]
+        |RustLocalVar(_,RGeneric g) -> [g]
+        |RustSelf |RustParameter _ | RustLocalVar _ |RustParameterSizeOf _ | RustSliceLenghtOf _ | RustIIDOf _ | RustStructField _ | RustConst _ -> []
+        ) |> Set.ofList 
+  let generics=
+    if Set.isEmpty genericTypes then
+      ""
+    else
+      "<"+System.String.Join(",",genericTypes)+">"
+  // let's find local variables and their types
+  let localVars=
+    parms |> List.collect
+      (fun (_,_,_,psource) ->
+        match psource with
+        |RustLocalVar (name, rt) -> [(name,rt)]
+        |RustStructField (name, _, rt) -> [(name,rt)]
+        |RustSelf | RustParameter _ |RustParameterSizeOf _ | RustSliceLenghtOf _ | RustIIDOf _ | RustConst _ -> []
+        ) |> Set.ofList
+  let locals=""
+  // let's find rust method parameters and their types
+  let rustParms=
+    parms |> List.collect
+      (fun (_,_,_,psource) ->
+        match psource with
+        |RustParameter (name,rtype) -> [(name,rtype)]
+        |RustSelf |RustParameterSizeOf _ | RustSliceLenghtOf _ | RustIIDOf _ | RustConst _ |RustLocalVar _ |RustStructField _ -> []
+      ) |> List.map (fun (name, rtype) -> name+" : "+(rustTypeToString rtype))
+  let parameters=System.String.Join(", ", rustParms)
+  let unsafe=if mannot=MAUnsafe then "unsafe " else ""
+  let nativeInvocation=""
+  // we are ready to generate method
+  "
+"+unsafe+"fn "+mname+generics+"("+parameters+") -> "+rtype+" {
+"+locals+"
+  let hr=unsafe {
+    "+nativeInvocation+"
+  };
+  "+rexpr+"
+}
+"
+
+let indentBy indentationString (source:System.String)=
+  indentationString+source.Replace("\n","\n"+indentationString)
+
+open CaseConverter
+let generateMethod (mname, mannot, parms, rty)=
+  if mannot=MAIUnknown || mannot=MADontImplement then
+    ""
+  else
+    let eparms=
+      parms |> List.map 
+        (fun (pname, pannot, ptype) -> 
+          let psource=
+            match pannot with
+              |AThis -> RustSelf
+              |_ -> RustParameter (toSnake pname, RType (tyToRust ptype))
+          (pname, pannot, ptype, psource))
+    let trivialEquip=(toSnake mname, mannot, eparms, rty, RVNative)
+    generateMethodFromEquippedAnnotation trivialEquip |> indentBy "  "
+
+let generateMethods methods=
+  let sb=new System.Text.StringBuilder()
+  for methoddesc in methods do
+    sb.Append(generateMethod methoddesc) |> ignore
+  sb.ToString()
 
 let safeInterfaceGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,structs:Map<string,CTypeDesc>,funcs:Map<string,CTypeDesc>, iids:Set<string>) : string=
   let sb=new System.Text.StringBuilder()
-  let vtbls=types |> List.ofSeq |> List.collect (fun (KeyValue(name,ty)) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl))) |> Map.ofList
-  if sanityCheck vtbls d3d12annotations then
+  let vtbls=types |> List.ofSeq |> List.collect (fun (KeyValue(name,ty)) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl))) 
+  match sanityCheck vtbls d3d12annotations with
+  |Some(interfaceAnnotations) ->
     let apl = appendLine sb
     apl "\
 extern crate iid;
@@ -625,9 +805,25 @@ extern crate d3d12_sys;
 use iid::*;
 use d3d12_sys::*;
 "
-    
+    for (iname, iannot, methods) in interfaceAnnotations do
+      if iannot=IAManual then
+        ()
+      else
+        apl <| sprintf "\
+pub struct %s(*mut *mut IUnknownVtbl);
+
+pub impl HasIID for %s {
+  fn iid() -> &'static IID { IID_I%s };
+  fn new(ppVtbl : *mut *mut IUnknownVtbl) -> Self { %s(ppVtbl) };
+  fn expose_iptr(&self) -> *mut *mut IUnknownVtbl { self.0 };
+}
+
+pub impl %s {
+%s
+}
+"          iname iname iname iname iname (generateMethods methods)
 
     sb.ToString()
-  else
+  |None -> 
     printfn "Sanity check failed. No Rust interfaces generated"
     ""
