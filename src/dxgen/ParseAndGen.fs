@@ -676,6 +676,9 @@ type RustType=
   |RMutBorrow of RustType
   |RGeneric of string
   |RHResult of RustType
+  |RResult of RustType*RustType
+  |ROption of RustType
+  |RArray of RustType*int64
 
 let rec rustTypeToString rt=
   match rt with
@@ -684,6 +687,9 @@ let rec rustTypeToString rt=
   |RMutBorrow t-> "&mut " + (rustTypeToString t)
   |RGeneric s -> s
   |RHResult t -> "HResult<" + (rustTypeToString t) + ">"
+  |RResult(t,e) -> "Result<" + (rustTypeToString t) + "," + (rustTypeToString e) + ">"
+  |ROption t -> "Option<"+(rustTypeToString t) + ">"
+  |RArray(t,sz) -> sprintf "[%s;%d]" (rustTypeToString t) sz
 
 type NParmSource=
   |RustSelf // *(self.0) as *mut _ as *mut InterfaceVtbl
@@ -695,12 +701,30 @@ type NParmSource=
   |RustStructField of string*string*RustType // (local var name, field name) &mut (tempstruct.field)
   |RustConst of string // some constant
 
-
 type ReturnValueSource=
   |RVNative // use native return type (void -> (), HRESULT -> HResult<()>, type -> rust_type)
   |RVLocalVar of string*RustType // local variable (default initialized). Uninitialized is better, but there's no stable support for this yet.
 
 
+// Generates rust code to check that sizes of all arrays in arrs are same. Some arrays can be optional.
+//
+// locVar - name of local variable that receives size of array
+// parms - list of annotated and equipped parameters of native method
+// arrs - list of native names of arrays
+let generateArraySizeCheck locVar parms arrs=
+  let arrList=
+    parms |> List.filter (fun (pname,_,_,_) -> List.contains pname arrs) 
+          |> List.map (fun (pname,_,_,psource) -> 
+              match psource with
+              |RustParameter (rpname, ROption _) ->
+                rpname
+              |RustParameter (rpname, _) ->
+                "Some("+rpname+")"
+              |_ -> 
+                printfn "Error in creating constraint for array sizes" 
+                "ERROR"
+            )
+  "  let "+locVar+" = same_lenght(&["+System.String.Join(",",arrList)+"]).expect(\"Arrays must have equal sizes.\");"
 
 // parms is list of tuples (parameterName, parameterAnnotation, nativeParameterType, parameterSource)
 let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
@@ -721,7 +745,7 @@ let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
           printfn "%s" err
           raise <| new System.Exception(err)
           (rtype, name)
-  let rtype=rustTypeToString rrt
+  let rtype=rrt
   // let's find generic types
   let genericTypes=
     parms |> List.collect 
@@ -736,17 +760,6 @@ let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
       ""
     else
       "<"+System.String.Join(",",genericTypes)+">"
-  // let's find local variables and their types
-  let localVars=
-    parms |> List.collect
-      (fun (_,_,_,psource) ->
-        match psource with
-        |RustLocalVar (name, rt) -> [(name,rt)]
-        |RustStructField (name, _, rt) -> [(name,rt)]
-        |RustSelf | RustParameter _ |RustParameterSizeOf _ | RustSliceLenghtOf _ | RustIIDOf _ | RustConst _ -> []
-        ) |> Set.ofList
-  // TODO: generate local variables
-  let locals=""
   // let's find rust method parameters and their types
   let rustParms=
     parms |> List.collect
@@ -757,16 +770,54 @@ let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
       ) |> List.map (fun (name, rtype) -> name+" : "+(rustTypeToString rtype))
   let parameters=System.String.Join(", ", rustParms)
   let unsafe=if mannot=MAUnsafe then "unsafe " else ""
+  // TODO: generate parameter check (array lenghts should be equal if there's just one native parameter for their length)
+  let csb=new System.Text.StringBuilder()
+  let hasConstraints=ref false
+  let cNum=ref 1
+  let parms_constraint=
+    parms |> 
+      List.map (
+        fun ((a,b,c,psource) as parm) ->
+          match psource with
+          |RustSliceLenghtOf ((_::_::_) as ps) ->
+            hasConstraints := true
+            let locVar=sprintf "len%d" !cNum
+            cNum := !cNum+1
+            csb.AppendLine(generateArraySizeCheck locVar parms ps) |> ignore
+            (a,b,c,RustLocalVar(locVar,RType "usize"))
+          |_ -> parm
+        )
+  let constraints=csb.ToString()
+  // let's find local variables and their types
+  let localVars=
+    parms |> List.collect // parms instead of parms_constraint, because constraint's local vars is in constraints block alreay
+      (fun (_,_,_,psource) ->
+        match psource with
+        |RustLocalVar (name, rt) -> [(name,rt)]
+        |RustStructField (name, _, rt) -> [(name,rt)]
+        |RustSelf | RustParameter _ |RustParameterSizeOf _ | RustSliceLenghtOf _ | RustIIDOf _ | RustConst _ -> []
+        ) |> Set.ofList
+  // TODO: if there's parameter check, then modify return type and return expression
+  let rtype_constraint=
+    if !hasConstraints then 
+      rtype // I decided to panic if array sizes do not match
+    else
+      rtype
+  let rexpr_constraint=
+    if !hasConstraints then
+      rexpr
+    else
+      rexpr
+  // generate local variables
+  let sbloc=new System.Text.StringBuilder()
+  for (vname,rt) in localVars do
+    sbloc.AppendLine(sprintf "  let %s : %s=Default::default();" vname (rustTypeToString rt)) |> ignore
+  let locals=sbloc.ToString()
   // TODO: generate call to native function
   let nativeInvocation=""
-  // TODO: generate parameter check (array lenghts should be equal if there's just one native parameter for their length)
-  let constraints=""
-  // TODO: if there's parameter check, then modify return type and return expression
-  let rtype_constraint=rtype
-  let rexpr_constraint=rexpr
   // we are ready to generate method
   "
-"+unsafe+"fn "+mname+generics+"("+parameters+") -> "+rtype_constraint+" {
+"+unsafe+"fn "+mname+generics+"("+parameters+") -> "+(rustTypeToString rtype_constraint)+" {
 "+constraints+"
 "+locals+"
   let hr=unsafe {
@@ -793,51 +844,121 @@ let getReferencedParameter parameterAnnotation=
 let indentBy indentationString (source:System.String)=
   indentationString+source.Replace("\n","\n"+indentationString)
 
+let rec convertTypeToRustNoArray ty pannot=
+  match ty with
+  |Array(Const(uty), sz) ->
+    RBorrow(RArray((convertTypeToRustNoArray uty pannot),sz))
+  |TypedefRef typename ->
+    RType typename // struct or enum or something that is already defined in libc or in d3d12_sys.rs
+  |Const(TypedefRef typename) ->
+    RType typename
+  |Const(Ptr(uty)) -> 
+    match pannot with
+    |InOptional ->
+      ROption(RBorrow (convertTypeToRustNoArray uty pannot))
+    |_ -> RBorrow (convertTypeToRustNoArray uty pannot)
+  |Ptr(uty) ->
+    match pannot with
+    |InOptional ->
+      ROption(RMutBorrow (convertTypeToRustNoArray uty pannot))
+    |_ -> RMutBorrow (convertTypeToRustNoArray uty pannot)
+  |Primitive _ -> RType(tyToRust ty)
+  |_ ->
+    raise <| new System.Exception(sprintf "convertToRustTypeNoArray: unsupported type %A" ty)
+
 open CaseConverter
 let generateMethod (mname, mannot, parms, rty)=
+  // let's iterate list of parametes, filling list of local varibles,
+  // generic types, equipping parameter with source
+  let genNum=ref 1
+  let locNum=ref 1
+  let eqpParms=ref []
+  for (pname, pannot, pty) in parms do
+    let processRefs()=
+        // let's find references to this parameter
+        let refs=parms |> List.filter (fun (_, pannot, _) -> getReferencedParameter pannot = pname)
+        match refs with
+        |[] ->
+          // No references. Just convert type
+          // C pointer can be a pointer to a value or an array.
+          // Arrays should be annotated, this parameter is not, thus no arrays.
+          (pname, pannot, pty, RustParameter (toSnake pname, convertTypeToRustNoArray pty pannot))
+        |[rf] -> 
+          // one reference
+          match rf with
+          |(name,InOutOfSize _,_) 
+          |(name,OutOfSize _,_) 
+          |(name,InOfSize _,_) -> 
+            (pname, pannot, pty, RustParameterSizeOf(name))
+          |(name, OutReturnInterface _, _) ->
+            (pname, pannot, pty, RustIIDOf name)
+          |(name, OutReturnKnownInterface(_,iid),_) ->
+            (pname, pannot, pty, RustConst ("&"+iid))
+          |(name, InOptionalArrayOfSize _, _) 
+          |(name, InArrayOfSize _, _) ->
+            (pname, pannot, pty, RustSliceLenghtOf [name])
+          |(name, InByteArrayOfSize _, _) ->
+            (pname, pannot, pty, RustParameterSizeOf(name))
+          |_ ->
+            raise <| new System.Exception(sprintf "Unexpected reference %A" rf)
+        |_ ->
+          // multiple references
+          // The only case is when this parameter is a size of multiple array parameters
+          if refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) -> true |_ -> false) then
+            (pname, pannot, pty, RustSliceLenghtOf (refs |> List.map (fun (name,_,_) -> name )))
+          else
+            raise <| new System.Exception("Unexpected annotations")
+    let eqParm=
+      match pannot with
+      |AThis ->
+        (pname, pannot, pty, RustSelf)
+      |ANone ->
+        processRefs()
+      | _ -> 
+        // TODO: Process other annotations
+        (pname, pannot, pty, RustParameter (toSnake pname, RType (tyToRust pty)))
+    eqpParms := eqParm :: !eqpParms
+
+  let eparms=List.rev !eqpParms
+
+  let trivialEquip=(toSnake mname, mannot, eparms, rty, RVNative)
+  generateMethodFromEquippedAnnotation trivialEquip |> indentBy "  "
+
+// Removes TypeSelector annotation, generating specialized methods
+let preGenerateMethod ((mname, mannot, parms, rty) as methoddesc)=
   if mannot=MAIUnknown || mannot=MADontImplement then
     ""
   else
-    // let's iterate list of parametes, filling list of local varibles,
-    // generic types, equipping parameter with source
-    let genNum=ref 1
-    let locNum=ref 1
-    let eqpParms=ref []
-    for (pname, pannot, pty) in parms do
-      let eqParm=
-        match pannot with
-        |AThis ->
-          (pname, pannot, pty, RustSelf)
-        |ANone ->
-          // let's find references to this parameter
-          let refs=parms |> List.filter (fun (_, pannot, _) -> getReferencedParameter pannot = pname)
-          match refs with
-          |[] ->
-            // No references. Just convert type
-            // TODO: Convert type
-            (pname, pannot, pty, RustParameter (toSnake pname, RType (tyToRust pty)))
-          |[rf] -> 
-            // one reference
-            // TODO: process
-            (pname, pannot, pty, RustParameter (toSnake pname, RType (tyToRust pty)))
-          |_ ->
-            // multiple references
-            // TODO: process
-            (pname, pannot, pty, RustParameter (toSnake pname, RType (tyToRust pty)))
-        | _ -> 
-          // TODO: Process other annotations
-          (pname, pannot, pty, RustParameter (toSnake pname, RType (tyToRust pty)))
-      eqpParms := eqParm :: !eqpParms
-
-    let eparms=List.rev !eqpParms
-
-    let trivialEquip=(toSnake mname, mannot, eparms, rty, RVNative)
-    generateMethodFromEquippedAnnotation trivialEquip |> indentBy "  "
+    match parms |> List.tryFind (function |(_,TypeSelector _,_) -> true |_ ->false) with
+    |Some (sname, TypeSelector (tname,slist), _) ->
+      let sb=new System.Text.StringBuilder()
+      for (suffix, sval, stype) in slist do
+        let parms1=
+          parms |> List.map
+            (fun (pname, pannot, pty) -> 
+              if pname=sname then
+                (pname, AConst sval, pty)
+              else if pname=tname then
+                match pty with
+                |Ptr _ ->
+                  (pname, pannot, Ptr (TypedefRef stype))
+                |Const (Ptr _) ->
+                  (pname, pannot, Const (Ptr (TypedefRef stype)))
+                |_ ->
+                  raise <| new System.Exception(sprintf "Unexpeted type %A of type-selected parameter" pty)
+              else
+                (pname, pannot, pty)
+            )
+        sb.AppendLine(generateMethod (mname+suffix,mannot,parms1,rty)) |> ignore
+      sb.ToString()
+    |None ->
+      generateMethod methoddesc
+  
 
 let generateMethods methods=
   let sb=new System.Text.StringBuilder()
   for methoddesc in methods do
-    sb.Append(generateMethod methoddesc) |> ignore
+    sb.Append(preGenerateMethod methoddesc) |> ignore
   sb.ToString()
 
 let safeInterfaceGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,structs:Map<string,CTypeDesc>,funcs:Map<string,CTypeDesc>, iids:Set<string>) : string=
@@ -851,6 +972,32 @@ extern crate iid;
 extern crate d3d12_sys;
 use iid::*;
 use d3d12_sys::*;
+
+// Utility function. 
+// Compares lengths of slices in Option<&[T]> 
+// returns Ok(len) if all present slices have length len (or 0 if there's no arrays), 
+           Err(()) is arrays have different lengths.
+fn same_length<T>(arrs:&[Option<&[T]>]) -> Result<usize, ()> {
+    let res=arrs.iter().fold(Ok(None), 
+        |sz, arr| { 
+            match sz { 
+                Err(_) => sz, 
+                Ok(None) => Ok(arr.map(|a|{a.len()})), 
+                Ok(Some(v)) => 
+                    match *arr {
+                        None => sz, 
+                        Some(a) => 
+                            if a.len()==v {
+                                sz
+                            } else {
+                                Err(())
+                            }
+                    }
+            }
+        });
+    res.map(|ms|{ms.unwrap_or(0)})
+}
+
 "
     for (iname, iannot, methods) in interfaceAnnotations do
       if iannot=IAManual then

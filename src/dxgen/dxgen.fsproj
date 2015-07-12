@@ -11,9 +11,10 @@
     <AssemblyName>dxgen</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
+    <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
     <Name>dxgen</Name>
     <NuGetPackageImportStamp>5f692ad3</NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -69,7 +70,7 @@
     <Compile Include="libclang.fs" />
     <Compile Include="HeaderLoader.fs" />
     <Compile Include="Model\TypeInfo.fs" />
-    <None Include="Model\TypeInfoBuilder.fs" />
+    <Compile Include="Model\TypeInfoBuilder.fs" />
     <Compile Include="CaseConverter.fs" />
     <Compile Include="SDKLocator.fs" />
     <Compile Include="ModuleBuilder.fs" />

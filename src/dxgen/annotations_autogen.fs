@@ -289,12 +289,12 @@ let d3d12annotations=[
     ],MANone);
     ("CheckFeatureSupport",[
       ("This",AThis);
-      ("Feature",TypeSelector("pFeatureSupportData",[("options","D3D12_FEATURE_D3D12_OPTIONS","D3D12_FEATURE_DATA_D3D12_OPTIONS");
-                                                     ("arch","D3D12_FEATURE_ARCHITECTURE","D3D12_FEATURE_DATA_ARCHITECTURE");
-                                                     ("feature_levels","D3D12_FEATURE_FEATURE_LEVELS","D3D12_FEATURE_DATA_FEATURE_LEVELS");
-                                                     ("format_support","D3D12_FEATURE_FORMAT_SUPPORT","D3D12_FEATURE_DATA_FORMAT_SUPPORT");
-                                                     ("multisample_quality_levels","D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS","D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS");
-                                                     ("format_info","D3D12_FEATURE_FORMAT_INFO","D3D12_FEATURE_DATA_FORMAT_INFO");
+      ("Feature",TypeSelector("pFeatureSupportData",[("Options","D3D12_FEATURE_D3D12_OPTIONS","D3D12_FEATURE_DATA_D3D12_OPTIONS");
+                                                     ("Arch","D3D12_FEATURE_ARCHITECTURE","D3D12_FEATURE_DATA_ARCHITECTURE");
+                                                     ("FeatureLevels","D3D12_FEATURE_FEATURE_LEVELS","D3D12_FEATURE_DATA_FEATURE_LEVELS");
+                                                     ("FormatSupport","D3D12_FEATURE_FORMAT_SUPPORT","D3D12_FEATURE_DATA_FORMAT_SUPPORT");
+                                                     ("MultisampleQualityLevels","D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS","D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS");
+                                                     ("FormatInfo","D3D12_FEATURE_FORMAT_INFO","D3D12_FEATURE_DATA_FORMAT_INFO");
                                                      ]));
       ("pFeatureSupportData",InOutOfSize "FeatureSupportDataSize");
       ("FeatureSupportDataSize",ANone);
@@ -390,13 +390,13 @@ let d3d12annotations=[
       ("InitialResourceState",ANone);
       ("pOptimizedClearValue",ANone);
       ("riidResource",ANone);
-      ("ppvResource",ANone);
+      ("ppvResource",OutReturnKnownInterface("riidResource","ID3D12Resource"));
     ],MANone);
     ("CreateHeap",[
       ("This",AThis);
       ("pDesc",ANone);
       ("riid",ANone);
-      ("ppvHeap",ANone);
+      ("ppvHeap",OutReturnKnownInterface("riid","ID3D12Heap"));
     ],MANone);
     ("CreatePlacedResource",[
       ("This",AThis);
@@ -406,7 +406,7 @@ let d3d12annotations=[
       ("InitialState",ANone);
       ("pOptimizedClearValue",ANone);
       ("riid",ANone);
-      ("ppvResource",ANone);
+      ("ppvResource",OutReturnKnownInterface("riid","ID3D12Resource"));
     ],MANone);
     ("CreateReservedResource",[
       ("This",AThis);
@@ -414,7 +414,7 @@ let d3d12annotations=[
       ("InitialState",ANone);
       ("pOptimizedClearValue",ANone);
       ("riid",ANone);
-      ("ppvResource",ANone);
+      ("ppvResource",OutReturnKnownInterface("riid","ID3D12Resource"));
     ],MANone);
     ("CreateSharedHandle",[
       ("This",AThis);
@@ -428,7 +428,7 @@ let d3d12annotations=[
       ("This",AThis);
       ("NTHandle",ANone);
       ("riid",ANone);
-      ("ppvObj",ANone);
+      ("ppvObj",OutReturnInterface("riid"));
     ],MANone);
     ("OpenSharedHandleByName",[
       ("This",AThis);
@@ -451,7 +451,7 @@ let d3d12annotations=[
       ("InitialValue",ANone);
       ("Flags",ANone);
       ("riid",ANone);
-      ("ppFence",ANone);
+      ("ppFence",OutReturnKnownInterface("riid","ID3D12Fence"));
     ],MANone);
     ("GetDeviceRemovedReason",[
       ("This",AThis);
@@ -471,7 +471,7 @@ let d3d12annotations=[
       ("This",AThis);
       ("pDesc",ANone);
       ("riid",ANone);
-      ("ppvHeap",ANone);
+      ("ppvHeap",OutReturnKnownInterface("riid","ID3D12Heap")); // maybe wrong. TODO: Check docs.
     ],MANone);
     ("SetStablePowerState",[
       ("This",AThis);
@@ -482,7 +482,7 @@ let d3d12annotations=[
       ("pDesc",ANone);
       ("pRootSignature",ANone);
       ("riid",ANone);
-      ("ppvCommandSignature",ANone);
+      ("ppvCommandSignature",OutReturnKnownInterface("riid","ID3D12CommandSignature"));
     ],MANone);
     ("GetResourceTiling",[
       ("This",AThis);
@@ -496,7 +496,7 @@ let d3d12annotations=[
     ],MANone);
     ("GetAdapterLuid",[
       ("This",AThis);
-      ("__ret_val",ANone);
+      ("__ret_val",OutReturn);
     ],MANone);
   ]);
   ("ID3D12FenceVtbl",IAAutogen,[
@@ -1049,7 +1049,7 @@ let d3d12annotations=[
     ],MANone);
     ("GetDesc",[
       ("This",AThis);
-      ("__ret_val",ANone);
+      ("__ret_val",OutReturn);
     ],MANone);
     ("GetGPUVirtualAddress",[
       ("This",AThis);

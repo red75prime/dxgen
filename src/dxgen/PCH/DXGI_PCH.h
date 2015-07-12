@@ -142,3 +142,5 @@ typedef void* RPC_IF_HANDLE;
 #define THIS                    INTERFACE * This
 
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE)
+
+typedef unsigned int DXGI_FORMAT;

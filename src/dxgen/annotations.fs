@@ -22,6 +22,7 @@ type ParamAnnotation=
   |InByteArrayOfSize of string // name of array lenght parameter
   |InOptional
   |TypeSelector of string*((string*string*string) list) // name of parameter that controls type of this parameter, list of triples (function suffix, selector value, type)
+  |AConst of string // Ugly. Don't use as annotations. For internal use.
 
 type MethodAnnotation=
   |MANone
