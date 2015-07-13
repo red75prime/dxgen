@@ -8,7 +8,7 @@ type ParamAnnotation=
   |AThis
   |ANone
   |InOut
-  |InOutReturn
+  |InOutReturn // 
   |InOutOfSize of string // Name of size parameter
   |OutOfSize of string // name of size parameter
   |InOfSize of string // name of size parameter
