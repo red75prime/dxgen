@@ -258,25 +258,25 @@ let d3d12annotations=[
       ("This",AThis);
       ("pDesc",ANone);
       ("riid",ANone);
-      ("ppCommandQueue",OutReturnKnownInterface("riid","ID3D12CommandQueue"));
+      ("ppCommandQueue",OutReturnKnownInterface("riid","D3D12CommandQueue"));
     ],MANone);
     ("CreateCommandAllocator",[
       ("This",AThis);
       ("type",ANone);
       ("riid",ANone);
-      ("ppCommandAllocator",OutReturnKnownInterface("riid","ID3D12CommandAllocator"));
+      ("ppCommandAllocator",OutReturnKnownInterface("riid","D3D12CommandAllocator"));
     ],MANone);
     ("CreateGraphicsPipelineState",[
       ("This",AThis);
       ("pDesc",ANone);
       ("riid",ANone);
-      ("ppPipelineState",OutReturnKnownInterface("riid","ID3D12PipelineState"));
+      ("ppPipelineState",OutReturnKnownInterface("riid","D3D12PipelineState"));
     ],MANone);
     ("CreateComputePipelineState",[
       ("This",AThis);
       ("pDesc",ANone);
       ("riid",ANone);
-      ("ppPipelineState",OutReturnKnownInterface("riid","ID3D12PipelineState"));
+      ("ppPipelineState",OutReturnKnownInterface("riid","D3D12PipelineState"));
     ],MANone);
     ("CreateCommandList",[
       ("This",AThis);
@@ -303,7 +303,7 @@ let d3d12annotations=[
       ("This",AThis);
       ("pDescriptorHeapDesc",ANone);
       ("riid",ANone);
-      ("ppvHeap",OutReturnKnownInterface("riid","ID3D12DescriptorHeap"));
+      ("ppvHeap",OutReturnKnownInterface("riid","D3D12DescriptorHeap"));
     ],MANone);
     ("GetDescriptorHandleIncrementSize",[
       ("This",AThis);
@@ -315,7 +315,7 @@ let d3d12annotations=[
       ("pBlobWithRootSignature",InByteArrayOfSize "blobLengthInBytes");
       ("blobLengthInBytes",ANone);
       ("riid",ANone);
-      ("ppvRootSignature",OutReturnKnownInterface("riid","ID3D12RootSignature"));
+      ("ppvRootSignature",OutReturnKnownInterface("riid","D3D12RootSignature"));
     ],MANone);
     ("CreateConstantBufferView",[
       ("This",AThis);
@@ -390,13 +390,13 @@ let d3d12annotations=[
       ("InitialResourceState",ANone);
       ("pOptimizedClearValue",ANone);
       ("riidResource",ANone);
-      ("ppvResource",OutReturnKnownInterface("riidResource","ID3D12Resource"));
+      ("ppvResource",OutReturnKnownInterface("riidResource","D3D12Resource"));
     ],MANone);
     ("CreateHeap",[
       ("This",AThis);
       ("pDesc",ANone);
       ("riid",ANone);
-      ("ppvHeap",OutReturnKnownInterface("riid","ID3D12Heap"));
+      ("ppvHeap",OutReturnKnownInterface("riid","D3D12Heap"));
     ],MANone);
     ("CreatePlacedResource",[
       ("This",AThis);
@@ -406,7 +406,7 @@ let d3d12annotations=[
       ("InitialState",ANone);
       ("pOptimizedClearValue",ANone);
       ("riid",ANone);
-      ("ppvResource",OutReturnKnownInterface("riid","ID3D12Resource"));
+      ("ppvResource",OutReturnKnownInterface("riid","D3D12Resource"));
     ],MANone);
     ("CreateReservedResource",[
       ("This",AThis);
@@ -414,7 +414,7 @@ let d3d12annotations=[
       ("InitialState",ANone);
       ("pOptimizedClearValue",ANone);
       ("riid",ANone);
-      ("ppvResource",OutReturnKnownInterface("riid","ID3D12Resource"));
+      ("ppvResource",OutReturnKnownInterface("riid","D3D12Resource"));
     ],MANone);
     ("CreateSharedHandle",[
       ("This",AThis);
@@ -451,7 +451,7 @@ let d3d12annotations=[
       ("InitialValue",ANone);
       ("Flags",ANone);
       ("riid",ANone);
-      ("ppFence",OutReturnKnownInterface("riid","ID3D12Fence"));
+      ("ppFence",OutReturnKnownInterface("riid","D3D12Fence"));
     ],MANone);
     ("GetDeviceRemovedReason",[
       ("This",AThis);
@@ -471,7 +471,7 @@ let d3d12annotations=[
       ("This",AThis);
       ("pDesc",ANone);
       ("riid",ANone);
-      ("ppvHeap",OutReturnKnownInterface("riid","ID3D12Heap")); // maybe wrong. TODO: Check docs.
+      ("ppvHeap",OutReturnKnownInterface("riid","D3D12Heap")); // maybe wrong. TODO: Check docs.
     ],MANone);
     ("SetStablePowerState",[
       ("This",AThis);
@@ -482,7 +482,7 @@ let d3d12annotations=[
       ("pDesc",ANone);
       ("pRootSignature",ANone);
       ("riid",ANone);
-      ("ppvCommandSignature",OutReturnKnownInterface("riid","ID3D12CommandSignature"));
+      ("ppvCommandSignature",OutReturnKnownInterface("riid","D3D12CommandSignature"));
     ],MANone);
     ("GetResourceTiling",[
       ("This",AThis);

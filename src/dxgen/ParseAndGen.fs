@@ -674,28 +674,35 @@ type RustType=
   |RType of string
   |RBorrow of RustType
   |RMutBorrow of RustType
-  |RGeneric of string
+  |RGeneric of string*string 
   |RHResult of RustType
   |RResult of RustType*RustType
   |ROption of RustType
   |RArray of RustType*int64
+  |RSlice of RustType
 
 let rec rustTypeToString rt=
   match rt with
   |RType s -> s
   |RBorrow t -> "&" + (rustTypeToString t)
   |RMutBorrow t-> "&mut " + (rustTypeToString t)
-  |RGeneric s -> s
+  |RGeneric (s,sub) -> s
   |RHResult t -> "HResult<" + (rustTypeToString t) + ">"
   |RResult(t,e) -> "Result<" + (rustTypeToString t) + "," + (rustTypeToString e) + ">"
   |ROption t -> "Option<"+(rustTypeToString t) + ">"
   |RArray(t,sz) -> sprintf "[%s;%d]" (rustTypeToString t) sz
+  |RSlice(t) -> "["+(rustTypeToString t)+"]"
 
 let rec extractGenerics rt=
   match rt with
   |RType s -> []
-  |RBorrow t |RMutBorrow t |RHResult t |RResult (t,_) |ROption t |RArray (t,_) -> extractGenerics t
-  |RGeneric s -> [s]
+  |RBorrow t |RMutBorrow t |RHResult t |RResult (t,_) |ROption t |RArray (t,_) |RSlice t-> extractGenerics t
+  |RGeneric(s,sub) -> [(s,sub)]
+
+type LVInit=
+  |LVDefault
+  |LVCOMWrapper
+  |LVSizeOf of string
 
 type NParmSource=
   |RustSelf // *(self.0) as *mut _ as *mut InterfaceVtbl
@@ -703,10 +710,20 @@ type NParmSource=
   |RustParameterSizeOf of string // mem::size_of::<rust parameter type>()
   |RustSliceLenghtOf of string list // multiple sources mean that all array lengths should be equal
   |RustIIDOf of string // rustparameter.iid()
-  |RustLocalVar of string*RustType // local variable (default init)
-  |RustLocalVarSizeOf of string*string // local variable (name, array parameter name)
+  |RustLocalVar of string*RustType*LVInit // local variable (default init)
   |RustStructField of string*string*RustType // (local var name, field name) &mut (tempstruct.field)
   |RustConst of string // some constant
+
+let typeOfSource s=
+  match s with
+  |RustSelf -> RType "Don't know"
+  |RustParameter(_,rty) -> rty
+  |RustParameterSizeOf _ -> RType "usize"
+  |RustSliceLenghtOf _ -> RType "usize"
+  |RustIIDOf _ -> RType "REFGUID"
+  |RustLocalVar(_,rty,_) -> rty
+  |RustStructField(_,_,rty) -> rty
+  |RustConst _ -> RType "Don't know"
 
 type ReturnValueSource=
   |RVNative // use native return type (void -> (), HRESULT -> HResult<()>, type -> rust_type)
@@ -739,7 +756,7 @@ let native2rustName parms name=
   |_ -> raise <| new System.Exception("Unreachable")
 
 // parms is list of tuples (parameterName, parameterAnnotation, nativeParameterType, parameterSource)
-let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
+let generateMethodFromEquippedAnnotation (mname, nname, mannot, parms, rty, rvsource)=
   // let's find return type and return expression
   let (rrt,rexpr)=
     match rvsource with
@@ -764,9 +781,9 @@ let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
       (fun (_,_,_,psource) -> 
         match psource with 
         |RustParameter(_,rty) 
-        |RustLocalVar(_,rty) -> extractGenerics rty
-        |RustSelf |RustLocalVarSizeOf _|RustParameterSizeOf _ |RustSliceLenghtOf _ |RustIIDOf _ |RustStructField _ |RustConst _ -> []
-        ) |> Set.ofList 
+        |RustLocalVar(_,rty,_) -> extractGenerics rty
+        |RustSelf |RustParameterSizeOf _ |RustSliceLenghtOf _ |RustIIDOf _ |RustStructField _ |RustConst _ -> []
+        ) |> Set.ofList |> Set.map (fun (s,sub) -> if System.String.IsNullOrEmpty sub then s else s+": "+sub)
   let generics=
     if Set.isEmpty genericTypes then
       ""
@@ -778,11 +795,11 @@ let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
       (fun (_,_,_,psource) ->
         match psource with
         |RustParameter (name,rtype) -> [(name,rtype)]
-        |RustSelf |RustParameterSizeOf _ | RustSliceLenghtOf _ | RustIIDOf _ | RustConst _ |RustLocalVar _ |RustLocalVarSizeOf _|RustStructField _ -> []
+        |RustSelf |RustParameterSizeOf _ | RustSliceLenghtOf _ | RustIIDOf _ | RustConst _ |RustLocalVar _ |RustStructField _ -> []
       ) |> List.map (fun (name, rtype) -> name+" : "+(rustTypeToString rtype))
   let parameters=System.String.Join(", ", rustParms)
   let unsafe=if mannot=MAUnsafe then "unsafe " else ""
-  // TODO: generate parameter check (array lenghts should be equal if there's just one native parameter for their length)
+  // generate parameter check (array lenghts should be equal if there's just one native parameter for their length)
   let csb=new System.Text.StringBuilder()
   let hasConstraints=ref false
   let cNum=ref 1
@@ -796,7 +813,7 @@ let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
             let locVar=sprintf "len%d" !cNum
             cNum := !cNum+1
             csb.AppendLine(generateArraySizeCheck locVar parms ps) |> ignore
-            (a,b,c,RustLocalVar(locVar,RType "usize"))
+            (a,b,c,RustLocalVar(locVar,RType "usize",LVDefault))
           |_ -> parm
         )
   let constraints=csb.ToString()
@@ -805,9 +822,8 @@ let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
     parms |> List.collect // parms instead of parms_constraint, because constraint's local vars is in constraints block alreay
       (fun (_,_,_,psource) ->
         match psource with
-        |RustLocalVar (name, rt) -> [(name,rt,None)]
-        |RustLocalVarSizeOf (name, aname) -> [(name, RType "usize", Some aname)] // TODO: ensure correctness for 32/64 bit builds
-        |RustStructField (name, _, rt) -> [(name,rt, None)]
+        |RustLocalVar (name, rt, init) -> [(name, rt, init)]
+        |RustStructField (name, _, rt) -> [(name, rt, LVDefault)]
         |RustSelf | RustParameter _ |RustParameterSizeOf _ | RustSliceLenghtOf _ | RustIIDOf _ | RustConst _ -> []
         ) |> Set.ofList
   // if there's parameter check, then modify return type and return expression
@@ -823,16 +839,43 @@ let generateMethodFromEquippedAnnotation (mname, mannot, parms, rty, rvsource)=
       rexpr
   // generate local variables
   let sbloc=new System.Text.StringBuilder()
-  for (vname,rt,maname) in localVars do
-    match maname with
-    |None ->
-      sbloc.AppendLine(sprintf "  let %s: %s = Default::default();" vname (rustTypeToString rt)) |> ignore
-    |Some aname ->
+  for (vname,rt,init) in localVars do
+    match init with
+    |LVCOMWrapper ->
+      sbloc.AppendLine(sprintf "  let mut %s: %s = unsafe{ zeroinit_com_wrapper() };" vname (rustTypeToString rt)) |> ignore
+    |LVDefault -> 
+        sbloc.AppendLine(sprintf "  let mut %s: %s = Default::default();" vname (rustTypeToString rt)) |> ignore
+    |LVSizeOf aname ->
       let raname=native2rustName parms aname
-      sbloc.AppendLine(sprintf "  let %s: %s = std::mem::size_of_val(%s);" vname (rustTypeToString rt) raname) |> ignore
+      sbloc.AppendLine(sprintf "  let mut %s: %s = std::mem::size_of_val(%s);" vname (rustTypeToString rt) raname) |> ignore
   let locals=sbloc.ToString()
   // TODO: generate call to native function
-  let nativeInvocation=""
+  let native_parms=
+    parms_constraint |> 
+      List.map 
+        (fun (_,_,cty,src) ->
+          match src with
+          |RustConst s ->
+            s
+          |RustIIDOf p ->
+            let pty=parms_constraint |> List.find (fun (n,_,_,_) -> n=p) |> (fun (_,_,_,src) -> typeOfSource src)
+            sprintf "(%s as HasIID)::iid() as REFGUID" (rustTypeToString pty)
+          |RustLocalVar (l,rty,_) ->
+            "&mut "+l+" as "+(tyToRust cty)
+          |RustParameter (p,_) ->
+            p+" as "+(tyToRust cty)
+          |RustParameterSizeOf p ->
+            "std::mem::size_of_val("+p+") as "+(tyToRust cty)
+          |RustSelf ->
+            "*self.0"
+          |RustSliceLenghtOf [p] ->
+            p+".len() as "+(tyToRust cty)
+          |RustSliceLenghtOf _ ->
+            raise <| new System.Exception("Unreachable")
+          |RustStructField(s,f,_) ->
+            "&"+s+"."+f+" as "+(tyToRust cty)
+            ) |> (fun seq -> System.String.Join(", ", seq))
+  let nativeInvocation="((**self.0)."+nname+")("+native_parms+")"
   // we are ready to generate method
   "
 "+unsafe+"fn "+mname+generics+"("+parameters+") -> "+(rustTypeToString rtype_constraint)+" {
@@ -862,6 +905,12 @@ let getReferencedParameter parameterAnnotation=
 let indentBy indentationString (source:System.String)=
   indentationString+source.Replace("\n","\n"+indentationString)
 
+let derefCType pty=
+  match pty with
+  |Ptr(Const(ty)) -> ty
+  |Ptr(ty) -> ty
+  |_ -> raise <| new System.Exception("Type isn't a pointer")
+
 let rec convertTypeToRustNoArray ty pannot=
   match ty with
   |Array(Const(uty), sz) ->
@@ -885,13 +934,14 @@ let rec convertTypeToRustNoArray ty pannot=
     raise <| new System.Exception(sprintf "convertToRustTypeNoArray: unsupported type %A" ty)
 
 open CaseConverter
-let generateMethod (mname, mannot, parms, rty)=
+let generateMethod (mname, nname, mannot, parms, rty)=
   // let's iterate list of parametes, filling list of local varibles,
   // generic types, equipping parameter with source
   let genNum=ref 1
   let locNum=ref 1
   let eqpParms=ref []
   let retParm=ref RVNative
+  let cty2locvar=ref Map.empty 
   for (pname, pannot, pty) in parms do
     let ensureNoRefs()=
         let refs=parms |> List.filter (fun (_, pannot, _) -> getReferencedParameter pannot = pname)
@@ -948,8 +998,9 @@ let generateMethod (mname, mannot, parms, rty)=
         |RustParameterSizeOf nname ->
           let locVar=sprintf "tmp%d" !locNum
           locNum:= !locNum + 1
-          retParm := RVLocalVar(locVar, RType "usize")
-          (pname, pannot, pty, RustLocalVarSizeOf(locVar,nname))
+          let rty=RType "usize"
+          retParm := RVLocalVar(locVar, rty)
+          (pname, pannot, pty, RustLocalVar(locVar,rty,LVSizeOf nname))
         |_ ->
           raise <| new System.Exception("Unreachable")
       |InOutOfSize nname |OutOfSize nname ->
@@ -959,17 +1010,17 @@ let generateMethod (mname, mannot, parms, rty)=
         |Ptr(Primitive Void) ->
           let gname=sprintf "T%d" !genNum
           genNum := !genNum + 1
-          (pname, pannot, pty, RustParameter(toSnake pname, RMutBorrow(RGeneric gname)))
+          (pname, pannot, pty, RustParameter(toSnake pname, RMutBorrow(RGeneric (gname,""))))
         |_ ->
           (pname, pannot, pty, RustParameter(toSnake pname, convertTypeToRustNoArray pty pannot))
       |InOfSize nname ->
         ensureNoRefs()
         // TypeSelector could assign type to this parameter
         match pty with
-        |Ptr(Const(Primitive Void)) ->
+        |Ptr(Const(Primitive Void)) |Ptr(Primitive Void) ->
           let gname=sprintf "T%d" !genNum
           genNum := !genNum + 1
-          (pname, pannot, pty, RustParameter(toSnake pname, RBorrow(RGeneric gname)))
+          (pname, pannot, pty, RustParameter(toSnake pname, RBorrow(RGeneric (gname,""))))
         |_ ->
           (pname, pannot, pty, RustParameter(toSnake pname, convertTypeToRustNoArray pty pannot))
       |OutReturn ->
@@ -983,17 +1034,50 @@ let generateMethod (mname, mannot, parms, rty)=
           |_ -> raise <| new System.Exception(sprintf "Parameter %s annotated by OutReturn isn't a pointer" pname)
         let rtype=convertTypeToRustNoArray derefType pannot
         retParm := RVLocalVar(locVar,rtype)
-        (pname, pannot, pty, RustLocalVar(locVar, rtype))
+        (pname, pannot, pty, RustLocalVar(locVar, rtype, LVDefault))
+      |OutReturnCombine (stype,sfield) ->
+        ensureNoRefs()
+        match Map.tryFind stype !cty2locvar with
+        |Some(locVar) ->
+          (pname, pannot, pty, RustStructField(locVar, sfield, RType stype))
+        |None ->
+          let locVar=sprintf "tmp%d" !locNum
+          locNum:= !locNum + 1
+          cty2locvar := Map.add stype locVar !cty2locvar
+          retParm := RVLocalVar(locVar, RType stype)
+          (pname, pannot, pty, RustStructField(locVar, sfield, RType stype))
+      |OutReturnInterface piid ->
+        ensureNoRefs()
+        let gname=sprintf "T%d" !genNum
+        genNum := !genNum + 1
+        let locVar=sprintf "tmp%d" !locNum
+        locNum:= !locNum + 1
+        let rty=RGeneric(gname, "HasIID")
+        retParm := RVLocalVar(locVar,rty)
+        (pname, pannot, pty, RustLocalVar(locVar,rty,LVCOMWrapper))
+      |OutReturnKnownInterface (piid, itype) ->
+        let locVar=sprintf "tmp%d" !locNum
+        locNum:= !locNum + 1
+        let rty=RType itype
+        retParm := RVLocalVar(locVar,rty)
+        (pname, pannot, pty, RustLocalVar(locVar,rty,LVCOMWrapper))
+      |InIUnknown ->
+        (pname, pannot, pty, RustParameter(toSnake pname, RMutBorrow(RType "HasIID")))
+      |InOptionalArrayOfSize _ ->
+        (pname, pannot, pty, RustParameter(toSnake pname, ROption(RBorrow(RSlice(convertTypeToRustNoArray (derefCType pty) pannot)))))
+      |InArrayOfSize _ ->
+        (pname, pannot, pty, RustParameter(toSnake pname, RBorrow(RSlice(convertTypeToRustNoArray (derefCType pty) pannot))))
+      |InByteArrayOfSize _ ->
+        (pname, pannot, pty, RustParameter(toSnake pname, RBorrow(RSlice(RType "u8"))))
+      |InOptional ->
+        (pname, pannot, pty, RustParameter(toSnake pname, ROption(RBorrow(convertTypeToRustNoArray (derefCType pty) pannot))))
       |AConst s ->
         (pname, pannot, pty, RustConst s)
-      | _ -> 
-        // TODO: Process other annotations
-        (pname, pannot, pty, RustParameter (toSnake pname, RType (tyToRust pty)))
     eqpParms := eqParm :: !eqpParms
 
   let eparms=List.rev !eqpParms
 
-  let trivialEquip=(toSnake mname, mannot, eparms, rty, !retParm)
+  let trivialEquip=(toSnake mname, nname, mannot, eparms, rty, !retParm)
   generateMethodFromEquippedAnnotation trivialEquip |> indentBy "  "
 
 // Removes TypeSelector annotation, generating specialized methods
@@ -1021,10 +1105,10 @@ let preGenerateMethod ((mname, mannot, parms, rty) as methoddesc)=
               else
                 (pname, pannot, pty)
             )
-        sb.AppendLine(generateMethod (mname+suffix,mannot,parms1,rty)) |> ignore
+        sb.AppendLine(generateMethod (mname+suffix, mname, mannot,parms1,rty)) |> ignore
       sb.ToString()
     |None ->
-      generateMethod methoddesc
+      generateMethod (mname, mname, mannot, parms, rty)
   
 
 let generateMethods methods=
@@ -1032,6 +1116,32 @@ let generateMethods methods=
   for methoddesc in methods do
     sb.Append(preGenerateMethod methoddesc) |> ignore
   sb.ToString()
+
+let addCombiningStructs (sb:System.Text.StringBuilder) interfaceAnnotations=
+  let apl=appendLine sb
+  let structFields=
+    interfaceAnnotations |> List.fold 
+      (fun s (_,_,mannots) ->
+        mannots |> List.fold  
+          (fun s (_,_,pannots,_) ->
+            pannots |> List.fold 
+              (fun s (_,pannot,pty) ->
+                match pannot with
+                |OutReturnCombine(stype,sfield) ->
+                  Set.add (stype,sfield,pty) s
+                |_ -> s
+              ) s          
+          ) s
+      ) Set.empty
+  let structsByType=structFields |> Seq.groupBy (fun (stype,_,_) -> stype)
+  for (stype,fields) in structsByType do
+    apl "#[derive(Default, Debug)]"
+    apl <| "pub struct "+stype+" {"
+    for (_,field, pty) in fields do
+      apl <| "  "+field+" : "+(tyToRust (derefCType pty))+","
+    apl "}"
+    apl ""
+  ()
 
 let safeInterfaceGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,structs:Map<string,CTypeDesc>,funcs:Map<string,CTypeDesc>, iids:Set<string>) : string=
   let sb=new System.Text.StringBuilder()
@@ -1078,7 +1188,12 @@ fn hr2ret<T>(hr : HRESULT, res:T) -> HResult<T> {
   }
 }
 
+unsafe fn zeroinit_com_wrapper<T: HasIID>() -> T {
+  T::new(std::mem::null_mut())
+}
+
 "
+    addCombiningStructs sb interfaceAnnotations
     for (iname, iannot, methods) in interfaceAnnotations do
       if iannot=IAManual then
         ()
