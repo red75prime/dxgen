@@ -42,7 +42,7 @@ let main argv =
                 let headerPath = (FileInfo(Path.Combine(sdkLocation, codeModule.IncludePath, header)))
                 
                 let types = OnlyParse.parse headerPath precompiledHeader
-                let ptext = OnlyParse.codeGen types
+                let ptext = sysgen.codeGen types
                 use sw=new System.IO.StreamWriter(@".\d3d12_sys.rs")
                 sw.Write(ptext)
                 let atext = OnlyParse.emptyAnnotationsGen types
