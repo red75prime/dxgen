@@ -101,7 +101,11 @@ let enumCType cursor=
 
 let rec typeDesc (ty: Type)=
   match ty.kind with
-  |TypeKind.Void ->   Primitive Void
+  |TypeKind.Void ->   
+    if isConstQualifiedTypeFS ty then
+      Const(Primitive Void)
+    else
+      Primitive Void
   |TypeKind.Bool ->   Primitive Bool
   |TypeKind.Char16 -> Primitive Char16
   |TypeKind.Char32 -> Primitive Char32
@@ -186,10 +190,11 @@ let rec tyToRust (ty:CTypeDesc)=
   |_ -> "NoRepresentationYet("+(sprintf "%A" ty)+")"
 and
   funcArgToRust(name,ty,_) =
-              if name="type" then
-                "ty"+" : "+(tyToRust ty)
-              else if name="" then
-                "_ : "+(tyToRust ty)
-              else
-                name+" : "+(tyToRust ty)
+    match name with
+    |"type" -> "ty"+": "+(tyToRust ty)
+    |"" -> "_ : "+(tyToRust ty)
+    |_ -> 
+      match ty with
+      |Array(_,_) -> name+": &"+(tyToRust ty)
+      |_ -> name+": "+(tyToRust ty)
 

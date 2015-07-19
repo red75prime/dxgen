@@ -434,6 +434,12 @@ extern Type getCanonicalType(Type ty)
 [<DllImport("libclang", EntryPoint = "clang_Cursor_getNumArguments", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern int32 getNumArguments(Cursor ty)
 
+[<DllImport("libclang", EntryPoint = "clang_isConstQualifiedType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern uint32 isConstQualifiedType(Type ty)
+
+let isConstQualifiedTypeFS ty=
+  isConstQualifiedType ty <> 0u
+
 [<DllImport("libclang", EntryPoint = "clang_Cursor_isBitField", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern uint32 isBitField(Cursor c)
 

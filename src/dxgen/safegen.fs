@@ -1,176 +1,10 @@
-﻿module OnlyParse
+﻿module safegen
 
 open System.Runtime.InteropServices
 open Microsoft.FSharp.NativeInterop
 open FSharpx
 open libclang
 open cdesc
-
-let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) =
-  // Let's use clean C interface. Those fancy C++ classes with inheritance and whistles aren't good for rust codegen.
-  let options = [| "-x"; "c"; "-std=c11"; "-fms-extensions"; "-fms-compatiblity"; "-fmsc-version=1800" |]
-  let index = createIndex(0, 0)
-
-  let pchTempLocation = Option.maybe {
-    let! pchLocation = pchLocation
-    let translationUnit = parseTranslationUnit(index, pchLocation.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.None)
-
-    return 
-      try
-        let fileLocation = System.IO.Path.GetTempFileName()
-        saveTranslationUnit(translationUnit, fileLocation, 0u)
-        System.IO.FileInfo(fileLocation)
-      finally
-        translationUnit |> disposeTranslationUnit
-  }
-
-  let options = Array.concat [options
-                              pchTempLocation |> Option.map (fun pch -> [| "-include-pch"; pch.FullName |]) |> Option.getOrElse [||]]
-
-  let translationUnit = parseTranslationUnit(index, headerLocation.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.None)
-
-
-  let types=ref Map.empty
-  let enums=ref Map.empty
-  let structs=ref Map.empty
-  let funcs=ref Map.empty
-  let iids=ref Set.empty
-
-  let parseEnumConsts (cursor:Cursor)=
-    let listOfConsts=ref []
-    let addConst cursor _ _=
-      if getCursorKind cursor=CursorKind.EnumConstantDecl then
-        listOfConsts := (cursor |> getCursorDisplayNameFS, cursor |> getEnumConstantDeclUnsignedValue) :: !listOfConsts
-      ChildVisitResult.Continue
-    visitChildrenFS cursor addConst () |> ignore
-    List.rev !listOfConsts
-
-  let parseFunction (cursor:Cursor) (fType:Type)=
-    let nArgs=getNumArgTypes(fType)
-    let cc=getFunctionTypeCallingConv(fType)
-    let rety=getResultType(fType) |> typeDesc
-    let args=ref []
-    let argsVisitor (cursor:Cursor) _ _=
-      if cursor.kind=CursorKind.ParmDecl then
-        args := (getCursorDisplayNameFS cursor, getCursorType cursor |> typeDesc, NoAnnonation) :: !args
-      ChildVisitResult.Continue
-    visitChildrenFS cursor argsVisitor () |> ignore
-    if (List.length !args <> nArgs) then
-      raise <| System.Exception("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
-    let retyname=getTypeSpellingFS(getCanonicalType(getResultType(fType)))
-    let retysize=getSizeOfType(getResultType(fType))
-    if retysize>0L && retysize<=8L && (retyname.StartsWith("struct ") || (retyname.Contains(" struct ") && retyname.Contains("*")=false)) then
-      // C returns those structs thru EAX:EDX, C++ thru reference
-      args := ("__ret_val",Ptr(rety), Out) :: !args
-      Function(CFuncDesc(List.rev !args,Primitive Void,cc))
-    else
-      Function(CFuncDesc(List.rev !args,rety,cc))
-
-
-  let parseStruct (cursor:Cursor)=
-    let tokens=tokenizeFS cursor
-    //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
-    let fields=ref []
-    let parseFieldDecl cursor _ _=
-      if getCursorKind cursor=CursorKind.FieldDecl then
-        let ctype=getCursorType cursor
-        let nm=getCursorDisplayNameFS cursor
-        let pointee=getPointeeType ctype
-        let nArgs=getNumArgTypes(pointee)
-        let ty=
-          if nArgs<> -1 then
-            // function pointer
-            Ptr(parseFunction cursor pointee)
-          else
-            if nm="pArgumentDescs" then
-              ctype |> typeDesc
-            else
-              ctype |> typeDesc
-        let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
-        fields := CStructElem(nm, ty, bw) :: !fields
-      ChildVisitResult.Continue
-    visitChildrenFS cursor parseFieldDecl () |> ignore
-    Struct(List.rev !fields)
-
-  let rec childVisitor cursor _ _ =
-    let cursorKind=getCursorKind cursor
-
-    if cursorKind=CursorKind.EnumDecl then
-      enums := !enums |> Map.add (cursor |> getCursorDisplayNameFS) (Enum(enumCType cursor,parseEnumConsts cursor))
-
-    if cursorKind=CursorKind.TypedefDecl then
-      let tokens=tokenizeFS cursor
-      //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
-      let uty=cursor |> getTypedefDeclUnderlyingType
-      let pty=uty |> getPointeeType
-      let nArgs=pty |> getNumArgTypes
-      let tdesc=
-        if nArgs<> -1 then
-          // it is a function pointer
-          Ptr(parseFunction cursor pty)
-        else
-          uty |> typeDesc
-      types := !types |> Map.add (cursor |> getCursorDisplayNameFS) (Typedef(tdesc))
-      // typedefs can contain other definitions
-      visitChildrenFS cursor childVisitor () |> ignore
-
-    if cursorKind=CursorKind.StructDecl then
-      structs := !structs |> Map.add (cursor |> getCursorDisplayNameFS) (parseStruct cursor)
-
-    if cursorKind=CursorKind.FunctionDecl then
-      funcs := !funcs |> Map.add (cursor |> getCursorSpellingFS) (parseFunction cursor (getCursorType cursor))
-
-    if cursorKind=CursorKind.VarDecl then
-      let nm=cursor |> getCursorSpellingFS
-      let tys=cursor |> getCursorType |> getTypeSpellingFS
-      if tys="const IID" then
-        iids := !iids |> Set.add nm
-      //printfn "%s %s" nm tys
-
-    if cursorKind=CursorKind.UnexposedDecl then // dip into extern "C"
-      visitChildrenFS cursor childVisitor () |> ignore
-    
-    ChildVisitResult.Continue
-
-  let cursor = getTranslationUnitCursor(translationUnit)
-
-  try
-    visitChildrenFS cursor childVisitor () |> ignore
-//    for en in !types do
-//      match en.Value with
-//      | Typedef(under) -> printfn "Typedef %s is %A" en.Key under
-//      | _ -> printfn "Some other type %A" en.Value
-//    ()
-//    for en in !enums do
-//      match en.Value with
-//      | Enum(underType, consts)  -> 
-//          printfn "Enum %s of %A" en.Key underType
-//          for (nm,vl) in consts do
-//            printfn "  %s = %d (0x%X)," nm vl vl
-//      | _ -> printfn "Shouldn't be here: %A" en.Value
-//
-//    for en in !structs do
-//      match en.Value with
-//      | Struct(elems)  -> 
-//          printfn "Struct %s of" en.Key 
-//          for CStructElem(name,ty,bw) in elems do
-//            printfn "  %s : %A (%A)," name ty bw
-//      | _ -> printfn "Shouldn't be here: %A" en.Value
-
-//    for en in !funcs do
-//      printfn "%s %A" en.Key en.Value
-
-    (!types, !enums, !structs, !funcs, !iids)
-
-  finally
-    translationUnit |> disposeTranslationUnit
-    index |> disposeIndex
-        
-    Option.maybe {
-        let! pch = pchTempLocation
-        pch.Delete()
-    } |> ignore
-
 
 let appendLine (sb:System.Text.StringBuilder) line=
   sb.AppendLine(line) |> ignore
@@ -476,9 +310,9 @@ let generateArraySizeCheck locVar parms arrs=
           |> List.map (fun (pname,_,_,psource) -> 
               match psource with
               |RustParameter (rpname, ROption _) ->
-                rpname
+                rpname+".map(|a|{a.len()})"
               |RustParameter (rpname, _) ->
-                "Some("+rpname+")"
+                "Some("+rpname+".len())"
               |_ -> 
                 printfn "Error in creating constraint for array sizes" 
                 "ERROR"
@@ -503,8 +337,8 @@ let generateMethodFromEquippedAnnotation (mname, nname, mannot, parms_k, rty, rv
     match rvsource with
       |RVNative ->
         match rty with
-        |Primitive Void -> (RType "()", "hr")
-        |TypedefRef name when name="HRESULT" -> (RHResult(RType "()"), "hr")
+        |Primitive Void -> (RType "()", "()")
+        |TypedefRef name when name="HRESULT" -> (RHResult(RType "()"), "hr2ret(hr,())")
         | _ -> (RType (tyToRust rty), "hr")
       |RVLocalVar(name,rtype) -> 
         match rty with
@@ -555,7 +389,7 @@ let generateMethodFromEquippedAnnotation (mname, nname, mannot, parms_k, rty, rv
             let locVar=sprintf "len%d" !cNum
             cNum := !cNum+1
             csb.AppendLine(generateArraySizeCheck locVar parms ps) |> ignore
-            (a,b,c,RustLocalVar(locVar,RType "usize",LVDefault))
+            (a,b,c,RustLocalVar(locVar,RType "usize",LVSizeOf ""))
           |_ -> parm
         )
   let constraints=csb.ToString()
@@ -586,10 +420,10 @@ let generateMethodFromEquippedAnnotation (mname, nname, mannot, parms_k, rty, rv
     |LVCOMWrapper ->
       sbloc.AppendLine(sprintf "  let mut %s: %s = unsafe{ zeroinit_com_wrapper() };" vname (rustTypeToString rt)) |> ignore
     |LVDefault -> 
-        sbloc.AppendLine(sprintf "  let mut %s: %s = Default::default();" vname (rustTypeToString rt)) |> ignore
+        sbloc.AppendLine(sprintf "  let mut %s: %s = unsafe{ ::std::mem::uninitialized() };" vname (rustTypeToString rt)) |> ignore
     |LVSizeOf aname ->
       let raname=native2rustName parms aname
-      sbloc.AppendLine(sprintf "  let mut %s: %s = size_of_val(%s);" vname (rustTypeToString rt) raname) |> ignore
+      sbloc.AppendLine(sprintf "  let mut %s = size_of_val(%s) as u32;" vname raname) |> ignore
     |LVStringConversion sname ->
       sbloc.AppendLine(sprintf "  let %s = os_str_to_vec_u16(%s);" vname sname) |> ignore
   let locals=sbloc.ToString()
@@ -608,20 +442,55 @@ let generateMethodFromEquippedAnnotation (mname, nname, mannot, parms_k, rty, rv
             match init with
             |LVStringConversion _ ->
               l+".as_ptr()"
+            |LVSizeOf _ ->
+              match cty with
+              |Ptr(_) ->
+                "&mut "+l+" as "+(tyToRust cty)
+              |_ ->
+                l+" as "+(tyToRust cty)
+            |LVCOMWrapper ->
+              l+".expose_iptr() as *mut *mut _ as "+(tyToRust cty)
             |_ -> 
               "&mut "+l+" as "+(tyToRust cty)
-          |RustParameter (p,_) ->
-            p+" as "+(tyToRust cty)
+          |RustParameter (p,rty) ->
+            match cty with
+            |Ptr(Primitive Void) ->
+              p+" as *mut _ as "+(tyToRust cty)
+            |Ptr(Const(Primitive Void)) ->
+              p+" as *const _ as "+(tyToRust cty)
+            |Ptr(Ptr(Primitive Void)) ->
+              match rty with
+              |RBorrow(RGeneric(_,"HasIID"))
+              |RMutBorrow(RGeneric(_,"HasIID")) -> 
+                p+".expose_iptr() as *mut *mut _ as *mut *mut c_void"
+              |_ -> p+" as "+(tyToRust cty)
+            |Ptr(TypedefRef _) |Ptr(Ptr(TypedefRef _)) |Ptr(Const(TypedefRef _)) ->
+              match rty with
+              |ROption(RMutBorrow(RSlice(_))) ->
+                "opt_slice_to_mut_ptr("+p+")"
+              |ROption(RMutBorrow(RType _)) ->
+                p+".map(|p|p as *mut _).unwrap_or(::std::ptr::null_mut())"
+              |RMutBorrow(RSlice(_)) ->
+                p+".as_mut_ptr() as "+(tyToRust cty)
+              |_ -> p+" as "+(tyToRust cty)
+            |Ptr(Const(TypedefRef _)) ->
+              match rty with
+              |ROption(RBorrow(RSlice(_))) ->
+                "opt_slice_to_ptr("+p+")"
+              |RBorrow(RSlice(_)) ->
+                p+".as_ptr()"
+              |_ -> p+" as "+(tyToRust cty)
+            |_ -> p+" as "+(tyToRust cty)
           |RustParameterSizeOf p ->
             "size_of_val("+p+") as "+(tyToRust cty)
           |RustSelf ->
-            "*self.0"
+            "self.0"
           |RustSliceLenghtOf [p] ->
             p+".len() as "+(tyToRust cty)
           |RustSliceLenghtOf _ ->
             raise <| new System.Exception("Unreachable")
           |RustStructField(s,f,_) ->
-            "&"+s+"."+f+" as "+(tyToRust cty)
+            "&mut "+s+"."+f+" as "+(tyToRust cty)
             ) |> (fun seq -> System.String.Join(", ", seq))
   let nativeInvocation="((**self.0)."+nname+")("+native_parms+")"
   // we are ready to generate method
@@ -667,7 +536,7 @@ let rec convertTypeToRustNoArray ty pannot=
     RType typename // struct or enum or something that is already defined in libc or in d3d12_sys.rs
   |Const(TypedefRef typename) ->
     RType typename
-  |Const(Ptr(uty)) -> 
+  |Ptr(Const(uty)) -> 
     match pannot with
     |InOptional ->
       ROption(RBorrow (convertTypeToRustNoArray uty pannot))
@@ -709,6 +578,8 @@ let generateMethod (mname, nname, mannot, parms, rty)=
             let locVar=sprintf "tmp%d" !locNum
             locNum:= !locNum + 1
             (pname, pannot, pty, RustLocalVar (locVar, RType "LPCWSTR", LVStringConversion (toSnake pname)))
+          |Array(_,_) ->
+            (pname, pannot, pty, RustParameter (toSnake pname, RMutBorrow(convertTypeToRustNoArray pty pannot)))
           |_ ->
             (pname, pannot, pty, RustParameter (toSnake pname, convertTypeToRustNoArray pty pannot))
         |[rf] -> 
@@ -721,7 +592,7 @@ let generateMethod (mname, nname, mannot, parms, rty)=
           |(name, OutReturnInterface _, _) ->
             (pname, pannot, pty, RustIIDOf name)
           |(name, OutReturnKnownInterface(_,iid),_) ->
-            (pname, pannot, pty, RustConst ("&"+iid))
+            (pname, pannot, pty, RustConst ("&IID_I"+iid))
           |(name, InOptionalArrayOfSize _, _) 
           |(name, InArrayOfSize _, _) ->
             (pname, pannot, pty, RustSliceLenghtOf [name])
@@ -752,7 +623,7 @@ let generateMethod (mname, nname, mannot, parms, rty)=
         |RustParameterSizeOf nname ->
           let locVar=sprintf "tmp%d" !locNum
           locNum:= !locNum + 1
-          let rty=RType "usize"
+          let rty=RType "u32"
           retParm := RVLocalVar(locVar, rty)
           (pname, pannot, pty, RustLocalVar(locVar,rty,LVSizeOf nname))
         |_ ->
@@ -816,15 +687,17 @@ let generateMethod (mname, nname, mannot, parms, rty)=
         retParm := RVLocalVar(locVar,rty)
         (pname, pannot, pty, RustLocalVar(locVar,rty,LVCOMWrapper))
       |InIUnknown ->
-        (pname, pannot, pty, RustParameter(toSnake pname, RMutBorrow(RType "HasIID")))
+        let gname=sprintf "T%d" !genNum
+        genNum := !genNum + 1
+        (pname, pannot, pty, RustParameter(toSnake pname, RMutBorrow(RGeneric(gname,"HasIID"))))
       |InOptionalArrayOfSize _ ->
-        (pname, pannot, pty, RustParameter(toSnake pname, ROption(RBorrow(RSlice(convertTypeToRustNoArray (derefCType pty) pannot)))))
+        (pname, pannot, pty, RustParameter(toSnake pname, ROption(RMutBorrow(RSlice(convertTypeToRustNoArray (derefCType pty) pannot)))))
       |InArrayOfSize _ ->
-        (pname, pannot, pty, RustParameter(toSnake pname, RBorrow(RSlice(convertTypeToRustNoArray (derefCType pty) pannot))))
+        (pname, pannot, pty, RustParameter(toSnake pname, RMutBorrow(RSlice(convertTypeToRustNoArray (derefCType pty) pannot))))
       |InByteArrayOfSize _ ->
-        (pname, pannot, pty, RustParameter(toSnake pname, RBorrow(RSlice(RType "u8"))))
+        (pname, pannot, pty, RustParameter(toSnake pname, RMutBorrow(RSlice(RType "u8"))))
       |InOptional ->
-        (pname, pannot, pty, RustParameter(toSnake pname, ROption(RBorrow(convertTypeToRustNoArray (derefCType pty) pannot))))
+        (pname, pannot, pty, RustParameter(toSnake pname, ROption(RMutBorrow(convertTypeToRustNoArray (derefCType pty) pannot))))
       |AConst s ->
         (pname, pannot, pty, RustConst s)
     eqpParms := eqParm :: !eqpParms
@@ -851,9 +724,9 @@ let preGenerateMethod ((mname, mannot, parms, rty) as methoddesc)=
               else if pname=tname then
                 match pty with
                 |Ptr _ ->
-                  (pname, pannot, Ptr (TypedefRef stype))
+                  (pname, pannot, pty) //Ptr (TypedefRef stype))
                 |Const (Ptr _) ->
-                  (pname, pannot, Const (Ptr (TypedefRef stype)))
+                  (pname, pannot, pty) //Const (Ptr (TypedefRef stype)))
                 |_ ->
                   raise <| new System.Exception(sprintf "Unexpeted type %A of type-selected parameter" pty)
               else
@@ -904,7 +777,8 @@ let safeInterfaceGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,st
   |Some(interfaceAnnotations) ->
     let apl = appendLine sb
     apl "\
-use iid::{HasIID, HResult, IUnknownVtbl, drop_com_ptr, clone_com_ptr};
+use iid::{HasIID, HResult, IUnknownVtbl, release_com_ptr, clone_com_ptr};
+use iid::iids::*;
 use d3d12_sys::*;
 use ::std::ptr::{null, null_mut};
 use ::std::mem::size_of_val;
@@ -920,17 +794,17 @@ fn os_str_to_vec_u16(s : &OsStr) -> Vec<u16> {
 // Compares lengths of slices in Option<&[T]> 
 // returns Ok(len) if all present slices have length len (or 0 if there's no arrays), 
 //         Err(()) is arrays have different lengths.
-fn same_lenght<T>(arrs:&[Option<&[T]>]) -> Result<usize, ()> {
-    let res=arrs.iter().fold(Ok(None), 
-        |sz, arr| { 
+fn same_lenght(lens:&[Option<usize>]) -> Result<usize, ()> {
+    let res=lens.iter().fold(Ok(None), 
+        |sz, mlen| { 
             match sz { 
                 Err(_) => sz, 
-                Ok(None) => Ok(arr.map(|a|{a.len()})), 
-                Ok(Some(v)) => 
-                    match *arr {
+                Ok(None) => Ok(mlen.map(|l1|l1)), 
+                Ok(Some(l)) => 
+                    match *mlen {
                         None => sz, 
-                        Some(a) => 
-                            if a.len()==v {
+                        Some(l1) => 
+                            if l1==l {
                                 sz
                             } else {
                                 Err(())
@@ -953,6 +827,14 @@ unsafe fn zeroinit_com_wrapper<T: HasIID>() -> T {
   T::new(null_mut())
 }
 
+fn opt_slice_to_mut_ptr<T>(os: Option<&mut [T]>) -> *mut T {
+  os.map(|s|s.as_mut_ptr()).unwrap_or(::std::ptr::null_mut())
+}
+
+fn opt_slice_to_ptr<T>(os: Option<&[T]>) -> *const T {
+  os.map(|s|s.as_ptr()).unwrap_or(::std::ptr::null())
+}
+
 "
     addCombiningStructs sb interfaceAnnotations
     for (iname, iannot, methods) in interfaceAnnotations do
@@ -965,12 +847,12 @@ pub struct %s(*mut *mut I%sVtbl);
 pub impl HasIID for %s {
   fn iid() -> &'static IID { &IID_I%s }
   fn new(ppVtbl : *mut *mut IUnknownVtbl) -> Self { %s(ppVtbl as *mut *mut _ as *mut *mut I%sVtbl) }
-  fn expose_iptr(&self) -> *mut *mut IUnknownVtbl { self.0 }
+  fn expose_iptr(&self) -> *mut *mut IUnknownVtbl { self.0 as *mut *mut _ as  *mut *mut IUnknownVtbl}
 }
 
 pub impl Drop for %s {
   fn drop(&mut self) {
-    drop_com_ptr(self)
+    release_com_ptr(self)
   }
 }
 

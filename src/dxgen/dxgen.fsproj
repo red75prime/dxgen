@@ -78,8 +78,9 @@
     <Compile Include="annotations.fs" />
     <Compile Include="annotations_autogen.fs" />
     <Compile Include="cdesc.fs" />
+    <Compile Include="parse.fs" />
     <Compile Include="sysgen.fs" />
-    <Compile Include="ParseAndGen.fs" />
+    <Compile Include="safegen.fs" />
     <Compile Include="Program.fs" />
     <None Include="PCH\Common_PCH.h" />
     <None Include="PCH\DXGI_PCH.h">

@@ -380,15 +380,13 @@ let d3d12annotations=[
       ("nodeMask",ANone);
       ("heapType",ANone);
     ],MANone);
-
-//// ------------------------ Continue here -----------------------------------------------------
     ("CreateCommittedResource",[
       ("This",AThis);
       ("pHeapProperties",ANone);
       ("HeapFlags",ANone);
       ("pResourceDesc",ANone);
       ("InitialResourceState",ANone);
-      ("pOptimizedClearValue",ANone);
+      ("pOptimizedClearValue",InOptional);
       ("riidResource",ANone);
       ("ppvResource",OutReturnKnownInterface("riidResource","D3D12Resource"));
     ],MANone);
@@ -404,7 +402,7 @@ let d3d12annotations=[
       ("HeapOffset",ANone);
       ("pDesc",ANone);
       ("InitialState",ANone);
-      ("pOptimizedClearValue",ANone);
+      ("pOptimizedClearValue",InOptional);
       ("riid",ANone);
       ("ppvResource",OutReturnKnownInterface("riid","D3D12Resource"));
     ],MANone);
@@ -412,17 +410,17 @@ let d3d12annotations=[
       ("This",AThis);
       ("pDesc",ANone);
       ("InitialState",ANone);
-      ("pOptimizedClearValue",ANone);
+      ("pOptimizedClearValue",InOptional);
       ("riid",ANone);
       ("ppvResource",OutReturnKnownInterface("riid","D3D12Resource"));
     ],MANone);
     ("CreateSharedHandle",[
       ("This",AThis);
       ("pObject",ANone);
-      ("pAttributes",ANone);
+      ("pAttributes",InOptional);
       ("Access",ANone);
       ("Name",ANone);
-      ("pHandle",ANone);
+      ("pHandle",OutReturn);
     ],MANone);
     ("OpenSharedHandle",[
       ("This",AThis);
@@ -434,17 +432,17 @@ let d3d12annotations=[
       ("This",AThis);
       ("Name",ANone);
       ("Access",ANone);
-      ("pNTHandle",ANone);
+      ("pNTHandle",OutReturn);
     ],MANone);
     ("MakeResident",[
       ("This",AThis);
       ("NumObjects",ANone);
-      ("ppObjects",ANone);
+      ("ppObjects",InArrayOfSize "NumObjects");
     ],MANone);
     ("Evict",[
       ("This",AThis);
       ("NumObjects",ANone);
-      ("ppObjects",ANone);
+      ("ppObjects",InArrayOfSize "NumObjects");
     ],MANone);
     ("CreateFence",[
       ("This",AThis);
@@ -456,6 +454,7 @@ let d3d12annotations=[
     ("GetDeviceRemovedReason",[
       ("This",AThis);
     ],MANone);
+//// ------------------------ Continue here -----------------------------------------------------
     ("GetCopyableFootprints",[
       ("This",AThis);
       ("pResourceDesc",ANone);
