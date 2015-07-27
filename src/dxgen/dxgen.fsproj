@@ -78,6 +78,7 @@
     <Compile Include="annotations.fs" />
     <Compile Include="annotations_autogen.fs" />
     <Compile Include="cdesc.fs" />
+    <Compile Include="rustdesc.fs" />
     <Compile Include="parse.fs" />
     <Compile Include="sysgen.fs" />
     <Compile Include="safegen.fs" />

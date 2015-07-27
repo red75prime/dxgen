@@ -61,6 +61,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
               (pname, ptype, pannot)
           |_ ->
             match ptype with
+            |Array(_,_) as arr -> (pname, Ptr(arr), pannot)
             |Ptr(TypedefRef "IUnknown")
             |Ptr(Const(TypedefRef "IUnknown")) ->
                (pname, Ptr(Ptr(Primitive Void)), pannot)
@@ -75,7 +76,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     if retysize>0L && retysize<=8L && (retyname.StartsWith("struct ") || (retyname.Contains(" struct ") && retyname.Contains("*")=false)) then
       // C returns those structs thru EAX:EDX, C++ thru reference
       args := ("__ret_val",Ptr(rety), Out) :: !args
-      Function(CFuncDesc(List.rev !args,Primitive Void,cc))
+      Function(CFuncDesc(List.rev !args, Ptr(rety),cc))
     else
       Function(CFuncDesc(List.rev !args,rety,cc))
 

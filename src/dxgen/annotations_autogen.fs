@@ -642,7 +642,7 @@ let d3d12annotations=[
     ("SetDescriptorHeaps",[
       ("This",AThis);
       ("NumDescriptorHeaps",ANone);
-      ("ppDescriptorHeaps",ANone);
+      ("ppDescriptorHeaps", InArrayOfSize "NumDescriptorHeaps");
     ],MANone);
     ("SetComputeRootSignature",[
       ("This",AThis);
@@ -1013,8 +1013,8 @@ let d3d12annotations=[
     getDevice;
     ("GetCachedBlob",[
       ("This",AThis);
-      ("ppBlob",ANone);
-    ],MANone);
+      ("ppBlob",OutReturn);
+    ],MADontImplement);
   ]);
   ("ID3D12QueryHeapVtbl",IAAutogen,[
     ("QueryInterface",[],MAIUnknown);
@@ -1040,7 +1040,7 @@ let d3d12annotations=[
       ("Subresource",ANone);
       ("pReadRange",ANone);
       ("ppData",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("Unmap",[
       ("This",AThis);
       ("Subresource",ANone);
@@ -1093,7 +1093,7 @@ let d3d12annotations=[
     setName;
     getDevice;
   ]);
-  ("ID3DIncludeVtbl",IAAutogen,[
+  ("ID3DIncludeVtbl",IAManual,[
     ("Open",[
       ("This",AThis);
       ("IncludeType",ANone);

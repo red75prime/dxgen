@@ -184,7 +184,7 @@ let rec tyToRust (ty:CTypeDesc)=
   |Array(uty,size) -> "["+(tyToRust uty)+";"+size.ToString()+"]"
   |Ptr(Const(uty)) -> "*const "+(tyToRust uty)
   |Ptr(Function(CFuncDesc(args,rty,cc))) ->
-    "extern "+(ccToRust cc)+" fn ("+((List.map funcArgToRust args) |> String.concat(", "))+") -> "+(tyToRust rty)
+    "extern "+(ccToRust cc)+" fn ("+((List.map funcArgToRust args) |> String.concat(", "))+") -> "+(if rty=Primitive Void then "()" else tyToRust rty)
   |Ptr uty -> "*mut " + (tyToRust uty)
   |Const(uty) -> tyToRust uty
   |_ -> "NoRepresentationYet("+(sprintf "%A" ty)+")"
