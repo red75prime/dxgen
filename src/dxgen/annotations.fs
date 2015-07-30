@@ -30,3 +30,6 @@ type MethodAnnotation=
   |MAUnsafe
   |MADontImplement
 
+type EnumAnnotation=
+  |EAFlags
+  |EAEnum

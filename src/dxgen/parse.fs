@@ -139,7 +139,6 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       let tys=cursor |> getCursorType |> getTypeSpellingFS
       if tys="const IID" then
         iids := !iids |> Set.add nm
-      //printfn "%s %s" nm tys
 
     if cursorKind=CursorKind.UnexposedDecl then // dip into extern "C"
       visitChildrenFS cursor childVisitor () |> ignore
@@ -150,30 +149,21 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 
   try
     visitChildrenFS cursor childVisitor () |> ignore
-//    for en in !types do
-//      match en.Value with
-//      | Typedef(under) -> printfn "Typedef %s is %A" en.Key under
-//      | _ -> printfn "Some other type %A" en.Value
-//    ()
-//    for en in !enums do
-//      match en.Value with
-//      | Enum(underType, consts)  -> 
-//          printfn "Enum %s of %A" en.Key underType
-//          for (nm,vl) in consts do
-//            printfn "  %s = %d (0x%X)," nm vl vl
-//      | _ -> printfn "Shouldn't be here: %A" en.Value
-//
-//    for en in !structs do
-//      match en.Value with
-//      | Struct(elems)  -> 
-//          printfn "Struct %s of" en.Key 
-//          for CStructElem(name,ty,bw) in elems do
-//            printfn "  %s : %A (%A)," name ty bw
-//      | _ -> printfn "Shouldn't be here: %A" en.Value
 
-//    for en in !funcs do
-//      printfn "%s %A" en.Key en.Value
-
+    for KeyValue(en,ty) in !enums do
+      match ty with
+      |Enum(values=vals) ->
+        let (_,isect)=vals |> List.map snd |> List.filter (fun n -> n<>0xffffUL && n<>0xffffffffUL && n<>0xffffffffffffffffUL) |> List.fold (fun (acc,isec) n -> (acc|||n,isec || (acc&&&n<>0UL) )) (0x0UL,false)
+        if isect then
+          printfn "  (\"%s\",EAEnum);" en
+        else 
+          if en.Contains("FLAGS") then
+            printfn "  (\"%s\",EAFlags);" en
+          else if (List.length vals)<4 then
+            printfn "  (\"%s\",EAEnum);" en
+          else
+            printfn "  (\"%s\",EAFlags);" en
+      | _ -> ()
     (!types, !enums, !structs, !funcs, !iids)
 
   finally
