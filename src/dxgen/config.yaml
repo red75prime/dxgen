@@ -11,7 +11,7 @@ modules:
 
     - name: dx_d3d12
       output-path: ../../dx_dxgi/src/
-      include-path: ./Include/10.0.10158.0/um/
+      include-path: ./Include/10.0.10240.0/um/
       precompiled-header: ./PCH/DXGI_PCH.h
       headers:
           - d3d12.h

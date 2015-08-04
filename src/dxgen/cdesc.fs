@@ -1,5 +1,6 @@
 ﻿module cdesc
 
+open FSharp.Reflection
 open libclang
 
 type CPrimitiveType=
@@ -32,19 +33,73 @@ let ccToRust (cc:CallingConv)=
   |_ -> raise <| new System.Exception(sprintf "Unimplemented calling convention %A in ccToRust" cc)
 
 
-type CParamAnnotation=
-  | NoAnnonation
-  | In
-  | InOptional
-  | Out
-  | OutOptional
-  | InOut
-  | InReads of string
-  | InReadsBytes of string
-  | OutWrites of string
-  | OutWritesBytes of string
-  | OutWritesOpt of string * string
+//#define _In_                             __attribute__((annotate("In")))
+//#define _In_z_                           __attribute__((annotate("InZ")))
+//#define _In_opt_                         __attribute__((annotate("InOpt")))
+//#define _Out_                            __attribute__((annotate("Out")))
+//#define _Out_opt_                        __attribute__((annotate("OutOpt")))
+//#define _Inout_                          __attribute__((annotate("InOut")))
+//#define _Inout_opt_                      __attribute__((annotate("InOutOpt")))
+//#define _In_reads_(x)					 __attribute__((annotate("InReads(" #x ")")))
+//#define _In_reads_opt_(x)				 __attribute__((annotate("InReadsOpt(" #x ")")))
+//#define _In_reads_bytes_(x)              __attribute__((annotate("InReadsBytes(" #x" )")))
+//#define _In_reads_bytes_opt_(x)          __attribute__((annotate("InReadsBytesOpt(" #x ")")))
+//#define _Inout_updates_bytes_(x)         __attribute__((annotate("InoutUpdatesBytes(" #x ")")))
+//#define _Out_writes_(x)			         __attribute__((annotate("OutWrites(" #x ")")))
+//#define _Out_writes_opt_(x) 			 __attribute__((annotate("OutWritesOpt(" #x ")")))
+//#define _Out_writes_bytes_(x)            __attribute__((annotate("OutWritesBytes(" #x ")")))
+//#define _Out_writes_to_opt_(size, count) __attribute__((annotate("OutWritesToOpt(" #size ", " #count")")))
+//#define _Out_writes_bytes_opt_(x)        __attribute__((annotate("OutWritesBytesOpt(" #x ")")))
+//#define _COM_Outptr_                     __attribute__((annotate("COMOutptr")))
+//#define _COM_Outptr_opt_                 __attribute__((annotate("COMOutptrOpt")))
+//#define _In_range_(a,b)                  __attribute__((annotate("InRange(" #a ", " #b ")")))
+//#define _Field_size_(x)					 __attribute__((annotate("Fieldsize(" #x ")")))
 
+type CParamAnnotation=
+  | NoAnnotation
+  | In
+  | InZ
+  | InOpt
+  | Out
+  | OutOpt
+  | InOut
+  | InOutOpt
+  | InReads of string
+  | InReadsOpt of string
+  | InReadsBytes of string
+  | InReadsBytesOpt of string
+  | InOutUpdatesBytes of string
+  | OutWrites of string
+  | OutWritesOpt of string
+  | OutWritesBytes of string
+  | OutWritesBytesOpt of string
+  | OutWritesTo of string*string
+  | OutWritesToOpt of string*string
+  | COMOutptr
+  | COMOutptrOpt
+  | InRange of string*string
+  | FieldSize of string
+  | OutptrOptResultBytebuffer
+  | OutptrResultBytebuffer
+
+let isParamOptional pa=
+  match pa with
+  |InOpt |OutOpt |InOutOpt |InReadsOpt _ | InReadsBytesOpt _ |OutWritesOpt _ |OutWritesBytesOpt _ |OutWritesToOpt _ |COMOutptrOpt |OutptrOptResultBytebuffer -> true
+  |NoAnnotation |In |InZ |Out |InOut |InReads _ |InReadsBytes _ |InOutUpdatesBytes _ |OutWrites _ |OutWritesBytes _ | OutWritesTo _ |COMOutptr |InRange _ |FieldSize _ |OutptrResultBytebuffer  -> false
+
+let removeOpt pa=
+  match pa with
+  |InOpt -> In
+  |OutOpt -> Out
+  |InOutOpt -> InOut
+  |InReadsOpt p -> InReads p
+  |InReadsBytesOpt p -> InReadsBytes p
+  |OutWritesOpt p -> OutWrites p
+  |OutWritesBytesOpt p -> OutWritesBytes p
+  |OutWritesToOpt(p,c) -> OutWritesTo(p,c)
+  |OutptrOptResultBytebuffer -> OutptrResultBytebuffer
+  |COMOutptrOpt -> COMOutptr
+  |NoAnnotation |In |InZ |Out |InOut |InReads _ |InReadsBytes _ |InOutUpdatesBytes _ |OutWrites _ |OutWritesBytes _ | OutWritesTo _ |COMOutptr |InRange _ |FieldSize _ |OutWritesBytes _ |OutptrResultBytebuffer  -> pa
 
 type CTypeDesc=
   |Primitive of CPrimitiveType

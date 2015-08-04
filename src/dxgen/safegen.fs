@@ -429,13 +429,6 @@ let generateMethodFromEquippedAnnotation (mname, nname, mannot, parms_k, rty, rv
               |RMutBorrow(RSlice(_)) ->
                 p+".as_mut_ptr() as "+(tyToRust cty)
               |_ -> p+" as "+(tyToRust cty)
-            |Ptr(Const(TypedefRef _)) ->
-              match rty with
-              |ROption(RBorrow(RSlice(_))) ->
-                "opt_slice_to_ptr("+p+")"
-              |RBorrow(RSlice(_)) ->
-                p+".as_ptr()"
-              |_ -> p+" as "+(tyToRust cty)
             |_ -> p+" as "+(tyToRust cty)
           |RustParameterSizeOf p ->
             "size_of_val("+p+") as "+(tyToRust cty)

@@ -180,3 +180,15 @@ and
       |Array(_,_) -> RMutBorrow(tyToRty ty)
       |_ -> tyToRty ty
     (nm, rty, ANone)
+
+// General notes of mapping native interfaces into safe ones
+//
+// 1. Native method can correspond to multiple safe methods (TypeSelector)
+// 2. Native parameter can be taken from:
+//   a. Safe parameter (type conversion on call-site)
+//   b. Local variable
+//     I)   uninitialized (for native _out_ parameter)
+//     II)  default initialized (?) (can't see a use for that)
+//     III) converted from safe parameter (for native _in_ parameter)
+//     IV)  struct (for returning multiple values from safe fn) (tuple? no names. inconvenient)
+//     

@@ -1,4 +1,5 @@
 ﻿//Define several Windows headers to hide them from the AST.
+
 #define _BASETSD_H_
 #define _INC_WINDOWS
 #define _INC_SDKDDKVER
@@ -47,10 +48,10 @@ typedef unsigned long long UINT64;
 typedef unsigned short UINT16;
 
 typedef struct _GUID {
-  DWORD Data1;
-  WORD  Data2;
-  WORD  Data3;
-  BYTE  Data4[8];
+	DWORD Data1;
+	WORD  Data2;
+	WORD  Data3;
+	BYTE  Data4[8];
 } GUID;
 
 typedef const GUID* REFGUID;
@@ -58,18 +59,18 @@ typedef const GUID* REFGUID;
 typedef GUID IID;
 
 typedef struct _LUID {
-  DWORD LowPart;
-  LONG  HighPart;
+	DWORD LowPart;
+	LONG  HighPart;
 } LUID;
 
 typedef struct _RECT {
-  LONG left;
-  LONG top;
-  LONG right;
-  LONG bottom;
+	LONG left;
+	LONG top;
+	LONG right;
+	LONG bottom;
 } RECT;
 
-#define REFIID __attribute__((annotate("In"))) REFGUID
+#define REFIID REFGUID
 
 //Override several macros to be more clean.
 #define WINAPI __stdcall
@@ -77,31 +78,6 @@ typedef struct _RECT {
 #define MIDL_INTERFACE(x) class __attribute__((annotate("GUID(\"" ## x ##"\")")))
 // #define interface ;\/\/
 
-#define _In_                             __attribute__((annotate("In")))
-#define _In_z_                             __attribute__((annotate("In_ZeroTerm")))
-#define _In_opt_                         __attribute__((annotate("In_Optional")))
-#define _Out_                            __attribute__((annotate("Out")))
-#define _Out_opt_                        __attribute__((annotate("Out_Optional")))
-#define _COM_Outptr_opt_    __attribute__((annotate("Out_Optional")))
-#define _Inout_                          __attribute__((annotate("In_Out")))
-#define _In_reads_(x)					 __attribute__((annotate("In_Reads(\"" #x "\")")))
-#define _In_reads_bytes_(x)              __attribute__((annotate("In_Reads_Bytes(\"" #x "\")")))
-#define _In_reads_bytes_opt_(x)              __attribute__((annotate("In_Reads_Bytes_Opt(\"" #x "\")")))
-#define _Out_writes_(x)					 __attribute__((annotate("Out_Writes(\"" #x "\")")))
-#define _Out_writes_opt_(x)					 __attribute__((annotate("Out_Writes_Opt(\"" #x "\")")))
-#define _Out_writes_bytes_(x)            __attribute__((annotate("Out_Writes_Bytes(\"" #x "\")")))
-#define _Out_writes_bytes_opt_(x)            __attribute__((annotate("Out_Writes_Bytes_Opt(\"" #x "\")")))
-#define _Out_writes_to_opt_(size, count) __attribute__((annotate("Out_Writes_To_Opt(\"" #size ", " #count "\")")))
-#define _COM_Outptr_opt_result_maybenull_ __attribute__((annotate("Out_Optional")))
-#define _Field_size_bytes_full_(x) 
-#define _Field_size_full_(x) 
-#define _Field_size_(x) 
-#define _Always_(x)
-#define _Outptr_opt_result_bytebuffer_(x)
-#define _In_range_(a,b)
-#define _In_reads_opt_(x)
-#define _Inout_updates_bytes_(x)
-#define _Inout_opt_
 
 #define DEFINE_GUID(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)
 
@@ -111,7 +87,6 @@ typedef struct _RECT {
 #define interface struct
 #define BEGIN_INTERFACE
 #define END_INTERFACE
-#define _COM_Outptr_
 
 typedef const char * LPCSTR;
 typedef const WCHAR * LPCWSTR;
@@ -122,9 +97,9 @@ typedef const WCHAR * LPCWSTR;
                                 } iface; \
                                 typedef struct iface##Vtbl iface##Vtbl; \
                                 struct iface##Vtbl
-#define DECLARE_INTERFACE_(iface, baseiface)    DECLARE_INTERFACE(iface)
-#define DECLARE_INTERFACE_IID(iface, iid)               DECLARE_INTERFACE(iface)
-#define DECLARE_INTERFACE_IID_(iface, baseiface, iid)   DECLARE_INTERFACE_(iface, baseiface)
+//#define DECLARE_INTERFACE_(iface, baseiface)    DECLARE_INTERFACE(iface)
+//#define DECLARE_INTERFACE_IID(iface, iid)               DECLARE_INTERFACE(iface)
+//#define DECLARE_INTERFACE_IID_(iface, baseiface, iid)   DECLARE_INTERFACE_(iface, baseiface)
 #define PURE
 #define EXTERN_C extern
 
@@ -143,4 +118,26 @@ typedef void* RPC_IF_HANDLE;
 
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE)
 
-typedef unsigned int DXGI_FORMAT;
+//typedef unsigned int DXGI_FORMAT;
+#define _In_                             __attribute__((annotate("In")))
+#define _In_z_                           __attribute__((annotate("InZ")))
+#define _In_opt_                         __attribute__((annotate("InOpt")))
+#define _Out_                            __attribute__((annotate("Out")))
+#define _Out_opt_                        __attribute__((annotate("OutOpt")))
+#define _Inout_                          __attribute__((annotate("InOut")))
+#define _Inout_opt_                      __attribute__((annotate("InOutOpt")))
+#define _In_reads_(x)					 __attribute__((annotate("InReads(" #x ")")))
+#define _In_reads_opt_(x)				 __attribute__((annotate("InReadsOpt(" #x ")")))
+#define _In_reads_bytes_(x)              __attribute__((annotate("InReadsBytes(" #x" )")))
+#define _In_reads_bytes_opt_(x)          __attribute__((annotate("InReadsBytesOpt(" #x ")")))
+#define _Inout_updates_bytes_(x)         __attribute__((annotate("InOutUpdatesBytes(" #x ")")))
+#define _Out_writes_(x)			         __attribute__((annotate("OutWrites(" #x ")")))
+#define _Out_writes_opt_(x) 			 __attribute__((annotate("OutWritesOpt(" #x ")")))
+#define _Out_writes_bytes_(x)            __attribute__((annotate("OutWritesBytes(" #x ")")))
+#define _Out_writes_to_opt_(size, count) __attribute__((annotate("OutWritesToOpt(" #size ", " #count")")))
+#define _Out_writes_bytes_opt_(x)        __attribute__((annotate("OutWritesBytesOpt(" #x ")")))
+#define _COM_Outptr_                     __attribute__((annotate("COMOutptr")))
+#define _COM_Outptr_opt_                 __attribute__((annotate("COMOutptrOpt")))
+#define _In_range_(a,b)                  __attribute__((annotate("InRange(" #a ", " #b ")")))
+#define _Field_size_(x)					 __attribute__((annotate("Fieldsize(" #x ")")))
+#define _Outptr_opt_result_bytebuffer_(b) __attribute__((annotate("OutptrOptResultBytebuffer")))

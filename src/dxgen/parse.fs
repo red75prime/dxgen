@@ -3,6 +3,17 @@
 open FSharpx
 open libclang
 open cdesc
+open salparser
+
+let annotations (cursor:Cursor) =
+  let annots=ref []
+  let annotationVisitor (cursor:Cursor) _ _ =
+    if getCursorKind cursor = CursorKind.AnnotateAttr then
+      let dn=getCursorSpellingFS cursor
+      annots := dn :: !annots
+    ChildVisitResult.Recurse
+  visitChildrenFS cursor annotationVisitor () |> ignore
+  List.rev !annots
 
 let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) =
   // Let's use clean C interface. Those fancy C++ classes with inheritance and whistles aren't good for rust codegen.
@@ -50,7 +61,11 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     let args=ref []
     let argsVisitor (cursor:Cursor) _ _=
       if cursor.kind=CursorKind.ParmDecl then
-        let (pname,ptype,pannot)=(getCursorDisplayNameFS cursor, getCursorType cursor |> typeDesc, NoAnnonation)
+        let cannot=match annotations cursor with
+          |[] -> NoAnnotation
+          |[ann] -> parseSAL ann
+          |_ -> raise <| new System.Exception("Multiple annotations")
+        let (pname,ptype,pannot)=(getCursorDisplayNameFS cursor, getCursorType cursor |> typeDesc, cannot)
         let pdesc=
           match pname with
           |"This" ->
