@@ -11,7 +11,7 @@ let zero=Parser (fun _->Seq.empty)
 let nullparser=Parser (fun cs-> seq{ yield ((),cs);} )
 
 // Returns all possible matches of p|q
-// Beware! Combinatoric explosion.
+// Beware! Combinatorial explosion.
 let (++) p q=Parser (fun cs->seq{yield! parse p cs; yield! parse q cs})
 
 // Returns first match of p|q
