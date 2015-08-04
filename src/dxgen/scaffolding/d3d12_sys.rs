@@ -1,0 +1,1 @@
+C:/Users/red75/Source/Repos/dxgen/src/dxgen/bin/Debug/d3d12_sys.rs
