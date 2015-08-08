@@ -84,8 +84,12 @@ type CParamAnnotation=
 
 let isParamOptional pa=
   match pa with
-  |InOpt |OutOpt |InOutOpt |InReadsOpt _ | InReadsBytesOpt _ |OutWritesOpt _ |OutWritesBytesOpt _ |OutWritesToOpt _ |COMOutptrOpt |OutptrOptResultBytebuffer -> true
-  |NoAnnotation |In |InZ |Out |InOut |InReads _ |InReadsBytes _ |InOutUpdatesBytes _ |OutWrites _ |OutWritesBytes _ | OutWritesTo _ |COMOutptr |InRange _ |FieldSize _ |OutptrResultBytebuffer  -> false
+  |InOpt |OutOpt |InOutOpt |InReadsOpt _ | InReadsBytesOpt _ |OutWritesOpt _ 
+  |OutWritesBytesOpt _ |OutWritesToOpt _ |COMOutptrOpt |OutptrOptResultBytebuffer -> true
+
+  |NoAnnotation |In |InZ |Out |InOut |InReads _ |InReadsBytes _ |InOutUpdatesBytes _ 
+  |OutWrites _ |OutWritesBytes _ | OutWritesTo _ |COMOutptr |InRange _ 
+  |FieldSize _ |OutptrResultBytebuffer  -> false
 
 let removeOpt pa=
   match pa with
@@ -99,7 +103,10 @@ let removeOpt pa=
   |OutWritesToOpt(p,c) -> OutWritesTo(p,c)
   |OutptrOptResultBytebuffer -> OutptrResultBytebuffer
   |COMOutptrOpt -> COMOutptr
-  |NoAnnotation |In |InZ |Out |InOut |InReads _ |InReadsBytes _ |InOutUpdatesBytes _ |OutWrites _ |OutWritesBytes _ | OutWritesTo _ |COMOutptr |InRange _ |FieldSize _ |OutWritesBytes _ |OutptrResultBytebuffer  -> pa
+
+  |NoAnnotation |In |InZ |Out |InOut |InReads _ |InReadsBytes _ 
+  |InOutUpdatesBytes _ |OutWrites _ |OutWritesBytes _ | OutWritesTo _ 
+  |COMOutptr |InRange _ |FieldSize _ |OutWritesBytes _ |OutptrResultBytebuffer  -> pa
 
 type CTypeDesc=
   |Primitive of CPrimitiveType

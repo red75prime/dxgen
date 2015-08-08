@@ -184,6 +184,7 @@ and
 // General notes of mapping native interfaces into safe ones
 //
 // 1. Native method can correspond to multiple safe methods (TypeSelector)
+//      
 // 2. Native parameter can be taken from:
 //   a. Safe parameter (type conversion on call-site)
 //   b. Local variable
@@ -192,3 +193,19 @@ and
 //     III) converted from safe parameter (for native _in_ parameter)
 //     IV)  struct (for returning multiple values from safe fn) (tuple? no names. inconvenient)
 //     
+
+type LocalVar={
+  ty : RustType;
+  initExpression : RVal;
+}
+
+type MethodRouting={
+  nativeName : RName;
+  safeName : RName;
+  unsafe : bool;
+  genericTypes : Map<RName, RVal>; // map from generic type name to constraints
+  localVars : Map<RName, LocalVar>; // map form local var name to local var desc.
+  nativeParms : Map<RName, RVal>; // map from native param name to conversion expression
+  safeParms : Map<RName, RustType> // 
+  returnVal : RVal; // return expression
+}

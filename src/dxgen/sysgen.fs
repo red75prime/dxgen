@@ -69,10 +69,10 @@ let codeGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,structs:Map
       let annot=Map.find name enum_annotations
       apl @"#[repr(C)]"
       apl @"#[derive(Clone,Copy,PartialEq,Eq,Default)]"
-      apl @"pub struct {0}(u32);"
+      apl <| sprintf @"pub struct %s(pub u32);" name
       apl ""
       if annot=EAFlags then
-        let lcsts=vals |> List.filter (snd>>isOnlyOneBitSet) |> List.map (fun (name,v) -> sprintf "(%s,%d)" name,v)
+        let lcsts=vals |> List.filter (snd>>isOnlyOneBitSet) |> List.map (fun (name,v) -> sprintf @"(""%s"",%d)" name v)
         let csts=System.String.Join(", ", lcsts)
         sb.AppendFormat(@"
 impl BitOr for {0} {{
@@ -87,12 +87,7 @@ impl BitOr for {0} {{
 
 impl fmt::Debug for {0} {{
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {{
-    write!(f,""{0}({{}})"", self.0)
-    let mut cv=self.0;
-
-    for v in &[{1}] {{
-      
-    }}
+    debug_fmt_enum(""{0}"", self.0, &[{1}], f)
   }}
 }}
       ", name, csts) |> ignore
@@ -181,9 +176,40 @@ impl fmt::Debug for {0} {{
   apl ""
   apl "#![feature(libc)]"
   apl ""
-  apl "extern crate libc;"
-  apl "use libc::*;"
-  apl "use std::fmt;"
+  apl @"
+extern crate libc;
+use libc::*;
+use std::fmt;
+
+fn debug_fmt_enum(name : &str, val: u32, opts: &[(&str,u32)], f: &mut fmt::Formatter) -> fmt::Result {
+  let mut p_opts=0u32;
+  let mut cval=val;
+  let mut has_prev=false;
+  for &(s,v) in opts {
+    if (p_opts & v)==0 {
+        p_opts |= v;
+        if (cval & v)!=0 {
+            if has_prev {
+                try!{write!(f,"" | "")};
+            } else {
+                has_prev=true;
+            }
+            try!{write!(f,""{:}"",s)};
+            cval &= !v;
+        }
+    }
+  }
+  if cval!=0 {
+    if has_prev {
+        try!{write!(f,"" | "")};
+    }
+    try!{write!(f, ""{}({:?})"", name, cval)}
+  } else if !has_prev {
+    try!{write!(f, ""{}(0)"", name)}
+  }
+  Ok(())
+}
+"
   createEnums sb
   createTypes sb
   createStructs sb

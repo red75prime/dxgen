@@ -463,6 +463,7 @@ let getReferencedParameter parameterAnnotation=
   |OutReturnKnownInterface (p,_) -> p
   |InOptionalArrayOfSize p -> p
   |InArrayOfSize p -> p
+  |InOutArrayOfSize p -> p
   |InByteArrayOfSize p -> p
   |TypeSelector (p,_) -> p
   |_ -> ""
@@ -657,6 +658,47 @@ let generateMethod (mname, nname, mannot, parms, rty)=
 
   let trivialEquip=(toSnake mname, nname, mannot, eparms, rty, !retParm)
   generateMethodFromEquippedAnnotation trivialEquip |> indentBy "  "
+
+
+let generateRouting (mname, nname, mannot, parms, rty)=
+  if mannot=MADontImplement then
+    []
+  else
+    let locVarNum=ref 1
+    let getNextLocVar()=
+      let lvname=sprintf "lv%d" !locVarNum
+      locVarNum := !locVarNum+1
+      lvname
+    let genTypeNum=ref 0
+    let getNextGT()=
+      let gtname=if !genTypeNum=0 then "T" else sprintf "T%d" !genTypeNum
+      genTypeNum := !genTypeNum+1
+      gtname
+    
+    let genTypes = ref Map.empty
+    let localVars = ref Map.empty
+    let nativeParms = ref Map.empty
+    let safeParms = ref Map.empty
+    let returnVal = ref "hr";
+
+    // Let's attach list of references to every native parameter
+    let parmsr=
+      List.map (
+        fun (pname, pannot, pty) ->
+          let refs=parms |> List.filter (fun (_,pannot,_) -> List.contains pname (getReferencedParameters pannot))
+          (pname, pannot, pty, refs)
+        ) parms
+
+
+    [{nativeName = nname;
+     safeName = mname;
+     unsafe = mannot=MAUnsafe;
+     genericTypes = !genTypes;
+     localVars = !localVars;
+     nativeParms = !nativeParms;
+     safeParms = !safeParms;
+     returnVal = !returnVal;
+    }]
 
 // Removes TypeSelector annotation, generating specialized methods
 let preGenerateMethod ((mname, mannot, parms, rty) as methoddesc)=

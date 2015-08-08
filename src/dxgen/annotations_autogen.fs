@@ -454,23 +454,22 @@ let d3d12annotations=[
     ("GetDeviceRemovedReason",[
       ("This",AThis);
     ],MANone);
-//// ------------------------ Continue here -----------------------------------------------------
     ("GetCopyableFootprints",[
       ("This",AThis);
       ("pResourceDesc",ANone);
       ("FirstSubresource",ANone);
       ("NumSubresources",ANone);
       ("BaseOffset",ANone);
-      ("pLayouts",ANone);
-      ("pNumRows",ANone);
-      ("pRowSizeInBytes",ANone);
-      ("pTotalBytes",ANone);
+      ("pLayouts", OutOptionalArrayOfSize "NumSubresources");
+      ("pNumRows",OutOptionalArrayOfSize "NumSubresources");
+      ("pRowSizeInBytes",OutOptionalArrayOfSize "NumSubresources");
+      ("pTotalBytes",OutOptional);
     ],MANone);
     ("CreateQueryHeap",[
       ("This",AThis);
       ("pDesc",ANone);
       ("riid",ANone);
-      ("ppvHeap",OutReturnKnownInterface("riid","D3D12Heap")); // maybe wrong. TODO: Check docs.
+      ("ppvHeap",OutReturnKnownInterface("riid","D3D12QueryHeap"));
     ],MANone);
     ("SetStablePowerState",[
       ("This",AThis);
@@ -479,19 +478,19 @@ let d3d12annotations=[
     ("CreateCommandSignature",[
       ("This",AThis);
       ("pDesc",ANone);
-      ("pRootSignature",ANone);
+      ("pRootSignature",InOptional); // Structure needs to be converted (contains pointer)
       ("riid",ANone);
       ("ppvCommandSignature",OutReturnKnownInterface("riid","D3D12CommandSignature"));
     ],MANone);
     ("GetResourceTiling",[
       ("This",AThis);
-      ("pTiledResource",ANone);
-      ("pNumTilesForEntireResource",ANone);
-      ("pPackedMipDesc",ANone);
-      ("pStandardTileShapeForNonPackedMips",ANone);
-      ("pNumSubresourceTilings",ANone);
+      ("pTiledResource",InComPtr);
+      ("pNumTilesForEntireResource",OutOptional);
+      ("pPackedMipDesc",OutOptional);
+      ("pStandardTileShapeForNonPackedMips",OutOptional);
+      ("pNumSubresourceTilings",InOutOptional);
       ("FirstSubresourceTilingToGet",ANone);
-      ("pSubresourceTilingsForNonPackedMips",ANone);
+      ("pSubresourceTilingsForNonPackedMips",OutReturn);
     ],MANone);
     ("GetAdapterLuid",[
       ("This",AThis);
@@ -537,12 +536,12 @@ let d3d12annotations=[
     ],MANone);
     ("Reset",[
       ("This",AThis);
-      ("pAllocator",ANone);
-      ("pInitialState",ANone);
+      ("pAllocator",InComPtr);
+      ("pInitialState",InOptionalComPtr);
     ],MANone);
     ("ClearState",[
       ("This",AThis);
-      ("pPipelineState",ANone);
+      ("pPipelineState",InOptionalComPtr);
     ],MANone);
     ("DrawInstanced",[
       ("This",AThis);
@@ -559,6 +558,7 @@ let d3d12annotations=[
       ("BaseVertexLocation",ANone);
       ("StartInstanceLocation",ANone);
     ],MANone);
+//// ------------------------ Continue here -----------------------------------------------------
     ("Dispatch",[
       ("This",AThis);
       ("ThreadGroupCountX",ANone);
@@ -1120,7 +1120,7 @@ let enum_annotations=
     ("D3D12_BUFFER_SRV_FLAGS",EAFlags);
     ("D3D12_BUFFER_UAV_FLAGS",EAFlags);
     ("D3D12_CLEAR_FLAGS",EAFlags);
-    ("D3D12_COLOR_WRITE_ENABLE",EAEnum);
+    ("D3D12_COLOR_WRITE_ENABLE",EAFlags);
     ("D3D12_COMMAND_LIST_TYPE",EAEnum);
     ("D3D12_COMMAND_QUEUE_FLAGS",EAFlags);
     ("D3D12_COMMAND_QUEUE_PRIORITY",EAEnum);

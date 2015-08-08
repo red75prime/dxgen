@@ -9,17 +9,7 @@ pub type IID=GUID;
 pub mod iids {
   use super::IID;
   
-//  #[link(name="uuid")]
-//  extern "C" {
-//    pub static IID_IUnknown : IID;
-//  }
-
-//  extern "C" {
-//    pub static IID_ID3DInclude : IID;
-//  }
-
   pub static IID_IUnknown : IID = IID {Data1:0, Data2:0, Data3:0, Data4:[0,0,0,0,0,0,0,0,],};  
-
 }
 
 pub type HRESULT=u32;
@@ -32,7 +22,7 @@ pub type REFGUID=&'static GUID;
 
 pub type HResult<T>=Result<T, HRESULT>;
 
-#[allow(non_snake_case)]
+#[allow(non_snake_case)}
 #[repr(C)]
 pub struct IUnknownVtbl {
   QueryInterface : extern "system" fn (This : *mut *mut IUnknownVtbl, riid : REFGUID, ppvObject : *mut *mut c_void) -> HRESULT,
@@ -64,7 +54,7 @@ pub fn release_com_ptr<T:HasIID>(obj : &mut T) {
     // 
   } else {
     unsafe {
-    ((**iunk).Release)(iunk);
+      ((**iunk).Release)(iunk);
     }
   }
 }
@@ -108,5 +98,3 @@ impl<T:HasIID> QueryInterface for T {
     }
   }
 }
-
-

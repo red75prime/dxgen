@@ -86,6 +86,10 @@
     <Compile Include="sysgen.fs" />
     <Compile Include="safegen.fs" />
     <Compile Include="Program.fs" />
+    <None Include="scaffolding\create_device.rs" />
+    <None Include="scaffolding\iid.rs" />
+    <None Include="scaffolding\macros.rs" />
+    <None Include="scaffolding\main.rs" />
     <None Include="PCH\Common_PCH.h" />
     <None Include="PCH\DXGI_PCH.h">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
