@@ -739,13 +739,16 @@ let generateRouting (mname, nname, mannot, parms, rty)=
           |Primitive _ |TypedefRef _ ->
             addNativeParmFun pname None (fun m -> "mem::size_of_val("+(Map.find rname m)+")")
           |_ -> addError ("Unexpected type for "+pname+", referent of [InOutOfSize]"+rname)
-        |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) -> true |_ -> false)  ->
+        |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) -> true |_ -> false)  ->
           // this parameter is the size of input array(s).
           let plist=refs |> 
                       List.map 
                         (function 
-                          |(pname, InOptionalArrayOfSize _,_) -> fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())"
-                          |(pname, InArrayOfSize _,_) ->  fun m -> "Some("+(Map.find pname m)+".len())"
+                          |(pname, InOptionalArrayOfSize _,_)
+                          |(pname, OutOptionalArrayOfSize _,_) -> 
+                            fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())"
+                          |(pname, InArrayOfSize _,_) ->  
+                            fun m -> "Some("+(Map.find pname m)+".len())"
                           |_ -> raise <| new System.Exception("Unreachable")
                         )
           let init=
@@ -774,7 +777,12 @@ let generateRouting (mname, nname, mannot, parms, rty)=
           |Primitive _ |EnumRef _->
             addError (sprintf "%s parameter: InOut parameter should be a pointer" pname)
           |Ptr(Const(cty)) ->
-            addError (sprintf "%s parameter: InOut parameter should be a pointer to non-const object" pname)
+            match pannot with
+            |InOptional ->
+              addSafeParm safeParmName (ROption(RBorrow(convertTypeToRustNoArray cty pannot)))
+              addNativeParm pname (Some(safeParmName)) (safeParmName+".map(|p|p as *const _ ).unwrap_or(ptr::null())")
+            |_ ->
+              addError (sprintf "%s parameter: InOut parameter should be a pointer to non-const object" pname)
           |Ptr(cty) ->
             addSafeParm safeParmName (RMutBorrow(convertTypeToRustNoArray cty pannot))
             addNativeParm pname (Some(safeParmName)) safeParmName
@@ -792,14 +800,18 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "*"+safeParmName+" = mem::size_of_val("+(Map.find rname m)+")")
             addNativeParm pname (Some(safeParmName)) safeParmName
           |_ -> addError (sprintf "%s parameter: Unexpected type" rname)
-        |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) -> true |_ -> false)  ->
+        |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) -> true |_ -> false)  ->
           // this parameter is the size of input array(s).
           let plist=refs |> 
                       List.map 
                         (function 
-                          |(pname, InOptionalArrayOfSize _,_) -> fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())"
-                          |(pname, InArrayOfSize _,_) ->  fun m -> "Some("+(Map.find pname m)+".len())"
-                          |_ -> raise <| new System.Exception("Unreachable")
+                          |(pname, InOptionalArrayOfSize _,_)
+                          |(pname, OutOptionalArrayOfSize _,_) -> 
+                            fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())"
+                          |(pname, InArrayOfSize _,_) ->  
+                            fun m -> "Some("+(Map.find pname m)+".len())"
+                          |_ -> 
+                            raise <| new System.Exception("Unreachable")
                         )
           let init=
             fun m -> 
@@ -953,7 +965,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         match refs with 
         |[] ->
           match pty with
-          |Ptr(Ptr(StructRef ciname)) ->
+          |Ptr(StructRef ciname) ->
             // Let's strip 'I' and 'Vtbl' parts
             let iname=ciname.Substring(1,ciname.Length-5)
             let rty=RBorrow(RType iname)

@@ -247,7 +247,7 @@ let d3d12annotations=[
       ("nodeMask",ANone);
       ("type",ANone);
       ("pCommandAllocator",ANone);
-      ("pInitialState",InOptional);
+      ("pInitialState",InOptionalComPtr);
       ("riid",ANone);
       ("ppCommandList",OutReturnInterface "riid");
     ],MANone);
