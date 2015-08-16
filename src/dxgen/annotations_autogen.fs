@@ -1,13 +1,16 @@
 ﻿module annotations_autogen
 open annotations
 
+let (++) xs ys=
+  List.concat [xs;ys]
+
 let getPrivateData= // Low level method
   ("GetPrivateData",[
       ("This",AThis);
       ("guid",ANone);
       ("pDataSize",InOutReturn);
-      ("pData",OutOfSize "pDataSize");
-    ],MAUnsafe) 
+      ("pData",OutOptionalOfSize "pDataSize");
+    ],MAUnsafe) // safe method should be: unsafe fn get_private_data<T>(guid: REFGUID, data: Option<&mut T>) -> HResult<usize>
 
 let setPrivateData=
   ("SetPrivateData",[
@@ -22,7 +25,7 @@ let setPrivateDataInterface=
       ("This",AThis);
       ("guid",ANone);
       ("pData",InIUnknown);
-    ],MANone)
+    ],MADontImplement) // Not useful without full-blown COM-support
 
 let setName=
   ("SetName",[
@@ -37,6 +40,16 @@ let getDevice=
     ("ppvDevice",OutReturnInterface "riid");
   ],MANone)
 
+let d3d12Object= [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    getPrivateData;
+    setPrivateData;
+    setPrivateDataInterface;
+    setName
+  ]
+
 let d3d12annotations=[
   ("ID3D10BlobVtbl",IAManual,[
     ("QueryInterface",[],MAIUnknown);
@@ -49,40 +62,19 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12CommandAllocatorVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12CommandAllocatorVtbl",IAAutogen,d3d12Object++[
     getDevice;
     ("Reset",[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12CommandListVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12CommandListVtbl",IAAutogen,d3d12Object++[
     getDevice;
     ("GetType",[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12CommandQueueVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12CommandQueueVtbl",IAAutogen, d3d12Object++[
     getDevice;
     ("UpdateTileMappings",[
       ("This",AThis);
@@ -149,14 +141,7 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12CommandSignatureVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12CommandSignatureVtbl",IAAutogen, d3d12Object++[
     getDevice;
   ]);
   ("ID3D12DebugCommandListVtbl",IAManual,[
@@ -212,14 +197,7 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12DescriptorHeapVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12DescriptorHeapVtbl",IAAutogen, d3d12Object++[
     getDevice;
     ("GetDesc",[
       ("This",AThis);
@@ -233,24 +211,10 @@ let d3d12annotations=[
       ("__ret_val",OutReturn);
     ],MANone);
   ]);
-  ("ID3D12DeviceChildVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12DeviceChildVtbl",IAAutogen, d3d12Object++[
     getDevice;
   ]);
-  ("ID3D12DeviceVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12DeviceVtbl",IAAutogen, d3d12Object++[
     ("GetNodeCount",[
       ("This",AThis);
     ],MANone);
@@ -312,7 +276,7 @@ let d3d12annotations=[
     ("CreateRootSignature",[
       ("This",AThis);
       ("nodeMask",ANone);
-      ("pBlobWithRootSignature",InByteArrayOfSize "blobLengthInBytes");
+      ("pBlobWithRootSignature", InByteArrayOfSize "blobLengthInBytes");
       ("blobLengthInBytes",ANone);
       ("riid",ANone);
       ("ppvRootSignature",OutReturnKnownInterface("riid","D3D12RootSignature"));
@@ -497,14 +461,7 @@ let d3d12annotations=[
       ("__ret_val",OutReturn);
     ],MANone);
   ]);
-  ("ID3D12FenceVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12FenceVtbl",IAAutogen, d3d12Object++[
     getDevice;
     ("GetCompletedValue",[
       ("This",AThis);
@@ -519,14 +476,7 @@ let d3d12annotations=[
       ("Value",ANone);
     ],MANone);
   ]);
-  ("ID3D12GraphicsCommandListVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12GraphicsCommandListVtbl",IAAutogen, d3d12Object++[
     getDevice;
     ("GetType",[
       ("This",AThis);
@@ -832,14 +782,7 @@ let d3d12annotations=[
       ("CountBufferOffset",ANone);
     ],MANone);
   ]);
-  ("ID3D12HeapVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12HeapVtbl",IAAutogen, d3d12Object++[
     getDevice;
     ("GetDesc",[
       ("This",AThis);
@@ -983,57 +926,21 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12ObjectVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
-  ]);
-  ("ID3D12PageableVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12ObjectVtbl",IAAutogen, d3d12Object);
+  ("ID3D12PageableVtbl",IAAutogen, d3d12Object++[
     getDevice;
   ]);
-  ("ID3D12PipelineStateVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12PipelineStateVtbl",IAAutogen, d3d12Object++[
     getDevice;
     ("GetCachedBlob",[
       ("This",AThis);
       ("ppBlob",OutReturn);
     ],MADontImplement);
   ]);
-  ("ID3D12QueryHeapVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12QueryHeapVtbl",IAAutogen, d3d12Object++[
     getDevice;
   ]);
-  ("ID3D12ResourceVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12ResourceVtbl",IAAutogen, d3d12Object++[
     getDevice;
     ("Map",[
       ("This",AThis);
@@ -1083,14 +990,7 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12RootSignatureVtbl",IAAutogen,[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName;
+  ("ID3D12RootSignatureVtbl",IAAutogen, d3d12Object++[
     getDevice;
   ]);
   ("ID3DIncludeVtbl",IAManual,[

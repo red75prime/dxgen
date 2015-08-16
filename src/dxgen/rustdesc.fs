@@ -195,17 +195,19 @@ and
 //     
 
 type LocalVar={
-  ty : RustType;
-  initExpression : RVal;
+  mut : bool
+  ty : RustType
+  initExpression : RVal
 }
 
 type MethodRouting={
-  nativeName : RName;
-  safeName : RName;
-  unsafe : bool;
-  genericTypes : Map<RName, RVal>; // map from generic type name to constraints
-  localVars : Map<RName, LocalVar>; // map form local var name to local var desc.
-  nativeParms : Map<RName, RVal>; // map from native param name to conversion expression
-  safeParms : Map<RName, RustType> // 
-  returnVal : RVal; // return expression
+  nativeName : RName
+  safeName : RName
+  unsafe : bool
+  genericTypes : Map<RName, RVal> // map from generic type name to constraints
+  localVars : Map<RName, LocalVar> // map form local var name to local var desc.
+  nativeParms : Map<RName, Option<RName>*RVal> // name of corresponding safe parm, conversion expression 
+  safeParms : Map<RName, RustType*Option<RVal>> // type of safe parm, initialization expression 
+  returnVal : RVal // return expression
+  returnType : RustType
 }

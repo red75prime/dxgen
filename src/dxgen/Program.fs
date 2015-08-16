@@ -54,6 +54,8 @@ let main argv =
 
                 printfn "Processing header %s" headerPath.FullName
 
+            safegen.whatDoWeHaveP()
+
             printfn "%s" (System.String('-', 80))
 
     | None -> failwith "Invalid options."

@@ -120,13 +120,53 @@ type CTypeDesc=
   |Array of CTypeDesc*int64
   |Struct of CStructElem list
   |StructRef of string
-  |Union of CStructElem
+  |Union of CStructElem list
   |UnionRef of string
   |UnsizedArray of CTypeDesc
   |Function of CFuncDesc
   |Interface of (string*CFuncDesc) list // 
 and CFuncDesc=CFuncDesc of ((string*CTypeDesc*CParamAnnotation) list)*CTypeDesc*CallingConv
 and CStructElem=CStructElem of name:string*typeDesc:CTypeDesc*bitWidth:Option<int32>
+
+let rec recursiveTransform f ty=
+  let transformStructElems ses=
+    ses |> List.map (fun (CStructElem(name, sty, bw)) -> CStructElem(name, recursiveTransform f sty, bw))
+  let transformFuncDesc (CFuncDesc(plist,rety,cc))=
+    CFuncDesc(plist |> List.map (fun (n,t,a) -> (n,recursiveTransform f t,a)) ,recursiveTransform f rety,cc)
+  match f ty with
+  |None ->
+    match ty with
+    |Primitive _ -> ty
+    |Unimplemented _ -> ty
+    |Typedef sty -> Typedef(recursiveTransform f sty)
+    |TypedefRef _ -> ty
+    |Enum _ -> ty
+    |EnumRef _ -> ty
+    |Ptr sty -> Ptr(recursiveTransform f sty)
+    |Const sty -> Const(recursiveTransform f sty)
+    |Array(sty,num) -> Array(recursiveTransform f sty, num)
+    |Struct ses -> Struct(transformStructElems ses)
+    |StructRef _ -> ty
+    |Union ses -> Union(transformStructElems ses)
+    |UnionRef _ -> ty
+    |UnsizedArray sty -> UnsizedArray(recursiveTransform f sty)
+    |Function(fd) -> Function(transformFuncDesc fd)
+    |Interface meths -> Interface(meths |> List.map (fun (n,fd) -> (n,transformFuncDesc fd)))
+  |Some v -> v
+
+let rec removeConst ty=
+  match ty with
+  |Const(sty) -> removeConst sty
+  |Ptr(sty) -> Ptr(removeConst sty)
+  |_ -> ty
+
+let isVoidPtr ty=
+  let rec isVoidPtrRec ty=
+    match ty with
+    |Primitive Void -> true
+    |Ptr(ty) -> isVoidPtrRec ty
+    |_ -> false
+  isVoidPtrRec (removeConst ty)
 
 // True iff ty is a typedef of struct that contains only function pointers
 let getVtbl (structs:Map<string, CTypeDesc>) ty=
@@ -137,10 +177,12 @@ let getVtbl (structs:Map<string, CTypeDesc>) ty=
       None
 
   match ty with
-  |Typedef(StructRef(sname)) -> 
+  |Typedef(StructRef(sname)) |StructRef(sname) -> 
     match Map.find sname structs with
     |Struct(ses) -> isStructVtbl ses
     |_ -> None
+  |Struct(ses) ->
+    isStructVtbl ses
   |_-> None
 
 let rec isStruct n2ty ty=

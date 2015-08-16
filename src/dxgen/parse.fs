@@ -5,6 +5,10 @@ open libclang
 open cdesc
 open salparser
 
+let filtermapMap (f: 'k -> 'v -> Option<'v1>) (m: Map<'k,'v>)=
+  m |> Map.filter (fun k v -> Option.isSome(f k v)) 
+    |> Map.map (fun k v -> match f k v with Some(v1) -> v1)
+
 let annotations (cursor:Cursor) =
   let annots=ref []
   let annotationVisitor (cursor:Cursor) _ _ =
@@ -179,6 +183,49 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           else
             printfn "  (\"%s\",EAFlags);" en
       | _ -> ()
+
+    // let's replace all "typedef struct BlaSmth {} Bla;" with "struct Bla {};"
+    // No need to follow C quirks.
+    let typedef2struct=
+      !types |> filtermapMap
+        (fun k v -> 
+          match v with 
+          |Typedef (StructRef s) -> Some(s)
+          |_ -> None
+          )
+
+    let struct2typedef = typedef2struct |> Map.toSeq |> Seq.map swap |> Map.ofSeq
+    
+    structs := !structs |> Map.toSeq |> Seq.map (fun (k,v) -> match Map.tryFind k struct2typedef with Some(n) -> (n,v) |None -> (k,v) ) |> Map.ofSeq
+
+    let removeTypedefStructs m=
+        m  |> Map.map 
+            (fun n ty ->
+                ty |> recursiveTransform 
+                  (fun ty ->
+                      match ty with
+                      |Typedef(StructRef s) ->
+                        match Map.tryFind s struct2typedef with
+                        |Some(s) ->
+                          Some(StructRef s)
+                        |None -> None
+                      |TypedefRef s ->
+                        match Map.tryFind s typedef2struct with
+                        |Some(_) ->
+                          Some(StructRef s)
+                        |None -> None
+                      |StructRef s ->
+                        match Map.tryFind s struct2typedef with
+                        |Some(s) ->
+                          Some(StructRef s)
+                        |None -> None
+                      |_ -> None
+                  )
+            )
+    types := removeTypedefStructs (!types |> Map.filter (fun n _ -> Map.containsKey n typedef2struct |> not))
+
+    structs := removeTypedefStructs !structs
+
     (!types, !enums, !structs, !funcs, !iids)
 
   finally
