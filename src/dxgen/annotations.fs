@@ -59,7 +59,7 @@ type InterfaceAnnotation=
 
 // InArrayOfSize s : *T => &[T], routes param.len() to parameter s
 
-// InByteArrayOfSize s : makes function generic over T, *c_void => &T, routes mem::size_of::<T>() to parameter s
+// InByteArrayOfSize (s,n) : makes function generic over T, *c_void => &T, routes mem::size_of_val(s)/n to parameter s
 
 // TypeSelector(buf, [(suffix, const, type)]) : annotated parameter select type that native method accepts in void* buf, buf parameter should be annotated InOutOfSize s
 // suffix : rust function suffix for type
@@ -91,7 +91,7 @@ type ParamAnnotation=
   |OutReturnInterface of string // parameter name of iid
   |OutReturnKnownInterface of string*string // parameter name of iid, interface type
   |InIUnknown
-  |InByteArrayOfSize of string // name of array lenght parameter
+  |InByteArrayOfSize of string*uint32 // name of array lenght parameter
   |InOptional
   |InComPtr
   |InOptionalComPtr
@@ -112,7 +112,7 @@ let getReferencedParameters parameterAnnotation=
   |InArrayOfSize p -> [p]
   |OutArrayOfSize p -> [p]
   |InOutArrayOfSize p -> [p]
-  |InByteArrayOfSize p -> [p]
+  |InByteArrayOfSize (p,_) -> [p]
   |TypeSelector (p,_) -> [p]
   |_ -> []
 

@@ -276,7 +276,7 @@ let d3d12annotations=[
     ("CreateRootSignature",[
       ("This",AThis);
       ("nodeMask",ANone);
-      ("pBlobWithRootSignature", InByteArrayOfSize "blobLengthInBytes");
+      ("pBlobWithRootSignature", InByteArrayOfSize ("blobLengthInBytes",1u));
       ("blobLengthInBytes",ANone);
       ("riid",ANone);
       ("ppvRootSignature",OutReturnKnownInterface("riid","D3D12RootSignature"));
@@ -628,14 +628,14 @@ let d3d12annotations=[
       ("This",AThis);
       ("RootParameterIndex",ANone);
       ("Num32BitValuesToSet",ANone);
-      ("pSrcData",ANone);
+      ("pSrcData",InByteArrayOfSize("Num32BitValuesToSet",4u));
       ("DestOffsetIn32BitValues",ANone);
     ],MANone);
     ("SetGraphicsRoot32BitConstants",[
       ("This",AThis);
       ("RootParameterIndex",ANone);
       ("Num32BitValuesToSet",ANone);
-      ("pSrcData",ANone);
+      ("pSrcData",InByteArrayOfSize("Num32BitValuesToSet",4u));
       ("DestOffsetIn32BitValues",ANone);
     ],MANone);
     ("SetComputeRootConstantBufferView",[
@@ -967,7 +967,7 @@ let d3d12annotations=[
       ("pSrcData",ANone);
       ("SrcRowPitch",ANone);
       ("SrcDepthPitch",ANone);
-    ],MANone);
+    ],MAUnsafe); // Method can read past the end of provided buffer
     ("ReadFromSubresource",[
       ("This",AThis);
       ("pDstData",ANone);
@@ -975,7 +975,7 @@ let d3d12annotations=[
       ("DstDepthPitch",ANone);
       ("SrcSubresource",ANone);
       ("pSrcBox",ANone);
-    ],MANone);
+    ],MAUnsafe); // Method doesn't take size of output buffer
     ("GetHeapProperties",[
       ("This",AThis);
       ("pHeapProperties",ANone);

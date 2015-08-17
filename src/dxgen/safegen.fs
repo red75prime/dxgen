@@ -60,7 +60,7 @@ let whatDoWeHaveP()=
     |InOptionalArrayOfSize p -> InOptionalArrayOfSize ""
     |OutOptionalArrayOfSize p -> OutOptionalArrayOfSize ""
     |InArrayOfSize p -> InArrayOfSize ""
-    |InByteArrayOfSize p -> InArrayOfSize ""
+    |InByteArrayOfSize _ -> InByteArrayOfSize ("",0u)
     |OutArrayOfSize p -> OutArrayOfSize ""
     |InOutArrayOfSize p -> InOutArrayOfSize ""
     |TypeSelector (p,_) -> TypeSelector("",[])
@@ -415,7 +415,7 @@ let getReferencedParameter parameterAnnotation=
   |InOptionalArrayOfSize p -> p
   |InArrayOfSize p -> p
   |InOutArrayOfSize p -> p
-  |InByteArrayOfSize p -> p
+  |InByteArrayOfSize (p,_) -> p
   |TypeSelector (p,_) -> p
   |_ -> ""
 
@@ -638,9 +638,13 @@ let generateRouting (mname, nname, mannot, parms, rty)=
     let safeParms = ref Map.empty
     let returnVals = ref Set.empty
     let errors = ref List.empty
+    let warnings = ref List.empty
 
     let addError err=
       errors := err :: !errors
+
+    let addWarning wrn=
+      warnings := wrn :: !warnings
 
     let addReturnExpression ex rty=
       returnVals := Set.add (ex,rty) !returnVals
@@ -699,6 +703,18 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         match refs with
         |[] ->
           match pty with
+          |Ptr(Const(Primitive Void)) ->
+            // pass pointer to input data. Due to technical problems input data should be slice
+            let gt=newGenType("")
+            addSafeParm safeParmName (RBorrow(RSlice(RGeneric(gt,""))))
+            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ptr()") 
+            addWarning (sprintf "%s parameter: ANone annotation applied to void pointer and method isn't marked as unsafe" pname)
+          |Ptr(Primitive Void) ->
+            // pass pointer to input data. Due to technical problems input data should be slice
+            let gt=newGenType("")
+            addSafeParm safeParmName (RMutBorrow(RSlice(RGeneric(gt,""))))
+            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_mut_ptr()") 
+            addWarning (sprintf "%s parameter: ANone annotation applied to void pointer and method isn't marked as unsafe" pname)
           |_ when isVoidPtr pty ->
             addError (sprintf "%s parameter: ANone annotation cannot be applied to void pointer" pname)
           |_ when (match (removeConst pty) with Ptr(Ptr(_)) -> true |_ -> false) ->
@@ -730,7 +746,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addNativeParm pname (Some(safeParmName)) safeParmName
         |[(rname, OutReturnInterface _, _)] |[(rname, OutReturnKnownInterface _, _)] ->
           () // processed in referenced paramerer
-        |[(rname, InOutOfSize _, _)] |[(rname, OutOfSize _, _)] |[(rname, InOfSize _, _)] |[(rname, InByteArrayOfSize _, _)]->
+        |[(rname, InOutOfSize _, _)] |[(rname, OutOfSize _, _)] |[(rname, InOfSize _, _)] ->
           // this parameter conveys the size of another parameter
           match pty with
           |Ptr(Primitive _) |Ptr(TypedefRef _) ->
@@ -738,6 +754,15 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addNativeParm pname (Some(safeParmName)) safeParmName
           |Primitive _ |TypedefRef _ ->
             addNativeParmFun pname None (fun m -> "mem::size_of_val("+(Map.find rname m)+")")
+          |_ -> addError ("Unexpected type for "+pname+", referent of [InOutOfSize]"+rname)
+        |[(rname, InByteArrayOfSize (_, n), _)] ->
+          // this parameter conveys the size of another parameter in n-byte units
+          match pty with
+          |Ptr(Primitive _) |Ptr(TypedefRef _) ->
+            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "*"+safeParmName+" = mem::size_of_val("+(Map.find rname m)+")/"+n.ToString())
+            addNativeParm pname (Some(safeParmName)) safeParmName
+          |Primitive _ |TypedefRef _ ->
+            addNativeParmFun pname None (fun m -> "mem::size_of_val("+(Map.find rname m)+")/"+n.ToString())
           |_ -> addError ("Unexpected type for "+pname+", referent of [InOutOfSize]"+rname)
         |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) -> true |_ -> false)  ->
           // this parameter is the size of input array(s).
@@ -824,11 +849,12 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         |refs ->
           addError (sprintf "%s parameter: Unexpected references %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
-      |InByteArrayOfSize p ->
+      |InByteArrayOfSize (p,n) ->
         match refs with
         |[] ->
           match pty with
           |Ptr(Const(Primitive Void)) ->
+            //TODO: size of generic type should be divisible by n
             let gt=newGenType("")
             addSafeParm safeParmName (RBorrow(RSlice(RGeneric(gt,""))))
             addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ptr()") 
@@ -980,7 +1006,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         match refs with 
         |[] ->
           match pty with
-          |Ptr(Ptr(StructRef ciname)) ->
+          |Ptr(StructRef ciname) ->
             // Let's strip 'I' and 'Vtbl' parts
             let iname=ciname.Substring(1,ciname.Length-5)
             let rty=ROption(RBorrow(RType iname))
@@ -1045,7 +1071,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
          safeParms = !safeParms |> Map.map (fun _ (mn,minit) -> (mn,Option.map (fun f -> f np2sp) minit))
          returnVal = returnVal
          returnType = returnType
-        }], !errors)
+        }, !warnings], !errors)
     else
       ([],!errors)
 
@@ -1079,7 +1105,7 @@ let preGenerateMethod ((mname, mannot, parms, rty) as methoddesc)=
         sb.AppendLine(generateMethod gparms) |> ignore
       sb.ToString()
     |None ->
-      let routing=generateRouting (mname, mname, mannot, parms, rty)
+      let (routings,errors)=generateRouting (mname, mname, mannot, parms, rty)
       generateMethod (mname, mname, mannot, parms, rty)
   
 
