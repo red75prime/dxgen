@@ -29,6 +29,7 @@ type RustType=
   |RResult of RustType*RustType
   |ROption of RustType
   |RArray of RustType*int64
+  |RVec of RustType
   |RSlice of RustType
   |RTupleStruct of RustType list
   |RStruct of RustStruct
@@ -52,6 +53,7 @@ let rec rustTypeToString rt :string=
   |RHResult t -> "HResult<" + (rustTypeToString t) + ">"
   |RResult(t,e) -> "Result<" + (rustTypeToString t) + "," + (rustTypeToString e) + ">"
   |ROption t -> "Option<"+(rustTypeToString t) + ">"
+  |RVec t -> "Vec<"+(rustTypeToString t)+">"
   |RArray(t,sz) -> sprintf "[%s;%d]" (rustTypeToString t) sz
   |RSlice(t) -> "["+(rustTypeToString t)+"]"
   |RTupleStruct(ts) ->
@@ -90,7 +92,7 @@ let sndOf3 (_,v,_) = v
 let rec extractGenerics rt=
   match rt with
   |RType s -> []
-  |RBorrow t |RMutBorrow t |RHResult t |RResult (t,_) |ROption t |RArray (t,_) |RSlice t |RConstPtr t |RMutPtr t-> extractGenerics t
+  |RBorrow t |RMutBorrow t |RHResult t |RResult (t,_) |ROption t |RArray (t,_) |RSlice t |RConstPtr t |RMutPtr t |RVec t-> extractGenerics t
   |RFn {args=args;rettype=rt} -> List.collect (sndOf3 >> extractGenerics) (("",rt,ANone)::args)
   |RTupleStruct fields -> List.collect extractGenerics fields
   |RStruct fields -> List.collect (sndOf3 >> extractGenerics) fields
@@ -206,8 +208,8 @@ type MethodRouting={
   unsafe : bool
   genericTypes : Map<RName, RVal> // map from generic type name to constraints
   localVars : Map<RName, LocalVar> // map form local var name to local var desc.
-  nativeParms : Map<RName, Option<RName>*RVal> // name of corresponding safe parm, conversion expression 
-  safeParms : Map<RName, RustType*Option<RVal>> // type of safe parm, initialization expression 
+  nativeParms : (RName*RVal) list // name of native parm, conversion expression 
+  safeParms : (RName*RustType*Option<RVal>) list // name of safe parm, type of safe parm, initialization expression 
   returnVal : RVal // return expression
   returnType : RustType
 }

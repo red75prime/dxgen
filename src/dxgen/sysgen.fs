@@ -65,7 +65,7 @@ let codeGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,structs:Map
     let apl s=sb.AppendLine(s) |> ignore
     apl "use std::ops::BitOr;"
     apl ""
-    for KeyValue(name,Enum(uty, vals)) in enums do
+    for (name,uty,vals) in enums |> Seq.choose (function |KeyValue(name,Enum(uty, vals)) -> Some(name,uty,vals) |_ -> None) do
       let annot=Map.find name enum_annotations
       apl @"#[repr(C)]"
       apl @"#[derive(Clone,Copy,PartialEq,Eq,Default)]"
@@ -124,7 +124,7 @@ impl fmt::Debug for {0} {{
   let libcTypeNames=Set.ofList ["BOOL";"LPCWSTR";"HMODULE";"GUID";"LARGE_INTEGER";"LPVOID";"WCHAR";"BYTE";"LPCVOID";"LONG_PTR";"WORD";"SIZE_T";"SECURITY_ATTRIBUTES";"HANDLE";"DWORD";"LPCSTR";"LONG"]
   let createStructs (sb:System.Text.StringBuilder)=
     let apl s=sb.AppendLine(s) |> ignore
-    for KeyValue(name, Struct(sfields)) in structs do
+    for (name,sfields) in structs |> Seq.choose(function |KeyValue(name, Struct(sfields)) -> Some(name,sfields) |_ -> None) do
       if Set.contains name libcTypeNames then
         ()
       else
@@ -136,7 +136,7 @@ impl fmt::Debug for {0} {{
           sb.AppendFormat("pub struct {0};",name).AppendLine() |> ignore;
         else
           sb.AppendFormat("pub struct {0} {{",name).AppendLine() |> ignore;
-          for CStructElem(fname,fty,None) in sfields do
+          for (fname,fty) in sfields |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |_ -> None) do
             sb.AppendFormat("  pub {0} : {1},", fname, tyToRust fty).AppendLine() |> ignore
           sb.AppendLine("}").AppendLine() |> ignore
   
@@ -156,7 +156,7 @@ impl fmt::Debug for {0} {{
 
   let createFunctions (sb:System.Text.StringBuilder)=
      // TODO: use 
-    for KeyValue(name, Function(CFuncDesc(args,rty,cc))) in funcs do
+    for (name,args,rty,cc) in funcs |> Seq.choose (function |KeyValue(name, Function(CFuncDesc(args,rty,cc))) -> Some(name,args,rty,cc) |_ -> None) do
       sb.AppendLine("#[link(name=\"d3d12\")]") |> ignore       
       sb.AppendFormat("extern {3} {{ pub fn {0}({1}) -> {2}; }}",name,((List.map funcArgToRust args) |> String.concat(", ")),(tyToRust rty), (ccToRust cc)).AppendLine() |> ignore
     sb.AppendLine("").AppendLine() |> ignore

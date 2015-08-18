@@ -7,7 +7,7 @@ open salparser
 
 let filtermapMap (f: 'k -> 'v -> Option<'v1>) (m: Map<'k,'v>)=
   m |> Map.filter (fun k v -> Option.isSome(f k v)) 
-    |> Map.map (fun k v -> match f k v with Some(v1) -> v1)
+    |> Map.map (fun k v -> match f k v with Some(v1) -> v1 |_ -> raise <| new System.Exception("Unreachable"))
 
 let annotations (cursor:Cursor) =
   let annots=ref []
@@ -65,10 +65,11 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     let args=ref []
     let argsVisitor (cursor:Cursor) _ _=
       if cursor.kind=CursorKind.ParmDecl then
-        let cannot=match annotations cursor with
-          |[] -> NoAnnotation
-          |[ann] -> parseSAL ann
-          |_ -> raise <| new System.Exception("Multiple annotations")
+        let cannot=
+          match annotations cursor with
+            |[] -> NoAnnotation
+            |[ann] -> parseSAL ann
+            |_ -> raise <| new System.Exception("Multiple annotations")
         let (pname,ptype,pannot)=(getCursorDisplayNameFS cursor, getCursorType cursor |> typeDesc, cannot)
         let pdesc=
           match pname with

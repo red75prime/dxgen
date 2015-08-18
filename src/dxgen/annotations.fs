@@ -77,6 +77,7 @@ type ParamAnnotation=
   |InOutOptional
   |InOutReturn // 
   |InArrayOfSize of string // name of array lenght parameter
+  |InComPtrArrayOfSize of string // name of array lenght parameter
   |InOptionalArrayOfSize of string // name of array lenght parameter
   |OutArrayOfSize of string
   |OutOptionalArrayOfSize of string
@@ -110,6 +111,7 @@ let getReferencedParameters parameterAnnotation=
   |InOptionalArrayOfSize p -> [p]
   |OutOptionalArrayOfSize p -> [p]
   |InArrayOfSize p -> [p]
+  |InComPtrArrayOfSize p -> [p]
   |OutArrayOfSize p -> [p]
   |InOutArrayOfSize p -> [p]
   |InByteArrayOfSize (p,_) -> [p]
@@ -138,6 +140,7 @@ let getReturnDesc parmAnnot=
   |InIUnknown -> []
   |InOptionalArrayOfSize _ -> []
   |InArrayOfSize _ -> []
+  |InComPtrArrayOfSize _ -> []
   |InByteArrayOfSize _ -> []
   |InOptional -> []
   |InComPtr -> []

@@ -51,7 +51,7 @@ let d3d12Object= [
   ]
 
 let d3d12annotations=[
-  ("ID3D10BlobVtbl",IAManual,[
+  ("ID3D10BlobVtbl",IAManual,"IUnknownVtbl",[
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -62,23 +62,23 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12CommandAllocatorVtbl",IAAutogen,d3d12Object++[
+  ("ID3D12CommandAllocatorVtbl",IAAutogen, "ID3D12PageableVtbl", d3d12Object++[
     getDevice;
     ("Reset",[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12CommandListVtbl",IAAutogen,d3d12Object++[
+  ("ID3D12CommandListVtbl",IAAutogen, "ID3D12DeviceChildVtbl", d3d12Object++[
     getDevice;
     ("GetType",[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12CommandQueueVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12CommandQueueVtbl",IAAutogen, "ID3D12PageableVtbl", d3d12Object++[
     getDevice;
     ("UpdateTileMappings",[
       ("This",AThis);
-      ("pResource",ANone);
+      ("pResource",InComPtr);
       ("NumResourceRegions",ANone);
       ("pResourceRegionStartCoordinates",InOptionalArrayOfSize "NumResourceRegions");
       ("pResourceRegionSizes",InOptionalArrayOfSize "NumResourceRegions");
@@ -91,9 +91,9 @@ let d3d12annotations=[
     ],MANone);
     ("CopyTileMappings",[
       ("This",AThis);
-      ("pDstResource",ANone);
+      ("pDstResource",InComPtr);
       ("pDstRegionStartCoordinate",ANone);
-      ("pSrcResource",ANone);
+      ("pSrcResource",InComPtr);
       ("pSrcRegionStartCoordinate",ANone);
       ("pRegionSize",ANone);
       ("Flags",ANone);
@@ -101,7 +101,7 @@ let d3d12annotations=[
     ("ExecuteCommandLists",[
       ("This",AThis);
       ("NumCommandLists",ANone);
-      ("ppCommandLists",InArrayOfSize "NumCommandLists");
+      ("ppCommandLists",InComPtrArrayOfSize "NumCommandLists");
     ],MANone);
     ("SetMarker",[
       ("This",AThis);
@@ -141,10 +141,10 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12CommandSignatureVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12CommandSignatureVtbl",IAAutogen, "ID3D12PageableVtbl", d3d12Object++[
     getDevice;
   ]);
-  ("ID3D12DebugCommandListVtbl",IAManual,[
+  ("ID3D12DebugCommandListVtbl",IAManual, "IUnknownVtbl", [
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -162,7 +162,7 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12DebugCommandQueueVtbl",IAManual,[
+  ("ID3D12DebugCommandQueueVtbl",IAManual, "IUnknownVtbl", [
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -173,7 +173,7 @@ let d3d12annotations=[
       ("State",ANone);
     ],MANone);
   ]);
-  ("ID3D12DebugDeviceVtbl",IAManual,[
+  ("ID3D12DebugDeviceVtbl",IAManual, "IUnknownVtbl", [
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -189,7 +189,7 @@ let d3d12annotations=[
       ("Flags",ANone);
     ],MANone);
   ]);
-  ("ID3D12DebugVtbl",IAManual,[
+  ("ID3D12DebugVtbl", IAManual, "IUnknownVtbl", [
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -197,7 +197,7 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12DescriptorHeapVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12DescriptorHeapVtbl",IAAutogen, "ID3D12PageableVtbl", d3d12Object++[
     getDevice;
     ("GetDesc",[
       ("This",AThis);
@@ -211,10 +211,10 @@ let d3d12annotations=[
       ("__ret_val",OutReturn);
     ],MANone);
   ]);
-  ("ID3D12DeviceChildVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12DeviceChildVtbl",IAAutogen, "ID3D12ObjectVtbl",  d3d12Object++[
     getDevice;
   ]);
-  ("ID3D12DeviceVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12DeviceVtbl",IAAutogen, "ID3D12ObjectVtbl", d3d12Object++[
     ("GetNodeCount",[
       ("This",AThis);
     ],MANone);
@@ -461,7 +461,7 @@ let d3d12annotations=[
       ("__ret_val",OutReturn);
     ],MANone);
   ]);
-  ("ID3D12FenceVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12FenceVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
     getDevice;
     ("GetCompletedValue",[
       ("This",AThis);
@@ -476,7 +476,7 @@ let d3d12annotations=[
       ("Value",ANone);
     ],MANone);
   ]);
-  ("ID3D12GraphicsCommandListVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12GraphicsCommandListVtbl",IAAutogen,  "ID3D12CommandListVtbl", d3d12Object++[
     getDevice;
     ("GetType",[
       ("This",AThis);
@@ -592,7 +592,7 @@ let d3d12annotations=[
     ("SetDescriptorHeaps",[
       ("This",AThis);
       ("NumDescriptorHeaps",ANone);
-      ("ppDescriptorHeaps", InArrayOfSize "NumDescriptorHeaps");
+      ("ppDescriptorHeaps", InComPtrArrayOfSize "NumDescriptorHeaps");
     ],MANone);
     ("SetComputeRootSignature",[
       ("This",AThis);
@@ -782,13 +782,13 @@ let d3d12annotations=[
       ("CountBufferOffset",ANone);
     ],MANone);
   ]);
-  ("ID3D12HeapVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12HeapVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
     getDevice;
     ("GetDesc",[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12InfoQueueVtbl",IAAutogen,[
+  ("ID3D12InfoQueueVtbl",IAAutogen, "IUnknownVtbl", [
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -926,21 +926,21 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12ObjectVtbl",IAAutogen, d3d12Object);
-  ("ID3D12PageableVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12ObjectVtbl",IAAutogen,  "IUnknownVtbl", d3d12Object);
+  ("ID3D12PageableVtbl",IAAutogen,  "ID3D12ObjectVtbl",  d3d12Object++[
     getDevice;
   ]);
-  ("ID3D12PipelineStateVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12PipelineStateVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
     getDevice;
     ("GetCachedBlob",[
       ("This",AThis);
       ("ppBlob",OutReturn);
     ],MADontImplement);
   ]);
-  ("ID3D12QueryHeapVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12QueryHeapVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
     getDevice;
   ]);
-  ("ID3D12ResourceVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12ResourceVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
     getDevice;
     ("Map",[
       ("This",AThis);
@@ -982,7 +982,7 @@ let d3d12annotations=[
       ("pHeapFlags",ANone);
     ],MANone);
   ]);
-  ("ID3D12RootSignatureDeserializerVtbl",IAAutogen,[
+  ("ID3D12RootSignatureDeserializerVtbl",IAAutogen, "IUnknownVtbl", [
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -990,10 +990,10 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12RootSignatureVtbl",IAAutogen, d3d12Object++[
+  ("ID3D12RootSignatureVtbl",IAAutogen, "ID3D12DeviceChildVtbl",  d3d12Object++[
     getDevice;
   ]);
-  ("ID3DIncludeVtbl",IAManual,[
+  ("ID3DIncludeVtbl",IAManual, "IUnknown", [
     ("Open",[
       ("This",AThis);
       ("IncludeType",ANone);
@@ -1007,9 +1007,9 @@ let d3d12annotations=[
       ("pData",ANone);
     ],MANone);
   ]);
-  ("IUnknown",IAManual,[
+  ("IUnknown",IAManual,"",[
     ]);
-  ("SECURITY_ATTRIBUTES",IAManual,[
+  ("SECURITY_ATTRIBUTES",IAManual,"",[
     ]);
   ]
 

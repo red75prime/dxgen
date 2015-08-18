@@ -27,7 +27,7 @@ let emptyAnnotationsGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>
   let vtbls=types |> List.ofSeq |> List.collect (fun (KeyValue(name,ty)) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl)))
   for (name, mths) in vtbls do
     apl(sprintf "  (\"%s\",IAAutogen,[" name)
-    for CStructElem(mname, Ptr(Function(CFuncDesc(args,ty,_))), _) in mths do
+    for (mname,args,ty) in mths |> List.choose (function |CStructElem(mname, Ptr(Function(CFuncDesc(args,ty,_))), _)-> Some(mname,args,ty)  |_ -> None) do
       if Set.contains mname iUnknownFuncs then
         apl(sprintf "    (\"%s\",[],MAIUnknown);" mname)
       else
@@ -68,7 +68,7 @@ let whatDoWeHaveP()=
 
   let arefs=ref Set.empty
 
-  for (_,_,mannots) in d3d12annotations do
+  for (_,_,_,mannots) in d3d12annotations do
     for (_,pannots,_) in mannots do
       for (p,pannot) in pannots do
         arefs := !arefs |> Set.add (clearAnnot pannot, pannots |> List.map snd |> List.filter (fun a -> List.contains p (getReferencedParameters a)) |> List.map clearAnnot) 
@@ -153,8 +153,8 @@ let mergeParameter iname mname parms pname (_,pty,_) (_,pan)=
 // Recursively check if interfaces', methods', parameters' names are equal in native and annotated 
 // Returns Some(annotaded native) or None
 let sanityCheck vtbls annotations= 
-  isListsMatch fst "Native interfaces" vtbls (fun (name,_,_) -> name) "Annotated interfaces" annotations 
-    (fun inamevtbl (_, structElems) (_,interfaceAnnotation,methodAnnotations) -> 
+  isListsMatch fst "Native interfaces" vtbls (fun (name,_,_,_) -> name) "Annotated interfaces" annotations 
+    (fun inamevtbl (_, structElems) (_, interfaceAnnotation, baseInterface, methodAnnotations) -> 
       // inamevtbl is in the form I***Vtbl, let's strip 'I' and 'Vtbl'
       let iname=inamevtbl.Substring(1,inamevtbl.Length-5)
       if interfaceAnnotation=IAManual then
@@ -165,20 +165,23 @@ let sanityCheck vtbls annotations=
         let mergedMethods=
           isListsMatch (fun (CStructElem(mname,_,_)) -> mname) (sprintf "Native methods of %s" iname) structElems 
                         (fun (mname,_,_) -> mname) (sprintf "Annotated methods of %s" iname) methodAnnotations
-            (fun mname (CStructElem(_,Ptr(Function(CFuncDesc(parms, rty, cc))),_)) (_,aparms,methodAnnotation) ->
-              // check if method mname matches
-              if methodAnnotation=MAIUnknown then
-                // don't check parameters of IUnknown methods
-                Some(mname, methodAnnotation, [], rty)
-              else
-                // by checking all parameters
-                let mergedParms=
-                  isListsMatch (fun (pname,_,_) -> pname) (sprintf "Parameters of native method %s::%s" iname mname) parms
-                                (fun (pname,_) -> pname) (sprintf "Parameters of annotated method %s::%s" iname mname) aparms 
-                                  (mergeParameter iname mname parms)
-                match mergedParms with
-                |Some(mp) -> Some(mname, methodAnnotation, mp, rty)
-                |None -> None
+            (fun mname se (_,aparms,methodAnnotation) ->
+              match se with
+              |(CStructElem(_,Ptr(Function(CFuncDesc(parms, rty, cc))),_)) ->
+                // check if method mname matches
+                if methodAnnotation=MAIUnknown then
+                  // don't check parameters of IUnknown methods
+                  Some(mname, methodAnnotation, [], rty)
+                else
+                  // by checking all parameters
+                  let mergedParms=
+                    isListsMatch (fun (pname,_,_) -> pname) (sprintf "Parameters of native method %s::%s" iname mname) parms
+                                  (fun (pname,_) -> pname) (sprintf "Parameters of annotated method %s::%s" iname mname) aparms 
+                                    (mergeParameter iname mname parms)
+                  match mergedParms with
+                  |Some(mp) -> Some(mname, methodAnnotation, mp, rty)
+                  |None -> None
+              |_ -> raise <| new System.Exception("Unreachable")
               )
         match mergedMethods with
         |Some(mm) -> Some(iname, interfaceAnnotation, mm)
@@ -499,7 +502,8 @@ let generateMethod (mname, nname, mannot, parms, rty)=
           |(name, OutReturnKnownInterface(_,iid),_) ->
             (pname, pannot, pty, RustConst ("&IID_I"+iid))
           |(name, InOptionalArrayOfSize _, _) 
-          |(name, InArrayOfSize _, _) ->
+          |(name, InArrayOfSize _, _)
+          |(name, InComPtrArrayOfSize _, _) ->
             (pname, pannot, pty, RustSliceLenghtOf [name])
           |(name, InByteArrayOfSize _, _) ->
             (pname, pannot, pty, RustParameterSizeOf(name))
@@ -510,7 +514,7 @@ let generateMethod (mname, nname, mannot, parms, rty)=
         |_ ->
           // multiple references
           // The only case is when this parameter is a size of multiple array parameters
-          if refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) -> true |_ -> false) then
+          if refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,InComPtrArrayOfSize _,_) -> true |_ -> false) then
             (pname, pannot, pty, RustSliceLenghtOf (refs |> List.map (fun (name,_,_) -> name )))
           else
             raise <| new System.Exception("Unexpected annotations")
@@ -601,7 +605,7 @@ let generateMethod (mname, nname, mannot, parms, rty)=
         (pname, pannot, pty, RustParameter(toSnake pname, RMutBorrow(RGeneric(gname,"HasIID"))))
       |InOptionalArrayOfSize _ |OutOptionalArrayOfSize _ |OutOptionalOfSize _ ->
         (pname, pannot, pty, RustParameter(toSnake pname, ROption(RMutBorrow(RSlice(convertTypeToRustNoArray (derefCType pty) pannot)))))
-      |InArrayOfSize _ ->
+      |InArrayOfSize _ |InComPtrArrayOfSize _ ->
         (pname, pannot, pty, RustParameter(toSnake pname, RMutBorrow(RSlice(convertTypeToRustNoArray (derefCType pty) pannot))))
       |InByteArrayOfSize _ ->
         (pname, pannot, pty, RustParameter(toSnake pname, RMutBorrow(RSlice(RType "u8"))))
@@ -609,6 +613,7 @@ let generateMethod (mname, nname, mannot, parms, rty)=
         (pname, pannot, pty, RustParameter(toSnake pname, ROption(RMutBorrow(convertTypeToRustNoArray (derefCType pty) pannot))))
       |AConst s ->
         (pname, pannot, pty, RustConst s)
+      |_ -> raise <| new System.Exception("Unsupported")
     eqpParms := eqParm :: !eqpParms
 
   let eparms=List.rev !eqpParms
@@ -616,6 +621,80 @@ let generateMethod (mname, nname, mannot, parms, rty)=
   let trivialEquip=(toSnake mname, nname, mannot, eparms, rty, !retParm)
   generateMethodFromEquippedAnnotation trivialEquip |> indentBy "  "
 
+
+let generateMethodFromRouting 
+        { nativeName = nname
+          safeName = sname
+          unsafe = unsafe
+          genericTypes = gtypes
+          localVars = lvs
+          nativeParms = nparms
+          safeParms = sparms
+          returnVal = rval
+          returnType = rtype
+        } = 
+  let generics=
+    if Map.isEmpty gtypes then
+      ""
+    else
+      "<"+System.String.Join(", ", 
+        gtypes |> Map.toSeq 
+          |> Seq.map 
+            (fun (t,c) -> 
+              if System.String.IsNullOrEmpty c 
+              then t 
+              else t+": "+c
+              ) )+">"
+  let sparams=
+    System.String.Concat(
+      sparms |> List.map 
+        (fun (spname, ty, _) ->
+          ", "+spname+": "+(rustTypeToString ty)) |> Seq.ofList)
+
+  let rettype=rustTypeToString rtype
+
+  let lvAndInit=
+    System.String.Join(System.Environment.NewLine,
+      seq {
+        yield! lvs |> Map.toSeq 
+          |> Seq.map 
+            (fun (lv, {mut=mut;ty=ty;initExpression=init}) ->
+              let muts=if mut then "mut " else ""
+              let lvtype=": "+(rustTypeToString ty)
+              let inits=if System.String.IsNullOrEmpty init then ";" else " = "+init+";"
+              "  let "+muts+lv+lvtype+inits)
+        yield!
+          sparms |> List.toSeq |> Seq.collect 
+            (fun (_,_,minit) ->
+              match minit with
+              |Some(init) -> Seq.singleton init
+              |None -> Seq.empty
+              )
+      })
+
+  let nativeInvocation=
+    System.String.Concat(
+      seq{
+        yield "((**self.0)."+nname+")("
+        yield System.String.Join(", ", nparms |> List.toSeq |> Seq.map snd)
+        yield ")"
+      })
+
+  let ftext=
+    System.String.Format(
+      @"
+pub {0}{1}{2}(&self{3}) -> {4} {{
+{5}
+  let hr=unsafe {{ {6} }};
+  {7}
+}}
+",    if unsafe then "unsafe " else ""
+        ,sname, generics
+        ,sparams, rettype,
+        lvAndInit,
+        nativeInvocation,
+        rval)
+  ftext
 
 let generateRouting (mname, nname, mannot, parms, rty)=
   if mannot=MADontImplement then
@@ -682,6 +761,14 @@ let generateRouting (mname, nname, mannot, parms, rty)=
           (pname, pannot, pty, refs)
         ) parms
 
+    let sname2lv=ref Map.empty
+    // Let's add local variables for OutReturnCombine
+    for sname in parmsr |> Seq.choose (function |(_,OutReturnCombine(sname,_),_,_) -> Some(sname) |_ -> None) |> Set.ofSeq do
+      let retty = RType(sname)
+      let lv=newLocalVar true retty (fun m -> "unsafe {mem::uninitialized::<_>()}")
+      addReturnExpression lv retty
+      sname2lv := Map.add sname lv !sname2lv
+
     // Let's generate routing
     for (pname, pannot, pty, refs) in parmsr do
       let safeParmName=toSnake pname // TODO: Process prefixes ("p", "pp" and such)
@@ -708,13 +795,15 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             let gt=newGenType("")
             addSafeParm safeParmName (RBorrow(RSlice(RGeneric(gt,""))))
             addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ptr()") 
-            addWarning (sprintf "%s parameter: ANone annotation applied to void pointer and method isn't marked as unsafe" pname)
+            if mannot<>MAUnsafe then
+              addWarning (sprintf "%s parameter: ANone annotation applied to void pointer and method isn't marked as unsafe" pname)
           |Ptr(Primitive Void) ->
             // pass pointer to input data. Due to technical problems input data should be slice
             let gt=newGenType("")
             addSafeParm safeParmName (RMutBorrow(RSlice(RGeneric(gt,""))))
             addNativeParm pname (Some(safeParmName)) (safeParmName+".as_mut_ptr()") 
-            addWarning (sprintf "%s parameter: ANone annotation applied to void pointer and method isn't marked as unsafe" pname)
+            if mannot<>MAUnsafe then
+              addWarning (sprintf "%s parameter: ANone annotation applied to void pointer and method isn't marked as unsafe" pname)
           |_ when isVoidPtr pty ->
             addError (sprintf "%s parameter: ANone annotation cannot be applied to void pointer" pname)
           |_ when (match (removeConst pty) with Ptr(Ptr(_)) -> true |_ -> false) ->
@@ -764,7 +853,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
           |Primitive _ |TypedefRef _ ->
             addNativeParmFun pname None (fun m -> "mem::size_of_val("+(Map.find rname m)+")/"+n.ToString())
           |_ -> addError ("Unexpected type for "+pname+", referent of [InOutOfSize]"+rname)
-        |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) -> true |_ -> false)  ->
+        |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) |(_,InComPtrArrayOfSize _,_) -> true |_ -> false)  ->
           // this parameter is the size of input array(s).
           let plist=refs |> 
                       List.map 
@@ -772,7 +861,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
                           |(pname, InOptionalArrayOfSize _,_)
                           |(pname, OutOptionalArrayOfSize _,_) -> 
                             fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())"
-                          |(pname, InArrayOfSize _,_) ->  
+                          |(pname, InArrayOfSize _,_) |(pname, InComPtrArrayOfSize _,_) ->  
                             fun m -> "Some("+(Map.find pname m)+".len())"
                           |_ -> raise <| new System.Exception("Unreachable")
                         )
@@ -825,7 +914,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "*"+safeParmName+" = mem::size_of_val("+(Map.find rname m)+")")
             addNativeParm pname (Some(safeParmName)) safeParmName
           |_ -> addError (sprintf "%s parameter: Unexpected type" rname)
-        |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) -> true |_ -> false)  ->
+        |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) |(_,InComPtrArrayOfSize _,_) -> true |_ -> false)  ->
           // this parameter is the size of input array(s).
           let plist=refs |> 
                       List.map 
@@ -833,7 +922,8 @@ let generateRouting (mname, nname, mannot, parms, rty)=
                           |(pname, InOptionalArrayOfSize _,_)
                           |(pname, OutOptionalArrayOfSize _,_) -> 
                             fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())"
-                          |(pname, InArrayOfSize _,_) ->  
+                          |(pname, InArrayOfSize _,_)
+                          |(pname, InComPtrArrayOfSize _,_) ->  
                             fun m -> "Some("+(Map.find pname m)+".len())"
                           |_ -> 
                             raise <| new System.Exception("Unreachable")
@@ -895,6 +985,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             let lvtype=convertTypeToRustNoArray uty pannot
             let lv=newLocalVar true lvtype (fun m -> (Map.find rname m)+".map(|v|mem::size_of_val(v)).unwrap_or(0)")
             addNativeParm pname None ("&mut "+lv)
+            addReturnExpression lv lvtype
           |_ ->
             addError (sprintf "%s parameter: must be a pointer." pname)
         |_ ->
@@ -904,8 +995,8 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         match refs with 
         |[] ->
           let gt=newGenType ""
-          addSafeParm safeParmName (RMutBorrow(RGeneric(gt,"")))
-          addNativeParm pname (Some(safeParmName)) (safeParmName+" as *mut _")
+          addSafeParm safeParmName (ROption(RMutBorrow(RGeneric(gt,""))))
+          addNativeParm pname (Some(safeParmName)) (safeParmName+".map(|v|v as *mut _).unwrap_or(ptr::null_mut())")
         |_ ->
           addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -922,6 +1013,24 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             |_ ->
               addSafeParm safeParmName (ROption(RMutBorrow(RSlice(ruty))))
               addNativeParm pname (Some(safeParmName)) (safeParmName+".map(|p|p.as_mut_ptr()).unwrap_or(null_mut())") // TODO: Use FFI option optimization
+          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+        |_ ->
+          addError (sprintf "%s parameter: Should have no refs. But they are %A" pname refs)
+// -----------------------------------------------------------------------------------------------------------------------------------------
+      |InComPtrArrayOfSize p->
+        // I believe Rust representation of COM-pointer is larger than a pointer, because of drop-flag.
+        // So we need to convert it to array of pointers
+        match refs with
+        |[] ->
+          match pty with
+          |Ptr(Const(Ptr(StructRef s)))
+          |Ptr(Ptr(StructRef s)) ->
+            let riname=s.Substring(1,s.Length-1)
+            let ruty=RType riname
+            let gt=newGenType s
+            addSafeParm safeParmName (RBorrow(RSlice(RBorrow(RGeneric(gt,s)))))
+            let lv=newLocalVar false (RVec(RMutPtr(RMutPtr(RType "IUnknownVtbl")))) (fun _ -> safeParmName+".iter().map(|o|o.expose_iptr()).collect()")
+            addNativeParm pname (Some(safeParmName)) (lv+".as_ptr() as *const *mut _")
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: Should have no refs. But they are %A" pname refs)
@@ -945,9 +1054,9 @@ let generateRouting (mname, nname, mannot, parms, rty)=
           match pty with
           |Ptr(uty) ->
             let rty=RType sname
-            let lv=newLocalVar true rty (fun m -> "unsafe {mem::uninitialized::<_>()}")
+            // local variable is added elsewhere
+            let lv = Map.find sname !sname2lv
             addNativeParm pname None ("&mut ("+lv+"."+field+") as *mut _")
-            addReturnExpression lv rty
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
@@ -992,8 +1101,8 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         |[] ->
           match pty with
           |Ptr(StructRef ciname) ->
-            // Let's strip 'I' and 'Vtbl' parts
-            let iname=ciname.Substring(1,ciname.Length-5)
+            // Let's strip 'I' part
+            let iname=ciname.Substring(1,ciname.Length-1)
             let rty=RBorrow(RType iname)
             addSafeParm safeParmName rty
             addNativeParm pname (Some(safeParmName)) (safeParmName+".expose_iptr() as *mut *mut _ ")
@@ -1018,68 +1127,89 @@ let generateRouting (mname, nname, mannot, parms, rty)=
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |_ -> raise <| new System.Exception("Unimplemented")
   
-    // map from native parm name to safeparm name
-    let np2sp = !nativeParms |> Map.toSeq |> Seq.filter (fun (_,(msp,_)) -> msp <> None) |> Seq.map (fun (np,(Some(sp),_)) -> (np,sp)) |> Map.ofSeq
-
-    let (returnVal,returnType)=
-      let nrty=
-        match List.last parms with
-        |("__ret_val",OutReturn,Ptr(_)) ->
-          // Artefact of brocken C-interface
-          Primitive Void
-        |_ -> rty
-      let mrv2tuple mrv=
-        ("("+System.String.Join(", ", List.map fst mrv)+")", RType("("+System.String.Join(", ", List.map (snd >> rustTypeToString) mrv)+")"))
-      match nrty with
-      |Ptr(Const(uty)) ->
-        ("hr", RConstPtr(RType(tyToRust uty)))
-      |TypedefRef "HRESULT" ->
-        match !returnVals |> Set.toList with
-        |[] ->
-          ("hr2ret(hr,())",RType "HResult<()>")
-        |[(ex,t)] ->
-          ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
-        |mrv ->
-          let (ex,t)=mrv2tuple mrv
-          ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
-      |StructRef sname |TypedefRef sname ->
-        match !returnVals |> Set.toList with
-        |[] ->
-          ("hr",RType sname)
-        |[(ex,t)] ->
-          ("(hr,"+ex+")", RType ("("+sname+", "+(rustTypeToString t)+")"))
-        |mrv ->
-          let (ex,t)=mrv2tuple (("hr", RType sname) :: mrv)
-          ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
-      |Primitive Void ->
-        match !returnVals |> Set.toList with
-        |[] ->
-          ("()",RType "()")
-        |[(ex,t)] ->
-          (ex, t)
-        |mrv ->
-          mrv2tuple mrv
-      |_ -> raise <| new System.Exception("Unexpected return type")
-          
-    if List.isEmpty !errors then
-      ([{nativeName = nname
-         safeName = mname
-         unsafe = mannot=MAUnsafe
-         genericTypes = !genTypes
-         localVars = !localVars |> Map.map (fun _ (mut,rty,init) -> {mut=mut;ty=rty;initExpression=init(np2sp)}) 
-         nativeParms = !nativeParms |> Map.map (fun _ (mn,conv) -> (mn,conv(np2sp)))
-         safeParms = !safeParms |> Map.map (fun _ (mn,minit) -> (mn,Option.map (fun f -> f np2sp) minit))
-         returnVal = returnVal
-         returnType = returnType
-        }, !warnings], !errors)
-    else
+    if not <| List.isEmpty !errors then
       ([],!errors)
+    else
+      // map from native parm name to safeparm name
+      let np2sp = !nativeParms |> Map.toSeq |> Seq.choose (function |(np,(Some(sp),_)) -> Some(np,sp) |_ -> None) |> Map.ofSeq
+
+      let (returnVal,returnType)=
+        let nrty=
+          match List.last parms with
+          |("__ret_val",OutReturn,Ptr(_)) ->
+            // Artefact of brocken C-interface
+            Primitive Void
+          |_ -> rty
+        let mrv2tuple mrv=
+          ("("+System.String.Join(", ", List.map fst mrv)+")", RType("("+System.String.Join(", ", List.map (snd >> rustTypeToString) mrv)+")"))
+        match nrty with
+        |Ptr(Const(uty)) ->
+          ("hr", RConstPtr(RType(tyToRust uty)))
+        |TypedefRef "HRESULT" ->
+          match !returnVals |> Set.toList with
+          |[] ->
+            ("hr2ret(hr,())",RType "HResult<()>")
+          |[(ex,t)] ->
+            ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
+          |mrv ->
+            let (ex,t)=mrv2tuple mrv
+            ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
+        |StructRef sname |TypedefRef sname ->
+          match !returnVals |> Set.toList with
+          |[] ->
+            ("hr",RType sname)
+          |[(ex,t)] ->
+            ("(hr,"+ex+")", RType ("("+sname+", "+(rustTypeToString t)+")"))
+          |mrv ->
+            let (ex,t)=mrv2tuple (("hr", RType sname) :: mrv)
+            ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
+        |Primitive Void ->
+          match !returnVals |> Set.toList with
+          |[] ->
+            ("()",RType "()")
+          |[(ex,t)] ->
+            (ex, t)
+          |mrv ->
+            mrv2tuple mrv
+        |_ -> raise <| new System.Exception("Unexpected return type")
+
+      let transformedNativeParms = 
+        !nativeParms |> Map.map (fun k (_,f) -> (k, f np2sp))
+
+      let transformedSafeParms =
+        !safeParms |> Map.map (fun k (ty, f) -> (k, ty, Option.map (fun f -> f np2sp) f))
+
+      let orderedNativeParms=
+        parms |> List.map (fun (nname,_,_) -> Map.find nname transformedNativeParms)
+
+      let orderedSafeParms = 
+        List.concat [
+          // for each native parm add corresponding safe parm
+          parms |> List.map (fun (pname,_,_) -> pname) 
+            |> List.filter (fun pname -> Map.containsKey pname np2sp) 
+            |> List.map (fun pname -> let sname=Map.find pname np2sp in Map.find sname transformedSafeParms);
+          // add orphaned safe parms
+          transformedSafeParms |> Map.toList 
+            |> List.map snd 
+            |> List.filter (fun (sname,_,_) -> Map.forall (fun _ v -> v <> sname) np2sp)]
+
+      ([{ nativeName = nname
+          safeName = toSnake mname
+          unsafe = mannot=MAUnsafe
+          genericTypes = !genTypes
+          localVars = !localVars |> Map.map (fun _ (mut,rty,init) -> {mut=mut;ty=rty;initExpression=init(np2sp)}) 
+          nativeParms = orderedNativeParms
+          safeParms = orderedSafeParms
+          returnVal = returnVal
+          returnType = returnType
+          }, !warnings], !errors)
 
 // Removes TypeSelector annotation, generating specialized methods
-let preGenerateMethod ((mname, mannot, parms, rty) as methoddesc)=
+let preGenerateMethod ((mname, mannot, parms, rty : CTypeDesc) as methoddesc)=
   if mannot=MAIUnknown || mannot=MADontImplement then
     ""
   else
+    printfn "  Method %s" mname
     match parms |> List.tryFind (function |(_,TypeSelector _,_) -> true |_ ->false) with
     |Some (sname, TypeSelector (tname,slist), _) ->
       let sb=new System.Text.StringBuilder()
@@ -1104,8 +1234,17 @@ let preGenerateMethod ((mname, mannot, parms, rty) as methoddesc)=
         let routing=generateRouting gparms
         sb.AppendLine(generateMethod gparms) |> ignore
       sb.ToString()
+    |Some(_) ->
+      raise <| new System.Exception("Unreachable")
     |None ->
       let (routings,errors)=generateRouting (mname, mname, mannot, parms, rty)
+      for e in errors do
+        printfn "%s" e
+      for (routing,warnings) in routings do
+        for w in warnings do
+          printfn "WARNING: %s" w
+        let mtext=generateMethodFromRouting routing
+        printfn "%s" mtext
       generateMethod (mname, mname, mannot, parms, rty)
   
 
@@ -1212,6 +1351,7 @@ fn opt_slice_to_ptr<T>(os: Option<&[T]>) -> *const T {
       if iannot=IAManual then
         ()
       else
+        printfn "Interface %s" iname
         apl <| sprintf "\
 pub struct %s(*mut *mut I%sVtbl);
 
