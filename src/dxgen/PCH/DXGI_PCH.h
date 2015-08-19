@@ -141,3 +141,9 @@ typedef void* RPC_IF_HANDLE;
 #define _In_range_(a,b)                  __attribute__((annotate("InRange(" #a ", " #b ")")))
 #define _Field_size_(x)					 __attribute__((annotate("Fieldsize(" #x ")")))
 #define _Outptr_opt_result_bytebuffer_(b) __attribute__((annotate("OutptrOptResultBytebuffer")))
+#define _Outptr_opt_result_maybenull_	 __attribute__((annotate("OutptrOptResultMayBeNull")))
+#define _COM_Outptr_opt_result_maybenull_ __attribute__((annotate("COMOutptrOptResultMayBeNull")))
+#define _Always_(x) x
+//TODO: Add to cdesc
+#define _Field_size_full_(x) 
+#define _Field_size_bytes_full_(x) 

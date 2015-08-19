@@ -39,9 +39,15 @@ let main argv =
                 if header.Exists then Some(header) else None
 
             for header in codeModule.Headers do
-                let headerPath = (FileInfo(Path.Combine(sdkLocation, codeModule.IncludePath, header)))
+                let headerPath = 
+                  codeModule.IncludePaths 
+                    |> Seq.map (fun incPath -> FileInfo(Path.Combine(sdkLocation, incPath, header)))
+                    |> Seq.find (fun fi -> fi.Exists)
                 
-                let types = parse.parse headerPath precompiledHeader
+                let includePaths=
+                  codeModule.IncludePaths |> Seq.map (fun incPath -> Path.Combine(sdkLocation, incPath))
+
+                let types = parse.parse headerPath precompiledHeader includePaths
                 let ptext = sysgen.codeGen types
                 use sw=new System.IO.StreamWriter(@".\d3d12_sys.rs")
                 sw.Write(ptext)

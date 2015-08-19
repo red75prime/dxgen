@@ -508,7 +508,6 @@ let d3d12annotations=[
       ("BaseVertexLocation",ANone);
       ("StartInstanceLocation",ANone);
     ],MANone);
-//// ------------------------ Continue here -----------------------------------------------------
     ("Dispatch",[
       ("This",AThis);
       ("ThreadGroupCountX",ANone);
@@ -517,9 +516,9 @@ let d3d12annotations=[
     ],MANone);
     ("CopyBufferRegion",[
       ("This",AThis);
-      ("pDstBuffer",ANone);
+      ("pDstBuffer",InComPtr);
       ("DstOffset",ANone);
-      ("pSrcBuffer",ANone);
+      ("pSrcBuffer",InComPtr);
       ("SrcOffset",ANone);
       ("NumBytes",ANone);
     ],MANone);
@@ -530,30 +529,31 @@ let d3d12annotations=[
       ("DstY",ANone);
       ("DstZ",ANone);
       ("pSrc",ANone);
-      ("pSrcBox",ANone);
+      ("pSrcBox",InOptional);
     ],MANone);
     ("CopyResource",[
       ("This",AThis);
-      ("pDstResource",ANone);
-      ("pSrcResource",ANone);
+      ("pDstResource",InComPtr);
+      ("pSrcResource",InComPtr);
     ],MANone);
     ("CopyTiles",[
       ("This",AThis);
-      ("pTiledResource",ANone);
+      ("pTiledResource",InComPtr);
       ("pTileRegionStartCoordinate",ANone);
       ("pTileRegionSize",ANone);
-      ("pBuffer",ANone);
+      ("pBuffer",InComPtr);
       ("BufferStartOffsetInBytes",ANone);
       ("Flags",ANone);
     ],MANone);
     ("ResolveSubresource",[
       ("This",AThis);
-      ("pDstResource",ANone);
+      ("pDstResource",InComPtr);
       ("DstSubresource",ANone);
-      ("pSrcResource",ANone);
+      ("pSrcResource",InComPtr);
       ("SrcSubresource",ANone);
       ("Format",ANone);
     ],MANone);
+//// ------------------------ Continue here -----------------------------------------------------
     ("IASetPrimitiveTopology",[
       ("This",AThis);
       ("PrimitiveTopology",ANone);
@@ -955,7 +955,6 @@ let d3d12annotations=[
     ],MANone);
     ("GetDesc",[
       ("This",AThis);
-      ("__ret_val",OutReturn);
     ],MANone);
     ("GetGPUVirtualAddress",[
       ("This",AThis);
@@ -1005,6 +1004,723 @@ let d3d12annotations=[
     ("Close",[
       ("This",AThis);
       ("pData",ANone);
+    ],MANone);
+  ]);
+  ("IDXGIAdapter1Vtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("EnumOutputs",[
+      ("This",AThis);
+      ("Output",ANone);
+      ("ppOutput",ANone);
+    ],MANone);
+    ("GetDesc",[
+      ("This",AThis);
+      ("pDesc",ANone);
+    ],MANone);
+    ("CheckInterfaceSupport",[
+      ("This",AThis);
+      ("InterfaceName",ANone);
+      ("pUMDVersion",ANone);
+    ],MANone);
+    ("GetDesc1",[
+      ("This",AThis);
+      ("pDesc",ANone);
+    ],MANone);
+  ]);
+  ("IDXGIAdapterVtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("EnumOutputs",[
+      ("This",AThis);
+      ("Output",ANone);
+      ("ppOutput",ANone);
+    ],MANone);
+    ("GetDesc",[
+      ("This",AThis);
+      ("pDesc",ANone);
+    ],MANone);
+    ("CheckInterfaceSupport",[
+      ("This",AThis);
+      ("InterfaceName",ANone);
+      ("pUMDVersion",ANone);
+    ],MANone);
+  ]);
+  ("IDXGIDevice1Vtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("GetAdapter",[
+      ("This",AThis);
+      ("pAdapter",ANone);
+    ],MANone);
+    ("CreateSurface",[
+      ("This",AThis);
+      ("pDesc",ANone);
+      ("NumSurfaces",ANone);
+      ("Usage",ANone);
+      ("pSharedResource",ANone);
+      ("ppSurface",ANone);
+    ],MANone);
+    ("QueryResourceResidency",[
+      ("This",AThis);
+      ("ppResources",ANone);
+      ("pResidencyStatus",ANone);
+      ("NumResources",ANone);
+    ],MANone);
+    ("SetGPUThreadPriority",[
+      ("This",AThis);
+      ("Priority",ANone);
+    ],MANone);
+    ("GetGPUThreadPriority",[
+      ("This",AThis);
+      ("pPriority",ANone);
+    ],MANone);
+    ("SetMaximumFrameLatency",[
+      ("This",AThis);
+      ("MaxLatency",ANone);
+    ],MANone);
+    ("GetMaximumFrameLatency",[
+      ("This",AThis);
+      ("pMaxLatency",ANone);
+    ],MANone);
+  ]);
+  ("IDXGIDeviceSubObjectVtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("GetDevice",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppDevice",ANone);
+    ],MANone);
+  ]);
+  ("IDXGIDeviceVtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("GetAdapter",[
+      ("This",AThis);
+      ("pAdapter",ANone);
+    ],MANone);
+    ("CreateSurface",[
+      ("This",AThis);
+      ("pDesc",ANone);
+      ("NumSurfaces",ANone);
+      ("Usage",ANone);
+      ("pSharedResource",ANone);
+      ("ppSurface",ANone);
+    ],MANone);
+    ("QueryResourceResidency",[
+      ("This",AThis);
+      ("ppResources",ANone);
+      ("pResidencyStatus",ANone);
+      ("NumResources",ANone);
+    ],MANone);
+    ("SetGPUThreadPriority",[
+      ("This",AThis);
+      ("Priority",ANone);
+    ],MANone);
+    ("GetGPUThreadPriority",[
+      ("This",AThis);
+      ("pPriority",ANone);
+    ],MANone);
+  ]);
+  ("IDXGIFactory1Vtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("EnumAdapters",[
+      ("This",AThis);
+      ("Adapter",ANone);
+      ("ppAdapter",ANone);
+    ],MANone);
+    ("MakeWindowAssociation",[
+      ("This",AThis);
+      ("WindowHandle",ANone);
+      ("Flags",ANone);
+    ],MANone);
+    ("GetWindowAssociation",[
+      ("This",AThis);
+      ("pWindowHandle",ANone);
+    ],MANone);
+    ("CreateSwapChain",[
+      ("This",AThis);
+      ("pDevice",ANone);
+      ("pDesc",ANone);
+      ("ppSwapChain",ANone);
+    ],MANone);
+    ("CreateSoftwareAdapter",[
+      ("This",AThis);
+      ("Module",ANone);
+      ("ppAdapter",ANone);
+    ],MANone);
+    ("EnumAdapters1",[
+      ("This",AThis);
+      ("Adapter",ANone);
+      ("ppAdapter",ANone);
+    ],MANone);
+    ("IsCurrent",[
+      ("This",AThis);
+    ],MANone);
+  ]);
+  ("IDXGIFactoryVtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("EnumAdapters",[
+      ("This",AThis);
+      ("Adapter",ANone);
+      ("ppAdapter",ANone);
+    ],MANone);
+    ("MakeWindowAssociation",[
+      ("This",AThis);
+      ("WindowHandle",ANone);
+      ("Flags",ANone);
+    ],MANone);
+    ("GetWindowAssociation",[
+      ("This",AThis);
+      ("pWindowHandle",ANone);
+    ],MANone);
+    ("CreateSwapChain",[
+      ("This",AThis);
+      ("pDevice",ANone);
+      ("pDesc",ANone);
+      ("ppSwapChain",ANone);
+    ],MANone);
+    ("CreateSoftwareAdapter",[
+      ("This",AThis);
+      ("Module",ANone);
+      ("ppAdapter",ANone);
+    ],MANone);
+  ]);
+  ("IDXGIKeyedMutexVtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("GetDevice",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppDevice",ANone);
+    ],MANone);
+    ("AcquireSync",[
+      ("This",AThis);
+      ("Key",ANone);
+      ("dwMilliseconds",ANone);
+    ],MANone);
+    ("ReleaseSync",[
+      ("This",AThis);
+      ("Key",ANone);
+    ],MANone);
+  ]);
+  ("IDXGIObjectVtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+  ]);
+  ("IDXGIOutputVtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("GetDesc",[
+      ("This",AThis);
+      ("pDesc",ANone);
+    ],MANone);
+    ("GetDisplayModeList",[
+      ("This",AThis);
+      ("EnumFormat",ANone);
+      ("Flags",ANone);
+      ("pNumModes",ANone);
+      ("pDesc",ANone);
+    ],MANone);
+    ("FindClosestMatchingMode",[
+      ("This",AThis);
+      ("pModeToMatch",ANone);
+      ("pClosestMatch",ANone);
+      ("pConcernedDevice",ANone);
+    ],MANone);
+    ("WaitForVBlank",[
+      ("This",AThis);
+    ],MANone);
+    ("TakeOwnership",[
+      ("This",AThis);
+      ("pDevice",ANone);
+      ("Exclusive",ANone);
+    ],MANone);
+    ("ReleaseOwnership",[
+      ("This",AThis);
+    ],MANone);
+    ("GetGammaControlCapabilities",[
+      ("This",AThis);
+      ("pGammaCaps",ANone);
+    ],MANone);
+    ("SetGammaControl",[
+      ("This",AThis);
+      ("pArray",ANone);
+    ],MANone);
+    ("GetGammaControl",[
+      ("This",AThis);
+      ("pArray",ANone);
+    ],MANone);
+    ("SetDisplaySurface",[
+      ("This",AThis);
+      ("pScanoutSurface",ANone);
+    ],MANone);
+    ("GetDisplaySurfaceData",[
+      ("This",AThis);
+      ("pDestination",ANone);
+    ],MANone);
+    ("GetFrameStatistics",[
+      ("This",AThis);
+      ("pStats",ANone);
+    ],MANone);
+  ]);
+  ("IDXGIResourceVtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("GetDevice",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppDevice",ANone);
+    ],MANone);
+    ("GetSharedHandle",[
+      ("This",AThis);
+      ("pSharedHandle",ANone);
+    ],MANone);
+    ("GetUsage",[
+      ("This",AThis);
+      ("pUsage",ANone);
+    ],MANone);
+    ("SetEvictionPriority",[
+      ("This",AThis);
+      ("EvictionPriority",ANone);
+    ],MANone);
+    ("GetEvictionPriority",[
+      ("This",AThis);
+      ("pEvictionPriority",ANone);
+    ],MANone);
+  ]);
+  ("IDXGISurface1Vtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("GetDevice",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppDevice",ANone);
+    ],MANone);
+    ("GetDesc",[
+      ("This",AThis);
+      ("pDesc",ANone);
+    ],MANone);
+    ("Map",[
+      ("This",AThis);
+      ("pLockedRect",ANone);
+      ("MapFlags",ANone);
+    ],MANone);
+    ("Unmap",[
+      ("This",AThis);
+    ],MANone);
+    ("GetDC",[
+      ("This",AThis);
+      ("Discard",ANone);
+      ("phdc",ANone);
+    ],MANone);
+    ("ReleaseDC",[
+      ("This",AThis);
+      ("pDirtyRect",ANone);
+    ],MANone);
+  ]);
+  ("IDXGISurfaceVtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("GetDevice",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppDevice",ANone);
+    ],MANone);
+    ("GetDesc",[
+      ("This",AThis);
+      ("pDesc",ANone);
+    ],MANone);
+    ("Map",[
+      ("This",AThis);
+      ("pLockedRect",ANone);
+      ("MapFlags",ANone);
+    ],MANone);
+    ("Unmap",[
+      ("This",AThis);
+    ],MANone);
+  ]);
+  ("IDXGISwapChainVtbl",IAAutogen, "IUnknown", [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MANone);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",ANone);
+      ("pData",ANone);
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",ANone);
+    ],MANone);
+    ("GetDevice",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppDevice",ANone);
+    ],MANone);
+    ("Present",[
+      ("This",AThis);
+      ("SyncInterval",ANone);
+      ("Flags",ANone);
+    ],MANone);
+    ("GetBuffer",[
+      ("This",AThis);
+      ("Buffer",ANone);
+      ("riid",ANone);
+      ("ppSurface",ANone);
+    ],MANone);
+    ("SetFullscreenState",[
+      ("This",AThis);
+      ("Fullscreen",ANone);
+      ("pTarget",ANone);
+    ],MANone);
+    ("GetFullscreenState",[
+      ("This",AThis);
+      ("pFullscreen",ANone);
+      ("ppTarget",ANone);
+    ],MANone);
+    ("GetDesc",[
+      ("This",AThis);
+      ("pDesc",ANone);
+    ],MANone);
+    ("ResizeBuffers",[
+      ("This",AThis);
+      ("BufferCount",ANone);
+      ("Width",ANone);
+      ("Height",ANone);
+      ("NewFormat",ANone);
+      ("SwapChainFlags",ANone);
+    ],MANone);
+    ("ResizeTarget",[
+      ("This",AThis);
+      ("pNewTargetParameters",ANone);
+    ],MANone);
+    ("GetContainingOutput",[
+      ("This",AThis);
+      ("ppOutput",ANone);
+    ],MANone);
+    ("GetFrameStatistics",[
+      ("This",AThis);
+      ("pStats",ANone);
+    ],MANone);
+    ("GetLastPresentCount",[
+      ("This",AThis);
+      ("pLastPresentCount",ANone);
     ],MANone);
   ]);
   ("IUnknown",IAManual,"",[
@@ -1100,6 +1816,15 @@ let enum_annotations=
     ("D3D_TESSELLATOR_DOMAIN",EAEnum);
     ("D3D_TESSELLATOR_OUTPUT_PRIMITIVE",EAEnum);
     ("D3D_TESSELLATOR_PARTITIONING",EAEnum);
+    ("DXGI_ADAPTER_FLAG",EAFlags);
+    ("DXGI_COLOR_SPACE_TYPE",EAEnum);
+    ("DXGI_FORMAT",EAEnum);
+    ("DXGI_MODE_ROTATION",EAEnum);
+    ("DXGI_MODE_SCALING",EAEnum);
+    ("DXGI_MODE_SCANLINE_ORDER",EAEnum);
+    ("DXGI_RESIDENCY",EAEnum);
+    ("DXGI_SWAP_CHAIN_FLAG",EAFlags);
+    ("DXGI_SWAP_EFFECT",EAEnum);
     ("_D3D_CBUFFER_TYPE",EAEnum);
     ("_D3D_INCLUDE_TYPE",EAEnum);
     ("_D3D_PARAMETER_FLAGS",EAEnum);
@@ -1109,5 +1834,4 @@ let enum_annotations=
     ("_D3D_SHADER_VARIABLE_CLASS",EAEnum);
     ("_D3D_SHADER_VARIABLE_FLAGS",EAFlags);
     ("_D3D_SHADER_VARIABLE_TYPE",EAEnum);
-
       ] |> Map.ofList

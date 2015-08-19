@@ -19,9 +19,21 @@ let annotations (cursor:Cursor) =
   visitChildrenFS cursor annotationVisitor () |> ignore
   List.rev !annots
 
-let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) =
+open annotations
+open annotations_autogen
+
+let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq)=
   // Let's use clean C interface. Those fancy C++ classes with inheritance and whistles aren't good for rust codegen.
-  let options = [| "-x"; "c"; "-std=c11"; "-fms-extensions"; "-fms-compatiblity"; "-fmsc-version=1800" |]
+  let options = 
+    seq {
+       yield "-x"
+       yield "c"
+       yield "-std=c11"
+       yield "-fms-extensions"
+       yield "-fms-compatiblity"
+       yield "-fmsc-version=1800"
+       yield! includePaths |> Seq.map (fun p -> "-I"+p)
+    } |> Array.ofSeq
   let index = createIndex(0, 0)
 
   let pchTempLocation = Option.maybe {
@@ -126,6 +138,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     visitChildrenFS cursor parseFieldDecl () |> ignore
     Struct(List.rev !fields)
 
+  // main parser callback
   let rec childVisitor cursor _ _ =
     let cursorKind=getCursorKind cursor
 
@@ -149,7 +162,8 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       visitChildrenFS cursor childVisitor () |> ignore
 
     if cursorKind=CursorKind.StructDecl then
-      structs := !structs |> Map.add (cursor |> getCursorDisplayNameFS) (parseStruct cursor)
+      let structName=cursor |> getCursorDisplayNameFS
+      structs := !structs |> Map.add structName (parseStruct cursor)
 
     if cursorKind=CursorKind.FunctionDecl then
       funcs := !funcs |> Map.add (cursor |> getCursorSpellingFS) (parseFunction cursor (getCursorType cursor))

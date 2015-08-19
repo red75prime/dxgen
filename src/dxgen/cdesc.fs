@@ -29,31 +29,9 @@ type CCallingConv=
 
 let ccToRust (cc:CallingConv)=
   match cc with
-  |CallingConv.X86StdCall -> "\"stdcall\""
+  |CallingConv.X86StdCall -> "\"system\""
   |_ -> raise <| new System.Exception(sprintf "Unimplemented calling convention %A in ccToRust" cc)
 
-
-//#define _In_                             __attribute__((annotate("In")))
-//#define _In_z_                           __attribute__((annotate("InZ")))
-//#define _In_opt_                         __attribute__((annotate("InOpt")))
-//#define _Out_                            __attribute__((annotate("Out")))
-//#define _Out_opt_                        __attribute__((annotate("OutOpt")))
-//#define _Inout_                          __attribute__((annotate("InOut")))
-//#define _Inout_opt_                      __attribute__((annotate("InOutOpt")))
-//#define _In_reads_(x)					 __attribute__((annotate("InReads(" #x ")")))
-//#define _In_reads_opt_(x)				 __attribute__((annotate("InReadsOpt(" #x ")")))
-//#define _In_reads_bytes_(x)              __attribute__((annotate("InReadsBytes(" #x" )")))
-//#define _In_reads_bytes_opt_(x)          __attribute__((annotate("InReadsBytesOpt(" #x ")")))
-//#define _Inout_updates_bytes_(x)         __attribute__((annotate("InoutUpdatesBytes(" #x ")")))
-//#define _Out_writes_(x)			         __attribute__((annotate("OutWrites(" #x ")")))
-//#define _Out_writes_opt_(x) 			 __attribute__((annotate("OutWritesOpt(" #x ")")))
-//#define _Out_writes_bytes_(x)            __attribute__((annotate("OutWritesBytes(" #x ")")))
-//#define _Out_writes_to_opt_(size, count) __attribute__((annotate("OutWritesToOpt(" #size ", " #count")")))
-//#define _Out_writes_bytes_opt_(x)        __attribute__((annotate("OutWritesBytesOpt(" #x ")")))
-//#define _COM_Outptr_                     __attribute__((annotate("COMOutptr")))
-//#define _COM_Outptr_opt_                 __attribute__((annotate("COMOutptrOpt")))
-//#define _In_range_(a,b)                  __attribute__((annotate("InRange(" #a ", " #b ")")))
-//#define _Field_size_(x)					 __attribute__((annotate("Fieldsize(" #x ")")))
 
 type CParamAnnotation=
   | NoAnnotation
@@ -81,11 +59,14 @@ type CParamAnnotation=
   | FieldSize of string
   | OutptrOptResultBytebuffer
   | OutptrResultBytebuffer
+  | OutptrOptResultMayBeNull
+  | COMOutptrOptResultMayBeNull
 
 let isParamOptional pa=
   match pa with
   |InOpt |OutOpt |InOutOpt |InReadsOpt _ | InReadsBytesOpt _ |OutWritesOpt _ 
-  |OutWritesBytesOpt _ |OutWritesToOpt _ |COMOutptrOpt |OutptrOptResultBytebuffer -> true
+  |OutWritesBytesOpt _ |OutWritesToOpt _ |COMOutptrOpt |OutptrOptResultBytebuffer 
+  |COMOutptrOptResultMayBeNull |OutptrOptResultMayBeNull -> true
 
   |NoAnnotation |In |InZ |Out |InOut |InReads _ |InReadsBytes _ |InOutUpdatesBytes _ 
   |OutWrites _ |OutWritesBytes _ | OutWritesTo _ |COMOutptr |InRange _ 
@@ -103,6 +84,8 @@ let removeOpt pa=
   |OutWritesToOpt(p,c) -> OutWritesTo(p,c)
   |OutptrOptResultBytebuffer -> OutptrResultBytebuffer
   |COMOutptrOpt -> COMOutptr
+  |COMOutptrOptResultMayBeNull | OutptrOptResultMayBeNull -> 
+    raise <| new System.Exception("Cannot removeOpt on COMOutptrOptResultMayBeNull")
 
   |NoAnnotation |In |InZ |Out |InOut |InReads _ |InReadsBytes _ 
   |InOutUpdatesBytes _ |OutWrites _ |OutWritesBytes _ | OutWritesTo _ 

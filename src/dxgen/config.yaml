@@ -2,7 +2,8 @@
 modules:
 #    - name: dx_dxgi
 #      output-path: ../../dx_dxgi/src/
-#      include-path: ./Include/10.0.10069.0/shared/
+#      include-path: 
+#        - ./Include/10.0.10240.0/shared/
 #      precompiled-header: ./PCH/DXGI_PCH.h
 #      headers:
 #          - dxgitype.h
@@ -11,14 +12,17 @@ modules:
 
     - name: dx_d3d12
       output-path: ../../dx_dxgi/src/
-      include-path: ./Include/10.0.10240.0/um/
+      include-path: 
+        - ./Include/10.0.10240.0/um/
+        - ./Include/10.0.10240.0/shared/
       precompiled-header: ./PCH/DXGI_PCH.h
       headers:
           - d3d12.h
 
 #    - name: dx_d3dcompiler
 #      output-path: ../../dx_dxgi/src/
-#      include-path: ./Include/10.0.10069.0/um/
+#      include-path: 
+#         - ./Include/10.0.10240.0/um/
 #      precompiled-header: ./PCH/DXGI_PCH.h
 #      headers:
 #          - d3dcommon.h

@@ -14,7 +14,7 @@ type Module = {
     OutputPath : string
 
     [<YamlMember("include-path")>]
-    IncludePath : string
+    IncludePaths : string seq
 
     [<YamlMember("precompiled-header")>]
     PrecompileHeader : string
