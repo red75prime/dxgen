@@ -301,7 +301,7 @@ let generateMethodFromRouting
   let nativeInvocation=
     System.String.Concat(
       seq{
-        yield "((**self.0)."+nname+")("
+        yield "((*(*self.0).lpVtbl)."+nname+")("
         yield System.String.Join(", ", nparms |> List.toSeq |> Seq.map snd)
         yield ")"
       })
@@ -420,14 +420,14 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             // pass pointer to input data. Due to technical problems input data should be slice
             let gt=newGenType("")
             addSafeParm safeParmName (RBorrow(RSlice(RGeneric(gt,""))))
-            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ptr()") 
+            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ptr() as *const _") 
             if mannot<>MAUnsafe then
               addWarning (sprintf "%s parameter: ANone annotation applied to void pointer and method isn't marked as unsafe" pname)
           |Ptr(Primitive Void) ->
             // pass pointer to input data. Due to technical problems input data should be slice
             let gt=newGenType("")
             addSafeParm safeParmName (RMutBorrow(RSlice(RGeneric(gt,""))))
-            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_mut_ptr()") 
+            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_mut_ptr() as *mut _") 
             if mannot<>MAUnsafe then
               addWarning (sprintf "%s parameter: ANone annotation applied to void pointer and method isn't marked as unsafe" pname)
           |_ when isVoidPtr pty ->
@@ -445,7 +445,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             let locVar=getNextLocVar()
             addLocalVar locVar false (RType "Vec<u16>") (fun m -> "str_to_vec_u16("+safeParmName+")")
             addSafeParm safeParmName (RType "Cow<str>")
-            addNativeParm pname (Some(safeParmName)) (locVar+".as_ptr()")
+            addNativeParm pname (Some(safeParmName)) (locVar+".as_ptr() as LPCWSTR")
           |Ptr(Const(cty)) ->
             addSafeParm safeParmName (RBorrow(convertTypeToRustNoArray cty pannot))
             addNativeParm pname (Some(safeParmName)) safeParmName
@@ -464,20 +464,20 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         |[(rname, InOutOfSize _, _)] |[(rname, OutOfSize _, _)] |[(rname, InOfSize _, _)] ->
           // this parameter conveys the size of another parameter
           match pty with
-          |Ptr(Primitive _) |Ptr(TypedefRef _) ->
-            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "*"+safeParmName+" = mem::size_of_val("+(Map.find rname m)+")")
+          |Ptr((Primitive _) as uty) |Ptr((TypedefRef _) as uty) ->
+            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "*"+safeParmName+" = mem::size_of_val("+(Map.find rname m)+") as "+(tyToRust uty))
             addNativeParm pname (Some(safeParmName)) safeParmName
           |Primitive _ |TypedefRef _ ->
-            addNativeParmFun pname None (fun m -> "mem::size_of_val("+(Map.find rname m)+")")
+            addNativeParmFun pname None (fun m -> "mem::size_of_val("+(Map.find rname m)+") as "+(tyToRust pty))
           |_ -> addError ("Unexpected type for "+pname+", referent of [InOutOfSize]"+rname)
         |[(rname, InByteArrayOfSize (_, n), _)] ->
           // this parameter conveys the size of another parameter in n-byte units
           match pty with
-          |Ptr(Primitive _) |Ptr(TypedefRef _) ->
-            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "*"+safeParmName+" = mem::size_of_val("+(Map.find rname m)+")/"+n.ToString())
+          |Ptr((Primitive _) as uty) |Ptr((TypedefRef _) as uty) ->
+            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "*"+safeParmName+" = (mem::size_of_val("+(Map.find rname m)+")/"+n.ToString()+") as "+(tyToRust uty))
             addNativeParm pname (Some(safeParmName)) safeParmName
           |Primitive _ |TypedefRef _ ->
-            addNativeParmFun pname None (fun m -> "mem::size_of_val("+(Map.find rname m)+")/"+n.ToString())
+            addNativeParmFun pname None (fun m -> "(mem::size_of_val("+(Map.find rname m)+")/"+n.ToString()+") as "+(tyToRust pty))
           |_ -> addError ("Unexpected type for "+pname+", referent of [InOutOfSize]"+rname)
         |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) |(_,InComPtrArrayOfSize _,_) -> true |_ -> false)  ->
           // this parameter is the size of input array(s).
@@ -495,11 +495,11 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             fun m -> 
               " same_length(&["+System.String.Join(",",plist |> List.map(fun f -> f m))+"]).expect(\"Arrays must have equal sizes\")"
           match pty with
-          |Ptr(Primitive _) |Ptr(TypedefRef _) ->
-            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "let *"+safeParmName+" = "+(init m))
+          |Ptr((Primitive _) as uty) |Ptr((TypedefRef _) as uty) ->
+            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "let *"+safeParmName+" = "+(init m)+" as "+(tyToRust uty))
             addNativeParm pname (Some(safeParmName)) safeParmName
           |Primitive _ |TypedefRef _ ->
-            addNativeParmFun pname None init
+            addNativeParmFun pname None (fun m -> (init m)+" as "+(tyToRust pty))
           |_ -> addError ("Unexpected type for size of array parameter "+pname+". The type should be integer or pointer to integer.")
         |refs ->
           addError (sprintf "Unexpected references to parameter %s: %A" pname refs)
@@ -520,7 +520,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             match pannot with
             |InOptional ->
               addSafeParm safeParmName (ROption(RBorrow(convertTypeToRustNoArray cty pannot)))
-              addNativeParm pname (Some(safeParmName)) (safeParmName+".map(|p|p as *const _ as *const _).unwrap_or(ptr::null())")
+              addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())")
             |_ ->
               addError (sprintf "%s parameter: InOut parameter should be a pointer to non-const object" pname)
           |Ptr(cty) ->
@@ -529,15 +529,15 @@ let generateRouting (mname, nname, mannot, parms, rty)=
           |Array(cty,num) ->
             // C array in function parameters means pointer to first element of array
             addSafeParm safeParmName (RMutBorrow(RArray(convertTypeToRustNoArray cty pannot,num)))
-            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ptr()")
+            addNativeParm pname (Some(safeParmName)) (safeParmName)
           |_ -> 
             addSafeParm safeParmName (convertTypeToRustNoArray pty pannot)
             addNativeParm pname (Some(safeParmName)) safeParmName
         |[(rname, InOutOfSize _, _)] |[(rname, OutOfSize _, _)] |[(rname, InOfSize _, _)] |[(rname, InByteArrayOfSize _, _)] ->
           // this parameter conveys the size of another parameter
           match pty with
-          |Ptr(Primitive _) |Ptr(TypedefRef _) ->
-            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "*"+safeParmName+" = mem::size_of_val("+(Map.find rname m)+")")
+          |Ptr((Primitive _) as uty) |Ptr((TypedefRef _) as uty) ->
+            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "*"+safeParmName+" = mem::size_of_val("+(Map.find rname m)+") as "+(tyToRust uty))
             addNativeParm pname (Some(safeParmName)) safeParmName
           |_ -> addError (sprintf "%s parameter: Unexpected type" rname)
         |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) |(_,InComPtrArrayOfSize _,_) -> true |_ -> false)  ->
@@ -558,8 +558,8 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             fun m -> 
               " same_length(&["+System.String.Join(",",plist |> List.map(fun f -> f m))+"].expect(\"Arrays must have equal sizes\")"
           match pty with
-          |Ptr(Primitive _) |Ptr(TypedefRef _) ->
-            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "let *"+safeParmName+" = "+(init m))
+          |Ptr((Primitive _) as uty) |Ptr((TypedefRef _) as uty) ->
+            addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "let *"+safeParmName+" = "+(init m)+" as "+(tyToRust uty))
             addNativeParm pname (Some(safeParmName)) safeParmName
           |_ -> addError (sprintf "%s parameter: The type should be pointer to integer." pname)
         |refs ->
@@ -573,7 +573,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             //TODO: size of generic type should be divisible by n
             let gt=newGenType("")
             addSafeParm safeParmName (RBorrow(RSlice(RGeneric(gt,""))))
-            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ptr()") 
+            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ptr() as *const _") 
           |_ ->
             addError (sprintf "%s parameter: Unexpected type %A for [InByteArrayOfSize]. The type should be 'const void *'" pname pty)        
         |_ ->
@@ -609,7 +609,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
           match pty with
           |Ptr(uty) ->
             let lvtype=convertTypeToRustNoArray uty pannot
-            let lv=newLocalVar true lvtype (fun m -> (Map.find rname m)+".map(|v|mem::size_of_val(v)).unwrap_or(0)")
+            let lv=newLocalVar true lvtype (fun m -> (Map.find rname m)+".as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as "+(tyToRust uty))
             addNativeParm pname None ("&mut "+lv)
             addReturnExpression lv lvtype
           |_ ->
@@ -622,7 +622,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         |[] ->
           let gt=newGenType ""
           addSafeParm safeParmName (ROption(RMutBorrow(RGeneric(gt,""))))
-          addNativeParm pname (Some(safeParmName)) (safeParmName+".map(|v|v as *mut _ as *mut _).unwrap_or(ptr::null_mut())")
+          addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ref().map(|v|*v as *const _ as *mut _).unwrap_or(ptr::null_mut())")
         |_ ->
           addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -635,10 +635,10 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             match pannot with
             |InArrayOfSize _ |OutArrayOfSize _ |InOutArrayOfSize _ ->
               addSafeParm safeParmName (RMutBorrow(RSlice(ruty)))
-              addNativeParm pname (Some(safeParmName)) (safeParmName+".as_mut_ptr()")
+              addNativeParm pname (Some(safeParmName)) (safeParmName+".as_mut_ptr() as *mut _")
             |_ ->
               addSafeParm safeParmName (ROption(RMutBorrow(RSlice(ruty))))
-              addNativeParm pname (Some(safeParmName)) (safeParmName+".map(|p|p.as_mut_ptr()).unwrap_or(ptr::null_mut())") // TODO: Use FFI option optimization
+              addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ref().map(|p|p.as_mut_ptr()).unwrap_or(ptr::null_mut()) as *mut _") // TODO: Use FFI option optimization
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: Should have no refs. But they are %A" pname refs)
@@ -655,8 +655,8 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             // TODO: impement traits for interfaces
             let gt=newGenType "HasIID"
             addSafeParm safeParmName (RBorrow(RSlice(RBorrow(RGeneric(gt,"HasIID")))))
-            let lv=newLocalVar false (RVec(RMutPtr(RMutPtr(RType "IUnknownVtbl")))) (fun _ -> safeParmName+".iter().map(|o|o.expose_iptr()).collect()")
-            addNativeParm pname (Some(safeParmName)) (lv+".as_ptr() as *const *mut _ as *const *mut _")
+            let lv=newLocalVar true (RVec(RMutPtr(RType "IUnknown"))) (fun _ -> safeParmName+".iter().map(|o|o.iptr()).collect()")
+            addNativeParm pname (Some(safeParmName)) (lv+".as_mut_ptr() as *mut *mut _ as *mut *mut _")
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: Should have no refs. But they are %A" pname refs)
@@ -673,7 +673,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             let gt=newGenType "HasIID"
             let rty=RBorrow(RGeneric(gt,"HasIID"))
             addSafeParm safeParmName rty
-            addNativeParm pname (Some(safeParmName)) (safeParmName+".expose_iptr() as *mut *mut _ as *mut *mut _ ")
+            addNativeParm pname (Some(safeParmName)) (safeParmName+".iptr() as *mut _ as *mut _ ")
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: InComPtr shouldn't have references. But references are %A" pname refs)
@@ -688,7 +688,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             let iname=ciname.Substring(1,ciname.Length-1)
             let rty=ROption(RBorrow(RType iname))
             addSafeParm safeParmName rty
-            addNativeParm pname (Some(safeParmName)) (safeParmName+".map(|i|i.expose_iptr()).unwrap_or(ptr::null_mut()) as *mut *mut _ as *mut *mut _")
+            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ref().map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _")
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: InOptionalComPtr shouldn't have references. But references are %A" pname refs)
@@ -727,7 +727,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             // TODO: check pty. 
             let gt=newGenType "HasIID"
             let rty=RGeneric(gt, "HasIID")
-            let lv=newLocalVar true (RMutPtr(RMutPtr(RType "IUnknownVtbl"))) (fun m -> "ptr::null_mut()")
+            let lv=newLocalVar true (RMutPtr(RType "IUnknown")) (fun m -> "ptr::null_mut()")
             addNativeParm pname None ("&mut "+lv+" as *mut *mut _ as *mut *mut c_void")
             addNativeParm rname None (gt+"::iid()")
             addReturnExpression (gt+"::new("+lv+")") rty
@@ -742,7 +742,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
           |Ptr(uty) ->
             // TODO: check pty. 
             let rty=RType iname
-            let lv=newLocalVar true (RMutPtr(RMutPtr(RType "IUnknownVtbl"))) (fun m -> "ptr::null_mut()")
+            let lv=newLocalVar true (RMutPtr(RType "IUnknown")) (fun m -> "ptr::null_mut()")
             addNativeParm pname None ("&mut "+lv+" as *mut *mut _ as *mut *mut c_void")
             addNativeParm rname None (iname+"::iid()")
             addReturnExpression (iname+"::new("+lv+")") rty
@@ -927,7 +927,7 @@ let safeInterfaceGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,st
   |Some(interfaceAnnotations) ->
     let apl = appendLine sb
     apl "\
-use iid::{HasIID, HResult, IUnknownVtbl, release_com_ptr, clone_com_ptr};
+use iid::{HasIID, HResult, IUnknownVtbl, IUnknown, release_com_ptr, clone_com_ptr};
 use iid::iids::*;
 use d3d12_sys::*;
 use std::ptr;
@@ -997,14 +997,14 @@ fn opt_slice_to_ptr<T>(os: Option<&[T]>) -> *const T {
       if iannot=IAManual then
         ()
       else
-        printfn "Interface %s" iname
+        //printfn "Interface %s" iname
         apl <| sprintf "\
-pub struct %s(*mut *mut I%sVtbl);
+pub struct %s(*mut I%s);
 
 impl HasIID for %s {
   fn iid() -> &'static IID { &IID_I%s }
-  fn new(ppVtbl : *mut *mut IUnknownVtbl) -> Self { %s(ppVtbl as *mut *mut _ as *mut *mut I%sVtbl) }
-  fn expose_iptr(&self) -> *mut *mut IUnknownVtbl { self.0 as *mut *mut _ as  *mut *mut IUnknownVtbl}
+  fn new(ppVtbl : *mut IUnknown) -> Self { %s(ppVtbl as *mut _ as *mut I%s) }
+  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
 
 impl Drop for %s {

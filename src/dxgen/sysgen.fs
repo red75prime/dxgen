@@ -121,7 +121,11 @@ impl fmt::Debug for {0} {{
       apl ""
 
 
-  let libcTypeNames=Set.ofList ["BOOL";"LPCWSTR";"HMODULE";"GUID";"LARGE_INTEGER";"LPVOID";"WCHAR";"BYTE";"LPCVOID";"LONG_PTR";"WORD";"SIZE_T";"SECURITY_ATTRIBUTES";"HANDLE";"DWORD";"LPCSTR";"LONG"]
+  let libcTypeNames=Set.ofList ["BOOL";"LPCWSTR";"HMODULE"
+      ;"GUID";"LARGE_INTEGER";"LPVOID"
+      ;"WCHAR";"BYTE";"LPCVOID";"LONG_PTR";"WORD";"SIZE_T"
+      ;"SECURITY_ATTRIBUTES";"HANDLE";"DWORD";"LPCSTR";"LONG"
+      ;"IUnknown"]
   let createStructs (sb:System.Text.StringBuilder)=
     let apl s=sb.AppendLine(s) |> ignore
     for (name,sfields) in structs |> Seq.choose(function |KeyValue(name, Struct(sfields)) -> Some(name,sfields) |_ -> None) do
@@ -130,8 +134,7 @@ impl fmt::Debug for {0} {{
       else
         apl "#[allow(non_snake_case)]"
         apl "#[repr(C)]"
-        if List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields then
-          apl "#[derive(Debug)]"
+        let nonInterface=List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields
         if sfields.IsEmpty then
           sb.AppendFormat("pub struct {0};",name).AppendLine() |> ignore;
         else
@@ -139,7 +142,34 @@ impl fmt::Debug for {0} {{
           for (fname,fty) in sfields |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |_ -> None) do
             sb.AppendFormat("  pub {0} : {1},", fname, tyToRust fty).AppendLine() |> ignore
           sb.AppendLine("}").AppendLine() |> ignore
-  
+        if nonInterface then
+          let code=
+            sfields |>
+              Seq.map(
+                function
+                |CStructElem(fname,fty,None)->
+                  match fty with
+                  |CTypeDesc.Array(aty, n) ->
+                    seq {
+                      yield "    try!{write!(f,\"  "+fname+": [\")};"
+                      yield "    for i in (0.."+n.ToString()+") {try!{write!(f,\"{:?}; \", self."+fname+"[i])};}"
+                      yield "    try!{writeln!(f,\"]\")};"
+                    } |> fun sq -> System.String.Join(System.Environment.NewLine,sq)
+                  |_ ->
+                    "    try!{writeln!(f,\"  "+fname+": {:?}\", self."+fname+")};"
+                |_ -> ""
+                ) |> fun sq -> System.String.Join(System.Environment.NewLine,sq)
+          apl (@"
+impl fmt::Debug for {Struct} {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    writeln!(f,""struct {Struct} "");
+{Code}
+    writeln!(f,"""");
+    Ok(())
+  }
+}
+".Replace("{Struct}",name).Replace("{Code}",code)               )
+            
   let createTypes (sb:System.Text.StringBuilder)=
     for KeyValue(name,ty) in types do
       // Some types are defined in rust's libc module
@@ -180,6 +210,7 @@ impl fmt::Debug for {0} {{
 extern crate libc;
 use libc::*;
 use std::fmt;
+use iid::IUnknown;
 
 fn debug_fmt_enum(name : &str, val: u32, opts: &[(&str,u32)], f: &mut fmt::Formatter) -> fmt::Result {
   let mut p_opts=0u32;

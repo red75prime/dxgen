@@ -84,20 +84,12 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             |_ -> raise <| new System.Exception("Multiple annotations")
         let (pname,ptype,pannot)=(getCursorDisplayNameFS cursor, getCursorType cursor |> typeDesc, cannot)
         let pdesc=
-          match pname with
-          |"This" ->
-            match ptype with
-            |Ptr(TypedefRef s) ->
-              (pname, Ptr(Ptr(TypedefRef (s+"Vtbl"))), pannot)
-            |_ ->
-              (pname, ptype, pannot)
-          |_ ->
-            match ptype with
-            |Array(_,_) as arr -> (pname, Ptr(arr), pannot)
-            |Ptr(TypedefRef "IUnknown")
-            |Ptr(Const(TypedefRef "IUnknown")) ->
-               (pname, Ptr(Ptr(Primitive Void)), pannot)
-            |_ -> (pname, ptype, pannot)
+          match ptype with
+          |Array(_,_) as arr -> (pname, Ptr(arr), pannot)
+//          |Ptr(TypedefRef "IUnknown")
+//          |Ptr(Const(TypedefRef "IUnknown")) ->
+//              (pname, Ptr(Ptr(Primitive Void)), pannot)
+          |_ -> (pname, ptype, pannot)
         args := pdesc :: !args
       ChildVisitResult.Continue
     visitChildrenFS cursor argsVisitor () |> ignore
