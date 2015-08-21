@@ -12,6 +12,9 @@ use d3d12_sys::*;
 use create_device::d3d12_create_device;
 use iid::HasIID;
 
+#[link(name="d3d12")]
+#[link(name="dxguid")]
+extern {}
 
 fn main() {
   let dev=match d3d12_create_device(D3D_FEATURE_LEVEL_11_1) {
@@ -35,7 +38,7 @@ fn main() {
      return;
     },
   };
-  println!("{:?}", ca.expose_iptr());
+  println!("{:?}", ca.iptr());
 
   let cqd=D3D12_COMMAND_QUEUE_DESC { Type : D3D12_COMMAND_LIST_TYPE_DIRECT, ..Default::default() };
   let cq=match dev.create_command_queue(&cqd) {
@@ -45,7 +48,7 @@ fn main() {
      return;
     },
   };
-  println!("{:?}", cq.expose_iptr());
+  println!("{:?}", cq.iptr());
  
 }
 

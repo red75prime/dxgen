@@ -120,12 +120,12 @@ impl fmt::Debug for {0} {{
       apl ""
       apl ""
 
-
   let libcTypeNames=Set.ofList ["BOOL";"LPCWSTR";"HMODULE"
       ;"GUID";"LARGE_INTEGER";"LPVOID"
       ;"WCHAR";"BYTE";"LPCVOID";"LONG_PTR";"WORD";"SIZE_T"
       ;"SECURITY_ATTRIBUTES";"HANDLE";"DWORD";"LPCSTR";"LONG"
       ;"IUnknown"]
+// ----------------- Create structs ----------------------------------
   let createStructs (sb:System.Text.StringBuilder)=
     let apl s=sb.AppendLine(s) |> ignore
     for (name,sfields) in structs |> Seq.choose(function |KeyValue(name, Struct(sfields)) -> Some(name,sfields) |_ -> None) do
@@ -135,6 +135,8 @@ impl fmt::Debug for {0} {{
         apl "#[allow(non_snake_case)]"
         apl "#[repr(C)]"
         let nonInterface=List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields
+        if nonInterface && (match Map.tryFind name d3d12structs with |Some(flag,_) when flag &&& StructFlags.DeriveDefault <> StructFlags.None -> true |_ -> false  ) then
+          apl "#[derive(Default)]"
         if sfields.IsEmpty then
           sb.AppendFormat("pub struct {0};",name).AppendLine() |> ignore;
         else
@@ -187,13 +189,13 @@ impl fmt::Debug for {Struct} {
   let createFunctions (sb:System.Text.StringBuilder)=
      // TODO: use 
     for (name,args,rty,cc) in funcs |> Seq.choose (function |KeyValue(name, Function(CFuncDesc(args,rty,cc))) -> Some(name,args,rty,cc) |_ -> None) do
-      sb.AppendLine("#[link(name=\"d3d12\")]") |> ignore       
+      //sb.AppendLine("#[link(name=\"d3d12\")]") |> ignore       
       sb.AppendFormat("extern {3} {{ pub fn {0}({1}) -> {2}; }}",name,((List.map funcArgToRust args) |> String.concat(", ")),(tyToRust rty), (ccToRust cc)).AppendLine() |> ignore
     sb.AppendLine("").AppendLine() |> ignore
 
   let createIIDs (sb:System.Text.StringBuilder)=
     let apl s=sb.AppendLine(s) |> ignore
-    apl "#[link(name=\"dxguid\")]"
+    //apl "#[link(name=\"dxguid\")]"
     apl "extern {"
     for iid in iids do
       sb.AppendFormat("  pub static {0}: IID;",iid).AppendLine() |> ignore
@@ -241,9 +243,21 @@ fn debug_fmt_enum(name : &str, val: u32, opts: &[(&str,u32)], f: &mut fmt::Forma
   Ok(())
 }
 "
+
+  for KeyValue(sn,st) in structs do
+    match st with
+    |Struct(ses) ->
+      if ses |> List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ -> true) then
+        printfn "  (\"%s\",StructFlags.None,[" sn
+        for CStructElem(fname,_,_) in ses do
+          printfn "    (\"%s\",FANone);" fname
+        printfn "    ]);"
+    |_ -> ()
+
   createEnums sb
   createTypes sb
   createStructs sb
   createIIDs sb
   createFunctions sb
   sb.ToString()
+

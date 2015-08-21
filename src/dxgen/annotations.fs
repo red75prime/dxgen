@@ -158,3 +158,16 @@ type MethodAnnotation=
 type EnumAnnotation=
   |EAFlags
   |EAEnum
+
+[<System.FlagsAttribute>]
+type StructFlags=
+  |None=0
+  |DeriveDefault=1
+  |DeriveDebug=2
+  |DeriveCopy=4
+
+type FieldAnnotation=
+  |FANone
+
+type StructAnnotation=StructFlags*((string*FieldAnnotation) list)
+  

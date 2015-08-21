@@ -22,48 +22,53 @@ pub type REFGUID=&'static GUID;
 
 pub type HResult<T>=Result<T, HRESULT>;
 
-#[allow(non_snake_case)}
+#[allow(non_snake_case)]
 #[repr(C)]
 pub struct IUnknownVtbl {
-  QueryInterface : extern "system" fn (This : *mut *mut IUnknownVtbl, riid : REFGUID, ppvObject : *mut *mut c_void) -> HRESULT,
-  AddRef : extern "system" fn (This : *mut *mut IUnknownVtbl) -> ULONG,
-  Release : extern "system" fn (This : *mut *mut IUnknownVtbl) -> ULONG,
+  QueryInterface : extern "system" fn (This : *mut IUnknown, riid : REFGUID, ppvObject : *mut *mut c_void) -> HRESULT,
+  AddRef : extern "system" fn (This : *mut IUnknown) -> ULONG,
+  Release : extern "system" fn (This : *mut IUnknown) -> ULONG,
+}
+
+#[repr(C)]
+pub struct IUnknown {
+  lpVtbl : *mut IUnknownVtbl,
 }
 
 pub trait HasIID {
   fn iid() -> REFGUID;
-  fn new(ppVtbl : *mut *mut IUnknownVtbl) -> Self;
-  fn expose_iptr(&self) -> *mut *mut IUnknownVtbl;
+  fn new(ppVtbl : *mut IUnknown) -> Self;
+  fn iptr(&self) -> *mut IUnknown;
 }
 
-struct UnknownPtr(*mut *mut IUnknownVtbl);
+struct UnknownPtr(*mut IUnknown);
 
 impl HasIID for UnknownPtr {
   fn iid() -> REFGUID { &iids::IID_IUnknown }
-  fn new(pp_vtbl : *mut *mut IUnknownVtbl) -> Self {
+  fn new(pp_vtbl : *mut IUnknown) -> Self {
     UnknownPtr(pp_vtbl)
   }
-  fn expose_iptr(&self) -> *mut *mut IUnknownVtbl {
+  fn iptr(&self) -> *mut IUnknown {
     self.0
   }
 }
 
 pub fn release_com_ptr<T:HasIID>(obj : &mut T) {
-  let iunk=obj.expose_iptr();
+  let iunk=obj.iptr();
   if iunk==::std::ptr::null_mut() {
     // 
   } else {
     unsafe {
-      ((**iunk).Release)(iunk);
+      ((*(*iunk).lpVtbl).Release)(iunk);
     }
   }
 }
 
 pub fn clone_com_ptr<T:HasIID>(obj: &T) -> T {
-  let iunk=obj.expose_iptr();
+  let iunk=obj.iptr();
   let ret=T::new(iunk);
   unsafe {
-    ((**iunk).AddRef)(iunk);
+    ((*(*iunk).lpVtbl).AddRef)(iunk);
   }
   ret
 }
@@ -86,13 +91,13 @@ pub trait QueryInterface {
 
 impl<T:HasIID> QueryInterface for T {
   fn query_interface<O:HasIID>(&self) -> HResult<O> {
-    let iunk=self.expose_iptr();
-    let mut ounk : *mut IUnknownVtbl=::std::ptr::null_mut();
+    let iunk=self.iptr();
+    let mut ounk : *mut IUnknown=::std::ptr::null_mut();
     let hr=unsafe {
-      ((**iunk).QueryInterface)(iunk, O::iid(), &mut ounk as *mut *mut _ as *mut *mut c_void)
+      ((*(*iunk).lpVtbl).QueryInterface)(iunk, O::iid(), &mut ounk as *mut *mut _ as *mut *mut c_void)
     };
     if hr==0 {
-      Ok(O::new(&mut ounk))
+      Ok(O::new(ounk))
     } else {
       Err(hr)
     }

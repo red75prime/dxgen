@@ -622,7 +622,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         |[] ->
           let gt=newGenType ""
           addSafeParm safeParmName (ROption(RMutBorrow(RGeneric(gt,""))))
-          addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ref().map(|v|*v as *const _ as *mut _).unwrap_or(ptr::null_mut())")
+          addNativeParm pname (Some(safeParmName)) (safeParmName+".map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())")
         |_ ->
           addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -638,7 +638,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
               addNativeParm pname (Some(safeParmName)) (safeParmName+".as_mut_ptr() as *mut _")
             |_ ->
               addSafeParm safeParmName (ROption(RMutBorrow(RSlice(ruty))))
-              addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ref().map(|p|p.as_mut_ptr()).unwrap_or(ptr::null_mut()) as *mut _") // TODO: Use FFI option optimization
+              addNativeParm pname (Some(safeParmName)) ("opt_arr_as_mut_ptr("+safeParmName+") as *mut _") // TODO: Use FFI option optimization
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: Should have no refs. But they are %A" pname refs)
@@ -688,7 +688,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             let iname=ciname.Substring(1,ciname.Length-1)
             let rty=ROption(RBorrow(RType iname))
             addSafeParm safeParmName rty
-            addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ref().map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _")
+            addNativeParm pname (Some(safeParmName)) (safeParmName+".map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _")
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: InOptionalComPtr shouldn't have references. But references are %A" pname refs)
@@ -939,6 +939,10 @@ use std::os::windows::ffi::OsStrExt;
 
 fn os_str_to_vec_u16(s : &OsStr) -> Vec<u16> {
   s.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
+}
+
+fn opt_arr_as_mut_ptr<T>(opt: Option<&mut [T]>) -> *mut T {
+  opt.as_ref().map(|v|(*v).as_ptr() as *mut _).unwrap_or(ptr::null_mut())
 }
 
 fn str_to_vec_u16(s : Cow<str>) -> Vec<u16> {
