@@ -77,9 +77,9 @@
     <Compile Include="SDKLocator.fs" />
     <Compile Include="ModuleBuilder.fs" />
     <Compile Include="Configuration.fs" />
+    <Compile Include="cdesc.fs" />
     <Compile Include="annotations.fs" />
     <Compile Include="annotations_autogen.fs" />
-    <Compile Include="cdesc.fs" />
     <Compile Include="salParser.fs" />
     <Compile Include="rustdesc.fs" />
     <Compile Include="parse.fs" />

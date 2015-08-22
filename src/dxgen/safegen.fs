@@ -524,12 +524,24 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             |_ ->
               addError (sprintf "%s parameter: InOut parameter should be a pointer to non-const object" pname)
           |Ptr(cty) ->
-            addSafeParm safeParmName (RMutBorrow(convertTypeToRustNoArray cty pannot))
-            addNativeParm pname (Some(safeParmName)) safeParmName
+            match pannot with 
+            |InOut ->
+              addSafeParm safeParmName (RMutBorrow(convertTypeToRustNoArray cty pannot))
+              addNativeParm pname (Some(safeParmName)) safeParmName
+            |InOutOptional |InOptional |OutOptional -> 
+              addSafeParm safeParmName (ROption(RMutBorrow(convertTypeToRustNoArray cty pannot)))
+              addNativeParm pname (Some(safeParmName)) ("opt_as_mut_ptr(&"+safeParmName+")")
+            |_ -> raise <| new System.Exception("Unreachable")
           |Array(cty,num) ->
             // C array in function parameters means pointer to first element of array
-            addSafeParm safeParmName (RMutBorrow(RArray(convertTypeToRustNoArray cty pannot,num)))
-            addNativeParm pname (Some(safeParmName)) (safeParmName)
+            match pannot with 
+            |InOut ->
+              addSafeParm safeParmName (RMutBorrow(RArray(convertTypeToRustNoArray cty pannot,num)))
+              addNativeParm pname (Some(safeParmName)) (safeParmName)
+            |InOutOptional |InOptional |OutOptional -> 
+              addSafeParm safeParmName (ROption((RMutBorrow(RArray(convertTypeToRustNoArray cty pannot,num)))))
+              addNativeParm pname (Some(safeParmName)) ("opt_as_mut_ptr(&"+safeParmName+")")
+            |_ -> raise <| new System.Exception("Unreachable")
           |_ -> 
             addSafeParm safeParmName (convertTypeToRustNoArray pty pannot)
             addNativeParm pname (Some(safeParmName)) safeParmName
@@ -638,7 +650,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
               addNativeParm pname (Some(safeParmName)) (safeParmName+".as_mut_ptr() as *mut _")
             |_ ->
               addSafeParm safeParmName (ROption(RMutBorrow(RSlice(ruty))))
-              addNativeParm pname (Some(safeParmName)) ("opt_arr_as_mut_ptr("+safeParmName+") as *mut _") // TODO: Use FFI option optimization
+              addNativeParm pname (Some(safeParmName)) ("opt_arr_as_mut_ptr(&"+safeParmName+") as *mut _") // TODO: Use FFI option optimization
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: Should have no refs. But they are %A" pname refs)
@@ -852,20 +864,14 @@ let preGenerateMethod ((mname, mannot, parms, rty : CTypeDesc) as methoddesc)=
       |Some (sname, TypeSelector (tname,slist), _) ->
         slist |> 
           List.map (
-            fun (suffix, sval, stype) -> 
+            fun (suffix, sval, stype, sannot) -> 
               let parms1=
                 parms |> List.map
                   (fun (pname, pannot, pty) -> 
                     if pname=sname then
                       (pname, AConst sval, pty)
                     else if pname=tname then
-                      match pty with
-                      |Ptr(Const(_)) ->
-                        (pname, pannot, Ptr(Const(StructRef stype))) //Const (Ptr (TypedefRef stype)))
-                      |Ptr _ ->
-                        (pname, pannot, Ptr(StructRef stype)) //Ptr (TypedefRef stype))
-                      |_ ->
-                        raise <| new System.Exception(sprintf "Unexpeсted type %A of type-selected parameter" pty)
+                        (pname, sannot, stype) //Const (Ptr (TypedefRef stype)))
                     else
                       (pname, pannot, pty)
                   )
@@ -941,8 +947,12 @@ fn os_str_to_vec_u16(s : &OsStr) -> Vec<u16> {
   s.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
 }
 
-fn opt_arr_as_mut_ptr<T>(opt: Option<&mut [T]>) -> *mut T {
+fn opt_arr_as_mut_ptr<T>(opt: &Option<&mut [T]>) -> *mut T {
   opt.as_ref().map(|v|(*v).as_ptr() as *mut _).unwrap_or(ptr::null_mut())
+}
+
+fn opt_as_mut_ptr<T>(opt: &Option<&mut T>) -> *mut T {
+  opt.as_ref().map(|v|*v as *const _ as *mut _).unwrap_or(ptr::null_mut())
 }
 
 fn str_to_vec_u16(s : Cow<str>) -> Vec<u16> {

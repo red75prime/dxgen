@@ -1,5 +1,6 @@
 ﻿module annotations_autogen
 open annotations
+open cdesc  
 
 let (++) xs ys=
   List.concat [xs;ys]
@@ -253,12 +254,12 @@ let d3d12annotations=[
     ],MANone);
     ("CheckFeatureSupport",[
       ("This",AThis);
-      ("Feature",TypeSelector("pFeatureSupportData",[("Options","D3D12_FEATURE_D3D12_OPTIONS","D3D12_FEATURE_DATA_D3D12_OPTIONS");
-                                                     ("Arch","D3D12_FEATURE_ARCHITECTURE","D3D12_FEATURE_DATA_ARCHITECTURE");
-                                                     ("FeatureLevels","D3D12_FEATURE_FEATURE_LEVELS","D3D12_FEATURE_DATA_FEATURE_LEVELS");
-                                                     ("FormatSupport","D3D12_FEATURE_FORMAT_SUPPORT","D3D12_FEATURE_DATA_FORMAT_SUPPORT");
-                                                     ("MultisampleQualityLevels","D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS","D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS");
-                                                     ("FormatInfo","D3D12_FEATURE_FORMAT_INFO","D3D12_FEATURE_DATA_FORMAT_INFO");
+      ("Feature",TypeSelector("pFeatureSupportData",[("Options","D3D12_FEATURE_D3D12_OPTIONS",Ptr(StructRef "D3D12_FEATURE_DATA_D3D12_OPTIONS"), InOutOfSize "FeatureSupportDataSize");
+                                                     ("Arch","D3D12_FEATURE_ARCHITECTURE",Ptr(StructRef "D3D12_FEATURE_DATA_ARCHITECTURE"), InOutOfSize "FeatureSupportDataSize");
+                                                     ("FeatureLevels","D3D12_FEATURE_FEATURE_LEVELS",Ptr(StructRef "D3D12_FEATURE_DATA_FEATURE_LEVELS"), InOutOfSize "FeatureSupportDataSize");
+                                                     ("FormatSupport","D3D12_FEATURE_FORMAT_SUPPORT",Ptr(StructRef "D3D12_FEATURE_DATA_FORMAT_SUPPORT"), InOutOfSize "FeatureSupportDataSize");
+                                                     ("MultisampleQualityLevels","D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS",Ptr(StructRef "D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS"), InOutOfSize "FeatureSupportDataSize");
+                                                     ("FormatInfo","D3D12_FEATURE_FORMAT_INFO",Ptr(StructRef "D3D12_FEATURE_DATA_FORMAT_INFO"), InOutOfSize "FeatureSupportDataSize");
                                                      ]));
       ("pFeatureSupportData",InOutOfSize "FeatureSupportDataSize");
       ("FeatureSupportDataSize",ANone);
@@ -553,7 +554,6 @@ let d3d12annotations=[
       ("SrcSubresource",ANone);
       ("Format",ANone);
     ],MANone);
-//// ------------------------ Continue here -----------------------------------------------------
     ("IASetPrimitiveTopology",[
       ("This",AThis);
       ("PrimitiveTopology",ANone);
@@ -561,16 +561,16 @@ let d3d12annotations=[
     ("RSSetViewports",[
       ("This",AThis);
       ("NumViewports",ANone);
-      ("pViewports",ANone);
+      ("pViewports",InArrayOfSize "NumViewports");
     ],MANone);
     ("RSSetScissorRects",[
       ("This",AThis);
       ("NumRects",ANone);
-      ("pRects",ANone);
+      ("pRects",InArrayOfSize "NumRects");
     ],MANone);
     ("OMSetBlendFactor",[
       ("This",AThis);
-      ("BlendFactor",ANone);
+      ("BlendFactor",InOptional);
     ],MANone);
     ("OMSetStencilRef",[
       ("This",AThis);
@@ -578,16 +578,16 @@ let d3d12annotations=[
     ],MANone);
     ("SetPipelineState",[
       ("This",AThis);
-      ("pPipelineState",ANone);
+      ("pPipelineState",InComPtr);
     ],MANone);
     ("ResourceBarrier",[
       ("This",AThis);
       ("NumBarriers",ANone);
-      ("pBarriers",ANone);
+      ("pBarriers",InArrayOfSize "NumBarriers");
     ],MANone);
     ("ExecuteBundle",[
       ("This",AThis);
-      ("pCommandList",ANone);
+      ("pCommandList",InComPtr);
     ],MANone);
     ("SetDescriptorHeaps",[
       ("This",AThis);
@@ -596,11 +596,11 @@ let d3d12annotations=[
     ],MANone);
     ("SetComputeRootSignature",[
       ("This",AThis);
-      ("pRootSignature",ANone);
+      ("pRootSignature",InComPtr);
     ],MANone);
     ("SetGraphicsRootSignature",[
       ("This",AThis);
-      ("pRootSignature",ANone);
+      ("pRootSignature",InComPtr);
     ],MANone);
     ("SetComputeRootDescriptorTable",[
       ("This",AThis);
@@ -670,26 +670,29 @@ let d3d12annotations=[
     ],MANone);
     ("IASetIndexBuffer",[
       ("This",AThis);
-      ("pView",ANone);
+      ("pView",InOptional);
     ],MANone);
     ("IASetVertexBuffers",[
       ("This",AThis);
       ("StartSlot",ANone);
       ("NumViews",ANone);
-      ("pViews",ANone);
+      ("pViews",InOptionalArrayOfSize "NumViews");
     ],MANone);
     ("SOSetTargets",[
       ("This",AThis);
       ("StartSlot",ANone);
       ("NumViews",ANone);
-      ("pViews",ANone);
+      ("pViews",InOptionalArrayOfSize "NumViews");
     ],MANone);
+//// ------------------------ Continue here -----------------------------------------------------
     ("OMSetRenderTargets",[
       ("This",AThis);
       ("NumRenderTargetDescriptors",ANone);
       ("pRenderTargetDescriptors",ANone);
-      ("RTsSingleHandleToDescriptorRange",ANone);
-      ("pDepthStencilDescriptor",ANone);
+      ("RTsSingleHandleToDescriptorRange", 
+        TypeSelector("pRenderTargetDescriptors",[("","TRUE",Ptr(Const(StructRef "D3D12_CPU_DESCRIPTOR_HANDLE")),ANone);
+                                                 ("Arr","FALSE",Ptr(Const(StructRef "D3D12_CPU_DESCRIPTOR_HANDLE")),InArrayOfSize "NumRenderTargetDescriptors");]));
+      ("pDepthStencilDescriptor",InOptional);
     ],MANone);
     ("ClearDepthStencilView",[
       ("This",AThis);

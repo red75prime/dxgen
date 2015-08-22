@@ -97,7 +97,7 @@ type ParamAnnotation=
   |InComPtr
   |InOptionalComPtr
   |OutOptional
-  |TypeSelector of string*((string*string*string) list) // name of parameter that controls type of this parameter, list of triples (function suffix, selector value, type)
+  |TypeSelector of string*((string*string*cdesc.CTypeDesc*ParamAnnotation) list) // name of parameter that controls type of this parameter, list of triples (function suffix, selector value, type)
   |AConst of string // Don't use as annotation. For internal use.
 
 let getReferencedParameters parameterAnnotation=
