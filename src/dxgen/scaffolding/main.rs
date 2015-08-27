@@ -9,11 +9,12 @@ mod d3d12;
 mod create_device;
 
 use d3d12_sys::*;
-use create_device::d3d12_create_device;
+use create_device::*;
 use iid::HasIID;
 
 #[link(name="d3d12")]
 #[link(name="dxguid")]
+#[link(name="dxgi")]
 extern {}
 
 fn main() {
@@ -50,5 +51,23 @@ fn main() {
   };
   println!("{:?}", cq.iptr());
  
+  if let Ok(factory)=create_dxgi_factory1() {
+    if let Ok(adapter0)=factory.enum_adapters1(0) {
+      if let Ok(output0)=adapter0.enum_outputs(0) {
+        for fnum in 0..130 {
+          let format=DXGI_FORMAT(fnum);
+          let num_modes=output0.get_display_mode_list(format, 0, None).unwrap();
+          if num_modes!=0 {
+            println!("Num modes: {} for {:?}", num_modes, format);
+            let mut modes=vec![DXGI_MODE_DESC::default(); num_modes as usize];
+            output0.get_display_mode_list(format, 0, Some(&mut modes[..]));
+            for mode in modes {
+              println!("{:?}", mode);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 

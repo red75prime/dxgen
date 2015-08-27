@@ -2,7 +2,7 @@
 
 open SharpYaml.Serialization
 
-[<CLIMutable>]
+[<CLIMutable>][<NoComparison>]
 type Module = {
     [<YamlMember("name")>]
     Name : string
@@ -20,7 +20,7 @@ type Module = {
     PrecompileHeader : string
 }
 
-[<CLIMutable>]
+[<CLIMutable>][<NoComparison>]
 type Configuration = {
     [<YamlMember("modules")>]
     Modules : Module seq

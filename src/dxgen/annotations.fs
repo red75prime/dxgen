@@ -95,6 +95,7 @@ type ParamAnnotation=
   |InByteArrayOfSize of string*uint32 // name of array lenght parameter
   |InOptional
   |InComPtr
+  |OutReturnComPtr
   |InOptionalComPtr
   |OutOptional
   |TypeSelector of string*((string*string*cdesc.CTypeDesc*ParamAnnotation) list) // name of parameter that controls type of this parameter, list of triples (function suffix, selector value, type)
@@ -137,6 +138,7 @@ let getReturnDesc parmAnnot=
   |OutReturnCombine _ -> [parmAnnot]
   |OutReturnInterface _ -> [parmAnnot]
   |OutReturnKnownInterface _ -> [parmAnnot]
+  |OutReturnComPtr -> [parmAnnot]
   |InIUnknown -> []
   |InOptionalArrayOfSize _ -> []
   |InArrayOfSize _ -> []

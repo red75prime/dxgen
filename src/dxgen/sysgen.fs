@@ -137,6 +137,8 @@ impl fmt::Debug for {0} {{
         let nonInterface=List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields
         if nonInterface && (match Map.tryFind name d3d12structs with |Some(flag,_) when flag &&& StructFlags.DeriveDefault <> StructFlags.None -> true |_ -> false  ) then
           apl "#[derive(Default)]"
+        if nonInterface && (match Map.tryFind name d3d12structs with |Some(flag,_) when flag &&& StructFlags.DeriveCopy <> StructFlags.None -> true |_ -> false  ) then
+          apl "#[derive(Clone,Copy)]"
         if sfields.IsEmpty then
           sb.AppendFormat("pub struct {0};",name).AppendLine() |> ignore;
         else
@@ -164,13 +166,12 @@ impl fmt::Debug for {0} {{
           apl (@"
 impl fmt::Debug for {Struct} {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    writeln!(f,""struct {Struct} "");
+    try!{writeln!(f,""struct {Struct} "")};
 {Code}
-    writeln!(f,"""");
-    Ok(())
+    writeln!(f,"""")
   }
 }
-".Replace("{Struct}",name).Replace("{Code}",code)               )
+".Replace("{Struct}",name).Replace("{Code}",code) )
             
   let createTypes (sb:System.Text.StringBuilder)=
     for KeyValue(name,ty) in types do

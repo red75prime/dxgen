@@ -51,6 +51,7 @@ let (>>+) p1 p2=
 
 // anyexcP ::= any character except '(' and ')'
 // pmatch ::= {anyexcP} | {anyexcP} '(' pmatch ')' pmatch
+#nowarn "21"
 let rec pmatch=
   parser{
     let! v=manyS ibChars

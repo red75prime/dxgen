@@ -41,12 +41,12 @@ pub trait HasIID {
   fn iptr(&self) -> *mut IUnknown;
 }
 
-struct UnknownPtr(*mut IUnknown);
+pub struct Unknown(*mut IUnknown);
 
-impl HasIID for UnknownPtr {
+impl HasIID for Unknown {
   fn iid() -> REFGUID { &iids::IID_IUnknown }
   fn new(pp_vtbl : *mut IUnknown) -> Self {
-    UnknownPtr(pp_vtbl)
+    Unknown(pp_vtbl)
   }
   fn iptr(&self) -> *mut IUnknown {
     self.0
@@ -73,13 +73,13 @@ pub fn clone_com_ptr<T:HasIID>(obj: &T) -> T {
   ret
 }
 
-impl Drop for UnknownPtr {
+impl Drop for Unknown {
   fn drop(&mut self) {
     release_com_ptr(self);
   }
 }
 
-impl Clone for UnknownPtr {
+impl Clone for Unknown {
   fn clone(&self) -> Self {
     clone_com_ptr(self) 
   }

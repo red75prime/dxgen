@@ -207,9 +207,16 @@ let deKeyword name=
   |"type" -> "type_"
   |_ -> name
 
-let toRustParmName s=
+let toRustParmName(s:string)=
   // TODO: process prefixes (p, pp)
-  s |> toSnake |> deKeyword
+  let depp=
+    if s.StartsWith("pp") then
+      s.Substring(2)
+    else if s.StartsWith("p") then
+      s.Substring(1)
+    else
+      s
+  depp |> toSnake |> deKeyword
 
 let toRustMethodName=toRustParmName
 
@@ -322,6 +329,9 @@ pub {0}fn {1}{2}(&self{3}) -> {4} {{
         rval)
   ftext
 
+//-------------------------------------------------------------------------------------
+// This function is the core of the safe interface generator
+//-=-----------------------------------------------------------------------------------
 let generateRouting (mname, nname, mannot, parms, rty)=
   if mannot=MADontImplement then
     ([],[])
@@ -479,7 +489,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
           |Primitive _ |TypedefRef _ ->
             addNativeParmFun pname None (fun m -> "(mem::size_of_val("+(Map.find rname m)+")/"+n.ToString()+") as "+(tyToRust pty))
           |_ -> addError ("Unexpected type for "+pname+", referent of [InOutOfSize]"+rname)
-        |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) |(_,InComPtrArrayOfSize _,_) -> true |_ -> false)  ->
+        |refs when refs |> List.forall (function |(_,InOptionalArrayOfSize _,_) |(_,InArrayOfSize _, _) |(_,OutArrayOfSize _, _) |(_,OutOptionalArrayOfSize _,_) |(_,InComPtrArrayOfSize _,_) -> true |_ -> false)  ->
           // this parameter is the size of input array(s).
           let plist=refs |> 
                       List.map 
@@ -487,7 +497,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
                           |(pname, InOptionalArrayOfSize _,_)
                           |(pname, OutOptionalArrayOfSize _,_) -> 
                             fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())"
-                          |(pname, InArrayOfSize _,_) |(pname, InComPtrArrayOfSize _,_) ->  
+                          |(pname, InArrayOfSize _,_) |(pname, OutArrayOfSize _,_) |(pname, InComPtrArrayOfSize _,_) ->  
                             fun m -> "Some("+(Map.find pname m)+".len())"
                           |_ -> raise <| new System.Exception("Unreachable")
                         )
@@ -626,8 +636,17 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addReturnExpression lv lvtype
           |_ ->
             addError (sprintf "%s parameter: must be a pointer." pname)
+        |[(rname,OutOptionalArrayOfSize _,_)] ->
+          match pty with
+          |Ptr(uty) ->
+            let lvtype=convertTypeToRustNoArray uty pannot
+            let lv=newLocalVar true lvtype (fun m -> (Map.find rname m)+".as_ref().map(|v|v.len()).unwrap_or(0) as "+(tyToRust uty))
+            addNativeParm pname None ("&mut "+lv)
+            addReturnExpression lv lvtype
+          |_ ->
+            addError (sprintf "%s parameter: must be a pointer." pname)
         |_ ->
-          addError (sprintf "%s parameter: InOutReturn should be referenced by OutOfSize. But references are %A" pname refs)
+          addError (sprintf "%s parameter: InOutReturn should be referenced by OutOptionalOfSize or OutOptionalArrayOfSize. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |OutOptionalOfSize p ->
         match refs with 
@@ -714,6 +733,21 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             let lv=newLocalVar true rty (fun m -> "unsafe {mem::uninitialized::<_>()}")
             addNativeParm pname None ("&mut "+lv+" as *mut _ as *mut _")
             addReturnExpression lv rty
+          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+        |_ ->
+          addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
+// -----------------------------------------------------------------------------------------------------------------------------------------
+      |OutReturnComPtr ->
+        match refs with 
+        |[] ->
+          match pty with
+          |Ptr(Ptr(StructRef s)) ->
+            // s should be a name of COM-interface. TODO: Check that it is
+            let rtName=s.Substring(1,s.Length-1) // Corresponding rust wrapper have name without leading 'I'
+            let rty=RType rtName
+            let lv=newLocalVar true (RMutPtr(RType s)) (fun m -> "ptr::null_mut()")
+            addNativeParm pname None ("&mut "+lv+" as *mut *mut _")
+            addReturnExpression (rtName+"::new("+lv+" as *mut _)") rty
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
@@ -933,7 +967,11 @@ let safeInterfaceGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,st
   |Some(interfaceAnnotations) ->
     let apl = appendLine sb
     apl "\
-use iid::{HasIID, HResult, IUnknownVtbl, IUnknown, release_com_ptr, clone_com_ptr};
+// This file is autogenerated
+
+#![allow(dead_code)] // TODO: remove later
+
+use iid::{HasIID, HResult, Unknown, IUnknown, release_com_ptr, clone_com_ptr};
 use iid::iids::*;
 use d3d12_sys::*;
 use std::ptr;
@@ -961,9 +999,9 @@ fn str_to_vec_u16(s : Cow<str>) -> Vec<u16> {
 }
 
 // Utility function. 
-// Compares lengths of slices in Option<&[T]> 
-// returns Ok(len) if all present slices have length len (or 0 if there's no arrays), 
-//         Err(()) is arrays have different lengths.
+// Compares optional numbers
+// returns Some(len) if all inputs are Some(len) or None (or Some(0) if all inputs are None), 
+//         None otherwise
 fn same_length(lens:&[Option<usize>]) -> Option<usize> {
     let res=lens.iter().fold(Ok(None), 
         |sz, mlen| { 
@@ -1017,7 +1055,7 @@ pub struct %s(*mut I%s);
 
 impl HasIID for %s {
   fn iid() -> &'static IID { &IID_I%s }
-  fn new(ppVtbl : *mut IUnknown) -> Self { %s(ppVtbl as *mut _ as *mut I%s) }
+  fn new(pp_vtbl : *mut IUnknown) -> Self { %s(pp_vtbl as *mut _ as *mut I%s) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
 

@@ -2,6 +2,7 @@
 
 // based on "Monadic Parser Combinators" by Graham Hutton and Erik Meijer (1996)
 
+[<NoComparison>][<NoEquality>]
 type Parser<'a,'s>=Parser of ('s -> seq<'a*'s>)
 
 let parse (Parser p) cs=p cs

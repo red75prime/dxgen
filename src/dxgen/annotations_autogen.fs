@@ -51,6 +51,92 @@ let d3d12Object= [
     setName
   ]
 
+let dxgiObject = [
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+    ("SetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("DataSize",ANone);
+      ("pData", InOfSize "DataSize");
+    ],MANone);
+    ("SetPrivateDataInterface",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pUnknown",ANone);
+    ],MADontImplement);
+    ("GetPrivateData",[
+      ("This",AThis);
+      ("Name",ANone);
+      ("pDataSize",InOutReturn);
+      ("pData", OutOptionalOfSize "pDataSize");
+    ],MANone);
+    ("GetParent",[
+      ("This",AThis);
+      ("riid",ANone);
+      ("ppParent",OutReturnInterface "riid");
+    ],MANone);
+  ]
+
+let dxgiDevice=
+  dxgiObject ++ [
+    ("GetAdapter",[
+      ("This",AThis);
+      ("pAdapter",OutReturnComPtr);
+    ],MANone);
+    ("CreateSurface",[
+      ("This",AThis);
+      ("pDesc",ANone);
+      ("NumSurfaces",ANone);
+      ("Usage",ANone);
+      ("pSharedResource",ANone);
+      ("ppSurface",ANone);
+    ],MADontImplement); // MSDN states that this method is internal
+    ("QueryResourceResidency",[
+      ("This",AThis);
+      ("ppResources",InComPtrArrayOfSize "NumResources");
+      ("pResidencyStatus",OutArrayOfSize "NumResources");
+      ("NumResources",ANone);
+    ],MANone);
+    ("SetGPUThreadPriority",[
+      ("This",AThis);
+      ("Priority",ANone);
+    ],MANone);
+    ("GetGPUThreadPriority",[
+      ("This",AThis);
+      ("pPriority",OutReturn);
+    ],MANone);]
+
+let dxgiFactory=
+  dxgiObject ++ 
+  [
+    ("EnumAdapters",[
+      ("This",AThis);
+      ("Adapter",ANone);
+      ("ppAdapter",OutReturnComPtr);
+    ],MANone);
+    ("MakeWindowAssociation",[
+      ("This",AThis);
+      ("WindowHandle",ANone);
+      ("Flags",ANone);
+    ],MANone);
+    ("GetWindowAssociation",[
+      ("This",AThis);
+      ("pWindowHandle",OutReturn);
+    ],MANone);
+    ("CreateSwapChain",[
+      ("This",AThis);
+      ("pDevice",InComPtr);
+      ("pDesc",ANone);
+      ("ppSwapChain",OutReturnComPtr);
+    ],MANone);
+    ("CreateSoftwareAdapter",[
+      ("This",AThis);
+      ("Module",ANone);
+      ("ppAdapter",OutReturnComPtr);
+    ],MANone);]
+
 let d3d12annotations=[
   ("ID3D10BlobVtbl",IAManual,"IUnknownVtbl",[
     ("QueryInterface",[],MAIUnknown);
@@ -684,7 +770,6 @@ let d3d12annotations=[
       ("NumViews",ANone);
       ("pViews",InOptionalArrayOfSize "NumViews");
     ],MANone);
-//// ------------------------ Continue here -----------------------------------------------------
     ("OMSetRenderTargets",[
       ("This",AThis);
       ("NumRenderTargetDescriptors",ANone);
@@ -701,62 +786,62 @@ let d3d12annotations=[
       ("Depth",ANone);
       ("Stencil",ANone);
       ("NumRects",ANone);
-      ("pRects",ANone);
+      ("pRects",InArrayOfSize "NumRects");
     ],MANone);
     ("ClearRenderTargetView",[
       ("This",AThis);
       ("RenderTargetView",ANone);
       ("ColorRGBA",ANone);
       ("NumRects",ANone);
-      ("pRects",ANone);
+      ("pRects",InArrayOfSize "NumRects");
     ],MANone);
     ("ClearUnorderedAccessViewUint",[
       ("This",AThis);
       ("ViewGPUHandleInCurrentHeap",ANone);
       ("ViewCPUHandle",ANone);
-      ("pResource",ANone);
+      ("pResource",InComPtr);
       ("Values",ANone);
       ("NumRects",ANone);
-      ("pRects",ANone);
+      ("pRects",InArrayOfSize "NumRects");
     ],MANone);
     ("ClearUnorderedAccessViewFloat",[
       ("This",AThis);
       ("ViewGPUHandleInCurrentHeap",ANone);
       ("ViewCPUHandle",ANone);
-      ("pResource",ANone);
+      ("pResource",InComPtr);
       ("Values",ANone);
       ("NumRects",ANone);
-      ("pRects",ANone);
+      ("pRects",InArrayOfSize "NumRects");
     ],MANone);
     ("DiscardResource",[
       ("This",AThis);
-      ("pResource",ANone);
-      ("pRegion",ANone);
+      ("pResource",InComPtr);
+      ("pRegion",InOptional);
     ],MANone);
     ("BeginQuery",[
       ("This",AThis);
-      ("pQueryHeap",ANone);
+      ("pQueryHeap",InComPtr);
       ("Type",ANone);
       ("Index",ANone);
     ],MANone);
     ("EndQuery",[
       ("This",AThis);
-      ("pQueryHeap",ANone);
+      ("pQueryHeap",InComPtr);
       ("Type",ANone);
       ("Index",ANone);
     ],MANone);
     ("ResolveQueryData",[
       ("This",AThis);
-      ("pQueryHeap",ANone);
+      ("pQueryHeap",InComPtr);
       ("Type",ANone);
       ("StartIndex",ANone);
       ("NumQueries",ANone);
-      ("pDestinationBuffer",ANone);
+      ("pDestinationBuffer",InComPtr);
       ("AlignedDestinationBufferOffset",ANone);
     ],MANone);
     ("SetPredication",[
       ("This",AThis);
-      ("pBuffer",ANone);
+      ("pBuffer",InOptionalComPtr);
       ("AlignedBufferOffset",ANone);
       ("Operation",ANone);
     ],MANone);
@@ -765,23 +850,23 @@ let d3d12annotations=[
       ("Metadata",ANone);
       ("pData",ANone);
       ("Size",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("BeginEvent",[
       ("This",AThis);
       ("Metadata",ANone);
       ("pData",ANone);
       ("Size",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("EndEvent",[
       ("This",AThis);
-    ],MANone);
+    ],MADontImplement);
     ("ExecuteIndirect",[
       ("This",AThis);
-      ("pCommandSignature",ANone);
+      ("pCommandSignature",InComPtr);
       ("MaxCommandCount",ANone);
-      ("pArgumentBuffer",ANone);
+      ("pArgumentBuffer",InComPtr);
       ("ArgumentBufferOffset",ANone);
-      ("pCountBuffer",ANone);
+      ("pCountBuffer",InComPtr);
       ("CountBufferOffset",ANone);
     ],MANone);
   ]);
@@ -791,7 +876,7 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12InfoQueueVtbl",IAAutogen, "IUnknownVtbl", [
+  ("ID3D12InfoQueueVtbl",IAManual, "IUnknownVtbl", [ //TODO: Annotate debug interfaces
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -937,7 +1022,7 @@ let d3d12annotations=[
     getDevice;
     ("GetCachedBlob",[
       ("This",AThis);
-      ("ppBlob",OutReturn);
+      ("ppBlob",OutReturn); // TODO: Implement OutReturnComPtr
     ],MADontImplement);
   ]);
   ("ID3D12QueryHeapVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
@@ -948,14 +1033,14 @@ let d3d12annotations=[
     ("Map",[
       ("This",AThis);
       ("Subresource",ANone);
-      ("pReadRange",ANone);
+      ("pReadRange",InOptional);
       ("ppData",ANone);
-    ],MADontImplement);
+    ],MADontImplement); // Mapping and unmapping call for RAII guards
     ("Unmap",[
       ("This",AThis);
       ("Subresource",ANone);
       ("pWrittenRange",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("GetDesc",[
       ("This",AThis);
     ],MANone);
@@ -965,11 +1050,11 @@ let d3d12annotations=[
     ("WriteToSubresource",[
       ("This",AThis);
       ("DstSubresource",ANone);
-      ("pDstBox",ANone);
+      ("pDstBox",InOptional);
       ("pSrcData",ANone);
       ("SrcRowPitch",ANone);
       ("SrcDepthPitch",ANone);
-    ],MAUnsafe); // Method can read past the end of provided buffer
+    ],MADontImplement); // Unsafe. Method can read past the end of provided buffer
     ("ReadFromSubresource",[
       ("This",AThis);
       ("pDstData",ANone);
@@ -977,11 +1062,11 @@ let d3d12annotations=[
       ("DstDepthPitch",ANone);
       ("SrcSubresource",ANone);
       ("pSrcBox",ANone);
-    ],MAUnsafe); // Method doesn't take size of output buffer
+    ],MADontImplement); // Unsafe. Method doesn't take size of output buffer
     ("GetHeapProperties",[
       ("This",AThis);
-      ("pHeapProperties",ANone);
-      ("pHeapFlags",ANone);
+      ("pHeapProperties",OutOptional);
+      ("pHeapFlags",OutOptional);
     ],MANone);
   ]);
   ("ID3D12RootSignatureDeserializerVtbl",IAAutogen, "IUnknownVtbl", [
@@ -1009,381 +1094,77 @@ let d3d12annotations=[
       ("pData",ANone);
     ],MANone);
   ]);
-  ("IDXGIAdapter1Vtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
+  ("IDXGIAdapter1Vtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("EnumOutputs",[
       ("This",AThis);
       ("Output",ANone);
-      ("ppOutput",ANone);
+      ("ppOutput", OutReturnComPtr);
     ],MANone);
     ("GetDesc",[
       ("This",AThis);
-      ("pDesc",ANone);
+      ("pDesc",OutReturn);
     ],MANone);
     ("CheckInterfaceSupport",[
       ("This",AThis);
       ("InterfaceName",ANone);
-      ("pUMDVersion",ANone);
+      ("pUMDVersion",OutReturn);
     ],MANone);
     ("GetDesc1",[
       ("This",AThis);
-      ("pDesc",ANone);
+      ("pDesc",OutReturn);
     ],MANone);
   ]);
-  ("IDXGIAdapterVtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
+  ("IDXGIAdapterVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("EnumOutputs",[
       ("This",AThis);
       ("Output",ANone);
-      ("ppOutput",ANone);
+      ("ppOutput",OutReturnComPtr);
     ],MANone);
     ("GetDesc",[
       ("This",AThis);
-      ("pDesc",ANone);
+      ("pDesc",OutReturn);
     ],MANone);
     ("CheckInterfaceSupport",[
       ("This",AThis);
       ("InterfaceName",ANone);
-      ("pUMDVersion",ANone);
+      ("pUMDVersion",OutReturn);
     ],MANone);
   ]);
-  ("IDXGIDevice1Vtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
-    ("GetAdapter",[
-      ("This",AThis);
-      ("pAdapter",ANone);
-    ],MANone);
-    ("CreateSurface",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("NumSurfaces",ANone);
-      ("Usage",ANone);
-      ("pSharedResource",ANone);
-      ("ppSurface",ANone);
-    ],MANone);
-    ("QueryResourceResidency",[
-      ("This",AThis);
-      ("ppResources",ANone);
-      ("pResidencyStatus",ANone);
-      ("NumResources",ANone);
-    ],MANone);
-    ("SetGPUThreadPriority",[
-      ("This",AThis);
-      ("Priority",ANone);
-    ],MANone);
-    ("GetGPUThreadPriority",[
-      ("This",AThis);
-      ("pPriority",ANone);
-    ],MANone);
+  ("IDXGIDevice1Vtbl",IAAutogen, "IDXGIDeviceVtbl", dxgiDevice ++ [
     ("SetMaximumFrameLatency",[
       ("This",AThis);
       ("MaxLatency",ANone);
     ],MANone);
     ("GetMaximumFrameLatency",[
       ("This",AThis);
-      ("pMaxLatency",ANone);
+      ("pMaxLatency",OutReturn);
     ],MANone);
   ]);
-  ("IDXGIDeviceSubObjectVtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
+  ("IDXGIDeviceSubObjectVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
-      ("ppDevice",ANone);
-    ],MANone);
+      ("ppDevice",ANone); // I cannot understand what MSDN says about this. TODO: Find out
+    ],MADontImplement);
   ]);
-  ("IDXGIDeviceVtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
-    ("GetAdapter",[
-      ("This",AThis);
-      ("pAdapter",ANone);
-    ],MANone);
-    ("CreateSurface",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("NumSurfaces",ANone);
-      ("Usage",ANone);
-      ("pSharedResource",ANone);
-      ("ppSurface",ANone);
-    ],MANone);
-    ("QueryResourceResidency",[
-      ("This",AThis);
-      ("ppResources",ANone);
-      ("pResidencyStatus",ANone);
-      ("NumResources",ANone);
-    ],MANone);
-    ("SetGPUThreadPriority",[
-      ("This",AThis);
-      ("Priority",ANone);
-    ],MANone);
-    ("GetGPUThreadPriority",[
-      ("This",AThis);
-      ("pPriority",ANone);
-    ],MANone);
-  ]);
-  ("IDXGIFactory1Vtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
-    ("EnumAdapters",[
-      ("This",AThis);
-      ("Adapter",ANone);
-      ("ppAdapter",ANone);
-    ],MANone);
-    ("MakeWindowAssociation",[
-      ("This",AThis);
-      ("WindowHandle",ANone);
-      ("Flags",ANone);
-    ],MANone);
-    ("GetWindowAssociation",[
-      ("This",AThis);
-      ("pWindowHandle",ANone);
-    ],MANone);
-    ("CreateSwapChain",[
-      ("This",AThis);
-      ("pDevice",ANone);
-      ("pDesc",ANone);
-      ("ppSwapChain",ANone);
-    ],MANone);
-    ("CreateSoftwareAdapter",[
-      ("This",AThis);
-      ("Module",ANone);
-      ("ppAdapter",ANone);
-    ],MANone);
+  ("IDXGIDeviceVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiDevice);
+  ("IDXGIFactory1Vtbl",IAAutogen, "IDXGIFactoryVtbl", dxgiFactory ++ [
     ("EnumAdapters1",[
       ("This",AThis);
       ("Adapter",ANone);
-      ("ppAdapter",ANone);
+      ("ppAdapter",OutReturnComPtr);
     ],MANone);
     ("IsCurrent",[
       ("This",AThis);
     ],MANone);
   ]);
-  ("IDXGIFactoryVtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
-    ("EnumAdapters",[
-      ("This",AThis);
-      ("Adapter",ANone);
-      ("ppAdapter",ANone);
-    ],MANone);
-    ("MakeWindowAssociation",[
-      ("This",AThis);
-      ("WindowHandle",ANone);
-      ("Flags",ANone);
-    ],MANone);
-    ("GetWindowAssociation",[
-      ("This",AThis);
-      ("pWindowHandle",ANone);
-    ],MANone);
-    ("CreateSwapChain",[
-      ("This",AThis);
-      ("pDevice",ANone);
-      ("pDesc",ANone);
-      ("ppSwapChain",ANone);
-    ],MANone);
-    ("CreateSoftwareAdapter",[
-      ("This",AThis);
-      ("Module",ANone);
-      ("ppAdapter",ANone);
-    ],MANone);
-  ]);
-  ("IDXGIKeyedMutexVtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
+  ("IDXGIFactoryVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiFactory);
+  ("IDXGIKeyedMutexVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
-      ("ppDevice",ANone);
-    ],MANone);
+      ("ppDevice",ANone); // I cannot understand what MSDN says about this. TODO: Find out
+    ],MADontImplement);
     ("AcquireSync",[
       ("This",AThis);
       ("Key",ANone);
@@ -1394,82 +1175,33 @@ let d3d12annotations=[
       ("Key",ANone);
     ],MANone);
   ]);
-  ("IDXGIObjectVtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
-  ]);
-  ("IDXGIOutputVtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
+  ("IDXGIObjectVtbl",IAAutogen, "IUnknown", 
+    dxgiObject
+  );
+  ("IDXGIOutputVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("GetDesc",[
       ("This",AThis);
-      ("pDesc",ANone);
+      ("pDesc",OutReturn);
     ],MANone);
     ("GetDisplayModeList",[
       ("This",AThis);
       ("EnumFormat",ANone);
       ("Flags",ANone);
-      ("pNumModes",ANone);
-      ("pDesc",ANone);
+      ("pNumModes",InOutReturn);
+      ("pDesc",OutOptionalArrayOfSize "pNumModes");
     ],MANone);
     ("FindClosestMatchingMode",[
       ("This",AThis);
       ("pModeToMatch",ANone);
-      ("pClosestMatch",ANone);
-      ("pConcernedDevice",ANone);
+      ("pClosestMatch",OutReturn);
+      ("pConcernedDevice",InOptionalComPtr);
     ],MANone);
     ("WaitForVBlank",[
       ("This",AThis);
     ],MANone);
     ("TakeOwnership",[
       ("This",AThis);
-      ("pDevice",ANone);
+      ("pDevice",InComPtr);
       ("Exclusive",ANone);
     ],MANone);
     ("ReleaseOwnership",[
@@ -1477,8 +1209,9 @@ let d3d12annotations=[
     ],MANone);
     ("GetGammaControlCapabilities",[
       ("This",AThis);
-      ("pGammaCaps",ANone);
+      ("pGammaCaps",OutReturn);
     ],MANone);
+//// ------------------------ Continue here -----------------------------------------------------
     ("SetGammaControl",[
       ("This",AThis);
       ("pArray",ANone);
@@ -1500,32 +1233,7 @@ let d3d12annotations=[
       ("pStats",ANone);
     ],MANone);
   ]);
-  ("IDXGIResourceVtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
+  ("IDXGIResourceVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
@@ -1548,32 +1256,7 @@ let d3d12annotations=[
       ("pEvictionPriority",ANone);
     ],MANone);
   ]);
-  ("IDXGISurface1Vtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
+  ("IDXGISurface1Vtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
@@ -1601,32 +1284,7 @@ let d3d12annotations=[
       ("pDirtyRect",ANone);
     ],MANone);
   ]);
-  ("IDXGISurfaceVtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
+  ("IDXGISurfaceVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
@@ -1645,32 +1303,7 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("IDXGISwapChainVtbl",IAAutogen, "IUnknown", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MANone);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",ANone);
-      ("pData",ANone);
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",ANone);
-    ],MANone);
+  ("IDXGISwapChainVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
@@ -2534,7 +2167,7 @@ let d3d12structs=
       ("Pitch",FANone);
       ("pBits",FANone);
       ]);
-    ("DXGI_MODE_DESC",StructFlags.None,[
+    ("DXGI_MODE_DESC",StructFlags.DeriveDefault ||| StructFlags.DeriveCopy,[
       ("Width",FANone);
       ("Height",FANone);
       ("RefreshRate",FANone);
@@ -2549,7 +2182,7 @@ let d3d12structs=
       ("Rotation",FANone);
       ("Monitor",FANone);
       ]);
-    ("DXGI_RATIONAL",StructFlags.None,[
+    ("DXGI_RATIONAL",StructFlags.DeriveDefault ||| StructFlags.DeriveCopy,[
       ("Numerator",FANone);
       ("Denominator",FANone);
       ]);
