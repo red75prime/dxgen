@@ -53,17 +53,26 @@ fn main() {
  
   if let Ok(factory)=create_dxgi_factory1() {
     if let Ok(adapter0)=factory.enum_adapters1(0) {
+      println!("{:?}",adapter0.get_desc().unwrap());
       if let Ok(output0)=adapter0.enum_outputs(0) {
+        let desc=output0.get_desc().unwrap();
+        println!("{:?}",desc);
         for fnum in 0..130 {
           let format=DXGI_FORMAT(fnum);
-          let num_modes=output0.get_display_mode_list(format, 0, None).unwrap();
-          if num_modes!=0 {
-            println!("Num modes: {} for {:?}", num_modes, format);
-            let mut modes=vec![DXGI_MODE_DESC::default(); num_modes as usize];
-            output0.get_display_mode_list(format, 0, Some(&mut modes[..]));
-            for mode in modes {
-              println!("{:?}", mode);
-            }
+          match output0.get_display_mode_list(format, 0, None) {
+            Ok(num_modes) => {
+              if num_modes!=0 {
+                println!("Num modes: {} for {:?}", num_modes, format);
+                let mut modes=vec![DXGI_MODE_DESC::default(); num_modes as usize];
+                output0.get_display_mode_list(format, 0, Some(&mut modes[..]));
+                for mode in modes {
+                  println!("{:?}", mode);
+                }
+              }
+            },
+            Err(hr) => {
+              println!("Error 0x{:x}", hr);
+            },
           }
         }
       }

@@ -153,6 +153,11 @@ impl fmt::Debug for {0} {{
                 function
                 |CStructElem(fname,fty,None)->
                   match fty with
+                  |CTypeDesc.Array(TypedefRef("WCHAR"), n) ->
+                    seq {
+                      yield "    try!{write!(f,\"  "+fname+": '\")};"
+                      yield "    {try!{writeln!(f,\"{:}'\", wchar_array_to_string_lossy(&self."+fname+"))};}"
+                    } |> fun sq -> System.String.Join(System.Environment.NewLine,sq)
                   |CTypeDesc.Array(aty, n) ->
                     seq {
                       yield "    try!{write!(f,\"  "+fname+": [\")};"
@@ -214,6 +219,19 @@ extern crate libc;
 use libc::*;
 use std::fmt;
 use iid::IUnknown;
+use std::os::windows::ffi::OsStringExt;
+use std::ffi::OsString;
+
+fn wchar_array_to_string_lossy(ws: &[u16]) -> String {
+  match ws.iter().position(|c|*c==0) {
+    Some(p) => {
+      OsString::from_wide(&ws[0..p]).to_string_lossy().into_owned()
+    },
+    None => {
+      OsString::from_wide(ws).to_string_lossy().into_owned()
+    },
+  }
+}
 
 fn debug_fmt_enum(name : &str, val: u32, opts: &[(&str,u32)], f: &mut fmt::Formatter) -> fmt::Result {
   let mut p_opts=0u32;

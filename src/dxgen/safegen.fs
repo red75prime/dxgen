@@ -214,6 +214,8 @@ let toRustParmName(s:string)=
       s.Substring(2)
     else if s.StartsWith("p") then
       s.Substring(1)
+    else if s.StartsWith("dw") then
+      s.Substring(2)
     else
       s
   depp |> toSnake |> deKeyword

@@ -1022,8 +1022,8 @@ let d3d12annotations=[
     getDevice;
     ("GetCachedBlob",[
       ("This",AThis);
-      ("ppBlob",OutReturn); // TODO: Implement OutReturnComPtr
-    ],MADontImplement);
+      ("ppBlob",OutReturnComPtr); // TODO: do something with typedefs like 'typedef ID3D10Blob ID3DBlob;' E.g. type D3DBlob=D3D10Blob;
+    ],MADontImplement); // TODO: do todo above, then replace with MANone
   ]);
   ("ID3D12QueryHeapVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
     getDevice;
@@ -1035,12 +1035,12 @@ let d3d12annotations=[
       ("Subresource",ANone);
       ("pReadRange",InOptional);
       ("ppData",ANone);
-    ],MADontImplement); // Mapping and unmapping call for RAII guards
+    ],MADontImplement); // TODO: Mapping and unmapping call for RAII guards
     ("Unmap",[
       ("This",AThis);
       ("Subresource",ANone);
       ("pWrittenRange",ANone);
-    ],MADontImplement);
+    ],MADontImplement); // TODO: Find some way of dealing with unbounded memory areas in safe rust
     ("GetDesc",[
       ("This",AThis);
     ],MANone);
@@ -1054,7 +1054,7 @@ let d3d12annotations=[
       ("pSrcData",ANone);
       ("SrcRowPitch",ANone);
       ("SrcDepthPitch",ANone);
-    ],MADontImplement); // Unsafe. Method can read past the end of provided buffer
+    ],MADontImplement); // TODO: Unsafe. Method can read past the end of provided buffer
     ("ReadFromSubresource",[
       ("This",AThis);
       ("pDstData",ANone);
@@ -1062,7 +1062,7 @@ let d3d12annotations=[
       ("DstDepthPitch",ANone);
       ("SrcSubresource",ANone);
       ("pSrcBox",ANone);
-    ],MADontImplement); // Unsafe. Method doesn't take size of output buffer
+    ],MADontImplement); // TODO: Unsafe. Method doesn't take size of output buffer
     ("GetHeapProperties",[
       ("This",AThis);
       ("pHeapProperties",OutOptional);
@@ -1163,7 +1163,7 @@ let d3d12annotations=[
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
-      ("ppDevice",ANone); // I cannot understand what MSDN says about this. TODO: Find out
+      ("ppDevice",OutReturnInterface "riid"); 
     ],MADontImplement);
     ("AcquireSync",[
       ("This",AThis);
@@ -1211,41 +1211,40 @@ let d3d12annotations=[
       ("This",AThis);
       ("pGammaCaps",OutReturn);
     ],MANone);
-//// ------------------------ Continue here -----------------------------------------------------
     ("SetGammaControl",[
       ("This",AThis);
       ("pArray",ANone);
     ],MANone);
     ("GetGammaControl",[
       ("This",AThis);
-      ("pArray",ANone);
+      ("pArray",OutReturn);
     ],MANone);
     ("SetDisplaySurface",[
       ("This",AThis);
-      ("pScanoutSurface",ANone);
+      ("pScanoutSurface",InComPtr);
     ],MANone);
     ("GetDisplaySurfaceData",[
       ("This",AThis);
-      ("pDestination",ANone);
+      ("pDestination",InComPtr);
     ],MANone);
     ("GetFrameStatistics",[
       ("This",AThis);
-      ("pStats",ANone);
+      ("pStats",OutReturn);
     ],MANone);
   ]);
   ("IDXGIResourceVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
-      ("ppDevice",ANone);
-    ],MANone);
+      ("ppDevice",OutReturnInterface "riid"); 
+    ],MADontImplement);
     ("GetSharedHandle",[
       ("This",AThis);
-      ("pSharedHandle",ANone);
+      ("pSharedHandle",OutReturn);
     ],MANone);
     ("GetUsage",[
       ("This",AThis);
-      ("pUsage",ANone);
+      ("pUsage",OutReturn);
     ],MANone);
     ("SetEvictionPriority",[
       ("This",AThis);
@@ -1253,22 +1252,22 @@ let d3d12annotations=[
     ],MANone);
     ("GetEvictionPriority",[
       ("This",AThis);
-      ("pEvictionPriority",ANone);
+      ("pEvictionPriority",OutReturn);
     ],MANone);
   ]);
   ("IDXGISurface1Vtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
-      ("ppDevice",ANone);
-    ],MANone);
+      ("ppDevice",OutReturnInterface "riid");
+    ],MADontImplement);
     ("GetDesc",[
       ("This",AThis);
-      ("pDesc",ANone);
+      ("pDesc",OutReturn);
     ],MANone);
     ("Map",[
       ("This",AThis);
-      ("pLockedRect",ANone);
+      ("pLockedRect",OutReturn);
       ("MapFlags",ANone);
     ],MANone);
     ("Unmap",[
@@ -1277,26 +1276,26 @@ let d3d12annotations=[
     ("GetDC",[
       ("This",AThis);
       ("Discard",ANone);
-      ("phdc",ANone);
+      ("phdc",OutReturn);
     ],MANone);
     ("ReleaseDC",[
       ("This",AThis);
-      ("pDirtyRect",ANone);
+      ("pDirtyRect",InOptional);
     ],MANone);
   ]);
   ("IDXGISurfaceVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
-      ("ppDevice",ANone);
-    ],MANone);
+      ("ppDevice",OutReturnInterface "riid"); 
+    ],MADontImplement);
     ("GetDesc",[
       ("This",AThis);
-      ("pDesc",ANone);
+      ("pDesc",OutReturn);
     ],MANone);
     ("Map",[
       ("This",AThis);
-      ("pLockedRect",ANone);
+      ("pLockedRect",OutReturn);
       ("MapFlags",ANone);
     ],MANone);
     ("Unmap",[
@@ -1307,8 +1306,8 @@ let d3d12annotations=[
     ("GetDevice",[
       ("This",AThis);
       ("riid",ANone);
-      ("ppDevice",ANone);
-    ],MANone);
+      ("ppDevice",OutReturnInterface "riid");
+    ],MADontImplement);
     ("Present",[
       ("This",AThis);
       ("SyncInterval",ANone);
@@ -1318,21 +1317,21 @@ let d3d12annotations=[
       ("This",AThis);
       ("Buffer",ANone);
       ("riid",ANone);
-      ("ppSurface",ANone);
+      ("ppSurface",OutReturnInterface "riid");
     ],MANone);
     ("SetFullscreenState",[
       ("This",AThis);
       ("Fullscreen",ANone);
-      ("pTarget",ANone);
+      ("pTarget",InOptionalComPtr);
     ],MANone);
     ("GetFullscreenState",[
       ("This",AThis);
-      ("pFullscreen",ANone);
-      ("ppTarget",ANone);
+      ("pFullscreen",AConst "ptr::null_mut()"); // This parameter can be ignored. Good case for AConst "ptr::null_mut()". OTOH why it is here? TODO: Investigate
+      ("ppTarget",ANone); // TODO: Implement OutOptionalComPtr, or OutOptionalReturnComPtr. 
     ],MANone);
     ("GetDesc",[
       ("This",AThis);
-      ("pDesc",ANone);
+      ("pDesc",OutReturn);
     ],MANone);
     ("ResizeBuffers",[
       ("This",AThis);
@@ -1348,15 +1347,15 @@ let d3d12annotations=[
     ],MANone);
     ("GetContainingOutput",[
       ("This",AThis);
-      ("ppOutput",ANone);
+      ("ppOutput",OutReturnComPtr);
     ],MANone);
     ("GetFrameStatistics",[
       ("This",AThis);
-      ("pStats",ANone);
+      ("pStats",OutReturn);
     ],MANone);
     ("GetLastPresentCount",[
       ("This",AThis);
-      ("pLastPresentCount",ANone);
+      ("pLastPresentCount",OutReturn);
     ],MANone);
   ]);
   ("IUnknown",IAManual,"",[
@@ -2106,7 +2105,7 @@ let d3d12structs=
       ("Name",FANone);
       ("Definition",FANone);
       ]);
-    ("DXGI_ADAPTER_DESC",StructFlags.None,[
+    ("DXGI_ADAPTER_DESC",StructFlags.DeriveDebug,[
       ("Description",FANone);
       ("VendorId",FANone);
       ("DeviceId",FANone);
@@ -2117,7 +2116,7 @@ let d3d12structs=
       ("SharedSystemMemory",FANone);
       ("AdapterLuid",FANone);
       ]);
-    ("DXGI_ADAPTER_DESC1",StructFlags.None,[
+    ("DXGI_ADAPTER_DESC1",StructFlags.DeriveDebug,[
       ("Description",FANone);
       ("VendorId",FANone);
       ("DeviceId",FANone);
