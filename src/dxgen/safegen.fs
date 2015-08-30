@@ -973,7 +973,7 @@ let safeInterfaceGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,st
 
 #![allow(dead_code)] // TODO: remove later
 
-use iid::{HasIID, HResult, Unknown, IUnknown, release_com_ptr, clone_com_ptr};
+use iid::{HasIID, Unknown, IUnknown, release_com_ptr, clone_com_ptr};
 use iid::iids::*;
 use d3d12_sys::*;
 use std::ptr;
@@ -982,6 +982,7 @@ use std::borrow::Cow;
 use libc::*;
 use std::ffi::{OsStr,OsString};
 use std::os::windows::ffi::OsStrExt;
+pub use iid::HResult;
 
 fn os_str_to_vec_u16(s : &OsStr) -> Vec<u16> {
   s.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()

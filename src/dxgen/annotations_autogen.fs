@@ -138,7 +138,7 @@ let dxgiFactory=
     ],MANone);]
 
 let d3d12annotations=[
-  ("ID3D10BlobVtbl",IAManual,"IUnknownVtbl",[
+  ("ID3D10BlobVtbl",IAAutogen,"IUnknownVtbl",[
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -388,7 +388,7 @@ let d3d12annotations=[
     ],MANone);
     ("CreateRenderTargetView",[
       ("This",AThis);
-      ("pResource",InOptional);
+      ("pResource",InOptionalComPtr);
       ("pDesc",InOptional);
       ("DestDescriptor",ANone);
     ],MANone);
@@ -1473,7 +1473,7 @@ let enum_annotations=
 
 let d3d12structs=
   [
-    ("D3D12_BLEND_DESC",StructFlags.None,[
+    ("D3D12_BLEND_DESC",StructFlags.DeriveCopy ||| StructFlags.DeriveDebug ||| StructFlags.DeriveDefault,[
       ("AlphaToCoverageEnable",FANone);
       ("IndependentBlendEnable",FANone);
       ("RenderTarget",FANone);
@@ -1533,7 +1533,7 @@ let d3d12structs=
       ("BufferLocation",FANone);
       ("SizeInBytes",FANone);
       ]);
-    ("D3D12_CPU_DESCRIPTOR_HANDLE",StructFlags.None,[
+    ("D3D12_CPU_DESCRIPTOR_HANDLE",StructFlags.DeriveCopy,[
       ("ptr",FANone);
       ]);
     ("D3D12_DEPTH_STENCILOP_DESC",StructFlags.None,[
@@ -1778,7 +1778,7 @@ let d3d12structs=
       ("ForcedSampleCount",FANone);
       ("ConservativeRaster",FANone);
       ]);
-    ("D3D12_RENDER_TARGET_BLEND_DESC",StructFlags.None,[
+    ("D3D12_RENDER_TARGET_BLEND_DESC",StructFlags.DeriveDefault ||| StructFlags.DeriveCopy ||| StructFlags.DeriveDebug ,[
       ("BlendEnable",FANone);
       ("LogicOpEnable",FANone);
       ("SrcBlend",FANone);
