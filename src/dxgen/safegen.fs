@@ -983,6 +983,7 @@ use libc::*;
 use std::ffi::{OsStr,OsString};
 use std::os::windows::ffi::OsStrExt;
 pub use iid::HResult;
+pub use iid::QueryInterface;
 
 fn os_str_to_vec_u16(s : &OsStr) -> Vec<u16> {
   s.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()

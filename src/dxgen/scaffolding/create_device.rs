@@ -26,6 +26,16 @@ pub fn create_dxgi_factory1() -> HResult<DXGIFactory1> {
   }
 }
 
+pub fn get_debug_interface() -> HResult<D3D12Debug> {
+  let mut p_fac : *mut IUnknown = ptr::null_mut();
+  let hr=unsafe {D3D12GetDebugInterface(&IID_ID3D12Debug, &mut p_fac as *mut *mut _ as *mut *mut _) }; 
+  if hr==0 {
+    Ok(D3D12Debug::new(p_fac))
+  } else {
+    Err(hr)
+  }
+}
+
 pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC, ver: D3D_ROOT_SIGNATURE_VERSION) -> HResult<D3D10Blob> {
   let mut p_blob : *mut IUnknown = ptr::null_mut();
   let hr=unsafe {D3D12SerializeRootSignature(root_signature, ver, &mut p_blob as *mut *mut _ as *mut *mut _, ptr::null_mut()) }; 

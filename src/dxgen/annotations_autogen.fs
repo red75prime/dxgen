@@ -276,7 +276,7 @@ let d3d12annotations=[
       ("Flags",ANone);
     ],MANone);
   ]);
-  ("ID3D12DebugVtbl", IAManual, "IUnknownVtbl", [
+  ("ID3D12DebugVtbl", IAAutogen, "IUnknownVtbl", [
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -876,7 +876,7 @@ let d3d12annotations=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D12InfoQueueVtbl",IAManual, "IUnknownVtbl", [ //TODO: Annotate debug interfaces
+  ("ID3D12InfoQueueVtbl",IAAutogen, "IUnknownVtbl", [ //TODO: Annotate debug interfaces
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
@@ -890,7 +890,7 @@ let d3d12annotations=[
     ("GetMessage",[
       ("This",AThis);
       ("MessageIndex",ANone);
-      ("pMessage",ANone);
+      ("pMessage",OutOptional);
       ("pMessageByteLength",ANone);
     ],MANone);
     ("GetNumMessagesAllowedByStorageFilter",[
@@ -1536,7 +1536,7 @@ let d3d12structs=
     ("D3D12_CPU_DESCRIPTOR_HANDLE",StructFlags.DeriveCopy,[
       ("ptr",FANone);
       ]);
-    ("D3D12_DEPTH_STENCILOP_DESC",StructFlags.None,[
+    ("D3D12_DEPTH_STENCILOP_DESC",StructFlags.DeriveCopy ||| StructFlags.DeriveDebug ||| StructFlags.DeriveDefault,[
       ("StencilFailOp",FANone);
       ("StencilDepthFailOp",FANone);
       ("StencilPassOp",FANone);
