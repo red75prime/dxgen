@@ -29,6 +29,104 @@ extern {}
 
 const FRAME_COUNT : u32 = 2;
 
+fn main() {
+  env_logger::init().unwrap();
+
+  let wnd=create_window("Hello, world!", 512, 256);
+  match create_appdata(wnd) {
+    Ok(appdata) => {
+    },
+    Err(iq) => {
+      let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
+      println!("Number of debug messages is {}", mnum);
+      for i in 0..mnum {
+        let mut sz=0;
+        let hr=iq.get_message(i,None,&mut sz);
+        info!("get_message returned {:?}", hr); // It is the case when hr!=0 and it's ok
+        // create buffer to receive message
+        let mut arr: Vec<u8> = Vec::with_capacity(sz as usize); 
+        let mut sz1=sz; 
+        unsafe {
+          // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
+          // it should be Option<&[u8]>, but I don't have annotation for that yet.
+          let hr=iq.get_message(i,Some(mem::transmute(arr.as_ptr())),&mut sz1); 
+          assert_eq!(sz,sz1); // just to be sure. hr is Err(1) on success.
+          // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
+          let msg:D3D12_MESSAGE=unsafe {mem::transmute_copy(&(*arr.as_ptr()))};
+          // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
+          let cdescr=::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
+          let descr=String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
+          println!("{:}",descr);
+        }
+      }
+    },
+  };
+
+  set_resize_fn(wnd,Some(Box::new(|w,h,c|{println!("Resize to {},{}",w,h);})));
+  message_loop();
+
+  //let dev=match d3d12_create_device(D3D_FEATURE_LEVEL_11_1) {
+  //  Ok(dev) => dev,
+  //  Err(hr) => {
+  //    println!("Cannot create device. Error {:X}", hr);
+  //    return;
+  //  },
+  //};
+  //let mut opts=D3D12_FEATURE_DATA_D3D12_OPTIONS{ ..Default::default() };
+  //dev.check_feature_support_options(&mut opts).unwrap();
+  //println!("{:#?}",opts);
+
+  //let luid=dev.get_adapter_luid();
+  //println!("{:?}", luid);
+
+  //let ca=match dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT) {
+  //  Ok(ca) => ca,
+  //  Err(hr) => {
+  //   println!("Command allocator creation error {:X}",hr);
+  //   return;
+  //  },
+  //};
+  //println!("{:?}", ca.iptr());
+
+  //let cqd=D3D12_COMMAND_QUEUE_DESC { Type : D3D12_COMMAND_LIST_TYPE_DIRECT, ..Default::default() };
+  //let cq=match dev.create_command_queue(&cqd) {
+  //  Ok(cq) => cq,
+  //  Err(hr) => {
+  //   println!("Command queue creation error {:X}",hr);
+  //   return;
+  //  },
+  //};
+  //println!("{:?}", cq.iptr());
+ 
+  //if let Ok(factory)=create_dxgi_factory1() {
+  //  if let Ok(adapter0)=factory.enum_adapters1(0) {
+  //    println!("{:?}",adapter0.get_desc().unwrap());
+  //    if let Ok(output0)=adapter0.enum_outputs(0) {
+  //      let desc=output0.get_desc().unwrap();
+  //      println!("{:?}",desc);
+  //      for fnum in 0..130 {
+  //        let format=DXGI_FORMAT(fnum);
+  //        match output0.get_display_mode_list(format, 0, None) {
+  //          Ok(num_modes) => {
+  //            if num_modes!=0 {
+  //              println!("Num modes: {} for {:?}", num_modes, format);
+  //              let mut modes=vec![DXGI_MODE_DESC::default(); num_modes as usize];
+  //              output0.get_display_mode_list(format, 0, Some(&mut modes[..]));
+  //              for mode in modes {
+  //                println!("{:?}", mode);
+  //              }
+  //            }
+  //          },
+  //          Err(hr) => {
+  //            println!("Error 0x{:x}", hr);
+  //          },
+  //        }
+  //      }
+  //    }
+  //  }
+  //}
+}
+
 struct AppData {
   viewport : D3D12_VIEWPORT,
   scissor_rect : D3D12_RECT,
@@ -261,99 +359,3 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   info!("Graphics pipeline state");
   Err(info_queue)
 }
-
-fn main() {
-  env_logger::init().unwrap();
-
-  //let dev=match d3d12_create_device(D3D_FEATURE_LEVEL_11_1) {
-  //  Ok(dev) => dev,
-  //  Err(hr) => {
-  //    println!("Cannot create device. Error {:X}", hr);
-  //    return;
-  //  },
-  //};
-  //let mut opts=D3D12_FEATURE_DATA_D3D12_OPTIONS{ ..Default::default() };
-  //dev.check_feature_support_options(&mut opts).unwrap();
-  //println!("{:#?}",opts);
-
-  //let luid=dev.get_adapter_luid();
-  //println!("{:?}", luid);
-
-  //let ca=match dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT) {
-  //  Ok(ca) => ca,
-  //  Err(hr) => {
-  //   println!("Command allocator creation error {:X}",hr);
-  //   return;
-  //  },
-  //};
-  //println!("{:?}", ca.iptr());
-
-  //let cqd=D3D12_COMMAND_QUEUE_DESC { Type : D3D12_COMMAND_LIST_TYPE_DIRECT, ..Default::default() };
-  //let cq=match dev.create_command_queue(&cqd) {
-  //  Ok(cq) => cq,
-  //  Err(hr) => {
-  //   println!("Command queue creation error {:X}",hr);
-  //   return;
-  //  },
-  //};
-  //println!("{:?}", cq.iptr());
- 
-  let wnd=create_window("Hello, world!", 512, 256);
-  match create_appdata(wnd) {
-    Ok(appdata) => {
-    },
-    Err(iq) => {
-      let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
-      println!("Number of debug messages is {}", mnum);
-      for i in 0..mnum {
-        let mut sz=0;
-        let hr=iq.get_message(i,None,&mut sz);
-        info!("get_message returned {:?}", hr);
-        let mut arr: Vec<u8> = Vec::with_capacity(sz as usize);
-        let mut sz1=sz;
-        unsafe {
-          //extremely unsafe. I don't know what I do.
-          let hr=iq.get_message(i,Some(mem::transmute(arr.as_ptr())),&mut sz1);
-          assert_eq!(sz,sz1);
-          let msg:D3D12_MESSAGE=unsafe {mem::transmute_copy(&(*arr.as_ptr()))};
-          let cdescr=::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
-          let descr=String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
-          println!("{:}",descr);
-        }
-      }
-    },
-  };
-
-  let hr=iq.get_message(i,Some(mem::transmute(arr.as_ptr())),&mut sz1); let msg:D3D12_MESSAGE=mem::transmute_copy(&(*arr.as_ptr()))};
-  set_resize_fn(wnd,Some(Box::new(|w,h,c|{println!("Resize to {},{}",w,h);})));
-  message_loop();
-
-  //if let Ok(factory)=create_dxgi_factory1() {
-  //  if let Ok(adapter0)=factory.enum_adapters1(0) {
-  //    println!("{:?}",adapter0.get_desc().unwrap());
-  //    if let Ok(output0)=adapter0.enum_outputs(0) {
-  //      let desc=output0.get_desc().unwrap();
-  //      println!("{:?}",desc);
-  //      for fnum in 0..130 {
-  //        let format=DXGI_FORMAT(fnum);
-  //        match output0.get_display_mode_list(format, 0, None) {
-  //          Ok(num_modes) => {
-  //            if num_modes!=0 {
-  //              println!("Num modes: {} for {:?}", num_modes, format);
-  //              let mut modes=vec![DXGI_MODE_DESC::default(); num_modes as usize];
-  //              output0.get_display_mode_list(format, 0, Some(&mut modes[..]));
-  //              for mode in modes {
-  //                println!("{:?}", mode);
-  //              }
-  //            }
-  //          },
-  //          Err(hr) => {
-  //            println!("Error 0x{:x}", hr);
-  //          },
-  //        }
-  //      }
-  //    }
-  //  }
-  //}
-}
-
