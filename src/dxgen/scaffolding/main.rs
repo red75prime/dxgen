@@ -1,3 +1,5 @@
+#![feature(result_expect)]
+
 #[macro_use]
 extern crate lazy_static;
 
@@ -32,6 +34,13 @@ const FRAME_COUNT : u32 = 2;
 fn main() {
   env_logger::init().unwrap();
 
+  let factory=create_dxgi_factory1().expect("Cannot create DXGIFactory1. No can do.");
+  let mut i=0;
+  while let Ok(adapter)=factory.enum_adapters(i) {
+    println!("Adapter {}: {:?}", i, adapter.get_desc());
+    i+=1;
+  }
+
   let wnd=create_window("Hello, world!", 512, 256);
   match create_appdata(wnd) {
     Ok(appdata) => {
@@ -58,7 +67,8 @@ fn main() {
           let descr=String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
           println!("{:}",descr);
         }
-      }
+      };
+      iq.clear_stored_messages();
     },
   };
 
@@ -180,8 +190,25 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
 
   let factory=create_dxgi_factory1().unwrap();
   info!("Factory");
-  let dev=d3d12_create_device(D3D_FEATURE_LEVEL_11_0).unwrap();
+  let dev=d3d12_create_device(None, D3D_FEATURE_LEVEL_12_0).unwrap();
   info!("Device");
+
+  let mut opts=D3D12_FEATURE_DATA_D3D12_OPTIONS{ ..Default::default() };
+  dev.check_feature_support_options(&mut opts).unwrap();
+  info!("{:#?}",opts);
+
+  let fl_array=[D3D_FEATURE_LEVEL_9_1, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_3, 
+                D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_11_0, 
+                D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_12_0,
+                D3D_FEATURE_LEVEL_12_1, ];
+  let mut feat_levels=D3D12_FEATURE_DATA_FEATURE_LEVELS {
+      NumFeatureLevels: fl_array.len() as UINT,
+      pFeatureLevelsRequested: fl_array.as_ptr(),
+      MaxSupportedFeatureLevel: D3D_FEATURE_LEVEL(0),
+    };
+  dev.check_feature_support_feature_levels(&mut feat_levels).unwrap();
+  info!("Max supported feature level: {:?}", feat_levels.MaxSupportedFeatureLevel);
+
   let info_queue: D3D12InfoQueue = dev.query_interface().unwrap();
   info!("Info queue");
 
@@ -212,7 +239,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   };
   let swap_chain=factory.create_swap_chain(&cqueue, &mut scd).unwrap();
   info!("Swap chain");
-  println!("{:?}", &scd);
+  //println!("{:?}", &scd);
   //let frameindex=swap_chain.get_current_back_buffer_index();
   //println!("Frame index: {:?}", &frameindex);
   let rtvhd=D3D12_DESCRIPTOR_HEAP_DESC{

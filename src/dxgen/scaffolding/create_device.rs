@@ -6,9 +6,9 @@ use libc::{c_void,LPCSTR,LPCWSTR};
 use libc;
 
 
-pub fn d3d12_create_device(min_feat_level: D3D_FEATURE_LEVEL) -> HResult<D3D12Device> {
+pub fn d3d12_create_device(adapter: Option<&DXGIAdapter>, min_feat_level: D3D_FEATURE_LEVEL) -> HResult<D3D12Device> {
   let mut p_dev : *mut IUnknown = ptr::null_mut();
-  let hr=unsafe {D3D12CreateDevice(ptr::null_mut(), min_feat_level, &IID_ID3D12Device, &mut p_dev as *mut *mut _ as *mut *mut c_void) }; 
+  let hr=unsafe {D3D12CreateDevice(adapter.map(|p|p.iptr()).unwrap_or(ptr::null_mut()), min_feat_level, &IID_ID3D12Device, &mut p_dev as *mut *mut _ as *mut *mut c_void) }; 
   if hr==0 {
     Ok(D3D12Device::new(p_dev))
   } else {
