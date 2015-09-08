@@ -1,6 +1,5 @@
 use d3d12_sys::*;
 use d3d12::*;
-use iid::{HasIID,IUnknown};
 use std::ptr;
 use libc::{c_void,LPCSTR,LPCWSTR};
 use libc;

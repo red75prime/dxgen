@@ -1,23 +1,18 @@
 #![feature(result_expect)]
 
-#[macro_use]
-extern crate lazy_static;
-
+#[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
 extern crate env_logger;
-
 extern crate libc;
+extern crate d3d12_sys;
+extern crate d3d12;
 
 mod macros;
-mod iid;
-mod d3d12_sys;
-mod d3d12;
 mod create_device;
 
 use d3d12_sys::*;
 use d3d12::*;
 use create_device::*;
-use iid::HasIID;
 use libc::HANDLE;
 use std::ptr;
 use std::fmt;
@@ -384,5 +379,10 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
       Err(_) => {return Err(info_queue);},
     };
   info!("Graphics pipeline state");
+
+  let command_list : D3D12GraphicsCommandList = dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
+  info!("Command list");
+  command_list.close().unwrap();
+  info!("Command list Close");
   Err(info_queue)
 }

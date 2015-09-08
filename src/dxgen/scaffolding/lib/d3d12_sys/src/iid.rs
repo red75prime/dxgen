@@ -1,24 +1,13 @@
-#![feature(libc)]
+use libc::{c_void};
 
-use std::fmt;
-
-use libc::{GUID,c_void};
-
-pub type IID=GUID;
+use d3d12_sys::{ULONG,HRESULT,REFGUID};
 
 pub mod iids {
-  use super::IID;
-  
+  use d3d12_sys::IID;
+
+  #[allow(non_upper_case_globals)]  
   pub static IID_IUnknown : IID = IID {Data1:0, Data2:0, Data3:0, Data4:[0,0,0,0,0,0,0,0,],};  
 }
-
-pub type HRESULT=u32;
-
-pub type UINT64=u64;
-
-pub type ULONG=u32;
-
-pub type REFGUID=&'static GUID;
 
 pub type HResult<T>=Result<T, HRESULT>;
 
@@ -30,6 +19,7 @@ pub struct IUnknownVtbl {
   Release : extern "system" fn (This : *mut IUnknown) -> ULONG,
 }
 
+#[allow(non_snake_case)]
 #[repr(C)]
 pub struct IUnknown {
   lpVtbl : *mut IUnknownVtbl,

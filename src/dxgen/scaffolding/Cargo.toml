@@ -1,0 +1,24 @@
+[package]
+name = "d3d12_safe"
+version = "0.2.0"
+authors = ["red75prime <red75prim@gmail.com>"]
+
+[dependencies]
+libc = "0.1.10"
+lazy_static = "0.1.14"
+log = "*"
+env_logger = "*"
+d3d12_sys = { version = "*", path = "lib/d3d12_sys" }
+d3d12 = { version = "*", path = "lib/d3d12" }
+
+[dependencies.winapi]
+git = "https://github.com/red75prime/winapi-rs.git"
+
+[dependencies.dxgi-sys]
+git = "https://github.com/red75prime/winapi-rs.git"
+
+[dependencies.user32-sys]
+git = "https://github.com/red75prime/winapi-rs.git"
+
+[dependencies.kernel32-sys]
+git = "https://github.com/red75prime/winapi-rs.git"

@@ -1,0 +1,11 @@
+[package]
+name = "d3d12"
+version = "0.3.0"
+authors = ["red75prime <red75prim@gmail.com>"]
+
+[lib]
+name = "d3d12"
+
+[dependencies]
+libc = "0.1.10"
+d3d12_sys = { version = "*", path = "../d3d12_sys" }
