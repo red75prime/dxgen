@@ -19,11 +19,11 @@ let makeStruct name ses=
 let makeInterface annotations name ses=
   [] //RustItem(name, REInterface ,RAPublic, [reprC])
 
-let convertToRust (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,structs:Map<string,CTypeDesc>,funcs:Map<string,CTypeDesc>, iids:Set<string>, annotations)=
+let convertToRust (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,funcs:Map<string,CTypeDesc*CodeLocation>, iids:Set<string>, annotations)=
   let rtypes=
     types |> List.ofSeq |> 
       List.map (
-        fun (KeyValue(name, ty)) ->
+        fun (KeyValue(name, (ty, _))) ->
           let rty=tyToRty ty
           RustItem (name, RETypeDef rty, RAPublic, [reprC])
         )
@@ -32,7 +32,7 @@ let convertToRust (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,struc
       List.collect (
         fun (KeyValue(name, ty)) ->
           match ty with
-          |Enum(underlyingType=ut; values=vals) ->
+          |Enum(underlyingType=ut; values=vals), _ ->
             RustItem (name, RETypeDef(RTupleStruct([tyToRty (Primitive ut)])),RAPublic,[reprC]) :: 
               (vals |> List.map (
                 fun (ename, eVal) ->
@@ -41,7 +41,7 @@ let convertToRust (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,struc
           |_ -> raise <| new System.Exception("Unexpected type of enum "+name)
       )
   let rstructs=
-    let makeStructOrInterface (KeyValue(name,ty)) =
+    let makeStructOrInterface (KeyValue(name,(ty,_))) =
       match getVtbl structs ty with
       |Some vtbl ->
         // Interface
@@ -60,12 +60,16 @@ let convertToRust (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,struc
 let isOnlyOneBitSet (v:uint64)=
   v<>0UL && (v &&& (v-1UL))=0UL
 
-let codeGen (types:Map<string,CTypeDesc>,enums:Map<string,CTypeDesc>,structs:Map<string,CTypeDesc>,funcs:Map<string,CTypeDesc>, iids:Set<string>) : string=
+let isDXGI (fname,_,_,_)=
+  //System.IO.Path.GetFileName(fname).StartsWith("dxgi",System.StringComparison.InvariantCultureIgnoreCase) 
+  false //TODO: switch to winapi-rs when it's usable
+
+let codeGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,funcs:Map<string,CTypeDesc*CodeLocation>, iids:Set<string>) : string=
   let createEnums (sb:System.Text.StringBuilder)=
     let apl s=sb.AppendLine(s) |> ignore
     apl "use std::ops::BitOr;"
     apl ""
-    for (name,uty,vals) in enums |> Seq.choose (function |KeyValue(name,Enum(uty, vals)) -> Some(name,uty,vals) |_ -> None) do
+    for (name,uty,vals,loc) in enums |> Seq.choose (function |KeyValue(name,(Enum(uty, vals),loc)) -> (if isDXGI loc then None else Some(name,uty,vals,loc)) |_ -> None) do
       let annot=Map.find name enum_annotations
       apl @"#[repr(C)]"
       apl @"#[derive(Clone,Copy,PartialEq,Eq,Default)]"
@@ -124,11 +128,11 @@ impl fmt::Debug for {0} {{
       ;"GUID";"LARGE_INTEGER";"LPVOID"
       ;"WCHAR";"BYTE";"LPCVOID";"LONG_PTR";"WORD";"SIZE_T"
       ;"SECURITY_ATTRIBUTES";"HANDLE";"DWORD";"LPCSTR";"LONG"
-      ;"IUnknown"]
+      ;"IUnknown"] 
 // ----------------- Create structs ----------------------------------
   let createStructs (sb:System.Text.StringBuilder)=
     let apl s=sb.AppendLine(s) |> ignore
-    for (name,sfields) in structs |> Seq.choose(function |KeyValue(name, Struct(sfields)) -> Some(name,sfields) |_ -> None) do
+    for (name,sfields,loc) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields),loc)) -> (if isDXGI loc then None else Some(name,sfields,loc)) |_ -> None) do
       if Set.contains name libcTypeNames then
         ()
       else
@@ -139,6 +143,9 @@ impl fmt::Debug for {0} {{
           apl "#[derive(Default)]"
         if nonInterface && (match Map.tryFind name d3d12structs with |Some(flag,_) when flag &&& StructFlags.DeriveCopy <> StructFlags.None -> true |_ -> false  ) then
           apl "#[derive(Clone,Copy)]"
+        let deriveDebug=(match Map.tryFind name d3d12structs with |Some(flag,_) when flag &&& StructFlags.DeriveDebug <> StructFlags.None -> true |_ -> false  )
+        if nonInterface && deriveDebug then
+          apl "#[derive(Debug)]"
         if sfields.IsEmpty then
           sb.AppendFormat("pub struct {0};",name).AppendLine() |> ignore;
         else
@@ -146,7 +153,7 @@ impl fmt::Debug for {0} {{
           for (fname,fty) in sfields |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |_ -> None) do
             sb.AppendFormat("  pub {0} : {1},", fname, tyToRust fty).AppendLine() |> ignore
           sb.AppendLine("}").AppendLine() |> ignore
-        if nonInterface then
+        if nonInterface && (not deriveDebug) then
           let code=
             sfields |>
               Seq.map(
@@ -179,10 +186,12 @@ impl fmt::Debug for {Struct} {
 ".Replace("{Struct}",name).Replace("{Code}",code) )
             
   let createTypes (sb:System.Text.StringBuilder)=
-    for KeyValue(name,ty) in types do
+    for KeyValue(name,(ty,loc)) in types do
       // Some types are defined in rust's libc module
       if Set.contains name libcTypeNames then
         ()
+      else if name="REFGUID" then
+        sb.AppendLine("pub type REFGUID=&'static GUID;") |> ignore
       else
         match ty with
         |Typedef(EnumRef(ename)) when ename=name -> ()
@@ -194,7 +203,7 @@ impl fmt::Debug for {Struct} {
 
   let createFunctions (sb:System.Text.StringBuilder)=
      // TODO: use 
-    for (name,args,rty,cc) in funcs |> Seq.choose (function |KeyValue(name, Function(CFuncDesc(args,rty,cc))) -> Some(name,args,rty,cc) |_ -> None) do
+    for (name,args,rty,cc,loc) in funcs |> Seq.choose (function |KeyValue(name, (Function(CFuncDesc(args,rty,cc)),loc)) -> (if isDXGI loc then None else Some(name,args,rty,cc,loc)) |_ -> None) do
       //sb.AppendLine("#[link(name=\"d3d12\")]") |> ignore       
       sb.AppendFormat("extern {3} {{ pub fn {0}({1}) -> {2}; }}",name,((List.map funcArgToRust args) |> String.concat(", ")),(tyToRust rty), (ccToRust cc)).AppendLine() |> ignore
     sb.AppendLine("").AppendLine() |> ignore
@@ -207,12 +216,11 @@ impl fmt::Debug for {Struct} {
       sb.AppendFormat("  pub static {0}: IID;",iid).AppendLine() |> ignore
     apl "}"
     apl ""
-
+  // ----------------------- codeGen ------------------------------------------------
   let sb=new System.Text.StringBuilder()
   let apl s=sb.AppendLine(s) |> ignore
   apl "// This file is autogenerated."
   apl ""
-  apl "#![feature(libc)]"
   apl ""
   apl @"
 extern crate libc;
@@ -263,15 +271,15 @@ fn debug_fmt_enum(name : &str, val: u32, opts: &[(&str,u32)], f: &mut fmt::Forma
 }
 "
 
-  for KeyValue(sn,st) in structs do
-    match st with
-    |Struct(ses) ->
-      if ses |> List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ -> true) then
-        printfn "  (\"%s\",StructFlags.None,[" sn
-        for CStructElem(fname,_,_) in ses do
-          printfn "    (\"%s\",FANone);" fname
-        printfn "    ]);"
-    |_ -> ()
+//  for KeyValue(sn,(st,loc)) in structs do
+//    match st with
+//    |Struct(ses) ->
+//      if ses |> List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ -> true) then
+//        printfn "  (\"%s\",StructFlags.None,[" sn
+//        for CStructElem(fname,_,_) in ses do
+//          printfn "    (\"%s\",FANone);" fname
+//        printfn "    ]);"
+//    |_ -> ()
 
   createEnums sb
   createTypes sb

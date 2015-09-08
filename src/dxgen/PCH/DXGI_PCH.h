@@ -147,3 +147,9 @@ typedef void* RPC_IF_HANDLE;
 //TODO: Add to cdesc
 #define _Field_size_full_(x) 
 #define _Field_size_bytes_full_(x) 
+#define _Out_writes_bytes_to_(x,y)
+#define _Out_writes_all_opt_(x)
+
+#include <dxgi1_2.h>
+#include <dxgi1_3.h>
+#include <dxgi1_4.h>

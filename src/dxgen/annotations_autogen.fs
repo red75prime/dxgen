@@ -5,1364 +5,1706 @@ open cdesc
 let (++) xs ys=
   List.concat [xs;ys]
 
-let getPrivateData= // Low level method
-  ("GetPrivateData",[
-      ("This",AThis);
-      ("guid",ANone);
-      ("pDataSize",InOutReturn);
-      ("pData",OutOptionalOfSize "pDataSize");
-    ],MAUnsafe) // safe method should be: unsafe fn get_private_data<T>(guid: REFGUID, data: Option<&mut T>) -> HResult<usize>
-
-let setPrivateData=
-  ("SetPrivateData",[
-      ("This",AThis);
-      ("guid",ANone);
-      ("DataSize",ANone);
-      ("pData", InOfSize "DataSize");
-    ],MANone)
-
-let setPrivateDataInterface=
-  ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("guid",ANone);
-      ("pData",InIUnknown);
-    ],MADontImplement) // Not useful without full-blown COM-support
-
-let setName=
-  ("SetName",[
-      ("This",AThis);
-      ("Name",ANone);
-    ],MANone)
-
-let getDevice=
-  ("GetDevice",[
-    ("This",AThis);
-    ("riid",ANone);
-    ("ppvDevice",OutReturnInterface "riid");
-  ],MANone)
-
-let d3d12Object= [
+let iUnknown=[
     ("QueryInterface",[],MAIUnknown);
     ("AddRef",[],MAIUnknown);
     ("Release",[],MAIUnknown);
-    getPrivateData;
-    setPrivateData;
-    setPrivateDataInterface;
-    setName
   ]
 
-let dxgiObject = [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("DataSize",ANone);
-      ("pData", InOfSize "DataSize");
-    ],MANone);
-    ("SetPrivateDataInterface",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pUnknown",ANone);
-    ],MADontImplement);
-    ("GetPrivateData",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("pDataSize",InOutReturn);
-      ("pData", OutOptionalOfSize "pDataSize");
-    ],MANone);
-    ("GetParent",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppParent",OutReturnInterface "riid");
-    ],MANone);
-  ]
+let populateVtbls annots=
+  let imap=annots |> Seq.map (fun ((iname,_,_,_) & an) ->  (iname,an) ) |> Map.ofSeq
+  let rec fullVtbl iname=
+    match iname with
+    |"" -> []
+    |"IUnknownVtbl" -> iUnknown
+    |_ -> 
+      let (_,_,parent,vtbl)=Map.find iname imap
+      (fullVtbl parent) ++ vtbl
+  annots |>
+    List.map 
+      (fun (iname, annot, pname, vtbl) ->
+        (iname, annot, pname, (fullVtbl pname) ++ vtbl))
 
-let dxgiDevice=
-  dxgiObject ++ [
-    ("GetAdapter",[
-      ("This",AThis);
-      ("pAdapter",OutReturnComPtr);
-    ],MANone);
-    ("CreateSurface",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("NumSurfaces",ANone);
-      ("Usage",ANone);
-      ("pSharedResource",ANone);
-      ("ppSurface",ANone);
-    ],MADontImplement); // MSDN states that this method is internal
-    ("QueryResourceResidency",[
-      ("This",AThis);
-      ("ppResources",InComPtrArrayOfSize "NumResources");
-      ("pResidencyStatus",OutArrayOfSize "NumResources");
-      ("NumResources",ANone);
-    ],MANone);
-    ("SetGPUThreadPriority",[
-      ("This",AThis);
-      ("Priority",ANone);
-    ],MANone);
-    ("GetGPUThreadPriority",[
-      ("This",AThis);
-      ("pPriority",OutReturn);
-    ],MANone);]
-
-let dxgiFactory=
-  dxgiObject ++ 
-  [
-    ("EnumAdapters",[
-      ("This",AThis);
-      ("Adapter",ANone);
-      ("ppAdapter",OutReturnComPtr);
-    ],MANone);
-    ("MakeWindowAssociation",[
-      ("This",AThis);
-      ("WindowHandle",ANone);
-      ("Flags",ANone);
-    ],MANone);
-    ("GetWindowAssociation",[
-      ("This",AThis);
-      ("pWindowHandle",OutReturn);
-    ],MANone);
-    ("CreateSwapChain",[
-      ("This",AThis);
-      ("pDevice",InComPtr);
-      ("pDesc",ANone);
-      ("ppSwapChain",OutReturnComPtr);
-    ],MANone);
-    ("CreateSoftwareAdapter",[
-      ("This",AThis);
-      ("Module",ANone);
-      ("ppAdapter",OutReturnComPtr);
-    ],MANone);]
-
-let d3d12annotations=[
-  ("ID3D10BlobVtbl",IAAutogen,"IUnknownVtbl",[
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("GetBufferPointer",[
-      ("This",AThis);
-    ],MANone);
-    ("GetBufferSize",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("ID3D12CommandAllocatorVtbl",IAAutogen, "ID3D12PageableVtbl", d3d12Object++[
-    getDevice;
-    ("Reset",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("ID3D12CommandListVtbl",IAAutogen, "ID3D12DeviceChildVtbl", d3d12Object++[
-    getDevice;
-    ("GetType",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("ID3D12CommandQueueVtbl",IAAutogen, "ID3D12PageableVtbl", d3d12Object++[
-    getDevice;
-    ("UpdateTileMappings",[
-      ("This",AThis);
-      ("pResource",InComPtr);
-      ("NumResourceRegions",ANone);
-      ("pResourceRegionStartCoordinates",InOptionalArrayOfSize "NumResourceRegions");
-      ("pResourceRegionSizes",InOptionalArrayOfSize "NumResourceRegions");
-      ("pHeap",InOptional);
-      ("NumRanges",ANone);
-      ("pRangeFlags",InOptionalArrayOfSize "NumRanges");
-      ("pHeapRangeStartOffsets",InOptionalArrayOfSize "NumRanges");
-      ("pRangeTileCounts",InOptionalArrayOfSize "NumRanges");
-      ("Flags",ANone);
-    ],MANone);
-    ("CopyTileMappings",[
-      ("This",AThis);
-      ("pDstResource",InComPtr);
-      ("pDstRegionStartCoordinate",ANone);
-      ("pSrcResource",InComPtr);
-      ("pSrcRegionStartCoordinate",ANone);
-      ("pRegionSize",ANone);
-      ("Flags",ANone);
-    ],MANone);
-    ("ExecuteCommandLists",[
-      ("This",AThis);
-      ("NumCommandLists",ANone);
-      ("ppCommandLists",InComPtrArrayOfSize "NumCommandLists");
-    ],MANone);
-    ("SetMarker",[
-      ("This",AThis);
-      ("Metadata",ANone);
-      ("pData",ANone);
-      ("Size",ANone);
-    ],MADontImplement);
-    ("BeginEvent",[
-      ("This",AThis);
-      ("Metadata",ANone);
-      ("pData",ANone);
-      ("Size",ANone);
-    ],MADontImplement);
-    ("EndEvent",[
-      ("This",AThis);
-    ],MADontImplement);
-    ("Signal",[
-      ("This",AThis);
-      ("pFence",ANone);
-      ("Value",ANone);
-    ],MANone);
-    ("Wait",[
-      ("This",AThis);
-      ("pFence",ANone);
-      ("Value",ANone);
-    ],MANone);
-    ("GetTimestampFrequency",[
-      ("This",AThis);
-      ("pFrequency",OutReturn);
-    ],MANone);
-    ("GetClockCalibration",[
-      ("This",AThis);
-      ("pGpuTimestamp",OutReturnCombine("GPUCPUTimestamp","gpu_timestamp"));
-      ("pCpuTimestamp",OutReturnCombine("GPUCPUTimestamp","cpu_timestamp"));
-    ],MANone);
-    ("GetDesc",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("ID3D12CommandSignatureVtbl",IAAutogen, "ID3D12PageableVtbl", d3d12Object++[
-    getDevice;
-  ]);
-  ("ID3D12DebugCommandListVtbl",IAManual, "IUnknownVtbl", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("AssertResourceState",[
-      ("This",AThis);
-      ("pResource",ANone);
-      ("Subresource",ANone);
-      ("State",ANone);
-    ],MANone);
-    ("SetFeatureMask",[
-      ("This",AThis);
-      ("Mask",ANone);
-    ],MANone);
-    ("GetFeatureMask",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("ID3D12DebugCommandQueueVtbl",IAManual, "IUnknownVtbl", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("AssertResourceState",[
-      ("This",AThis);
-      ("pResource",ANone);
-      ("Subresource",ANone);
-      ("State",ANone);
-    ],MANone);
-  ]);
-  ("ID3D12DebugDeviceVtbl",IAManual, "IUnknownVtbl", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetFeatureMask",[
-      ("This",AThis);
-      ("Mask",ANone);
-    ],MANone);
-    ("GetFeatureMask",[
-      ("This",AThis);
-    ],MANone);
-    ("ReportLiveDeviceObjects",[
-      ("This",AThis);
-      ("Flags",ANone);
-    ],MANone);
-  ]);
-  ("ID3D12DebugVtbl", IAAutogen, "IUnknownVtbl", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("EnableDebugLayer",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("ID3D12DescriptorHeapVtbl",IAAutogen, "ID3D12PageableVtbl", d3d12Object++[
-    getDevice;
-    ("GetDesc",[
-      ("This",AThis);
-    ],MANone);
-    ("GetCPUDescriptorHandleForHeapStart",[
-      ("This",AThis);
-      ("__ret_val",OutReturn);
-    ],MANone);
-    ("GetGPUDescriptorHandleForHeapStart",[
-      ("This",AThis);
-      ("__ret_val",OutReturn);
-    ],MANone);
-  ]);
-  ("ID3D12DeviceChildVtbl",IAAutogen, "ID3D12ObjectVtbl",  d3d12Object++[
-    getDevice;
-  ]);
-  ("ID3D12DeviceVtbl",IAAutogen, "ID3D12ObjectVtbl", d3d12Object++[
-    ("GetNodeCount",[
-      ("This",AThis);
-    ],MANone);
-    ("CreateCommandQueue",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("riid",ANone);
-      ("ppCommandQueue",OutReturnKnownInterface("riid","D3D12CommandQueue"));
-    ],MANone);
-    ("CreateCommandAllocator",[
-      ("This",AThis);
-      ("type",ANone);
-      ("riid",ANone);
-      ("ppCommandAllocator",OutReturnKnownInterface("riid","D3D12CommandAllocator"));
-    ],MANone);
-    ("CreateGraphicsPipelineState",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("riid",ANone);
-      ("ppPipelineState",OutReturnKnownInterface("riid","D3D12PipelineState"));
-    ],MANone);
-    ("CreateComputePipelineState",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("riid",ANone);
-      ("ppPipelineState",OutReturnKnownInterface("riid","D3D12PipelineState"));
-    ],MANone);
-    ("CreateCommandList",[
-      ("This",AThis);
-      ("nodeMask",ANone);
-      ("type",ANone);
-      ("pCommandAllocator",ANone);
-      ("pInitialState",InOptionalComPtr);
-      ("riid",ANone);
-      ("ppCommandList",OutReturnInterface "riid");
-    ],MANone);
-    ("CheckFeatureSupport",[
-      ("This",AThis);
-      ("Feature",TypeSelector("pFeatureSupportData",[("Options","D3D12_FEATURE_D3D12_OPTIONS",Ptr(StructRef "D3D12_FEATURE_DATA_D3D12_OPTIONS"), InOutOfSize "FeatureSupportDataSize");
-                                                     ("Arch","D3D12_FEATURE_ARCHITECTURE",Ptr(StructRef "D3D12_FEATURE_DATA_ARCHITECTURE"), InOutOfSize "FeatureSupportDataSize");
-                                                     ("FeatureLevels","D3D12_FEATURE_FEATURE_LEVELS",Ptr(StructRef "D3D12_FEATURE_DATA_FEATURE_LEVELS"), InOutOfSize "FeatureSupportDataSize");
-                                                     ("FormatSupport","D3D12_FEATURE_FORMAT_SUPPORT",Ptr(StructRef "D3D12_FEATURE_DATA_FORMAT_SUPPORT"), InOutOfSize "FeatureSupportDataSize");
-                                                     ("MultisampleQualityLevels","D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS",Ptr(StructRef "D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS"), InOutOfSize "FeatureSupportDataSize");
-                                                     ("FormatInfo","D3D12_FEATURE_FORMAT_INFO",Ptr(StructRef "D3D12_FEATURE_DATA_FORMAT_INFO"), InOutOfSize "FeatureSupportDataSize");
-                                                     ]));
-      ("pFeatureSupportData",InOutOfSize "FeatureSupportDataSize");
-      ("FeatureSupportDataSize",ANone);
-    ],MANone);
-    ("CreateDescriptorHeap",[
-      ("This",AThis);
-      ("pDescriptorHeapDesc",ANone);
-      ("riid",ANone);
-      ("ppvHeap",OutReturnKnownInterface("riid","D3D12DescriptorHeap"));
-    ],MANone);
-    ("GetDescriptorHandleIncrementSize",[
-      ("This",AThis);
-      ("DescriptorHeapType",ANone);
-    ],MANone);
-    ("CreateRootSignature",[
-      ("This",AThis);
-      ("nodeMask",ANone);
-      ("pBlobWithRootSignature", InByteArrayOfSize ("blobLengthInBytes",1u));
-      ("blobLengthInBytes",ANone);
-      ("riid",ANone);
-      ("ppvRootSignature",OutReturnKnownInterface("riid","D3D12RootSignature"));
-    ],MANone);
-    ("CreateConstantBufferView",[
-      ("This",AThis);
-      ("pDesc",InOptional);
-      ("DestDescriptor",ANone);
-    ],MANone);
-    ("CreateShaderResourceView",[
-      ("This",AThis);
-      ("pResource",InOptional);
-      ("pDesc",InOptional);
-      ("DestDescriptor",ANone);
-    ],MANone);
-    ("CreateUnorderedAccessView",[
-      ("This",AThis);
-      ("pResource",InOptional);
-      ("pCounterResource",InOptional);
-      ("pDesc",InOptional);
-      ("DestDescriptor",ANone);
-    ],MANone);
-    ("CreateRenderTargetView",[
-      ("This",AThis);
-      ("pResource",InOptionalComPtr);
-      ("pDesc",InOptional);
-      ("DestDescriptor",ANone);
-    ],MANone);
-    ("CreateDepthStencilView",[
-      ("This",AThis);
-      ("pResource",InOptional);
-      ("pDesc",InOptional);
-      ("DestDescriptor",ANone);
-    ],MANone);
-    ("CreateSampler",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("DestDescriptor",ANone);
-    ],MANone);
-    ("CopyDescriptors",[
-      ("This",AThis);
-      ("NumDestDescriptorRanges",ANone);
-      ("pDestDescriptorRangeStarts",InArrayOfSize "NumDestDescriptorRanges");
-      ("pDestDescriptorRangeSizes",InOptionalArrayOfSize "NumDestDescriptorRanges");
-      ("NumSrcDescriptorRanges",ANone);
-      ("pSrcDescriptorRangeStarts",InArrayOfSize "NumSrcDescriptorRanges");
-      ("pSrcDescriptorRangeSizes",InOptionalArrayOfSize "NumSrcDescriptorRanges");
-      ("DescriptorHeapsType",ANone);
-    ],MANone);
-    ("CopyDescriptorsSimple",[
-      ("This",AThis);
-      ("NumDescriptors",ANone);
-      ("DestDescriptorRangeStart",ANone);
-      ("SrcDescriptorRangeStart",ANone);
-      ("DescriptorHeapsType",ANone);
-    ],MANone);
-    ("GetResourceAllocationInfo",[
-      ("This",AThis);
-      ("visibleMask",ANone);
-      ("numResourceDescs",ANone);
-      ("pResourceDescs",InArrayOfSize "numResourceDescs");
-    ],MANone);
-    ("GetCustomHeapProperties",[
-      ("This",AThis);
-      ("nodeMask",ANone);
-      ("heapType",ANone);
-    ],MANone);
-    ("CreateCommittedResource",[
-      ("This",AThis);
-      ("pHeapProperties",ANone);
-      ("HeapFlags",ANone);
-      ("pResourceDesc",ANone);
-      ("InitialResourceState",ANone);
-      ("pOptimizedClearValue",InOptional);
-      ("riidResource",ANone);
-      ("ppvResource",OutReturnKnownInterface("riidResource","D3D12Resource"));
-    ],MANone);
-    ("CreateHeap",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("riid",ANone);
-      ("ppvHeap",OutReturnKnownInterface("riid","D3D12Heap"));
-    ],MANone);
-    ("CreatePlacedResource",[
-      ("This",AThis);
-      ("pHeap",ANone);
-      ("HeapOffset",ANone);
-      ("pDesc",ANone);
-      ("InitialState",ANone);
-      ("pOptimizedClearValue",InOptional);
-      ("riid",ANone);
-      ("ppvResource",OutReturnKnownInterface("riid","D3D12Resource"));
-    ],MANone);
-    ("CreateReservedResource",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("InitialState",ANone);
-      ("pOptimizedClearValue",InOptional);
-      ("riid",ANone);
-      ("ppvResource",OutReturnKnownInterface("riid","D3D12Resource"));
-    ],MANone);
-    ("CreateSharedHandle",[
-      ("This",AThis);
-      ("pObject",ANone);
-      ("pAttributes",InOptional);
-      ("Access",ANone);
-      ("Name",ANone);
-      ("pHandle",OutReturn);
-    ],MANone);
-    ("OpenSharedHandle",[
-      ("This",AThis);
-      ("NTHandle",ANone);
-      ("riid",ANone);
-      ("ppvObj",OutReturnInterface("riid"));
-    ],MANone);
-    ("OpenSharedHandleByName",[
-      ("This",AThis);
-      ("Name",ANone);
-      ("Access",ANone);
-      ("pNTHandle",OutReturn);
-    ],MANone);
-    ("MakeResident",[
-      ("This",AThis);
-      ("NumObjects",ANone);
-      ("ppObjects",InArrayOfSize "NumObjects");
-    ],MANone);
-    ("Evict",[
-      ("This",AThis);
-      ("NumObjects",ANone);
-      ("ppObjects",InArrayOfSize "NumObjects");
-    ],MANone);
-    ("CreateFence",[
-      ("This",AThis);
-      ("InitialValue",ANone);
-      ("Flags",ANone);
-      ("riid",ANone);
-      ("ppFence",OutReturnKnownInterface("riid","D3D12Fence"));
-    ],MANone);
-    ("GetDeviceRemovedReason",[
-      ("This",AThis);
-    ],MANone);
-    ("GetCopyableFootprints",[
-      ("This",AThis);
-      ("pResourceDesc",ANone);
-      ("FirstSubresource",ANone);
-      ("NumSubresources",ANone);
-      ("BaseOffset",ANone);
-      ("pLayouts", OutOptionalArrayOfSize "NumSubresources");
-      ("pNumRows",OutOptionalArrayOfSize "NumSubresources");
-      ("pRowSizeInBytes",OutOptionalArrayOfSize "NumSubresources");
-      ("pTotalBytes",OutOptional);
-    ],MANone);
-    ("CreateQueryHeap",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("riid",ANone);
-      ("ppvHeap",OutReturnKnownInterface("riid","D3D12QueryHeap"));
-    ],MANone);
-    ("SetStablePowerState",[
-      ("This",AThis);
-      ("Enable",ANone);
-    ],MANone);
-    ("CreateCommandSignature",[
-      ("This",AThis);
-      ("pDesc",ANone);
-      ("pRootSignature",InOptional); // Structure needs to be converted (contains pointer)
-      ("riid",ANone);
-      ("ppvCommandSignature",OutReturnKnownInterface("riid","D3D12CommandSignature"));
-    ],MANone);
-    ("GetResourceTiling",[
-      ("This",AThis);
-      ("pTiledResource",InComPtr);
-      ("pNumTilesForEntireResource",OutOptional);
-      ("pPackedMipDesc",OutOptional);
-      ("pStandardTileShapeForNonPackedMips",OutOptional);
-      ("pNumSubresourceTilings",InOutOptional);
-      ("FirstSubresourceTilingToGet",ANone);
-      ("pSubresourceTilingsForNonPackedMips",OutReturn);
-    ],MANone);
-    ("GetAdapterLuid",[
-      ("This",AThis);
-      ("__ret_val",OutReturn);
-    ],MANone);
-  ]);
-  ("ID3D12FenceVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
-    getDevice;
-    ("GetCompletedValue",[
-      ("This",AThis);
-    ],MANone);
-    ("SetEventOnCompletion",[
-      ("This",AThis);
-      ("Value",ANone);
-      ("hEvent",ANone);
-    ],MANone);
-    ("Signal",[
-      ("This",AThis);
-      ("Value",ANone);
-    ],MANone);
-  ]);
-  ("ID3D12GraphicsCommandListVtbl",IAAutogen,  "ID3D12CommandListVtbl", d3d12Object++[
-    getDevice;
-    ("GetType",[
-      ("This",AThis);
-    ],MANone);
-    ("Close",[
-      ("This",AThis);
-    ],MANone);
-    ("Reset",[
-      ("This",AThis);
-      ("pAllocator",InComPtr);
-      ("pInitialState",InOptionalComPtr);
-    ],MANone);
-    ("ClearState",[
-      ("This",AThis);
-      ("pPipelineState",InOptionalComPtr);
-    ],MANone);
-    ("DrawInstanced",[
-      ("This",AThis);
-      ("VertexCountPerInstance",ANone);
-      ("InstanceCount",ANone);
-      ("StartVertexLocation",ANone);
-      ("StartInstanceLocation",ANone);
-    ],MANone);
-    ("DrawIndexedInstanced",[
-      ("This",AThis);
-      ("IndexCountPerInstance",ANone);
-      ("InstanceCount",ANone);
-      ("StartIndexLocation",ANone);
-      ("BaseVertexLocation",ANone);
-      ("StartInstanceLocation",ANone);
-    ],MANone);
-    ("Dispatch",[
-      ("This",AThis);
-      ("ThreadGroupCountX",ANone);
-      ("ThreadGroupCountY",ANone);
-      ("ThreadGroupCountZ",ANone);
-    ],MANone);
-    ("CopyBufferRegion",[
-      ("This",AThis);
-      ("pDstBuffer",InComPtr);
-      ("DstOffset",ANone);
-      ("pSrcBuffer",InComPtr);
-      ("SrcOffset",ANone);
-      ("NumBytes",ANone);
-    ],MANone);
-    ("CopyTextureRegion",[
-      ("This",AThis);
-      ("pDst",ANone);
-      ("DstX",ANone);
-      ("DstY",ANone);
-      ("DstZ",ANone);
-      ("pSrc",ANone);
-      ("pSrcBox",InOptional);
-    ],MANone);
-    ("CopyResource",[
-      ("This",AThis);
-      ("pDstResource",InComPtr);
-      ("pSrcResource",InComPtr);
-    ],MANone);
-    ("CopyTiles",[
-      ("This",AThis);
-      ("pTiledResource",InComPtr);
-      ("pTileRegionStartCoordinate",ANone);
-      ("pTileRegionSize",ANone);
-      ("pBuffer",InComPtr);
-      ("BufferStartOffsetInBytes",ANone);
-      ("Flags",ANone);
-    ],MANone);
-    ("ResolveSubresource",[
-      ("This",AThis);
-      ("pDstResource",InComPtr);
-      ("DstSubresource",ANone);
-      ("pSrcResource",InComPtr);
-      ("SrcSubresource",ANone);
-      ("Format",ANone);
-    ],MANone);
-    ("IASetPrimitiveTopology",[
-      ("This",AThis);
-      ("PrimitiveTopology",ANone);
-    ],MANone);
-    ("RSSetViewports",[
-      ("This",AThis);
-      ("NumViewports",ANone);
-      ("pViewports",InArrayOfSize "NumViewports");
-    ],MANone);
-    ("RSSetScissorRects",[
-      ("This",AThis);
-      ("NumRects",ANone);
-      ("pRects",InArrayOfSize "NumRects");
-    ],MANone);
-    ("OMSetBlendFactor",[
-      ("This",AThis);
-      ("BlendFactor",InOptional);
-    ],MANone);
-    ("OMSetStencilRef",[
-      ("This",AThis);
-      ("StencilRef",ANone);
-    ],MANone);
-    ("SetPipelineState",[
-      ("This",AThis);
-      ("pPipelineState",InComPtr);
-    ],MANone);
-    ("ResourceBarrier",[
-      ("This",AThis);
-      ("NumBarriers",ANone);
-      ("pBarriers",InArrayOfSize "NumBarriers");
-    ],MANone);
-    ("ExecuteBundle",[
-      ("This",AThis);
-      ("pCommandList",InComPtr);
-    ],MANone);
-    ("SetDescriptorHeaps",[
-      ("This",AThis);
-      ("NumDescriptorHeaps",ANone);
-      ("ppDescriptorHeaps", InComPtrArrayOfSize "NumDescriptorHeaps");
-    ],MANone);
-    ("SetComputeRootSignature",[
-      ("This",AThis);
-      ("pRootSignature",InComPtr);
-    ],MANone);
-    ("SetGraphicsRootSignature",[
-      ("This",AThis);
-      ("pRootSignature",InComPtr);
-    ],MANone);
-    ("SetComputeRootDescriptorTable",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("BaseDescriptor",ANone);
-    ],MANone);
-    ("SetGraphicsRootDescriptorTable",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("BaseDescriptor",ANone);
-    ],MANone);
-    ("SetComputeRoot32BitConstant",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("SrcData",ANone);
-      ("DestOffsetIn32BitValues",ANone);
-    ],MANone);
-    ("SetGraphicsRoot32BitConstant",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("SrcData",ANone);
-      ("DestOffsetIn32BitValues",ANone);
-    ],MANone);
-    ("SetComputeRoot32BitConstants",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("Num32BitValuesToSet",ANone);
-      ("pSrcData",InByteArrayOfSize("Num32BitValuesToSet",4u));
-      ("DestOffsetIn32BitValues",ANone);
-    ],MANone);
-    ("SetGraphicsRoot32BitConstants",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("Num32BitValuesToSet",ANone);
-      ("pSrcData",InByteArrayOfSize("Num32BitValuesToSet",4u));
-      ("DestOffsetIn32BitValues",ANone);
-    ],MANone);
-    ("SetComputeRootConstantBufferView",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("BufferLocation",ANone);
-    ],MANone);
-    ("SetGraphicsRootConstantBufferView",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("BufferLocation",ANone);
-    ],MANone);
-    ("SetComputeRootShaderResourceView",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("BufferLocation",ANone);
-    ],MANone);
-    ("SetGraphicsRootShaderResourceView",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("BufferLocation",ANone);
-    ],MANone);
-    ("SetComputeRootUnorderedAccessView",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("BufferLocation",ANone);
-    ],MANone);
-    ("SetGraphicsRootUnorderedAccessView",[
-      ("This",AThis);
-      ("RootParameterIndex",ANone);
-      ("BufferLocation",ANone);
-    ],MANone);
-    ("IASetIndexBuffer",[
-      ("This",AThis);
-      ("pView",InOptional);
-    ],MANone);
-    ("IASetVertexBuffers",[
-      ("This",AThis);
-      ("StartSlot",ANone);
-      ("NumViews",ANone);
-      ("pViews",InOptionalArrayOfSize "NumViews");
-    ],MANone);
-    ("SOSetTargets",[
-      ("This",AThis);
-      ("StartSlot",ANone);
-      ("NumViews",ANone);
-      ("pViews",InOptionalArrayOfSize "NumViews");
-    ],MANone);
-    ("OMSetRenderTargets",[
-      ("This",AThis);
-      ("NumRenderTargetDescriptors",ANone);
-      ("pRenderTargetDescriptors",ANone);
-      ("RTsSingleHandleToDescriptorRange", 
-        TypeSelector("pRenderTargetDescriptors",[("","TRUE",Ptr(Const(StructRef "D3D12_CPU_DESCRIPTOR_HANDLE")),ANone);
-                                                 ("Arr","FALSE",Ptr(Const(StructRef "D3D12_CPU_DESCRIPTOR_HANDLE")),InArrayOfSize "NumRenderTargetDescriptors");]));
-      ("pDepthStencilDescriptor",InOptional);
-    ],MANone);
-    ("ClearDepthStencilView",[
-      ("This",AThis);
-      ("DepthStencilView",ANone);
-      ("ClearFlags",ANone);
-      ("Depth",ANone);
-      ("Stencil",ANone);
-      ("NumRects",ANone);
-      ("pRects",InArrayOfSize "NumRects");
-    ],MANone);
-    ("ClearRenderTargetView",[
-      ("This",AThis);
-      ("RenderTargetView",ANone);
-      ("ColorRGBA",ANone);
-      ("NumRects",ANone);
-      ("pRects",InArrayOfSize "NumRects");
-    ],MANone);
-    ("ClearUnorderedAccessViewUint",[
-      ("This",AThis);
-      ("ViewGPUHandleInCurrentHeap",ANone);
-      ("ViewCPUHandle",ANone);
-      ("pResource",InComPtr);
-      ("Values",ANone);
-      ("NumRects",ANone);
-      ("pRects",InArrayOfSize "NumRects");
-    ],MANone);
-    ("ClearUnorderedAccessViewFloat",[
-      ("This",AThis);
-      ("ViewGPUHandleInCurrentHeap",ANone);
-      ("ViewCPUHandle",ANone);
-      ("pResource",InComPtr);
-      ("Values",ANone);
-      ("NumRects",ANone);
-      ("pRects",InArrayOfSize "NumRects");
-    ],MANone);
-    ("DiscardResource",[
-      ("This",AThis);
-      ("pResource",InComPtr);
-      ("pRegion",InOptional);
-    ],MANone);
-    ("BeginQuery",[
-      ("This",AThis);
-      ("pQueryHeap",InComPtr);
-      ("Type",ANone);
-      ("Index",ANone);
-    ],MANone);
-    ("EndQuery",[
-      ("This",AThis);
-      ("pQueryHeap",InComPtr);
-      ("Type",ANone);
-      ("Index",ANone);
-    ],MANone);
-    ("ResolveQueryData",[
-      ("This",AThis);
-      ("pQueryHeap",InComPtr);
-      ("Type",ANone);
-      ("StartIndex",ANone);
-      ("NumQueries",ANone);
-      ("pDestinationBuffer",InComPtr);
-      ("AlignedDestinationBufferOffset",ANone);
-    ],MANone);
-    ("SetPredication",[
-      ("This",AThis);
-      ("pBuffer",InOptionalComPtr);
-      ("AlignedBufferOffset",ANone);
-      ("Operation",ANone);
-    ],MANone);
-    ("SetMarker",[
-      ("This",AThis);
-      ("Metadata",ANone);
-      ("pData",ANone);
-      ("Size",ANone);
-    ],MADontImplement);
-    ("BeginEvent",[
-      ("This",AThis);
-      ("Metadata",ANone);
-      ("pData",ANone);
-      ("Size",ANone);
-    ],MADontImplement);
-    ("EndEvent",[
-      ("This",AThis);
-    ],MADontImplement);
-    ("ExecuteIndirect",[
-      ("This",AThis);
-      ("pCommandSignature",InComPtr);
-      ("MaxCommandCount",ANone);
-      ("pArgumentBuffer",InComPtr);
-      ("ArgumentBufferOffset",ANone);
-      ("pCountBuffer",InComPtr);
-      ("CountBufferOffset",ANone);
-    ],MANone);
-  ]);
-  ("ID3D12HeapVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
-    getDevice;
-    ("GetDesc",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("ID3D12InfoQueueVtbl",IAAutogen, "IUnknownVtbl", [ //TODO: Annotate debug interfaces
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("SetMessageCountLimit",[
-      ("This",AThis);
-      ("MessageCountLimit",ANone);
-    ],MANone);
-    ("ClearStoredMessages",[
-      ("This",AThis);
-    ],MANone);
-    ("GetMessage",[
-      ("This",AThis);
-      ("MessageIndex",ANone);
-      ("pMessage",OutOptional);
-      ("pMessageByteLength",ANone);
-    ],MANone);
-    ("GetNumMessagesAllowedByStorageFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("GetNumMessagesDeniedByStorageFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("GetNumStoredMessages",[
-      ("This",AThis);
-    ],MANone);
-    ("GetNumStoredMessagesAllowedByRetrievalFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("GetNumMessagesDiscardedByMessageCountLimit",[
-      ("This",AThis);
-    ],MANone);
-    ("GetMessageCountLimit",[
-      ("This",AThis);
-    ],MANone);
-    ("AddStorageFilterEntries",[
-      ("This",AThis);
-      ("pFilter",ANone);
-    ],MANone);
-    ("GetStorageFilter",[
-      ("This",AThis);
-      ("pFilter",ANone);
-      ("pFilterByteLength",ANone);
-    ],MANone);
-    ("ClearStorageFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("PushEmptyStorageFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("PushCopyOfStorageFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("PushStorageFilter",[
-      ("This",AThis);
-      ("pFilter",ANone);
-    ],MANone);
-    ("PopStorageFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("GetStorageFilterStackSize",[
-      ("This",AThis);
-    ],MANone);
-    ("AddRetrievalFilterEntries",[
-      ("This",AThis);
-      ("pFilter",ANone);
-    ],MANone);
-    ("GetRetrievalFilter",[
-      ("This",AThis);
-      ("pFilter",ANone);
-      ("pFilterByteLength",ANone);
-    ],MANone);
-    ("ClearRetrievalFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("PushEmptyRetrievalFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("PushCopyOfRetrievalFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("PushRetrievalFilter",[
-      ("This",AThis);
-      ("pFilter",ANone);
-    ],MANone);
-    ("PopRetrievalFilter",[
-      ("This",AThis);
-    ],MANone);
-    ("GetRetrievalFilterStackSize",[
-      ("This",AThis);
-    ],MANone);
-    ("AddMessage",[
-      ("This",AThis);
-      ("Category",ANone);
-      ("Severity",ANone);
-      ("ID",ANone);
-      ("pDescription",ANone);
-    ],MANone);
-    ("AddApplicationMessage",[
-      ("This",AThis);
-      ("Severity",ANone);
-      ("pDescription",ANone);
-    ],MANone);
-    ("SetBreakOnCategory",[
-      ("This",AThis);
-      ("Category",ANone);
-      ("bEnable",ANone);
-    ],MANone);
-    ("SetBreakOnSeverity",[
-      ("This",AThis);
-      ("Severity",ANone);
-      ("bEnable",ANone);
-    ],MANone);
-    ("SetBreakOnID",[
-      ("This",AThis);
-      ("ID",ANone);
-      ("bEnable",ANone);
-    ],MANone);
-    ("GetBreakOnCategory",[
-      ("This",AThis);
-      ("Category",ANone);
-    ],MANone);
-    ("GetBreakOnSeverity",[
-      ("This",AThis);
-      ("Severity",ANone);
-    ],MANone);
-    ("GetBreakOnID",[
-      ("This",AThis);
-      ("ID",ANone);
-    ],MANone);
-    ("SetMuteDebugOutput",[
-      ("This",AThis);
-      ("bMute",ANone);
-    ],MANone);
-    ("GetMuteDebugOutput",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("ID3D12ObjectVtbl",IAAutogen,  "IUnknownVtbl", d3d12Object);
-  ("ID3D12PageableVtbl",IAAutogen,  "ID3D12ObjectVtbl",  d3d12Object++[
-    getDevice;
-  ]);
-  ("ID3D12PipelineStateVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
-    getDevice;
-    ("GetCachedBlob",[
-      ("This",AThis);
-      ("ppBlob",OutReturnComPtr); // TODO: do something with typedefs like 'typedef ID3D10Blob ID3DBlob;' E.g. type D3DBlob=D3D10Blob;
-    ],MADontImplement); // TODO: do todo above, then replace with MANone
-  ]);
-  ("ID3D12QueryHeapVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
-    getDevice;
-  ]);
-  ("ID3D12ResourceVtbl",IAAutogen, "ID3D12PageableVtbl",  d3d12Object++[
-    getDevice;
-    ("Map",[
-      ("This",AThis);
-      ("Subresource",ANone);
-      ("pReadRange",InOptional);
-      ("ppData",ANone);
-    ],MADontImplement); // TODO: Mapping and unmapping call for RAII guards
-    ("Unmap",[
-      ("This",AThis);
-      ("Subresource",ANone);
-      ("pWrittenRange",ANone);
-    ],MADontImplement); // TODO: Find some way of dealing with unbounded memory areas in safe rust
-    ("GetDesc",[
-      ("This",AThis);
-    ],MANone);
-    ("GetGPUVirtualAddress",[
-      ("This",AThis);
-    ],MANone);
-    ("WriteToSubresource",[
-      ("This",AThis);
-      ("DstSubresource",ANone);
-      ("pDstBox",InOptional);
-      ("pSrcData",ANone);
-      ("SrcRowPitch",ANone);
-      ("SrcDepthPitch",ANone);
-    ],MADontImplement); // TODO: Unsafe. Method can read past the end of provided buffer
-    ("ReadFromSubresource",[
-      ("This",AThis);
-      ("pDstData",ANone);
-      ("DstRowPitch",ANone);
-      ("DstDepthPitch",ANone);
-      ("SrcSubresource",ANone);
-      ("pSrcBox",ANone);
-    ],MADontImplement); // TODO: Unsafe. Method doesn't take size of output buffer
-    ("GetHeapProperties",[
-      ("This",AThis);
-      ("pHeapProperties",OutOptional);
-      ("pHeapFlags",OutOptional);
-    ],MANone);
-  ]);
-  ("ID3D12RootSignatureDeserializerVtbl",IAAutogen, "IUnknownVtbl", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
-    ("GetRootSignatureDesc",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("ID3D12RootSignatureVtbl",IAAutogen, "ID3D12DeviceChildVtbl",  d3d12Object++[
-    getDevice;
-  ]);
-  ("ID3DIncludeVtbl",IAManual, "IUnknown", [
-    ("Open",[
-      ("This",AThis);
-      ("IncludeType",ANone);
-      ("pFileName",ANone);
-      ("pParentData",ANone);
-      ("ppData",ANone);
-      ("pBytes",ANone);
-    ],MANone);
-    ("Close",[
-      ("This",AThis);
-      ("pData",ANone);
-    ],MANone);
-  ]);
-  ("IDXGIAdapter1Vtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
-    ("EnumOutputs",[
-      ("This",AThis);
-      ("Output",ANone);
-      ("ppOutput", OutReturnComPtr);
-    ],MANone);
-    ("GetDesc",[
-      ("This",AThis);
-      ("pDesc",OutReturn);
-    ],MANone);
-    ("CheckInterfaceSupport",[
-      ("This",AThis);
-      ("InterfaceName",ANone);
-      ("pUMDVersion",OutReturn);
-    ],MANone);
-    ("GetDesc1",[
-      ("This",AThis);
-      ("pDesc",OutReturn);
-    ],MANone);
-  ]);
-  ("IDXGIAdapterVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
-    ("EnumOutputs",[
-      ("This",AThis);
-      ("Output",ANone);
-      ("ppOutput",OutReturnComPtr);
-    ],MANone);
-    ("GetDesc",[
-      ("This",AThis);
-      ("pDesc",OutReturn);
-    ],MANone);
-    ("CheckInterfaceSupport",[
-      ("This",AThis);
-      ("InterfaceName",ANone);
-      ("pUMDVersion",OutReturn);
-    ],MANone);
-  ]);
-  ("IDXGIDevice1Vtbl",IAAutogen, "IDXGIDeviceVtbl", dxgiDevice ++ [
-    ("SetMaximumFrameLatency",[
-      ("This",AThis);
-      ("MaxLatency",ANone);
-    ],MANone);
-    ("GetMaximumFrameLatency",[
-      ("This",AThis);
-      ("pMaxLatency",OutReturn);
-    ],MANone);
-  ]);
-  ("IDXGIDeviceSubObjectVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
-    ("GetDevice",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppDevice",ANone); // I cannot understand what MSDN says about this. TODO: Find out
-    ],MADontImplement);
-  ]);
-  ("IDXGIDeviceVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiDevice);
-  ("IDXGIFactory1Vtbl",IAAutogen, "IDXGIFactoryVtbl", dxgiFactory ++ [
-    ("EnumAdapters1",[
-      ("This",AThis);
-      ("Adapter",ANone);
-      ("ppAdapter",OutReturnComPtr);
-    ],MANone);
-    ("IsCurrent",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("IDXGIFactoryVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiFactory);
-  ("IDXGIKeyedMutexVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
-    ("GetDevice",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppDevice",OutReturnInterface "riid"); 
-    ],MADontImplement);
-    ("AcquireSync",[
-      ("This",AThis);
-      ("Key",ANone);
-      ("dwMilliseconds",ANone);
-    ],MANone);
-    ("ReleaseSync",[
-      ("This",AThis);
-      ("Key",ANone);
-    ],MANone);
-  ]);
-  ("IDXGIObjectVtbl",IAAutogen, "IUnknown", 
-    dxgiObject
-  );
-  ("IDXGIOutputVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
-    ("GetDesc",[
-      ("This",AThis);
-      ("pDesc",OutReturn);
-    ],MANone);
-    ("GetDisplayModeList",[
-      ("This",AThis);
-      ("EnumFormat",ANone);
-      ("Flags",ANone);
-      ("pNumModes",InOutReturn);
-      ("pDesc",OutOptionalArrayOfSize "pNumModes");
-    ],MANone);
-    ("FindClosestMatchingMode",[
-      ("This",AThis);
-      ("pModeToMatch",ANone);
-      ("pClosestMatch",OutReturn);
-      ("pConcernedDevice",InOptionalComPtr);
-    ],MANone);
-    ("WaitForVBlank",[
-      ("This",AThis);
-    ],MANone);
-    ("TakeOwnership",[
-      ("This",AThis);
-      ("pDevice",InComPtr);
-      ("Exclusive",ANone);
-    ],MANone);
-    ("ReleaseOwnership",[
-      ("This",AThis);
-    ],MANone);
-    ("GetGammaControlCapabilities",[
-      ("This",AThis);
-      ("pGammaCaps",OutReturn);
-    ],MANone);
-    ("SetGammaControl",[
-      ("This",AThis);
-      ("pArray",ANone);
-    ],MANone);
-    ("GetGammaControl",[
-      ("This",AThis);
-      ("pArray",OutReturn);
-    ],MANone);
-    ("SetDisplaySurface",[
-      ("This",AThis);
-      ("pScanoutSurface",InComPtr);
-    ],MANone);
-    ("GetDisplaySurfaceData",[
-      ("This",AThis);
-      ("pDestination",InComPtr);
-    ],MANone);
-    ("GetFrameStatistics",[
-      ("This",AThis);
-      ("pStats",OutReturn);
-    ],MANone);
-  ]);
-  ("IDXGIResourceVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
-    ("GetDevice",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppDevice",OutReturnInterface "riid"); 
-    ],MADontImplement);
-    ("GetSharedHandle",[
-      ("This",AThis);
-      ("pSharedHandle",OutReturn);
-    ],MANone);
-    ("GetUsage",[
-      ("This",AThis);
-      ("pUsage",OutReturn);
-    ],MANone);
-    ("SetEvictionPriority",[
-      ("This",AThis);
-      ("EvictionPriority",ANone);
-    ],MANone);
-    ("GetEvictionPriority",[
-      ("This",AThis);
-      ("pEvictionPriority",OutReturn);
-    ],MANone);
-  ]);
-  ("IDXGISurface1Vtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
-    ("GetDevice",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppDevice",OutReturnInterface "riid");
-    ],MADontImplement);
-    ("GetDesc",[
-      ("This",AThis);
-      ("pDesc",OutReturn);
-    ],MANone);
-    ("Map",[
-      ("This",AThis);
-      ("pLockedRect",OutReturn);
-      ("MapFlags",ANone);
-    ],MANone);
-    ("Unmap",[
-      ("This",AThis);
-    ],MANone);
-    ("GetDC",[
-      ("This",AThis);
-      ("Discard",ANone);
-      ("phdc",OutReturn);
-    ],MANone);
-    ("ReleaseDC",[
-      ("This",AThis);
-      ("pDirtyRect",InOptional);
-    ],MANone);
-  ]);
-  ("IDXGISurfaceVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
-    ("GetDevice",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppDevice",OutReturnInterface "riid"); 
-    ],MADontImplement);
-    ("GetDesc",[
-      ("This",AThis);
-      ("pDesc",OutReturn);
-    ],MANone);
-    ("Map",[
-      ("This",AThis);
-      ("pLockedRect",OutReturn);
-      ("MapFlags",ANone);
-    ],MANone);
-    ("Unmap",[
-      ("This",AThis);
-    ],MANone);
-  ]);
-  ("IDXGISwapChainVtbl",IAAutogen, "IDXGIObjectVtbl", dxgiObject ++ [
-    ("GetDevice",[
-      ("This",AThis);
-      ("riid",ANone);
-      ("ppDevice",OutReturnInterface "riid");
-    ],MADontImplement);
-    ("Present",[
-      ("This",AThis);
-      ("SyncInterval",ANone);
-      ("Flags",ANone);
-    ],MANone);
-    ("GetBuffer",[
-      ("This",AThis);
-      ("Buffer",ANone);
-      ("riid",ANone);
-      ("ppSurface",OutReturnInterface "riid");
-    ],MANone);
-    ("SetFullscreenState",[
-      ("This",AThis);
-      ("Fullscreen",ANone);
-      ("pTarget",InOptionalComPtr);
-    ],MANone);
-    ("GetFullscreenState",[
-      ("This",AThis);
-      ("pFullscreen",AConst "ptr::null_mut()"); // This parameter can be ignored. Good case for AConst "ptr::null_mut()". OTOH why it is here? TODO: Investigate
-      ("ppTarget",ANone); // TODO: Implement OutOptionalComPtr, or OutOptionalReturnComPtr. 
-    ],MANone);
-    ("GetDesc",[
-      ("This",AThis);
-      ("pDesc",OutReturn);
-    ],MANone);
-    ("ResizeBuffers",[
-      ("This",AThis);
-      ("BufferCount",ANone);
-      ("Width",ANone);
-      ("Height",ANone);
-      ("NewFormat",ANone);
-      ("SwapChainFlags",ANone);
-    ],MANone);
-    ("ResizeTarget",[
-      ("This",AThis);
-      ("pNewTargetParameters",ANone);
-    ],MANone);
-    ("GetContainingOutput",[
-      ("This",AThis);
-      ("ppOutput",OutReturnComPtr);
-    ],MANone);
-    ("GetFrameStatistics",[
-      ("This",AThis);
-      ("pStats",OutReturn);
-    ],MANone);
-    ("GetLastPresentCount",[
-      ("This",AThis);
-      ("pLastPresentCount",OutReturn);
-    ],MANone);
-  ]);
-  ("IUnknown",IAManual,"",[
-    ]);
-  ("SECURITY_ATTRIBUTES",IAManual,"",[
-    ]);
-  ]
+let d3d12annotations=
+  populateVtbls 
+    [
+      ("ID3D10BlobVtbl",IAAutogen,"IUnknownVtbl",[
+        ("GetBufferPointer",[
+          ("This",AThis);
+        ],MANone);
+        ("GetBufferSize",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("ID3D12CommandAllocatorVtbl",IAAutogen, "ID3D12PageableVtbl", [
+        ("Reset",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("ID3D12CommandListVtbl",IAAutogen, "ID3D12DeviceChildVtbl", [
+        ("GetType",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("ID3D12CommandQueueVtbl",IAAutogen, "ID3D12PageableVtbl", [
+        ("UpdateTileMappings",[
+          ("This",AThis);
+          ("pResource",InComPtr);
+          ("NumResourceRegions",ANone);
+          ("pResourceRegionStartCoordinates",InOptionalArrayOfSize "NumResourceRegions");
+          ("pResourceRegionSizes",InOptionalArrayOfSize "NumResourceRegions");
+          ("pHeap",InOptional);
+          ("NumRanges",ANone);
+          ("pRangeFlags",InOptionalArrayOfSize "NumRanges");
+          ("pHeapRangeStartOffsets",InOptionalArrayOfSize "NumRanges");
+          ("pRangeTileCounts",InOptionalArrayOfSize "NumRanges");
+          ("Flags",ANone);
+        ],MANone);
+        ("CopyTileMappings",[
+          ("This",AThis);
+          ("pDstResource",InComPtr);
+          ("pDstRegionStartCoordinate",ANone);
+          ("pSrcResource",InComPtr);
+          ("pSrcRegionStartCoordinate",ANone);
+          ("pRegionSize",ANone);
+          ("Flags",ANone);
+        ],MANone);
+        ("ExecuteCommandLists",[
+          ("This",AThis);
+          ("NumCommandLists",ANone);
+          ("ppCommandLists",InComPtrArrayOfSize "NumCommandLists");
+        ],MANone);
+        ("SetMarker",[
+          ("This",AThis);
+          ("Metadata",ANone);
+          ("pData",ANone);
+          ("Size",ANone);
+        ],MADontImplement);
+        ("BeginEvent",[
+          ("This",AThis);
+          ("Metadata",ANone);
+          ("pData",ANone);
+          ("Size",ANone);
+        ],MADontImplement);
+        ("EndEvent",[
+          ("This",AThis);
+        ],MADontImplement);
+        ("Signal",[
+          ("This",AThis);
+          ("pFence",ANone);
+          ("Value",ANone);
+        ],MANone);
+        ("Wait",[
+          ("This",AThis);
+          ("pFence",ANone);
+          ("Value",ANone);
+        ],MANone);
+        ("GetTimestampFrequency",[
+          ("This",AThis);
+          ("pFrequency",OutReturn);
+        ],MANone);
+        ("GetClockCalibration",[
+          ("This",AThis);
+          ("pGpuTimestamp",OutReturnCombine("GPUCPUTimestamp","gpu_timestamp"));
+          ("pCpuTimestamp",OutReturnCombine("GPUCPUTimestamp","cpu_timestamp"));
+        ],MANone);
+        ("GetDesc",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("ID3D12CommandSignatureVtbl",IAAutogen, "ID3D12PageableVtbl", []);
+      ("ID3D12DebugCommandListVtbl",IAManual, "IUnknownVtbl", [
+        ("AssertResourceState",[
+          ("This",AThis);
+          ("pResource",ANone);
+          ("Subresource",ANone);
+          ("State",ANone);
+        ],MANone);
+        ("SetFeatureMask",[
+          ("This",AThis);
+          ("Mask",ANone);
+        ],MANone);
+        ("GetFeatureMask",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("ID3D12DebugCommandQueueVtbl",IAManual, "IUnknownVtbl", [
+        ("AssertResourceState",[
+          ("This",AThis);
+          ("pResource",ANone);
+          ("Subresource",ANone);
+          ("State",ANone);
+        ],MANone);
+      ]);
+      ("ID3D12DebugDeviceVtbl",IAManual, "IUnknownVtbl", [
+        ("SetFeatureMask",[
+          ("This",AThis);
+          ("Mask",ANone);
+        ],MANone);
+        ("GetFeatureMask",[
+          ("This",AThis);
+        ],MANone);
+        ("ReportLiveDeviceObjects",[
+          ("This",AThis);
+          ("Flags",ANone);
+        ],MANone);
+      ]);
+      ("ID3D12DebugVtbl", IAAutogen, "IUnknownVtbl", [
+        ("EnableDebugLayer",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("ID3D12DescriptorHeapVtbl",IAAutogen, "ID3D12PageableVtbl", [
+        ("GetDesc",[
+          ("This",AThis);
+        ],MANone);
+        ("GetCPUDescriptorHandleForHeapStart",[
+          ("This",AThis);
+          ("__ret_val",OutReturn);
+        ],MANone);
+        ("GetGPUDescriptorHandleForHeapStart",[
+          ("This",AThis);
+          ("__ret_val",OutReturn);
+        ],MANone);
+      ]);
+      ("ID3D12DeviceChildVtbl",IAAutogen, "ID3D12ObjectVtbl",  [
+        ("GetDevice",[
+          ("This",AThis);
+          ("riid",ANone);
+          ("ppvDevice",OutReturnInterface "riid");
+        ],MANone);
+      ]);
+      ("ID3D12DeviceVtbl",IAAutogen, "ID3D12ObjectVtbl", [
+        ("GetNodeCount",[
+          ("This",AThis);
+        ],MANone);
+        ("CreateCommandQueue",[
+          ("This",AThis);
+          ("pDesc",ANone);
+          ("riid",ANone);
+          ("ppCommandQueue",OutReturnKnownInterface("riid","D3D12CommandQueue"));
+        ],MANone);
+        ("CreateCommandAllocator",[
+          ("This",AThis);
+          ("type",ANone);
+          ("riid",ANone);
+          ("ppCommandAllocator",OutReturnKnownInterface("riid","D3D12CommandAllocator"));
+        ],MANone);
+        ("CreateGraphicsPipelineState",[
+          ("This",AThis);
+          ("pDesc",ANone);
+          ("riid",ANone);
+          ("ppPipelineState",OutReturnKnownInterface("riid","D3D12PipelineState"));
+        ],MANone);
+        ("CreateComputePipelineState",[
+          ("This",AThis);
+          ("pDesc",ANone);
+          ("riid",ANone);
+          ("ppPipelineState",OutReturnKnownInterface("riid","D3D12PipelineState"));
+        ],MANone);
+        ("CreateCommandList",[
+          ("This",AThis);
+          ("nodeMask",ANone);
+          ("type",ANone);
+          ("pCommandAllocator",InComPtr);
+          ("pInitialState",InOptionalComPtr);
+          ("riid",ANone);
+          ("ppCommandList",OutReturnInterface "riid");
+        ],MANone);
+        ("CheckFeatureSupport",[
+          ("This",AThis);
+          ("Feature",TypeSelector("pFeatureSupportData",[("Options","D3D12_FEATURE_D3D12_OPTIONS",Ptr(StructRef "D3D12_FEATURE_DATA_D3D12_OPTIONS"), InOutOfSize "FeatureSupportDataSize");
+                                                         ("Arch","D3D12_FEATURE_ARCHITECTURE",Ptr(StructRef "D3D12_FEATURE_DATA_ARCHITECTURE"), InOutOfSize "FeatureSupportDataSize");
+                                                         ("FeatureLevels","D3D12_FEATURE_FEATURE_LEVELS",Ptr(StructRef "D3D12_FEATURE_DATA_FEATURE_LEVELS"), InOutOfSize "FeatureSupportDataSize");
+                                                         ("FormatSupport","D3D12_FEATURE_FORMAT_SUPPORT",Ptr(StructRef "D3D12_FEATURE_DATA_FORMAT_SUPPORT"), InOutOfSize "FeatureSupportDataSize");
+                                                         ("MultisampleQualityLevels","D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS",Ptr(StructRef "D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS"), InOutOfSize "FeatureSupportDataSize");
+                                                         ("FormatInfo","D3D12_FEATURE_FORMAT_INFO",Ptr(StructRef "D3D12_FEATURE_DATA_FORMAT_INFO"), InOutOfSize "FeatureSupportDataSize");
+                                                         ]));
+          ("pFeatureSupportData",InOutOfSize "FeatureSupportDataSize");
+          ("FeatureSupportDataSize",ANone);
+        ],MANone);
+        ("CreateDescriptorHeap",[
+          ("This",AThis);
+          ("pDescriptorHeapDesc",ANone);
+          ("riid",ANone);
+          ("ppvHeap",OutReturnKnownInterface("riid","D3D12DescriptorHeap"));
+        ],MANone);
+        ("GetDescriptorHandleIncrementSize",[
+          ("This",AThis);
+          ("DescriptorHeapType",ANone);
+        ],MANone);
+        ("CreateRootSignature",[
+          ("This",AThis);
+          ("nodeMask",ANone);
+          ("pBlobWithRootSignature", InByteArrayOfSize ("blobLengthInBytes",1u));
+          ("blobLengthInBytes",ANone);
+          ("riid",ANone);
+          ("ppvRootSignature",OutReturnKnownInterface("riid","D3D12RootSignature"));
+        ],MANone);
+        ("CreateConstantBufferView",[
+          ("This",AThis);
+          ("pDesc",InOptional);
+          ("DestDescriptor",ANone);
+        ],MANone);
+        ("CreateShaderResourceView",[
+          ("This",AThis);
+          ("pResource",InOptional);
+          ("pDesc",InOptional);
+          ("DestDescriptor",ANone);
+        ],MANone);
+        ("CreateUnorderedAccessView",[
+          ("This",AThis);
+          ("pResource",InOptional);
+          ("pCounterResource",InOptional);
+          ("pDesc",InOptional);
+          ("DestDescriptor",ANone);
+        ],MANone);
+        ("CreateRenderTargetView",[
+          ("This",AThis);
+          ("pResource",InOptionalComPtr);
+          ("pDesc",InOptional);
+          ("DestDescriptor",ANone);
+        ],MANone);
+        ("CreateDepthStencilView",[
+          ("This",AThis);
+          ("pResource",InOptional);
+          ("pDesc",InOptional);
+          ("DestDescriptor",ANone);
+        ],MANone);
+        ("CreateSampler",[
+          ("This",AThis);
+          ("pDesc",ANone);
+          ("DestDescriptor",ANone);
+        ],MANone);
+        ("CopyDescriptors",[
+          ("This",AThis);
+          ("NumDestDescriptorRanges",ANone);
+          ("pDestDescriptorRangeStarts",InArrayOfSize "NumDestDescriptorRanges");
+          ("pDestDescriptorRangeSizes",InOptionalArrayOfSize "NumDestDescriptorRanges");
+          ("NumSrcDescriptorRanges",ANone);
+          ("pSrcDescriptorRangeStarts",InArrayOfSize "NumSrcDescriptorRanges");
+          ("pSrcDescriptorRangeSizes",InOptionalArrayOfSize "NumSrcDescriptorRanges");
+          ("DescriptorHeapsType",ANone);
+        ],MANone);
+        ("CopyDescriptorsSimple",[
+          ("This",AThis);
+          ("NumDescriptors",ANone);
+          ("DestDescriptorRangeStart",ANone);
+          ("SrcDescriptorRangeStart",ANone);
+          ("DescriptorHeapsType",ANone);
+        ],MANone);
+        ("GetResourceAllocationInfo",[
+          ("This",AThis);
+          ("visibleMask",ANone);
+          ("numResourceDescs",ANone);
+          ("pResourceDescs",InArrayOfSize "numResourceDescs");
+        ],MANone);
+        ("GetCustomHeapProperties",[
+          ("This",AThis);
+          ("nodeMask",ANone);
+          ("heapType",ANone);
+        ],MANone);
+        ("CreateCommittedResource",[
+          ("This",AThis);
+          ("pHeapProperties",ANone);
+          ("HeapFlags",ANone);
+          ("pResourceDesc",ANone);
+          ("InitialResourceState",ANone);
+          ("pOptimizedClearValue",InOptional);
+          ("riidResource",ANone);
+          ("ppvResource",OutReturnKnownInterface("riidResource","D3D12Resource"));
+        ],MANone);
+        ("CreateHeap",[
+          ("This",AThis);
+          ("pDesc",ANone);
+          ("riid",ANone);
+          ("ppvHeap",OutReturnKnownInterface("riid","D3D12Heap"));
+        ],MANone);
+        ("CreatePlacedResource",[
+          ("This",AThis);
+          ("pHeap",ANone);
+          ("HeapOffset",ANone);
+          ("pDesc",ANone);
+          ("InitialState",ANone);
+          ("pOptimizedClearValue",InOptional);
+          ("riid",ANone);
+          ("ppvResource",OutReturnKnownInterface("riid","D3D12Resource"));
+        ],MANone);
+        ("CreateReservedResource",[
+          ("This",AThis);
+          ("pDesc",ANone);
+          ("InitialState",ANone);
+          ("pOptimizedClearValue",InOptional);
+          ("riid",ANone);
+          ("ppvResource",OutReturnKnownInterface("riid","D3D12Resource"));
+        ],MANone);
+        ("CreateSharedHandle",[
+          ("This",AThis);
+          ("pObject",ANone);
+          ("pAttributes",InOptional);
+          ("Access",ANone);
+          ("Name",ANone);
+          ("pHandle",OutReturn);
+        ],MANone);
+        ("OpenSharedHandle",[
+          ("This",AThis);
+          ("NTHandle",ANone);
+          ("riid",ANone);
+          ("ppvObj",OutReturnInterface("riid"));
+        ],MANone);
+        ("OpenSharedHandleByName",[
+          ("This",AThis);
+          ("Name",ANone);
+          ("Access",ANone);
+          ("pNTHandle",OutReturn);
+        ],MANone);
+        ("MakeResident",[
+          ("This",AThis);
+          ("NumObjects",ANone);
+          ("ppObjects",InArrayOfSize "NumObjects");
+        ],MANone);
+        ("Evict",[
+          ("This",AThis);
+          ("NumObjects",ANone);
+          ("ppObjects",InArrayOfSize "NumObjects");
+        ],MANone);
+        ("CreateFence",[
+          ("This",AThis);
+          ("InitialValue",ANone);
+          ("Flags",ANone);
+          ("riid",ANone);
+          ("ppFence",OutReturnKnownInterface("riid","D3D12Fence"));
+        ],MANone);
+        ("GetDeviceRemovedReason",[
+          ("This",AThis);
+        ],MANone);
+        ("GetCopyableFootprints",[
+          ("This",AThis);
+          ("pResourceDesc",ANone);
+          ("FirstSubresource",ANone);
+          ("NumSubresources",ANone);
+          ("BaseOffset",ANone);
+          ("pLayouts", OutOptionalArrayOfSize "NumSubresources");
+          ("pNumRows",OutOptionalArrayOfSize "NumSubresources");
+          ("pRowSizeInBytes",OutOptionalArrayOfSize "NumSubresources");
+          ("pTotalBytes",OutOptional);
+        ],MANone);
+        ("CreateQueryHeap",[
+          ("This",AThis);
+          ("pDesc",ANone);
+          ("riid",ANone);
+          ("ppvHeap",OutReturnKnownInterface("riid","D3D12QueryHeap"));
+        ],MANone);
+        ("SetStablePowerState",[
+          ("This",AThis);
+          ("Enable",ANone);
+        ],MANone);
+        ("CreateCommandSignature",[
+          ("This",AThis);
+          ("pDesc",ANone);
+          ("pRootSignature",InOptional); // Structure needs to be converted (contains pointer)
+          ("riid",ANone);
+          ("ppvCommandSignature",OutReturnKnownInterface("riid","D3D12CommandSignature"));
+        ],MANone);
+        ("GetResourceTiling",[
+          ("This",AThis);
+          ("pTiledResource",InComPtr);
+          ("pNumTilesForEntireResource",OutOptional);
+          ("pPackedMipDesc",OutOptional);
+          ("pStandardTileShapeForNonPackedMips",OutOptional);
+          ("pNumSubresourceTilings",InOutOptional);
+          ("FirstSubresourceTilingToGet",ANone);
+          ("pSubresourceTilingsForNonPackedMips",OutReturn);
+        ],MANone);
+        ("GetAdapterLuid",[
+          ("This",AThis);
+          ("__ret_val",OutReturn);
+        ],MANone);
+      ]);
+      ("ID3D12FenceVtbl",IAAutogen, "ID3D12PageableVtbl", [
+        ("GetCompletedValue",[
+          ("This",AThis);
+        ],MANone);
+        ("SetEventOnCompletion",[
+          ("This",AThis);
+          ("Value",ANone);
+          ("hEvent",ANone);
+        ],MANone);
+        ("Signal",[
+          ("This",AThis);
+          ("Value",ANone);
+        ],MANone);
+      ]);
+      ("ID3D12GraphicsCommandListVtbl", IAAutogen,  "ID3D12CommandListVtbl", [
+        ("Close",[
+          ("This",AThis);
+        ],MANone);
+        ("Reset",[
+          ("This",AThis);
+          ("pAllocator",InComPtr);
+          ("pInitialState",InOptionalComPtr);
+        ],MANone);
+        ("ClearState",[
+          ("This",AThis);
+          ("pPipelineState",InOptionalComPtr);
+        ],MANone);
+        ("DrawInstanced",[
+          ("This",AThis);
+          ("VertexCountPerInstance",ANone);
+          ("InstanceCount",ANone);
+          ("StartVertexLocation",ANone);
+          ("StartInstanceLocation",ANone);
+        ],MANone);
+        ("DrawIndexedInstanced",[
+          ("This",AThis);
+          ("IndexCountPerInstance",ANone);
+          ("InstanceCount",ANone);
+          ("StartIndexLocation",ANone);
+          ("BaseVertexLocation",ANone);
+          ("StartInstanceLocation",ANone);
+        ],MANone);
+        ("Dispatch",[
+          ("This",AThis);
+          ("ThreadGroupCountX",ANone);
+          ("ThreadGroupCountY",ANone);
+          ("ThreadGroupCountZ",ANone);
+        ],MANone);
+        ("CopyBufferRegion",[
+          ("This",AThis);
+          ("pDstBuffer",InComPtr);
+          ("DstOffset",ANone);
+          ("pSrcBuffer",InComPtr);
+          ("SrcOffset",ANone);
+          ("NumBytes",ANone);
+        ],MANone);
+        ("CopyTextureRegion",[
+          ("This",AThis);
+          ("pDst",ANone);
+          ("DstX",ANone);
+          ("DstY",ANone);
+          ("DstZ",ANone);
+          ("pSrc",ANone);
+          ("pSrcBox",InOptional);
+        ],MANone);
+        ("CopyResource",[
+          ("This",AThis);
+          ("pDstResource",InComPtr);
+          ("pSrcResource",InComPtr);
+        ],MANone);
+        ("CopyTiles",[
+          ("This",AThis);
+          ("pTiledResource",InComPtr);
+          ("pTileRegionStartCoordinate",ANone);
+          ("pTileRegionSize",ANone);
+          ("pBuffer",InComPtr);
+          ("BufferStartOffsetInBytes",ANone);
+          ("Flags",ANone);
+        ],MANone);
+        ("ResolveSubresource",[
+          ("This",AThis);
+          ("pDstResource",InComPtr);
+          ("DstSubresource",ANone);
+          ("pSrcResource",InComPtr);
+          ("SrcSubresource",ANone);
+          ("Format",ANone);
+        ],MANone);
+        ("IASetPrimitiveTopology",[
+          ("This",AThis);
+          ("PrimitiveTopology",ANone);
+        ],MANone);
+        ("RSSetViewports",[
+          ("This",AThis);
+          ("NumViewports",ANone);
+          ("pViewports",InArrayOfSize "NumViewports");
+        ],MANone);
+        ("RSSetScissorRects",[
+          ("This",AThis);
+          ("NumRects",ANone);
+          ("pRects",InArrayOfSize "NumRects");
+        ],MANone);
+        ("OMSetBlendFactor",[
+          ("This",AThis);
+          ("BlendFactor",InOptional);
+        ],MANone);
+        ("OMSetStencilRef",[
+          ("This",AThis);
+          ("StencilRef",ANone);
+        ],MANone);
+        ("SetPipelineState",[
+          ("This",AThis);
+          ("pPipelineState",InComPtr);
+        ],MANone);
+        ("ResourceBarrier",[
+          ("This",AThis);
+          ("NumBarriers",ANone);
+          ("pBarriers",InArrayOfSize "NumBarriers");
+        ],MANone);
+        ("ExecuteBundle",[
+          ("This",AThis);
+          ("pCommandList",InComPtr);
+        ],MANone);
+        ("SetDescriptorHeaps",[
+          ("This",AThis);
+          ("NumDescriptorHeaps",ANone);
+          ("ppDescriptorHeaps", InComPtrArrayOfSize "NumDescriptorHeaps");
+        ],MANone);
+        ("SetComputeRootSignature",[
+          ("This",AThis);
+          ("pRootSignature",InComPtr);
+        ],MANone);
+        ("SetGraphicsRootSignature",[
+          ("This",AThis);
+          ("pRootSignature",InComPtr);
+        ],MANone);
+        ("SetComputeRootDescriptorTable",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("BaseDescriptor",ANone);
+        ],MANone);
+        ("SetGraphicsRootDescriptorTable",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("BaseDescriptor",ANone);
+        ],MANone);
+        ("SetComputeRoot32BitConstant",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("SrcData",ANone);
+          ("DestOffsetIn32BitValues",ANone);
+        ],MANone);
+        ("SetGraphicsRoot32BitConstant",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("SrcData",ANone);
+          ("DestOffsetIn32BitValues",ANone);
+        ],MANone);
+        ("SetComputeRoot32BitConstants",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("Num32BitValuesToSet",ANone);
+          ("pSrcData",InByteArrayOfSize("Num32BitValuesToSet",4u));
+          ("DestOffsetIn32BitValues",ANone);
+        ],MANone);
+        ("SetGraphicsRoot32BitConstants",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("Num32BitValuesToSet",ANone);
+          ("pSrcData",InByteArrayOfSize("Num32BitValuesToSet",4u));
+          ("DestOffsetIn32BitValues",ANone);
+        ],MANone);
+        ("SetComputeRootConstantBufferView",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("BufferLocation",ANone);
+        ],MANone);
+        ("SetGraphicsRootConstantBufferView",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("BufferLocation",ANone);
+        ],MANone);
+        ("SetComputeRootShaderResourceView",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("BufferLocation",ANone);
+        ],MANone);
+        ("SetGraphicsRootShaderResourceView",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("BufferLocation",ANone);
+        ],MANone);
+        ("SetComputeRootUnorderedAccessView",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("BufferLocation",ANone);
+        ],MANone);
+        ("SetGraphicsRootUnorderedAccessView",[
+          ("This",AThis);
+          ("RootParameterIndex",ANone);
+          ("BufferLocation",ANone);
+        ],MANone);
+        ("IASetIndexBuffer",[
+          ("This",AThis);
+          ("pView",InOptional);
+        ],MANone);
+        ("IASetVertexBuffers",[
+          ("This",AThis);
+          ("StartSlot",ANone);
+          ("NumViews",ANone);
+          ("pViews",InOptionalArrayOfSize "NumViews");
+        ],MANone);
+        ("SOSetTargets",[
+          ("This",AThis);
+          ("StartSlot",ANone);
+          ("NumViews",ANone);
+          ("pViews",InOptionalArrayOfSize "NumViews");
+        ],MANone);
+        ("OMSetRenderTargets",[
+          ("This",AThis);
+          ("NumRenderTargetDescriptors",ANone);
+          ("pRenderTargetDescriptors",ANone);
+          ("RTsSingleHandleToDescriptorRange", 
+            TypeSelector("pRenderTargetDescriptors",[("","TRUE",Ptr(Const(StructRef "D3D12_CPU_DESCRIPTOR_HANDLE")),ANone);
+                                                     ("Arr","FALSE",Ptr(Const(StructRef "D3D12_CPU_DESCRIPTOR_HANDLE")),InArrayOfSize "NumRenderTargetDescriptors");]));
+          ("pDepthStencilDescriptor",InOptional);
+        ],MANone);
+        ("ClearDepthStencilView",[
+          ("This",AThis);
+          ("DepthStencilView",ANone);
+          ("ClearFlags",ANone);
+          ("Depth",ANone);
+          ("Stencil",ANone);
+          ("NumRects",ANone);
+          ("pRects",InArrayOfSize "NumRects");
+        ],MANone);
+        ("ClearRenderTargetView",[
+          ("This",AThis);
+          ("RenderTargetView",ANone);
+          ("ColorRGBA",ANone);
+          ("NumRects",ANone);
+          ("pRects",InArrayOfSize "NumRects");
+        ],MANone);
+        ("ClearUnorderedAccessViewUint",[
+          ("This",AThis);
+          ("ViewGPUHandleInCurrentHeap",ANone);
+          ("ViewCPUHandle",ANone);
+          ("pResource",InComPtr);
+          ("Values",ANone);
+          ("NumRects",ANone);
+          ("pRects",InArrayOfSize "NumRects");
+        ],MANone);
+        ("ClearUnorderedAccessViewFloat",[
+          ("This",AThis);
+          ("ViewGPUHandleInCurrentHeap",ANone);
+          ("ViewCPUHandle",ANone);
+          ("pResource",InComPtr);
+          ("Values",ANone);
+          ("NumRects",ANone);
+          ("pRects",InArrayOfSize "NumRects");
+        ],MANone);
+        ("DiscardResource",[
+          ("This",AThis);
+          ("pResource",InComPtr);
+          ("pRegion",InOptional);
+        ],MANone);
+        ("BeginQuery",[
+          ("This",AThis);
+          ("pQueryHeap",InComPtr);
+          ("Type",ANone);
+          ("Index",ANone);
+        ],MANone);
+        ("EndQuery",[
+          ("This",AThis);
+          ("pQueryHeap",InComPtr);
+          ("Type",ANone);
+          ("Index",ANone);
+        ],MANone);
+        ("ResolveQueryData",[
+          ("This",AThis);
+          ("pQueryHeap",InComPtr);
+          ("Type",ANone);
+          ("StartIndex",ANone);
+          ("NumQueries",ANone);
+          ("pDestinationBuffer",InComPtr);
+          ("AlignedDestinationBufferOffset",ANone);
+        ],MANone);
+        ("SetPredication",[
+          ("This",AThis);
+          ("pBuffer",InOptionalComPtr);
+          ("AlignedBufferOffset",ANone);
+          ("Operation",ANone);
+        ],MANone);
+        ("SetMarker",[
+          ("This",AThis);
+          ("Metadata",ANone);
+          ("pData",ANone);
+          ("Size",ANone);
+        ],MADontImplement);
+        ("BeginEvent",[
+          ("This",AThis);
+          ("Metadata",ANone);
+          ("pData",ANone);
+          ("Size",ANone);
+        ],MADontImplement);
+        ("EndEvent",[
+          ("This",AThis);
+        ],MADontImplement);
+        ("ExecuteIndirect",[
+          ("This",AThis);
+          ("pCommandSignature",InComPtr);
+          ("MaxCommandCount",ANone);
+          ("pArgumentBuffer",InComPtr);
+          ("ArgumentBufferOffset",ANone);
+          ("pCountBuffer",InComPtr);
+          ("CountBufferOffset",ANone);
+        ],MANone);
+      ]);
+      ("ID3D12HeapVtbl",IAAutogen, "ID3D12PageableVtbl",  [
+        ("GetDesc",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("ID3D12InfoQueueVtbl",IAAutogen, "IUnknownVtbl", [ //TODO: Annotate debug interfaces
+        ("SetMessageCountLimit",[
+          ("This",AThis);
+          ("MessageCountLimit",ANone);
+        ],MANone);
+        ("ClearStoredMessages",[
+          ("This",AThis);
+        ],MANone);
+        ("GetMessage",[
+          ("This",AThis);
+          ("MessageIndex",ANone);
+          ("pMessage",OutOptional);
+          ("pMessageByteLength",ANone);
+        ],MANone);
+        ("GetNumMessagesAllowedByStorageFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("GetNumMessagesDeniedByStorageFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("GetNumStoredMessages",[
+          ("This",AThis);
+        ],MANone);
+        ("GetNumStoredMessagesAllowedByRetrievalFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("GetNumMessagesDiscardedByMessageCountLimit",[
+          ("This",AThis);
+        ],MANone);
+        ("GetMessageCountLimit",[
+          ("This",AThis);
+        ],MANone);
+        ("AddStorageFilterEntries",[
+          ("This",AThis);
+          ("pFilter",ANone);
+        ],MANone);
+        ("GetStorageFilter",[
+          ("This",AThis);
+          ("pFilter",ANone);
+          ("pFilterByteLength",ANone);
+        ],MANone);
+        ("ClearStorageFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("PushEmptyStorageFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("PushCopyOfStorageFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("PushStorageFilter",[
+          ("This",AThis);
+          ("pFilter",ANone);
+        ],MANone);
+        ("PopStorageFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("GetStorageFilterStackSize",[
+          ("This",AThis);
+        ],MANone);
+        ("AddRetrievalFilterEntries",[
+          ("This",AThis);
+          ("pFilter",ANone);
+        ],MANone);
+        ("GetRetrievalFilter",[
+          ("This",AThis);
+          ("pFilter",ANone);
+          ("pFilterByteLength",ANone);
+        ],MANone);
+        ("ClearRetrievalFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("PushEmptyRetrievalFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("PushCopyOfRetrievalFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("PushRetrievalFilter",[
+          ("This",AThis);
+          ("pFilter",ANone);
+        ],MANone);
+        ("PopRetrievalFilter",[
+          ("This",AThis);
+        ],MANone);
+        ("GetRetrievalFilterStackSize",[
+          ("This",AThis);
+        ],MANone);
+        ("AddMessage",[
+          ("This",AThis);
+          ("Category",ANone);
+          ("Severity",ANone);
+          ("ID",ANone);
+          ("pDescription",ANone);
+        ],MANone);
+        ("AddApplicationMessage",[
+          ("This",AThis);
+          ("Severity",ANone);
+          ("pDescription",ANone);
+        ],MANone);
+        ("SetBreakOnCategory",[
+          ("This",AThis);
+          ("Category",ANone);
+          ("bEnable",ANone);
+        ],MANone);
+        ("SetBreakOnSeverity",[
+          ("This",AThis);
+          ("Severity",ANone);
+          ("bEnable",ANone);
+        ],MANone);
+        ("SetBreakOnID",[
+          ("This",AThis);
+          ("ID",ANone);
+          ("bEnable",ANone);
+        ],MANone);
+        ("GetBreakOnCategory",[
+          ("This",AThis);
+          ("Category",ANone);
+        ],MANone);
+        ("GetBreakOnSeverity",[
+          ("This",AThis);
+          ("Severity",ANone);
+        ],MANone);
+        ("GetBreakOnID",[
+          ("This",AThis);
+          ("ID",ANone);
+        ],MANone);
+        ("SetMuteDebugOutput",[
+          ("This",AThis);
+          ("bMute",ANone);
+        ],MANone);
+        ("GetMuteDebugOutput",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("ID3D12ObjectVtbl", IAAutogen, "IUnknownVtbl", [
+        ("GetPrivateData",[
+            ("This",AThis);
+            ("guid",ANone);
+            ("pDataSize",InOutReturn);
+            ("pData",OutOptionalOfSize "pDataSize");
+          ],MAUnsafe); // safe method should be: unsafe fn get_private_data<T>(guid: REFGUID, data: Option<&mut T>) -> HResult<usize>
+        ("SetPrivateData",[
+            ("This",AThis);
+            ("guid",ANone);
+            ("DataSize",ANone);
+            ("pData", InOfSize "DataSize");
+          ],MANone);
+        ("SetPrivateDataInterface",[
+            ("This",AThis);
+            ("guid",ANone);
+            ("pData",InIUnknown);
+          ],MADontImplement); // Not useful without full-blown COM-support
+        ("SetName",[
+            ("This",AThis);
+            ("Name",ANone);
+          ],MANone);
+        ]
+      );
+      ("ID3D12PageableVtbl",IAAutogen,  "ID3D12DeviceChildVtbl",  []);
+      ("ID3D12PipelineStateVtbl",IAAutogen, "ID3D12PageableVtbl",  [
+        ("GetCachedBlob",[
+          ("This",AThis);
+          ("ppBlob",OutReturnComPtr); // TODO: do something with typedefs like 'typedef ID3D10Blob ID3DBlob;' E.g. type D3DBlob=D3D10Blob;
+        ],MADontImplement); // TODO: do todo above, then replace with MANone
+      ]);
+      ("ID3D12QueryHeapVtbl",IAAutogen, "ID3D12PageableVtbl",  []);
+      ("ID3D12ResourceVtbl",IAAutogen, "ID3D12PageableVtbl",  [
+        ("Map",[
+          ("This",AThis);
+          ("Subresource",ANone);
+          ("pReadRange",InOptional);
+          ("ppData",OutReturnBarePointer);
+        ],MAUnsafe); // TODO: Mapping and unmapping call for RAII guards
+        ("Unmap",[
+          ("This",AThis);
+          ("Subresource",ANone);
+          ("pWrittenRange",InOptional);
+        ],MANone); // TODO: Find some way of dealing with unbounded memory areas in safe rust
+        ("GetDesc",[
+          ("This",AThis);
+        ],MANone);
+        ("GetGPUVirtualAddress",[
+          ("This",AThis);
+        ],MANone);
+        ("WriteToSubresource",[
+          ("This",AThis);
+          ("DstSubresource",ANone);
+          ("pDstBox",InOptional);
+          ("pSrcData",ANone);
+          ("SrcRowPitch",ANone);
+          ("SrcDepthPitch",ANone);
+        ],MADontImplement); // TODO: Unsafe. Method can read past the end of provided buffer
+        ("ReadFromSubresource",[
+          ("This",AThis);
+          ("pDstData",ANone);
+          ("DstRowPitch",ANone);
+          ("DstDepthPitch",ANone);
+          ("SrcSubresource",ANone);
+          ("pSrcBox",ANone);
+        ],MADontImplement); // TODO: Unsafe. Method doesn't take size of output buffer
+        ("GetHeapProperties",[
+          ("This",AThis);
+          ("pHeapProperties",OutOptional);
+          ("pHeapFlags",OutOptional);
+        ],MANone);
+      ]);
+      ("ID3D12RootSignatureDeserializerVtbl",IAAutogen, "IUnknownVtbl", [
+        ("GetRootSignatureDesc",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("ID3D12RootSignatureVtbl",IAAutogen, "ID3D12DeviceChildVtbl",  []);
+      ("ID3DIncludeVtbl",IAManual, "", [
+        ("Open",[
+          ("This",AThis);
+          ("IncludeType",ANone);
+          ("pFileName",ANone);
+          ("pParentData",ANone);
+          ("ppData",ANone);
+          ("pBytes",ANone);
+        ],MANone);
+        ("Close",[
+          ("This",AThis);
+          ("pData",ANone);
+        ],MANone);
+      ]);
+      ("IDXGIAdapter1Vtbl",IAAutogen, "IDXGIAdapterVtbl", [
+        ("GetDesc1",[
+          ("This",AThis);
+          ("pDesc",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGIAdapter2Vtbl",IAAutogen, "IDXGIAdapter1Vtbl", [
+        ("GetDesc2",[
+          ("This",AThis);
+          ("pDesc",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGIAdapter3Vtbl",IAAutogen, "IDXGIAdapter2Vtbl", [
+        ("RegisterHardwareContentProtectionTeardownStatusEvent",[
+          ("This",AThis);
+          ("hEvent",ANone);
+          ("pdwCookie",OutReturn);
+        ],MANone);
+        ("UnregisterHardwareContentProtectionTeardownStatus",[
+          ("This",AThis);
+          ("dwCookie",ANone);
+        ],MANone);
+        ("QueryVideoMemoryInfo",[
+          ("This",AThis);
+          ("NodeIndex",ANone);
+          ("MemorySegmentGroup",ANone);
+          ("pVideoMemoryInfo",OutReturn);
+        ],MANone);
+        ("SetVideoMemoryReservation",[
+          ("This",AThis);
+          ("NodeIndex",ANone);
+          ("MemorySegmentGroup",ANone);
+          ("Reservation",ANone);
+        ],MANone);
+        ("RegisterVideoMemoryBudgetChangeNotificationEvent",[
+          ("This",AThis);
+          ("hEvent",ANone);
+          ("pdwCookie",OutReturn);
+        ],MANone);
+        ("UnregisterVideoMemoryBudgetChangeNotification",[
+          ("This",AThis);
+          ("dwCookie",ANone);
+        ],MANone);
+      ]);
+      ("IDXGIAdapterVtbl",IAAutogen, "IDXGIObjectVtbl", [
+        ("EnumOutputs",[
+          ("This",AThis);
+          ("Output",ANone);
+          ("ppOutput",OutReturnComPtr);
+        ],MANone);
+        ("GetDesc",[
+          ("This",AThis);
+          ("pDesc",OutReturn);
+        ],MANone);
+        ("CheckInterfaceSupport",[
+          ("This",AThis);
+          ("InterfaceName",ANone);
+          ("pUMDVersion",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGIDecodeSwapChainVtbl",IAAutogen, "IUnknownVtbl", [
+        ("PresentBuffer",[
+          ("This",AThis);
+          ("BufferToPresent",ANone);
+          ("SyncInterval",ANone);
+          ("Flags",ANone);
+        ],MANone);
+        ("SetSourceRect",[
+          ("This",AThis);
+          ("pRect",ANone);
+        ],MANone);
+        ("SetTargetRect",[
+          ("This",AThis);
+          ("pRect",ANone);
+        ],MANone);
+        ("SetDestSize",[
+          ("This",AThis);
+          ("Width",ANone);
+          ("Height",ANone);
+        ],MANone);
+        ("GetSourceRect",[
+          ("This",AThis);
+          ("pRect",OutReturn);
+        ],MANone);
+        ("GetTargetRect",[
+          ("This",AThis);
+          ("pRect",OutReturn);
+        ],MANone);
+        ("GetDestSize",[
+          ("This",AThis);
+          ("pWidth",OutReturnCombine("DSize","width"));
+          ("pHeight",OutReturnCombine("DSize","height"));
+        ],MANone);
+        ("SetColorSpace",[
+          ("This",AThis);
+          ("ColorSpace",ANone);
+        ],MANone);
+        ("GetColorSpace",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("IDXGIDevice1Vtbl",IAAutogen, "IDXGIDeviceVtbl", [
+        ("SetMaximumFrameLatency",[
+          ("This",AThis);
+          ("MaxLatency",ANone);
+        ],MANone);
+        ("GetMaximumFrameLatency",[
+          ("This",AThis);
+          ("pMaxLatency",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGIDevice2Vtbl",IAAutogen, "IDXGIDevice1Vtbl", [
+        ("OfferResources",[
+          ("This",AThis);
+          ("NumResources",ANone);
+          ("ppResources",InComPtrArrayOfSize "NumResources");
+          ("Priority",ANone);
+        ],MANone);
+        ("ReclaimResources",[
+          ("This",AThis);
+          ("NumResources",ANone);
+          ("ppResources",InComPtrArrayOfSize "NumResources");
+          ("pDiscarded", OutOptionalArrayOfSize "NumResources");
+        ],MANone);
+        ("EnqueueSetEvent",[
+          ("This",AThis);
+          ("hEvent",ANone);
+        ],MANone);
+      ]);
+      ("IDXGIDevice3Vtbl",IAAutogen, "IDXGIDevice2Vtbl", [
+        ("Trim",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("IDXGIDeviceSubObjectVtbl",IAAutogen, "IDXGIObjectVtbl", [
+        ("GetDevice",[
+          ("This",AThis);
+          ("riid",ANone);
+          ("ppDevice",ANone); // I cannot understand what MSDN says about this. TODO: Find out
+        ],MADontImplement);
+      ]);
+      ("IDXGIDeviceVtbl",IAAutogen, "IDXGIObjectVtbl", 
+       [
+        ("GetAdapter",[
+          ("This",AThis);
+          ("pAdapter",OutReturnComPtr);
+        ],MANone);
+        ("CreateSurface",[
+          ("This",AThis);
+          ("pDesc",ANone);
+          ("NumSurfaces",ANone);
+          ("Usage",ANone);
+          ("pSharedResource",ANone);
+          ("ppSurface",ANone);
+        ],MADontImplement); // MSDN states that this method is internal
+        ("QueryResourceResidency",[
+          ("This",AThis);
+          ("ppResources",InComPtrArrayOfSize "NumResources");
+          ("pResidencyStatus",OutArrayOfSize "NumResources");
+          ("NumResources",ANone);
+        ],MANone);
+        ("SetGPUThreadPriority",[
+          ("This",AThis);
+          ("Priority",ANone);
+        ],MANone);
+        ("GetGPUThreadPriority",[
+          ("This",AThis);
+          ("pPriority",OutReturn);
+        ],MANone);]
+      );
+      ("IDXGIDisplayControlVtbl",IAAutogen, "IUnknownVtbl", [
+        ("IsStereoEnabled",[
+          ("This",AThis);
+        ],MANone);
+        ("SetStereoEnabled",[
+          ("This",AThis);
+          ("enabled",ANone);
+        ],MANone);
+      ]);
+      ("IDXGIFactory1Vtbl",IAAutogen, "IDXGIFactoryVtbl", [
+        ("EnumAdapters1",[
+          ("This",AThis);
+          ("Adapter",ANone);
+          ("ppAdapter",OutReturnComPtr);
+        ],MANone);
+        ("IsCurrent",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("IDXGIFactory2Vtbl",IAAutogen, "IDXGIFactory1Vtbl", [
+        ("IsWindowedStereoEnabled",[
+          ("This",AThis);
+        ],MANone);
+        ("CreateSwapChainForHwnd",[
+          ("This",AThis);
+          ("pDevice",InComPtr);
+          ("hWnd",ANone);
+          ("pDesc",ANone);
+          ("pFullscreenDesc",InOptional);
+          ("pRestrictToOutput",InOptionalComPtr);
+          ("ppSwapChain",OutReturnComPtr);
+        ],MANone);
+        ("CreateSwapChainForCoreWindow",[
+          ("This",AThis);
+          ("pDevice",InComPtr);
+          ("pWindow",InComPtr);
+          ("pDesc",ANone);
+          ("pRestrictToOutput",InOptionalComPtr);
+          ("ppSwapChain",OutReturnComPtr);
+        ],MANone);
+        ("GetSharedResourceAdapterLuid",[
+          ("This",AThis);
+          ("hResource",ANone);
+          ("pLuid",OutReturn);
+        ],MANone);
+        ("RegisterStereoStatusWindow",[
+          ("This",AThis);
+          ("WindowHandle",ANone);
+          ("wMsg",ANone);
+          ("pdwCookie",OutReturn);
+        ],MANone);
+        ("RegisterStereoStatusEvent",[
+          ("This",AThis);
+          ("hEvent",ANone);
+          ("pdwCookie",OutReturn);
+        ],MANone);
+        ("UnregisterStereoStatus",[
+          ("This",AThis);
+          ("dwCookie",ANone);
+        ],MANone);
+        ("RegisterOcclusionStatusWindow",[
+          ("This",AThis);
+          ("WindowHandle",ANone);
+          ("wMsg",ANone);
+          ("pdwCookie",OutReturn);
+        ],MANone);
+        ("RegisterOcclusionStatusEvent",[
+          ("This",AThis);
+          ("hEvent",ANone);
+          ("pdwCookie",OutReturn);
+        ],MANone);
+        ("UnregisterOcclusionStatus",[
+          ("This",AThis);
+          ("dwCookie",ANone);
+        ],MANone);
+        ("CreateSwapChainForComposition",[
+          ("This",AThis);
+          ("pDevice",InComPtr);
+          ("pDesc",ANone);
+          ("pRestrictToOutput",InOptionalComPtr);
+          ("ppSwapChain",OutReturnComPtr);
+        ],MANone);
+      ]);
+      ("IDXGIFactory3Vtbl",IAAutogen, "IDXGIFactory2Vtbl", [
+        ("GetCreationFlags",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("IDXGIFactory4Vtbl",IAAutogen, "IDXGIFactory3Vtbl", [
+        ("EnumAdapterByLuid",[
+          ("This",AThis);
+          ("AdapterLuid",ANone);
+          ("riid",ANone);
+          ("ppvAdapter",OutReturnInterface "riid");
+        ],MANone);
+        ("EnumWarpAdapter",[
+          ("This",AThis);
+          ("riid",ANone);
+          ("ppvAdapter",OutReturnInterface "riid");
+        ],MANone);
+      ]);
+      ("IDXGIFactoryMediaVtbl",IAAutogen, "IUnknownVtbl", [
+        ("CreateSwapChainForCompositionSurfaceHandle",[
+          ("This",AThis);
+          ("pDevice",InComPtr);
+          ("hSurface",ANone);
+          ("pDesc",ANone);
+          ("pRestrictToOutput",InOptionalComPtr);
+          ("ppSwapChain",OutReturnComPtr);
+        ],MANone);
+        ("CreateDecodeSwapChainForCompositionSurfaceHandle",[
+          ("This",AThis);
+          ("pDevice",InComPtr);
+          ("hSurface",ANone);
+          ("pDesc",ANone);
+          ("pYuvDecodeBuffers",InComPtr);
+          ("pRestrictToOutput",InOptionalComPtr);
+          ("ppSwapChain",OutReturnComPtr);
+        ],MANone);
+      ]);
+      ("IDXGIFactoryVtbl",IAAutogen, "IDXGIObjectVtbl", 
+       [
+        ("EnumAdapters",[
+          ("This",AThis);
+          ("Adapter",ANone);
+          ("ppAdapter",OutReturnComPtr);
+        ],MANone);
+        ("MakeWindowAssociation",[
+          ("This",AThis);
+          ("WindowHandle",ANone);
+          ("Flags",ANone);
+        ],MANone);
+        ("GetWindowAssociation",[
+          ("This",AThis);
+          ("pWindowHandle",OutReturn);
+        ],MANone);
+        ("CreateSwapChain",[
+          ("This",AThis);
+          ("pDevice",InComPtr);
+          ("pDesc",ANone);
+          ("ppSwapChain",OutReturnComPtr);
+        ],MANone);
+        ("CreateSoftwareAdapter",[
+          ("This",AThis);
+          ("Module",ANone);
+          ("ppAdapter",OutReturnComPtr);
+        ],MANone);]
+      );
+      ("IDXGIKeyedMutexVtbl",IAAutogen, "IDXGIDeviceSubObjectVtbl", [
+        ("AcquireSync",[
+          ("This",AThis);
+          ("Key",ANone);
+          ("dwMilliseconds",ANone);
+        ],MANone);
+        ("ReleaseSync",[
+          ("This",AThis);
+          ("Key",ANone);
+        ],MANone);
+      ]);
+      ("IDXGIObjectVtbl",IAAutogen, "IUnknownVtbl", [
+        ("SetPrivateData",[
+          ("This",AThis);
+          ("Name",ANone);
+          ("DataSize",ANone);
+          ("pData", InOfSize "DataSize");
+        ],MANone);
+        ("SetPrivateDataInterface",[
+          ("This",AThis);
+          ("Name",ANone);
+          ("pUnknown",ANone);
+        ],MADontImplement);
+        ("GetPrivateData",[
+          ("This",AThis);
+          ("Name",ANone);
+          ("pDataSize",InOutReturn);
+          ("pData", OutOptionalOfSize "pDataSize");
+        ],MANone);
+        ("GetParent",[
+          ("This",AThis);
+          ("riid",ANone);
+          ("ppParent",OutReturnInterface "riid");
+        ],MANone);
+       ]
+      );
+      ("IDXGIOutput1Vtbl",IAAutogen, "IDXGIOutputVtbl", [
+        ("GetDisplayModeList1",[
+          ("This",AThis);
+          ("EnumFormat",ANone);
+          ("Flags",ANone);
+          ("pNumModes",OutReturn);
+          ("pDesc",OutOptionalArrayOfSize "pNumModes");
+        ],MANone);
+        ("FindClosestMatchingMode1",[
+          ("This",AThis);
+          ("pModeToMatch",ANone);
+          ("pClosestMatch",ANone);
+          ("pConcernedDevice",InOptionalComPtr);
+        ],MANone);
+        ("GetDisplaySurfaceData1",[
+          ("This",AThis);
+          ("pDestination",InComPtr);
+        ],MANone);
+        ("DuplicateOutput",[
+          ("This",AThis);
+          ("pDevice",InComPtr);
+          ("ppOutputDuplication",OutReturnComPtr);
+        ],MANone);
+      ]);
+      ("IDXGIOutput2Vtbl",IAAutogen, "IDXGIOutput1Vtbl", [
+        ("SupportsOverlays",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("IDXGIOutput3Vtbl",IAAutogen, "IDXGIOutput2Vtbl", [
+        ("CheckOverlaySupport",[
+          ("This",AThis);
+          ("EnumFormat",ANone);
+          ("pConcernedDevice",InComPtr);
+          ("pFlags",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGIOutput4Vtbl",IAAutogen, "IDXGIOutput3Vtbl", [
+        ("CheckOverlayColorSpaceSupport",[
+          ("This",AThis);
+          ("Format",ANone);
+          ("ColorSpace",ANone);
+          ("pConcernedDevice",InComPtr);
+          ("pFlags",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGIOutputDuplicationVtbl",IAAutogen, "IDXGIObjectVtbl", [
+        ("GetDesc",[
+          ("This",AThis);
+          ("pDesc",OutReturn);
+        ],MANone);
+        ("AcquireNextFrame",[
+          ("This",AThis);
+          ("TimeoutInMilliseconds",ANone);
+          ("pFrameInfo",ANone);
+          ("ppDesktopResource",OutReturnComPtr);
+        ],MANone);
+        ("GetFrameDirtyRects",[
+          ("This",AThis);
+          ("DirtyRectsBufferSize",ANone);
+          ("pDirtyRectsBuffer",InByteArrayOfSize("DirtyRectsBufferSize",1u));
+          ("pDirtyRectsBufferSizeRequired",ANone);
+        ],MANone);
+        ("GetFrameMoveRects",[
+          ("This",AThis);
+          ("MoveRectsBufferSize",ANone);
+          ("pMoveRectBuffer",InByteArrayOfSize("MoveRectsBufferSize",1u));
+          ("pMoveRectsBufferSizeRequired",ANone);
+        ],MANone);
+        ("GetFramePointerShape",[
+          ("This",AThis);
+          ("PointerShapeBufferSize",ANone);
+          ("pPointerShapeBuffer",InByteArrayOfSize("PointerShapeBufferSize",1u));
+          ("pPointerShapeBufferSizeRequired",ANone);
+          ("pPointerShapeInfo",ANone);
+        ],MANone);
+        ("MapDesktopSurface",[
+          ("This",AThis);
+          ("pLockedRect",OutReturn);
+        ],MANone);
+        ("UnMapDesktopSurface",[
+          ("This",AThis);
+        ],MANone);
+        ("ReleaseFrame",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("IDXGIOutputVtbl",IAAutogen, "IDXGIObjectVtbl", [
+        ("GetDesc",[
+          ("This",AThis);
+          ("pDesc",OutReturn);
+        ],MANone);
+        ("GetDisplayModeList",[
+          ("This",AThis);
+          ("EnumFormat",ANone);
+          ("Flags",ANone);
+          ("pNumModes",InOutReturn);
+          ("pDesc",OutOptionalArrayOfSize "pNumModes");
+        ],MANone);
+        ("FindClosestMatchingMode",[
+          ("This",AThis);
+          ("pModeToMatch",ANone);
+          ("pClosestMatch",OutReturn);
+          ("pConcernedDevice",InOptionalComPtr);
+        ],MANone);
+        ("WaitForVBlank",[
+          ("This",AThis);
+        ],MANone);
+        ("TakeOwnership",[
+          ("This",AThis);
+          ("pDevice",InComPtr);
+          ("Exclusive",ANone);
+        ],MANone);
+        ("ReleaseOwnership",[
+          ("This",AThis);
+        ],MANone);
+        ("GetGammaControlCapabilities",[
+          ("This",AThis);
+          ("pGammaCaps",OutReturn);
+        ],MANone);
+        ("SetGammaControl",[
+          ("This",AThis);
+          ("pArray",ANone);
+        ],MANone);
+        ("GetGammaControl",[
+          ("This",AThis);
+          ("pArray",OutReturn);
+        ],MANone);
+        ("SetDisplaySurface",[
+          ("This",AThis);
+          ("pScanoutSurface",InComPtr);
+        ],MANone);
+        ("GetDisplaySurfaceData",[
+          ("This",AThis);
+          ("pDestination",InComPtr);
+        ],MANone);
+        ("GetFrameStatistics",[
+          ("This",AThis);
+          ("pStats",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGIResource1Vtbl",IAAutogen, "IDXGIResourceVtbl", [
+        ("CreateSubresourceSurface",[
+          ("This",AThis);
+          ("index",ANone);
+          ("ppSurface",OutReturnComPtr);
+        ],MANone);
+        ("CreateSharedHandle",[
+          ("This",AThis);
+          ("pAttributes",InOptional);
+          ("dwAccess",ANone);
+          ("lpName",ANone);
+          ("pHandle",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGIResourceVtbl",IAAutogen, "IDXGIDeviceSubObjectVtbl", [
+        ("GetSharedHandle",[
+          ("This",AThis);
+          ("pSharedHandle",OutReturn);
+        ],MANone);
+        ("GetUsage",[
+          ("This",AThis);
+          ("pUsage",OutReturn);
+        ],MANone);
+        ("SetEvictionPriority",[
+          ("This",AThis);
+          ("EvictionPriority",ANone);
+        ],MANone);
+        ("GetEvictionPriority",[
+          ("This",AThis);
+          ("pEvictionPriority",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGISurface1Vtbl",IAAutogen, "IDXGISurfaceVtbl", [
+        ("GetDC",[
+          ("This",AThis);
+          ("Discard",ANone);
+          ("phdc",OutReturn);
+        ],MANone);
+        ("ReleaseDC",[
+          ("This",AThis);
+          ("pDirtyRect",InOptional);
+        ],MANone);
+      ]);
+      ("IDXGISurface2Vtbl",IAAutogen, "IDXGISurface1Vtbl", [
+        ("GetResource",[
+          ("This",AThis);
+          ("riid",ANone);
+          ("ppParentResource",OutReturnInterface "riid");
+          ("pSubresourceIndex",ANone);
+        ],MANone);
+      ]);
+      ("IDXGISurfaceVtbl",IAAutogen, "IDXGIDeviceSubObjectVtbl", [
+        ("GetDesc",[
+          ("This",AThis);
+          ("pDesc",OutReturn);
+        ],MANone);
+        ("Map",[
+          ("This",AThis);
+          ("pLockedRect",OutReturn);
+          ("MapFlags",ANone);
+        ],MANone);
+        ("Unmap",[
+          ("This",AThis);
+        ],MANone);
+      ]);
+      ("IDXGISwapChain1Vtbl",IAAutogen, "IDXGISwapChainVtbl", [
+        ("GetDesc1",[
+          ("This",AThis);
+          ("pDesc",OutReturn);
+        ],MANone);
+        ("GetFullscreenDesc",[
+          ("This",AThis);
+          ("pDesc",OutReturn);
+        ],MANone);
+        ("GetHwnd",[
+          ("This",AThis);
+          ("pHwnd",OutReturn);
+        ],MANone);
+        ("GetCoreWindow",[
+          ("This",AThis);
+          ("refiid",ANone);
+          ("ppUnk",OutReturnInterface "refiid"); //TODO: check if refiid is interface id
+        ],MANone);
+        ("Present1",[
+          ("This",AThis);
+          ("SyncInterval",ANone);
+          ("PresentFlags",ANone);
+          ("pPresentParameters",ANone);
+        ],MANone);
+        ("IsTemporaryMonoSupported",[
+          ("This",AThis);
+        ],MANone);
+        ("GetRestrictToOutput",[
+          ("This",AThis);
+          ("ppRestrictToOutput",OutReturnComPtr);
+        ],MANone);
+        ("SetBackgroundColor",[
+          ("This",AThis);
+          ("pColor",ANone);
+        ],MANone);
+        ("GetBackgroundColor",[
+          ("This",AThis);
+          ("pColor",OutReturn);
+        ],MANone);
+        ("SetRotation",[
+          ("This",AThis);
+          ("Rotation",ANone);
+        ],MANone);
+        ("GetRotation",[
+          ("This",AThis);
+          ("pRotation",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGISwapChain2Vtbl",IAAutogen, "IDXGISwapChain1Vtbl", [
+        ("SetSourceSize",[
+          ("This",AThis);
+          ("Width",ANone);
+          ("Height",ANone);
+        ],MANone);
+        ("GetSourceSize",[
+          ("This",AThis);
+          ("pWidth",OutReturnCombine("DSize","width"));
+          ("pHeight",OutReturnCombine("DSize","height"));
+        ],MANone);
+        ("SetMaximumFrameLatency",[
+          ("This",AThis);
+          ("MaxLatency",ANone);
+        ],MANone);
+        ("GetMaximumFrameLatency",[
+          ("This",AThis);
+          ("pMaxLatency",OutReturn);
+        ],MANone);
+        ("GetFrameLatencyWaitableObject",[
+          ("This",AThis);
+        ],MANone);
+        ("SetMatrixTransform",[
+          ("This",AThis);
+          ("pMatrix",ANone);
+        ],MANone);
+        ("GetMatrixTransform",[
+          ("This",AThis);
+          ("pMatrix",OutReturn);
+        ],MANone);
+      ]);
+      ("IDXGISwapChain3Vtbl",IAAutogen, "IDXGISwapChain2Vtbl", [
+        ("GetCurrentBackBufferIndex",[
+          ("This",AThis);
+        ],MANone);
+        ("CheckColorSpaceSupport",[
+          ("This",AThis);
+          ("ColorSpace",ANone);
+          ("pColorSpaceSupport",OutReturn);
+        ],MANone);
+        ("SetColorSpace1",[
+          ("This",AThis);
+          ("ColorSpace",ANone);
+        ],MANone);
+        ("ResizeBuffers1",[
+          ("This",AThis);
+          ("BufferCount",ANone);
+          ("Width",ANone);
+          ("Height",ANone);
+          ("Format",ANone);
+          ("SwapChainFlags",ANone);
+          ("pCreationNodeMask",InArrayOfSize "BufferCount");
+          ("ppPresentQueue",InComPtrArrayOfSize "BufferCount");
+        ],MANone);
+      ]);
+      ("IDXGISwapChainMediaVtbl",IAAutogen, "IUnknownVtbl", [
+        ("GetFrameStatisticsMedia",[
+          ("This",AThis);
+          ("pStats",OutReturn);
+        ],MANone);
+        ("SetPresentDuration",[
+          ("This",AThis);
+          ("Duration",ANone);
+        ],MANone);
+        ("CheckPresentDurationSupport",[
+          ("This",AThis);
+          ("DesiredPresentDuration",ANone);
+          ("pClosestSmallerPresentDuration",ANone);
+          ("pClosestLargerPresentDuration",ANone);
+        ],MANone);
+      ]);
+      ("IDXGISwapChainVtbl",IAAutogen, "IDXGIDeviceSubObjectVtbl", [
+        ("Present",[
+          ("This",AThis);
+          ("SyncInterval",ANone);
+          ("Flags",ANone);
+        ],MANone);
+        ("GetBuffer",[
+          ("This",AThis);
+          ("Buffer",ANone);
+          ("riid",ANone);
+          ("ppSurface",OutReturnInterface "riid");
+        ],MANone);
+        ("SetFullscreenState",[
+          ("This",AThis);
+          ("Fullscreen",ANone);
+          ("pTarget",InOptionalComPtr);
+        ],MANone);
+        ("GetFullscreenState",[
+          ("This",AThis);
+          ("pFullscreen",AConst "ptr::null_mut()"); // This parameter can be ignored. Good case for AConst "ptr::null_mut()". OTOH why it is here? TODO: Investigate
+          ("ppTarget",ANone); // TODO: Implement OutOptionalComPtr, or OutOptionalReturnComPtr. 
+        ],MANone);
+        ("GetDesc",[
+          ("This",AThis);
+          ("pDesc",OutReturn);
+        ],MANone);
+        ("ResizeBuffers",[
+          ("This",AThis);
+          ("BufferCount",ANone);
+          ("Width",ANone);
+          ("Height",ANone);
+          ("NewFormat",ANone);
+          ("SwapChainFlags",ANone);
+        ],MANone);
+        ("ResizeTarget",[
+          ("This",AThis);
+          ("pNewTargetParameters",ANone);
+        ],MANone);
+        ("GetContainingOutput",[
+          ("This",AThis);
+          ("ppOutput",OutReturnComPtr);
+        ],MANone);
+        ("GetFrameStatistics",[
+          ("This",AThis);
+          ("pStats",OutReturn);
+        ],MANone);
+        ("GetLastPresentCount",[
+          ("This",AThis);
+          ("pLastPresentCount",OutReturn);
+        ],MANone);
+      ]);
+      ("IUnknown",IAManual,"",[
+        ]);
+      ("SECURITY_ATTRIBUTES",IAManual,"",[
+        ]);
+  ] 
 
 let enum_annotations=
   [
@@ -1452,12 +1794,23 @@ let enum_annotations=
     ("D3D_TESSELLATOR_OUTPUT_PRIMITIVE",EAEnum);
     ("D3D_TESSELLATOR_PARTITIONING",EAEnum);
     ("DXGI_ADAPTER_FLAG",EAFlags);
+    ("DXGI_ALPHA_MODE",EAEnum);
     ("DXGI_COLOR_SPACE_TYPE",EAEnum);
+    ("DXGI_COMPUTE_PREEMPTION_GRANULARITY",EAEnum);
     ("DXGI_FORMAT",EAEnum);
+    ("DXGI_FRAME_PRESENTATION_MODE",EAEnum);
+    ("DXGI_GRAPHICS_PREEMPTION_GRANULARITY",EAEnum);
+    ("DXGI_MEMORY_SEGMENT_GROUP",EAEnum);
     ("DXGI_MODE_ROTATION",EAEnum);
     ("DXGI_MODE_SCALING",EAEnum);
     ("DXGI_MODE_SCANLINE_ORDER",EAEnum);
+    ("DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS",EAFlags);
+    ("DXGI_OUTDUPL_POINTER_SHAPE_TYPE",EAEnum);
+    ("DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG",EAFlags);
+    ("DXGI_OVERLAY_SUPPORT_FLAG",EAFlags);
     ("DXGI_RESIDENCY",EAEnum);
+    ("DXGI_SCALING",EAEnum);
+    ("DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG",EAFlags);
     ("DXGI_SWAP_CHAIN_FLAG",EAFlags);
     ("DXGI_SWAP_EFFECT",EAEnum);
     ("_D3D_CBUFFER_TYPE",EAEnum);
@@ -1469,11 +1822,12 @@ let enum_annotations=
     ("_D3D_SHADER_VARIABLE_CLASS",EAEnum);
     ("_D3D_SHADER_VARIABLE_FLAGS",EAFlags);
     ("_D3D_SHADER_VARIABLE_TYPE",EAEnum);
+    ("_DXGI_OFFER_RESOURCE_PRIORITY",EAEnum);
       ] |> Map.ofList
 
 let d3d12structs=
   [
-    ("D3D12_BLEND_DESC",StructFlags.DeriveCopy ||| StructFlags.DeriveDebug ||| StructFlags.DeriveDefault,[
+    ("D3D12_BLEND_DESC",StructFlags.DeriveCopy ||| StructFlags.DeriveDefault,[
       ("AlphaToCoverageEnable",FANone);
       ("IndependentBlendEnable",FANone);
       ("RenderTarget",FANone);
@@ -1536,7 +1890,7 @@ let d3d12structs=
     ("D3D12_CPU_DESCRIPTOR_HANDLE",StructFlags.DeriveCopy,[
       ("ptr",FANone);
       ]);
-    ("D3D12_DEPTH_STENCILOP_DESC",StructFlags.DeriveCopy ||| StructFlags.DeriveDebug ||| StructFlags.DeriveDefault,[
+    ("D3D12_DEPTH_STENCILOP_DESC",StructFlags.DeriveCopy ||| StructFlags.DeriveDefault,[
       ("StencilFailOp",FANone);
       ("StencilDepthFailOp",FANone);
       ("StencilPassOp",FANone);
@@ -1778,7 +2132,7 @@ let d3d12structs=
       ("ForcedSampleCount",FANone);
       ("ConservativeRaster",FANone);
       ]);
-    ("D3D12_RENDER_TARGET_BLEND_DESC",StructFlags.DeriveDefault ||| StructFlags.DeriveCopy ||| StructFlags.DeriveDebug ,[
+    ("D3D12_RENDER_TARGET_BLEND_DESC",StructFlags.DeriveDefault ||| StructFlags.DeriveCopy ,[
       ("BlendEnable",FANone);
       ("LogicOpEnable",FANone);
       ("SrcBlend",FANone);
@@ -2105,7 +2459,7 @@ let d3d12structs=
       ("Name",FANone);
       ("Definition",FANone);
       ]);
-    ("DXGI_ADAPTER_DESC",StructFlags.DeriveDebug,[
+    ("DXGI_ADAPTER_DESC",StructFlags.None,[
       ("Description",FANone);
       ("VendorId",FANone);
       ("DeviceId",FANone);
@@ -2116,7 +2470,7 @@ let d3d12structs=
       ("SharedSystemMemory",FANone);
       ("AdapterLuid",FANone);
       ]);
-    ("DXGI_ADAPTER_DESC1",StructFlags.DeriveDebug,[
+    ("DXGI_ADAPTER_DESC1",StructFlags.None,[
       ("Description",FANone);
       ("VendorId",FANone);
       ("DeviceId",FANone);

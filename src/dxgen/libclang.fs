@@ -320,6 +320,14 @@ type CallingConv=
 [<UnmanagedFunctionPointer(CallingConvention.Cdecl)>]
 type CursorVisitor = delegate of Cursor * Cursor * ClientData -> ChildVisitResult
 
+[<DllImport("libclang", EntryPoint = "clang_disposeString", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern void disposeString(String str)
+
+let toString (str: String) =
+    let result = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(str.data)
+    disposeString(str)
+    result
+
 [<DllImport("libclang", EntryPoint = "clang_createIndex", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern Index createIndex(int excludeDeclarationsFromPch, int displayDiagnostics)
 
@@ -380,6 +388,9 @@ extern void getExpansionLocation(SourceLocation source, File& file, uint32& line
 [<DllImport("libclang", EntryPoint = "clang_getFileName", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern String getFileName(File file)
 
+let getFileNameFS file=
+  getFileName file |> toString
+
 [<DllImport("libclang", EntryPoint = "clang_getEnumConstantDeclValue", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern int64 getEnumConstantDeclValue(Cursor cursor)
 
@@ -419,9 +430,6 @@ extern void disposeTokens(TranslationUnit translationUnit, Token* tokens, uint32
 [<DllImport("libclang", EntryPoint = "clang_getTokenSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern String getTokenSpelling(TranslationUnit translationUnit, Token token)
 
-[<DllImport("libclang", EntryPoint = "clang_disposeString", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern void disposeString(String str)
-
 [<DllImport("libclang", EntryPoint = "clang_Type_getSizeOf", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern int64 getSizeOfType(Type ty)
 
@@ -448,11 +456,6 @@ let isBitFieldFS c=
 
 [<DllImport("libclang", EntryPoint = "clang_getFieldDeclBitWidth", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern int32 getFieldDeclBitWidth(Cursor c)
-
-let toString (str: String) =
-    let result = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(str.data)
-    disposeString(str)
-    result
 
 
 let tokenizeFS cursor=

@@ -132,10 +132,19 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 
   // main parser callback
   let rec childVisitor cursor _ _ =
+    let mutable curFile = File(0)
+    let mutable curLine=0u
+    let mutable curColumn=0u
+    let mutable curOffset=0u
+    getExpansionLocation( cursor |> getCursorExtent |> getRangeStart, &curFile, &curLine, &curColumn, &curOffset)
+    let curFileName = getFileNameFS curFile
+    let locInfo=(curFileName, curLine, curColumn, curOffset)
+
+
     let cursorKind=getCursorKind cursor
 
     if cursorKind=CursorKind.EnumDecl then
-      enums := !enums |> Map.add (cursor |> getCursorDisplayNameFS) (Enum(enumCType cursor,parseEnumConsts cursor))
+      enums := !enums |> Map.add (cursor |> getCursorDisplayNameFS) (Enum(enumCType cursor, parseEnumConsts cursor), locInfo)
 
     if cursorKind=CursorKind.TypedefDecl then
       let tokens=tokenizeFS cursor
@@ -149,16 +158,16 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           Ptr(parseFunction cursor pty)
         else
           uty |> typeDesc
-      types := !types |> Map.add (cursor |> getCursorDisplayNameFS) (Typedef(tdesc))
+      types := !types |> Map.add (cursor |> getCursorDisplayNameFS) (Typedef(tdesc), locInfo)
       // typedefs can contain other definitions
       visitChildrenFS cursor childVisitor () |> ignore
 
     if cursorKind=CursorKind.StructDecl then
       let structName=cursor |> getCursorDisplayNameFS
-      structs := !structs |> Map.add structName (parseStruct cursor)
+      structs := !structs |> Map.add structName (parseStruct cursor, locInfo)
 
     if cursorKind=CursorKind.FunctionDecl then
-      funcs := !funcs |> Map.add (cursor |> getCursorSpellingFS) (parseFunction cursor (getCursorType cursor))
+      funcs := !funcs |> Map.add (cursor |> getCursorSpellingFS) (parseFunction cursor (getCursorType cursor), locInfo)
 
     if cursorKind=CursorKind.VarDecl then
       let nm=cursor |> getCursorSpellingFS
@@ -178,7 +187,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 
     for KeyValue(en,ty) in !enums do
       match ty with
-      |Enum(values=vals) ->
+      |Enum(values=vals), _ ->
         let (_,isect)=vals |> List.map snd |> List.filter (fun n -> n<>0xffffUL && n<>0xffffffffUL && n<>0xffffffffffffffffUL) |> List.fold (fun (acc,isec) n -> (acc|||n,isec || (acc&&&n<>0UL) )) (0x0UL,false)
         if isect then
           printfn "  (\"%s\",EAEnum);" en
@@ -197,7 +206,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       !types |> filtermapMap
         (fun k v -> 
           match v with 
-          |Typedef (StructRef s) -> Some(s)
+          |Typedef (StructRef s), _ -> Some(s)
           |_ -> None
           )
 
@@ -207,7 +216,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 
     let removeTypedefStructs m=
         m  |> Map.map 
-            (fun n ty ->
+            (fun n (ty, loc) ->
                 ty |> recursiveTransform 
                   (fun ty ->
                       match ty with
@@ -227,7 +236,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
                           Some(StructRef s)
                         |None -> None
                       |_ -> None
-                  )
+                  ) |> fun ty -> (ty, loc)
             )
     types := removeTypedefStructs (!types |> Map.filter (fun n _ -> Map.containsKey n typedef2struct |> not))
 

@@ -32,6 +32,7 @@ let ccToRust (cc:CallingConv)=
   |CallingConv.X86StdCall -> "\"system\""
   |_ -> raise <| new System.Exception(sprintf "Unimplemented calling convention %A in ccToRust" cc)
 
+type CodeLocation=System.String*uint32*uint32*uint32
 
 type CParamAnnotation=
   | NoAnnotation
@@ -152,7 +153,7 @@ let isVoidPtr ty=
   isVoidPtrRec (removeConst ty)
 
 // True iff ty is a typedef of struct that contains only function pointers
-let getVtbl (structs:Map<string, CTypeDesc>) ty=
+let getVtbl (structs:Map<string, CTypeDesc*CodeLocation>) ty=
   let isStructVtbl ses=
     if List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> true |_ -> false) ses then
       Some(ses)
@@ -162,7 +163,7 @@ let getVtbl (structs:Map<string, CTypeDesc>) ty=
   match ty with
   |Typedef(StructRef(sname)) |StructRef(sname) -> 
     match Map.find sname structs with
-    |Struct(ses) -> isStructVtbl ses
+    |Struct(ses), _ -> isStructVtbl ses
     |_ -> None
   |Struct(ses) ->
     isStructVtbl ses

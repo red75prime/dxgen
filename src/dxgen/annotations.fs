@@ -98,6 +98,7 @@ type ParamAnnotation=
   |OutReturnComPtr
   |InOptionalComPtr
   |OutOptional
+  |OutReturnBarePointer
   |TypeSelector of string*((string*string*cdesc.CTypeDesc*ParamAnnotation) list) // name of parameter that controls type of this parameter, list of triples (function suffix, selector value, type)
   |AConst of string // Don't use as annotation. For internal use.
 
@@ -150,6 +151,7 @@ let getReturnDesc parmAnnot=
   |OutOptional -> []
   |TypeSelector _ -> []
   |AConst _ -> []
+  |OutReturnBarePointer -> [parmAnnot]
 
 type MethodAnnotation=
   |MANone
