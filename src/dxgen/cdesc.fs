@@ -286,3 +286,57 @@ and
       |Array(_,_) -> name+": &"+(tyToRust ty)
       |_ -> name+": "+(tyToRust ty)
 
+let rec tyToRustGlobal (ty:CTypeDesc)=
+  match ty with
+  |Primitive t ->
+    match t with
+    |Void -> "::c_void"
+    |UInt16 -> "u16"
+    |UInt8 -> "u8"
+    |UInt32 -> "u32"
+    |UInt64 -> "u64"
+    |UIntPtr -> "usize" 
+    |Int16 -> "i16"
+    |Int32 -> "i32"
+    |Int64 -> "i64"
+    |Int8 -> "i8"
+    |IntPtr -> "isize"
+    |Float32 -> "::c_float"
+    |Float64 -> "::c_double"
+    |Float80 -> "f80"
+    |Bool -> "bool"
+    |Char8 -> "u8"
+    |Char16 -> "u16"
+    |Char32 -> "u32"
+  |Unimplemented v-> "Unimplemented("+v+")"
+  |Typedef uty -> tyToRustGlobal uty
+  |TypedefRef tyn-> 
+    match tyn with
+    |_ -> "::"+tyn
+  |StructRef tyn -> "::"+tyn
+  |EnumRef tyn -> "::"+tyn
+  |Array(uty,size) -> "["+(tyToRustGlobal uty)+"; "+size.ToString()+"]"
+  |Ptr(Const(uty)) -> "*const "+(tyToRustGlobal uty)
+  |Ptr(Function(CFuncDesc(args,rty,cc))) ->
+    "extern "+(ccToRust cc)+" fn ("+((List.map funcArgToRustGlobal args) |> String.concat(", "))+") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)
+  |Ptr uty -> "*mut " + (tyToRustGlobal uty)
+  |Const(uty) -> tyToRustGlobal uty
+  |_ -> "NoRepresentationYet("+(sprintf "%A" ty)+")"
+and
+  funcArgToRustGlobal(name,ty,_) =
+    match name with
+    |"type" -> "ty"+": "+(tyToRustGlobal ty)
+    |"" -> "_ : "+(tyToRustGlobal ty)
+    |_ -> 
+      match ty with
+      |Array(_,_) -> name+": &"+(tyToRustGlobal ty)
+      |_ -> name+": "+(tyToRustGlobal ty)
+
+type MacroConst=
+  |MCInt32 of int32
+  |MCUInt32 of uint32
+  |MCInt64 of int64
+  |MCUInt64 of uint64
+  |MCFloat of float
+  |MCDouble of double
+

@@ -25,8 +25,7 @@ let populateVtbls annots=
       (fun (iname, annot, pname, vtbl) ->
         (iname, annot, pname, (fullVtbl pname) ++ vtbl))
 
-let d3d12annotations=
-  populateVtbls 
+let d3d12annotations_prime=
     [
       ("ID3D10BlobVtbl",IAAutogen,"IUnknownVtbl",[
         ("GetBufferPointer",[
@@ -2574,3 +2573,5 @@ let d3d12structs=
       ("Data4",FANone);
       ]);  
     ] |> Seq.map (fun (a,b,c) -> (a,(b,c))) |> Map.ofSeq
+
+let d3d12annotations = populateVtbls d3d12annotations_prime

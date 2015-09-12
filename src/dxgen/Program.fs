@@ -48,6 +48,10 @@ let main argv =
                   codeModule.IncludePaths |> Seq.map (fun incPath -> Path.Combine(sdkLocation, incPath))
 
                 let types = parse.parse headerPath precompiledHeader includePaths
+                let wapi = sysgen.winapiGen types
+                for KeyValue(f,t) in wapi do
+                  use sw=new System.IO.StreamWriter(@".\winapi\"+f)
+                  sw.Write(t)
                 let ptext = sysgen.codeGen types
                 use sw=new System.IO.StreamWriter(@".\d3d12_sys.rs")
                 sw.Write(ptext)

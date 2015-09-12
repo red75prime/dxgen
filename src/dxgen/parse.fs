@@ -22,6 +22,78 @@ let annotations (cursor:Cursor) =
 open annotations
 open annotations_autogen
 
+let tryParse (s:System.String)=
+  let invcul=System.Globalization.CultureInfo.InvariantCulture
+  let ignorecase=System.StringComparison.InvariantCultureIgnoreCase
+  if s.StartsWith("0x", ignorecase) then
+    if s.EndsWith("ULL", ignorecase) then
+      let s'=s.Substring(2,s.Length-5)
+      try Some(MCUInt64(System.Convert.ToUInt64(s',16)), "0x"+s') with
+      |_ -> raise <| new System.Exception(sprintf "%s should be UInt64, but it isn't" s)
+    else if s.EndsWith("LL", ignorecase) then
+      let s'=s.Substring(2,s.Length-4)
+      try Some(MCInt64(System.Convert.ToInt64(s',16)), "0x"+s') with
+      |_ -> raise <| new System.Exception(sprintf "%s should be Int64, but it isn't" s)
+    else if s.EndsWith("UL", ignorecase) then
+      let s'=s.Substring(2,s.Length-4)
+      try Some(MCUInt32(System.Convert.ToUInt32(s',16)), "0x"+s') with
+      |_ -> raise <| new System.Exception(sprintf "%s should be UInt32, but it isn't" s)
+    else if s.EndsWith("L", ignorecase) then
+      let s'=s.Substring(2,s.Length-3)
+      try Some(MCInt32(System.Convert.ToInt32(s',16)), "0x"+s') with
+      |_ -> raise <| new System.Exception(sprintf "%s should be Int32, but it isn't" s)
+    else 
+      let s'=s.Substring(2)
+      try Some(MCUInt32(System.Convert.ToUInt32(s',16)), "0x"+s') with
+      |_ -> 
+        try Some(MCInt32(System.Convert.ToInt32(s',16)), "0x"+s') with
+        |_ -> 
+          try Some(MCUInt64(System.Convert.ToUInt64(s',16)), "0x"+s') with                
+          |_ -> 
+            try Some(MCInt64(System.Convert.ToInt64(s',16)), "0x"+s') with
+            |_ -> None
+  else
+    if s.EndsWith("f", ignorecase) then
+      let s'=s.Substring(0,s.Length-1)
+      try Some(MCFloat(System.Convert.ToDouble(s, invcul) |> float), s) with
+      |_ -> None
+    else
+      if System.String.IsNullOrEmpty(s) || not <| System.Char.IsDigit(s.[0]) then
+        None
+      else if s.EndsWith("ULL", ignorecase) then
+        let s'=s.Substring(0,s.Length-3)
+        try Some(MCUInt64(System.Convert.ToUInt64(s',10)), s') with
+        |_ -> raise <| new System.Exception(sprintf "%s should be UInt64, but it isn't" s)
+      else if s.EndsWith("LL", ignorecase) then
+        let s'=s.Substring(0,s.Length-2)
+        try Some(MCInt64(System.Convert.ToInt64(s', 10)), s') with
+        |_ -> raise <| new System.Exception(sprintf "%s should be Int64, but it isn't" s)
+      else if s.EndsWith("UL", ignorecase) then
+        let s'=s.Substring(0,s.Length-2)
+        try Some(MCUInt32(System.Convert.ToUInt32(s', 10)), s') with
+        |_ -> 
+          printfn "%s should be UInt32, but it isn't" s
+          None
+      else if s.EndsWith("L", ignorecase) then
+        let s'=s.Substring(0, s.Length-1)
+        try Some(MCDouble(System.Convert.ToDouble(s', invcul)), s') with
+        |_ ->
+          try Some(MCInt32(System.Convert.ToInt32(s',10)), s') with
+          |_ ->
+            printfn "  %s should be Int32 or Double, but it isn't" s
+            None
+      else
+        try Some(MCUInt32(System.Convert.ToUInt32(s,10)), s) with
+        |_ -> 
+          try Some(MCInt32(System.Convert.ToInt32(s,10)), s) with
+          |_ -> 
+            try Some(MCUInt64(System.Convert.ToUInt64(s,10)), s) with                
+            |_ -> 
+              try Some(MCInt64(System.Convert.ToInt64(s,10)), s) with
+              |_ ->
+                try Some(MCDouble(System.Convert.ToDouble(s, invcul)), s) with
+                |_ -> None
+
 let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq)=
   // Let's use clean C interface. Those fancy C++ classes with inheritance and whistles aren't good for rust codegen.
   let options = 
@@ -34,11 +106,11 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
        yield "-fmsc-version=1800"
        yield! includePaths |> Seq.map (fun p -> "-I"+p)
     } |> Array.ofSeq
-  let index = createIndex(0, 0)
+  let index = createIndex(0, 1)
 
   let pchTempLocation = Option.maybe {
     let! pchLocation = pchLocation
-    let translationUnit = parseTranslationUnit(index, pchLocation.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.None)
+    let translationUnit = parseTranslationUnit(index, pchLocation.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.DetailedProcessingRecord)
 
     return 
       try
@@ -52,14 +124,15 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
   let options = Array.concat [options
                               pchTempLocation |> Option.map (fun pch -> [| "-include-pch"; pch.FullName |]) |> Option.getOrElse [||]]
 
-  let translationUnit = parseTranslationUnit(index, headerLocation.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.None)
+  let translationUnit = parseTranslationUnit(index, headerLocation.FullName, options, options.Length, [||], 0u, TranslationUnitFlags.DetailedProcessingRecord)
 
 
   let types=ref Map.empty
   let enums=ref Map.empty
   let structs=ref Map.empty
   let funcs=ref Map.empty
-  let iids=ref Set.empty
+  let iids=ref Map.empty
+  let defines=ref Map.empty
 
   let parseEnumConsts (cursor:Cursor)=
     let listOfConsts=ref []
@@ -143,6 +216,28 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 
     let cursorKind=getCursorKind cursor
 
+    if cursorKind=CursorKind.MacroDefinition then
+      let mname :: tokens = (tokenizeFS cursor)
+      // rudimentary parsing of macro defined constants
+      // expressions aren't supported
+      let ignorecase=System.StringComparison.InvariantCultureIgnoreCase
+      if mname.StartsWith("D3D", ignorecase) || mname.StartsWith("DXGI", ignorecase) then
+        let cv=
+          match tokens with
+          |"(" :: value :: ")" :: _ :: [] // last token doesn't belong to macro. libclang bug?
+          |value :: _ :: [] ->
+            tryParse value
+          |"(" :: "-" :: value :: ")" :: _ :: [] 
+          |"-" :: value :: _ :: [] ->
+            tryParse ("-" + value)
+          |_ -> None
+        match cv with
+        |Some(v,orgs) ->
+          //printfn "%A %s" v (System.String.Join(" ", tokens))
+          defines := !defines |> Map.add mname (v, orgs, locInfo)
+        |None ->
+          ()
+
     if cursorKind=CursorKind.EnumDecl then
       enums := !enums |> Map.add (cursor |> getCursorDisplayNameFS) (Enum(enumCType cursor, parseEnumConsts cursor), locInfo)
 
@@ -173,7 +268,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       let nm=cursor |> getCursorSpellingFS
       let tys=cursor |> getCursorType |> getTypeSpellingFS
       if tys="const IID" then
-        iids := !iids |> Set.add nm
+        iids := !iids |> Map.add nm locInfo
 
     if cursorKind=CursorKind.UnexposedDecl then // dip into extern "C"
       visitChildrenFS cursor childVisitor () |> ignore
@@ -242,7 +337,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 
     structs := removeTypedefStructs !structs
 
-    (!types, !enums, !structs, !funcs, !iids)
+    (!types, !enums, !structs, !funcs, !iids, !defines)
 
   finally
     translationUnit |> disposeTranslationUnit

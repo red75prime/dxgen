@@ -70,6 +70,12 @@ typedef struct _RECT {
 	LONG bottom;
 } RECT;
 
+typedef struct tagPOINT
+{
+	LONG  x;
+	LONG  y;
+} POINT;
+
 #define REFIID REFGUID
 
 //Override several macros to be more clean.

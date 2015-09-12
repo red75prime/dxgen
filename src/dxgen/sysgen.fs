@@ -64,7 +64,12 @@ let isDXGI (fname,_,_,_)=
   //System.IO.Path.GetFileName(fname).StartsWith("dxgi",System.StringComparison.InvariantCultureIgnoreCase) 
   false //TODO: switch to winapi-rs when it's usable
 
-let codeGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,funcs:Map<string,CTypeDesc*CodeLocation>, iids:Set<string>) : string=
+let codeGen (types:Map<string,CTypeDesc*CodeLocation>,
+              enums:Map<string,CTypeDesc*CodeLocation>,
+                structs:Map<string,CTypeDesc*CodeLocation>,
+                  funcs:Map<string,CTypeDesc*CodeLocation>, 
+                    iids:Map<string,CodeLocation>,
+                      defines:Map<string, MacroConst*string*CodeLocation>) : string=
   let createEnums (sb:System.Text.StringBuilder)=
     let apl s=sb.AppendLine(s) |> ignore
     apl "use std::ops::BitOr;"
@@ -212,7 +217,7 @@ impl fmt::Debug for {Struct} {
     let apl s=sb.AppendLine(s) |> ignore
     //apl "#[link(name=\"dxguid\")]"
     apl "extern {"
-    for iid in iids do
+    for KeyValue(iid,_) in iids do
       sb.AppendFormat("  pub static {0}: IID;",iid).AppendLine() |> ignore
     apl "}"
     apl ""
@@ -288,3 +293,192 @@ fn debug_fmt_enum(name : &str, val: u32, opts: &[(&str,u32)], f: &mut fmt::Forma
   createFunctions sb
   sb.ToString()
 
+let maxLineLen=99
+let eolAfter=80
+
+let winapiGen (types:Map<string,CTypeDesc*CodeLocation>, 
+                enums:Map<string,CTypeDesc*CodeLocation>,
+                  structs:Map<string,CTypeDesc*CodeLocation>,
+                    funcs:Map<string,CTypeDesc*CodeLocation>, 
+                      iids:Map<string,CodeLocation>,
+                       defines:Map<string, MacroConst*string*CodeLocation>) : Map<string,System.String>=
+  let uncopyableStructs=
+    let isStructUncopyableByItself (ses : CStructElem list)=
+      ses |> List.exists (function |CStructElem(_,Array(_,n),_) when n>32L -> true |_ -> false)
+    let rec isStructUncopyable s=
+      match s with
+      |Struct(ses) ->
+        (isStructUncopyableByItself ses) || 
+          ses |> List.exists (
+            function 
+              |CStructElem(_,StructRef sname,_) -> 
+                match Map.find sname structs with 
+                |(Struct(_) as s,_) -> isStructUncopyable s
+                |_ -> false
+              |_ -> false)
+      |_ -> false
+    structs |> Map.toSeq |> Seq.filter (snd >> fst >> isStructUncopyable) |> Seq.map fst |> Set.ofSeq
+
+  let rsfilename s=
+    (System.IO.Path.GetFileNameWithoutExtension s)+".rs"
+
+  let file2sb=ref Map.empty
+
+  let dxann=d3d12annotations_prime |> Seq.map (fun (a,b,c,d) -> (a,(b,c,d))) |> Map.ofSeq
+
+  let apl f s=
+    let sb=
+      match Map.tryFind f !file2sb with
+      |Some(sb:System.Text.StringBuilder) -> 
+        sb
+      |None ->
+        let sb=new System.Text.StringBuilder()
+        file2sb := Map.add f sb !file2sb
+        sb
+    sb.AppendLine(s) |> ignore
+
+  let createEnums()=
+    for (name,uty,vals,(fname,_,_,_)) in enums |> Seq.choose (function |KeyValue(name,(Enum(uty, vals),loc)) -> (if isDXGI loc then None else Some(name,uty,vals,loc)) |_ -> None) do
+      let f=rsfilename fname
+      let apl=apl f
+      let annot=Map.find name enum_annotations
+      let macro=if annot=EAEnum then "ENUM!" else "FLAGS!"
+      apl (macro+"{ enum "+name+" {")
+      for (cname,v) in vals do
+        apl ("    " + cname + " = 0x" + v.ToString("X") + ",")
+      apl "}}"
+      apl ""
+
+  let libcTypeNames=Set.ofList ["BOOL";"LPCWSTR";"HMODULE"
+      ;"GUID";"LARGE_INTEGER";"LPVOID"
+      ;"WCHAR";"BYTE";"LPCVOID";"LONG_PTR";"WORD";"SIZE_T"
+      ;"SECURITY_ATTRIBUTES";"HANDLE";"DWORD";"LPCSTR";"LONG"
+      ;"IUnknown"] 
+// ----------------- Create structs ----------------------------------
+  let createStructs()=
+    for (name,sfields,(fname,_,_,_)) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields),loc)) -> (if isDXGI loc then None else Some(name,sfields,loc)) |_ -> None) do
+      let f=rsfilename fname
+      let apl=apl f
+      if Set.contains name libcTypeNames || Map.containsKey (name+"Vtbl") dxann then
+        ()
+      else
+        let nonInterface=List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields
+        if nonInterface then
+          let uncopyable=Set.contains name uncopyableStructs
+          if uncopyable then
+            apl "#[repr(C)] #[derive(Copy)]"
+          else
+            apl "#[repr(C)] #[derive(Clone, Copy, Debug)]"
+          apl <| System.String.Format("pub struct {0} {{",name)
+          for (fname,fty) in sfields |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |_-> raise <| new System.Exception("Bitfields aren't supported")) do
+            apl <| System.String.Format("    pub {0}: {1},", fname, tyToRustGlobal fty)
+          apl "}"
+          apl ""
+          if uncopyable then
+            apl <| sprintf "impl Clone for %s {" name
+            apl "    fn clone(&self) -> Self { *self },"
+            apl "}"
+            apl ""
+        else
+          let (_,basename,fns)=Map.find name dxann
+          let fnset=fns |> Seq.map (fun (fn,_,_) -> fn) |> Set.ofSeq
+          apl "RIDL!("
+          if basename="" then
+            apl <| sprintf "interface %s(%s) {" (name.Substring(0,name.Length-4)) name
+          else
+            apl <| sprintf "interface %s(%s): %s(%s) {" (name.Substring(0,name.Length-4)) name (basename.Substring(0, basename.Length-4)) basename
+          for (fname,parms,rty)
+            in sfields |> Seq.choose
+                (function 
+                  |CStructElem(fname,Ptr(Function(CFuncDesc(parms,rty,_))),_) -> 
+                    if Set.contains fname fnset then
+                      Some(fname,parms,rty)
+                    else
+                      None
+                  |_ -> None
+                ) 
+              do
+            let p1 = "    fn "+fname+"("
+            let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+","
+            let parts = 
+              seq {
+                yield "&mut self,"
+                yield! parms |> List.tail |> Seq.map(fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty)+",")
+              }
+            let v1=p1+System.String.Join(" ",parts)+pend
+            if v1.Length > eolAfter then
+              let indent = "        "
+              let indentm1="       "
+              apl p1
+              let ll=
+                parts |> Seq.fold
+                  (fun cl p ->
+                    if cl="" then
+                      let c = indent+p
+                      if c.Length>eolAfter then
+                        apl c
+                        ""
+                      else
+                        c
+                    else
+                      let c=cl+" "+p
+                      if c.Length>maxLineLen then
+                        apl cl
+                        indent+p
+                      else if c.Length>eolAfter then
+                        apl c
+                        ""
+                      else
+                        c
+                  ) ""
+              if ll<>"" then
+                apl ll
+              apl ("    "+pend)
+            else
+              apl v1
+
+          apl "});"
+          apl ""
+//RIDL!( 
+//294 interface IDXGIFactory1(IDXGIFactory1Vtbl): IDXGIFactory(IDXGIFactoryVtbl) { 
+//295     fn EnumAdapters1(&mut self, Adapter: ::UINT, ppAdapter: *mut *mut IDXGIAdapter1) -> ::HRESULT, 
+//296     fn IsCurrent(&mut self) -> ::BOOL 
+//297 }); 
+
+
+            
+  let createTypes()=
+    for KeyValue(name,(ty,(fname,_,_,_))) in types do
+      let f=rsfilename fname
+      let apl=apl f
+      match ty with
+      |Typedef(EnumRef(ename)) when ename=name -> ()
+      |Typedef(StructRef(sname)) when sname=name -> ()
+      |_ -> 
+        apl <| sprintf "pub type %s = %s;" name (tyToRustGlobal ty)
+//    apl ""
+//
+//  let createFunctions (sb:System.Text.StringBuilder)=
+//     // TODO: use 
+//    for (name,args,rty,cc,loc) in funcs |> Seq.choose (function |KeyValue(name, (Function(CFuncDesc(args,rty,cc)),loc)) -> (if isDXGI loc then None else Some(name,args,rty,cc,loc)) |_ -> None) do
+//      //sb.AppendLine("#[link(name=\"d3d12\")]") |> ignore       
+//      sb.AppendFormat("extern {3} {{ pub fn {0}({1}) -> {2}; }}",name,((List.map funcArgToRust args) |> String.concat(", ")),(tyToRust rty), (ccToRust cc)).AppendLine() |> ignore
+//    sb.AppendLine("").AppendLine() |> ignore
+//
+//  let createIIDs (sb:System.Text.StringBuilder)=
+//    let apl s=sb.AppendLine(s) |> ignore
+//    //apl "#[link(name=\"dxguid\")]"
+//    apl "extern {"
+//    for KeyValue(iid,_) in iids do
+//      sb.AppendFormat("  pub static {0}: IID;",iid).AppendLine() |> ignore
+//    apl "}"
+//    apl ""
+  // ----------------------- codeGen ------------------------------------------------
+
+  createEnums()
+  createStructs()
+  createTypes()
+//  createIIDs sb
+//  createFunctions sb
+  !file2sb |> Map.map (fun  k v -> v.ToString())
+  
