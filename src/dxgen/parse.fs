@@ -40,8 +40,10 @@ let tryParse (s:System.String)=
       |_ -> raise <| new System.Exception(sprintf "%s should be UInt32, but it isn't" s)
     else if s.EndsWith("L", ignorecase) then
       let s'=s.Substring(2,s.Length-3)
-      try Some(MCInt32(System.Convert.ToInt32(s',16)), "0x"+s') with
-      |_ -> raise <| new System.Exception(sprintf "%s should be Int32, but it isn't" s)
+      try Some(MCUInt32(System.Convert.ToUInt32(s',16)), "0x"+s') with
+      |_ ->
+        try Some(MCInt32(System.Convert.ToInt32(s',16)), "0x"+s') with
+        |_ -> raise <| new System.Exception(sprintf "%s should be Int32, but it isn't" s)
     else 
       let s'=s.Substring(2)
       try Some(MCUInt32(System.Convert.ToUInt32(s',16)), "0x"+s') with
@@ -55,7 +57,7 @@ let tryParse (s:System.String)=
   else
     if s.EndsWith("f", ignorecase) then
       let s'=s.Substring(0,s.Length-1)
-      try Some(MCFloat(System.Convert.ToDouble(s, invcul) |> float), s) with
+      try Some(MCFloat(System.Convert.ToDouble(s', invcul) |> float), s') with
       |_ -> None
     else
       if System.String.IsNullOrEmpty(s) || not <| System.Char.IsDigit(s.[0]) then
@@ -74,14 +76,16 @@ let tryParse (s:System.String)=
         |_ -> 
           printfn "%s should be UInt32, but it isn't" s
           None
-      else if s.EndsWith("L", ignorecase) then
+      else if s.EndsWith("L", ignorecase) then // 'L' suffix doesn't mean that the number is signed
         let s'=s.Substring(0, s.Length-1)
         try Some(MCDouble(System.Convert.ToDouble(s', invcul)), s') with
         |_ ->
-          try Some(MCInt32(System.Convert.ToInt32(s',10)), s') with
+          try Some(MCUInt32(System.Convert.ToUInt32(s',10)), s') with
           |_ ->
-            printfn "  %s should be Int32 or Double, but it isn't" s
-            None
+            try Some(MCInt32(System.Convert.ToInt32(s',10)), s') with
+            |_ ->
+              printfn "  %s should be UInt32, Int32 or Double, but it isn't" s
+              None
       else
         try Some(MCUInt32(System.Convert.ToUInt32(s,10)), s) with
         |_ -> 

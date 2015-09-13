@@ -76,6 +76,14 @@ typedef struct tagPOINT
 	LONG  y;
 } POINT;
 
+#define D3DCOLORVALUE_DEFINED
+typedef struct _D3DCOLORVALUE {
+	float r;
+	float g;
+	float b;
+	float a;
+} D3DCOLORVALUE;
+
 #define REFIID REFGUID
 
 //Override several macros to be more clean.

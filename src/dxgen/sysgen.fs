@@ -293,6 +293,25 @@ fn debug_fmt_enum(name : &str, val: u32, opts: &[(&str,u32)], f: &mut fmt::Forma
   createFunctions sb
   sb.ToString()
 
+// Returns pairs of sequense elements, except for last element
+let seqPairwise (s:seq<'t>)=
+  if Seq.isEmpty s then
+    Seq.empty
+  else
+    let s1=s |> Seq.map Some
+    let s2= // shifted sequence
+      seq {
+        yield! s |> Seq.skip 1 |> Seq.map Some
+        yield None
+      }
+    Seq.zip s1 s2 
+      |> Seq.map 
+        (function 
+          |(Some(a),Some(b)) -> [a;b]
+          |(Some(a),None) -> [a]
+          |_ -> raise <| new System.Exception("Unreachable"))
+  
+
 let maxLineLen=99
 let eolAfter=80
 
@@ -326,13 +345,18 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
 
   let dxann=d3d12annotations_prime |> Seq.map (fun (a,b,c,d) -> (a,(b,c,d))) |> Map.ofSeq
 
-  let apl f s=
+  let apl (f:System.String) s=
     let sb=
       match Map.tryFind f !file2sb with
       |Some(sb:System.Text.StringBuilder) -> 
         sb
       |None ->
         let sb=new System.Text.StringBuilder()
+        let text=sprintf @"// Copyright © 2015; Dmitry Roschin
+// Licensed under the MIT License <LICENSE.md>
+//! Mappings for the contents of %s.h" (f.Substring(0,f.Length-3))
+        sb.AppendLine(text) |> ignore
+        sb.AppendLine() |> ignore
         file2sb := Map.add f sb !file2sb
         sb
     sb.AppendLine(s) |> ignore
@@ -342,10 +366,15 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       let f=rsfilename fname
       let apl=apl f
       let annot=Map.find name enum_annotations
-      let macro=if annot=EAEnum then "ENUM!" else "FLAGS!"
+      let convhex=fun (v:uint64) -> "0x" + v.ToString("X")
+      let convdec=fun (v:uint64) -> v.ToString()
+      let (macro,convf)=if annot=EAEnum then ("ENUM!", convdec)  else ("FLAGS!", convhex)
       apl (macro+"{ enum "+name+" {")
       for (cname,v) in vals do
-        apl ("    " + cname + " = 0x" + v.ToString("X") + ",")
+        if cname.Contains("_FORCE_DWORD") then
+          apl ("    " + cname + " = " + (convhex v) + ",")
+        else
+          apl ("    " + cname + " = " + (convf v) + ",")
       apl "}}"
       apl ""
 
@@ -376,7 +405,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
           apl ""
           if uncopyable then
             apl <| sprintf "impl Clone for %s {" name
-            apl "    fn clone(&self) -> Self { *self },"
+            apl "    fn clone(&self) -> Self { *self }"
             apl "}"
             apl ""
         else
@@ -387,8 +416,10 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
             apl <| sprintf "interface %s(%s) {" (name.Substring(0,name.Length-4)) name
           else
             apl <| sprintf "interface %s(%s): %s(%s) {" (name.Substring(0,name.Length-4)) name (basename.Substring(0, basename.Length-4)) basename
-          for (fname,parms,rty)
-            in sfields |> Seq.choose
+
+          let fseq=
+            sfields 
+              |> Seq.choose
                 (function 
                   |CStructElem(fname,Ptr(Function(CFuncDesc(parms,rty,_))),_) -> 
                     if Set.contains fname fnset then
@@ -396,15 +427,16 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                     else
                       None
                   |_ -> None
-                ) 
-              do
+                )
+          
+          for (fname,parms,rty)::next in fseq |> seqPairwise do
             let p1 = "    fn "+fname+"("
-            let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+","
+            let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
             let parts = 
               seq {
-                yield "&mut self,"
-                yield! parms |> List.tail |> Seq.map(fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty)+",")
-              }
+                  yield "&mut self"
+                  yield! parms |> Seq.map (fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty))
+              } |> seqPairwise |> Seq.map (function |[p;_] -> (p+",") |[p] -> p |_ -> "")
             let v1=p1+System.String.Join(" ",parts)+pend
             if v1.Length > eolAfter then
               let indent = "        "
@@ -456,29 +488,68 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       |Typedef(StructRef(sname)) when sname=name -> ()
       |_ -> 
         apl <| sprintf "pub type %s = %s;" name (tyToRustGlobal ty)
-//    apl ""
-//
-//  let createFunctions (sb:System.Text.StringBuilder)=
-//     // TODO: use 
-//    for (name,args,rty,cc,loc) in funcs |> Seq.choose (function |KeyValue(name, (Function(CFuncDesc(args,rty,cc)),loc)) -> (if isDXGI loc then None else Some(name,args,rty,cc,loc)) |_ -> None) do
-//      //sb.AppendLine("#[link(name=\"d3d12\")]") |> ignore       
-//      sb.AppendFormat("extern {3} {{ pub fn {0}({1}) -> {2}; }}",name,((List.map funcArgToRust args) |> String.concat(", ")),(tyToRust rty), (ccToRust cc)).AppendLine() |> ignore
-//    sb.AppendLine("").AppendLine() |> ignore
-//
-//  let createIIDs (sb:System.Text.StringBuilder)=
-//    let apl s=sb.AppendLine(s) |> ignore
-//    //apl "#[link(name=\"dxguid\")]"
-//    apl "extern {"
-//    for KeyValue(iid,_) in iids do
-//      sb.AppendFormat("  pub static {0}: IID;",iid).AppendLine() |> ignore
-//    apl "}"
-//    apl ""
+
+  let createDefines()=
+    for KeyValue(name,(mc,orgs,(fname,_,_,_))) in defines do
+      let f=rsfilename fname
+      let apl=apl f
+      match mc with
+      |MCUInt64(_) -> 
+        apl <| sprintf "pub const %s: ::UINT64 = %s;" name orgs
+      |MCInt64(_) -> 
+        apl <| sprintf "pub const %s: ::INT64 = %s;" name orgs
+      |MCUInt32(_) -> 
+        apl <| sprintf "pub const %s: ::UINT = %s;" name orgs
+      |MCInt32(_) -> 
+        apl <| sprintf "pub const %s: ::INT = %s;" name orgs
+      |MCFloat(_) -> 
+        apl <| sprintf "pub const %s: ::FLOAT = %s;" name orgs
+      |MCDouble(_) -> 
+        apl <| sprintf "pub const %s: ::DOUBLE = %s;" name orgs
+        
+
+  let createFunctions()=
+    funcs 
+      |> Seq.choose 
+        (function 
+          |KeyValue(name, (Function(CFuncDesc(args,rty,cc)),loc)) -> 
+            if isDXGI loc then None else Some(name,args,rty,cc,loc)
+          |_ -> None)
+      |> Seq.map
+        (fun (name,args,rty,cc,(fname,_,_,_)) ->
+          let rcc=ccToRust cc
+          let text=System.String.Format("    pub fn {0}({1}) -> {2};",name,((List.map funcArgToRust args) |> String.concat(", ")),(tyToRustGlobal rty))
+          let f=(rsfilename fname)
+          let f'=f.Substring(0,f.Length-3)+"_sys.rs"
+          (f',rcc,text))
+      |> Seq.groupBy (fun (a,b,c) -> a)
+      |> Seq.iter
+        (fun (f,txts) ->
+          let apl=apl f
+          txts 
+            |> Seq.groupBy (fun (a,b,c) -> b)
+            |> Seq.iter 
+              (fun (rcc, lines) ->
+                apl <| sprintf "extern \"%s\" {" rcc
+                lines |> Seq.iter (fun (_,_,t) -> apl t)
+                apl "}"
+                apl ""
+                ))
+    
+  let createIIDs()=
+    let apl=apl "iids.rs"
+    apl "extern {"
+    for KeyValue(iid,_) in iids do
+      apl <| sprintf "  pub static %s: IID;" iid
+    apl "}"
+    apl ""
   // ----------------------- codeGen ------------------------------------------------
 
   createEnums()
   createStructs()
   createTypes()
-//  createIIDs sb
-//  createFunctions sb
+  createIIDs()
+  createDefines()
+  createFunctions()
   !file2sb |> Map.map (fun  k v -> v.ToString())
   
