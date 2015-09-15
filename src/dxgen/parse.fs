@@ -159,7 +159,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             |[] -> NoAnnotation
             |[ann] -> parseSAL ann
             |_ -> raise <| new System.Exception("Multiple annotations")
-        let (pname,ptype,pannot)=(getCursorDisplayNameFS cursor, getCursorType cursor |> typeDesc, cannot)
+        let (pname,ptype,pannot)=(getCursorDisplayNameFS cursor |> (fun pname -> if pname="type" then "type_" else pname), getCursorType cursor |> typeDesc, cannot)
         let pdesc=
           match ptype with
           |Array(_,_) as arr -> (pname, Ptr(arr), pannot)

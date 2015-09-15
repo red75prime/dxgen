@@ -185,7 +185,7 @@ let d3d12annotations_prime=
         ],MANone);
         ("CreateCommandAllocator",[
           ("This",AThis);
-          ("type",ANone);
+          ("type_",ANone);
           ("riid",ANone);
           ("ppCommandAllocator",OutReturnKnownInterface("riid","D3D12CommandAllocator"));
         ],MANone);
@@ -204,7 +204,7 @@ let d3d12annotations_prime=
         ("CreateCommandList",[
           ("This",AThis);
           ("nodeMask",ANone);
-          ("type",ANone);
+          ("type_",ANone);
           ("pCommandAllocator",InComPtr);
           ("pInitialState",InOptionalComPtr);
           ("riid",ANone);

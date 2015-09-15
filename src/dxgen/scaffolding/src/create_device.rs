@@ -1,7 +1,9 @@
+use winapi::*;
+use d3d12_safe::*;
 use d3d12_sys::*;
-use d3d12::*;
+use dxguid_sys::*;
+use dxgi_sys::*;
 use std::ptr;
-use libc::{c_void,LPCSTR,LPCWSTR};
 use libc;
 
 
@@ -57,7 +59,7 @@ pub fn d3d_compile_from_file(file_name: &str, entry: &str, target: &str, flags: 
   let mut blob2: *mut ID3D10Blob = ptr::null_mut();
   let hr=unsafe{D3DCompileFromFile(w_file_name.as_ptr(), ptr::null_mut(), ptr::null_mut(), w_entry.as_ptr(), w_target.as_ptr(), flags, 0, &mut blob1, &mut blob2)};
   if blob2 != ptr::null_mut() {
-    let blob=D3D10Blob::new(blob2 as *mut _);
+    let mut blob=D3D10Blob::new(blob2 as *mut _);
     unsafe{
       let blob_slice:&[u8]=::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize);
       let mut ret=vec![];
@@ -68,7 +70,7 @@ pub fn d3d_compile_from_file(file_name: &str, entry: &str, target: &str, flags: 
   } else {
     if hr==0 {
       assert!(blob1 != ptr::null_mut());
-      let blob=D3D10Blob::new(blob1 as *mut _);
+      let mut blob=D3D10Blob::new(blob1 as *mut _);
       let mut ret=vec![];
       unsafe {
         let blob_slice:&[u8]=::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize);

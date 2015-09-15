@@ -435,7 +435,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
             let parts = 
               seq {
                   yield "&mut self"
-                  yield! parms |> Seq.map (fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty))
+                  yield! parms |> Seq.tail |> Seq.map (fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty))
               } |> seqPairwise |> Seq.map (function |[p;_] -> (p+",") |[p] -> p |_ -> "")
             let v1=p1+System.String.Join(" ",parts)+pend
             if v1.Length > eolAfter then
@@ -518,7 +518,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       |> Seq.map
         (fun (name,args,rty,cc,(fname,_,_,_)) ->
           let rcc=ccToRust cc
-          let text=System.String.Format("    pub fn {0}({1}) -> {2};",name,((List.map funcArgToRust args) |> String.concat(", ")),(tyToRustGlobal rty))
+          let text=System.String.Format("    pub fn {0}({1}) -> {2};",name,((List.map funcArgToRust args) |> String.concat(", ")),(tyToRust rty))
           let f=(rsfilename fname)
           let f'=f.Substring(0,f.Length-3)+"_sys.rs"
           (f',rcc,text))
@@ -530,7 +530,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
             |> Seq.groupBy (fun (a,b,c) -> b)
             |> Seq.iter 
               (fun (rcc, lines) ->
-                apl <| sprintf "extern \"%s\" {" rcc
+                apl <| sprintf "extern %s {" rcc
                 lines |> Seq.iter (fun (_,_,t) -> apl t)
                 apl "}"
                 apl ""

@@ -4,24 +4,23 @@
 #[macro_use] extern crate log;
 extern crate env_logger;
 extern crate libc;
+extern crate winapi;
+extern crate d3d12_safe;
+extern crate dxguid_sys;
+extern crate dxgi_sys;
 extern crate d3d12_sys;
-extern crate d3d12;
 
 mod macros;
 mod create_device;
 
-use d3d12_sys::*;
-use d3d12::*;
+use winapi::*;
+use d3d12_safe::*;
 use create_device::*;
-use libc::HANDLE;
 use std::ptr;
 use std::fmt;
 use std::mem;
 
-#[link(name="d3d12")]
 #[link(name="d3dcompiler")]
-#[link(name="dxguid")]
-#[link(name="dxgi")]
 extern {}
 
 const FRAME_COUNT : u32 = 2;
@@ -29,10 +28,10 @@ const FRAME_COUNT : u32 = 2;
 fn main() {
   env_logger::init().unwrap();
 
-  let factory=create_dxgi_factory1().expect("Cannot create DXGIFactory1. No can do.");
+  let mut factory=create_dxgi_factory1().expect("Cannot create DXGIFactory1. No can do.");
   let mut i=0;
   while let Ok(adapter)=factory.enum_adapters(i) {
-    println!("Adapter {}: {:?}", i, adapter.get_desc());
+//    println!("Adapter {}: {:?}", i, adapter.get_desc());
     i+=1;
   }
 
@@ -41,6 +40,7 @@ fn main() {
     Ok(appdata) => {
     },
     Err(iq) => {
+      let mut iq=iq;
       let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
       println!("Number of debug messages is {}", mnum);
       for i in 0..mnum {
@@ -179,16 +179,16 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     top: 0,
   };
 
-  let debug=get_debug_interface().unwrap();
+  let mut debug=get_debug_interface().unwrap();
   info!("Debug");
   debug.enable_debug_layer();
 
-  let factory=create_dxgi_factory1().unwrap();
+  let mut factory=create_dxgi_factory1().unwrap();
   info!("Factory");
-  let dev=d3d12_create_device(None, D3D_FEATURE_LEVEL_12_0).unwrap();
+  let mut dev=d3d12_create_device(None, D3D_FEATURE_LEVEL_12_0).unwrap();
   info!("Device");
 
-  let mut opts=D3D12_FEATURE_DATA_D3D12_OPTIONS{ ..Default::default() };
+  let mut opts: D3D12_FEATURE_DATA_D3D12_OPTIONS = unsafe{ mem::uninitialized::<_>() };
   dev.check_feature_support_options(&mut opts).unwrap();
   info!("{:#?}",opts);
 
@@ -199,12 +199,12 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   let mut feat_levels=D3D12_FEATURE_DATA_FEATURE_LEVELS {
       NumFeatureLevels: fl_array.len() as UINT,
       pFeatureLevelsRequested: fl_array.as_ptr(),
-      MaxSupportedFeatureLevel: D3D_FEATURE_LEVEL(0),
+      MaxSupportedFeatureLevel: D3D_FEATURE_LEVEL_9_1,
     };
   dev.check_feature_support_feature_levels(&mut feat_levels).unwrap();
   info!("Max supported feature level: {:?}", feat_levels.MaxSupportedFeatureLevel);
 
-  let info_queue: D3D12InfoQueue = dev.query_interface().unwrap();
+  let mut info_queue: D3D12InfoQueue = dev.query_interface().unwrap();
   info!("Info queue");
 
   let qd=D3D12_COMMAND_QUEUE_DESC{
@@ -213,7 +213,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     Priority: 0,
     NodeMask: 0,
   };
-  let cqueue=dev.create_command_queue(&qd).unwrap();
+  let mut cqueue=dev.create_command_queue(&qd).unwrap();
   info!("Command queue");
   let mut scd=DXGI_SWAP_CHAIN_DESC{
     BufferCount: FRAME_COUNT,
@@ -232,7 +232,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     Windowed: 1,
     Flags: 0,
   };
-  let swap_chain=factory.create_swap_chain(&cqueue, &mut scd).unwrap();
+  let mut swap_chain=factory.create_swap_chain(&cqueue, &mut scd).unwrap();
   info!("Swap chain");
   //println!("{:?}", &scd);
   //let frameindex=swap_chain.get_current_back_buffer_index();
@@ -243,7 +243,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
     NodeMask: 0,
   };
-  let rtvheap=dev.create_descriptor_heap(&rtvhd).unwrap(); 
+  let mut rtvheap=dev.create_descriptor_heap(&rtvhd).unwrap(); 
   info!("Descriptor heap");
   let rtvdsize=dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
   let mut cdh=rtvheap.get_cpu_descriptor_handle_for_heap_start();
@@ -254,7 +254,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     cdh.ptr += rtvdsize;
     render_targets.push(buf);
   }
-  let callocator=dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT).unwrap();
+  let mut callocator=dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT).unwrap();
   info!("Command allocator");
   let rsd=D3D12_ROOT_SIGNATURE_DESC{
     NumParameters: 0,
@@ -263,11 +263,11 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     pStaticSamplers: ptr::null(),
     Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
   };
-  let blob=d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1).unwrap();
-  let root_sign=
+  let mut blob=d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1).unwrap();
+  let mut root_sign=
     unsafe{
       let blob_slice:&[u8]=::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize);
-      let root_sign=dev.create_root_signature(0, blob_slice).unwrap();
+      let mut root_sign=dev.create_root_signature(0, blob_slice).unwrap();
       ::std::mem::forget(blob_slice);
       root_sign
     };
@@ -305,6 +305,20 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
       StencilPassOp: D3D12_STENCIL_OP_KEEP,
       StencilFailOp: D3D12_STENCIL_OP_KEEP,
     };
+  let blend_desc_def=
+    D3D12_RENDER_TARGET_BLEND_DESC{
+      BlendEnable: 0,
+      LogicOpEnable: 0,
+      SrcBlend: D3D12_BLEND_ONE,
+      DestBlend: D3D12_BLEND_ZERO,
+      BlendOp: D3D12_BLEND_OP_ADD,
+      SrcBlendAlpha: D3D12_BLEND_ONE,
+      DestBlendAlpha: D3D12_BLEND_ZERO,
+      BlendOpAlpha: D3D12_BLEND_OP_ADD,
+      LogicOp: D3D12_LOGIC_OP_NOOP,
+      RenderTargetWriteMask: 15,
+    };
+
   let pso_desc= D3D12_GRAPHICS_PIPELINE_STATE_DESC {
     pRootSignature: root_sign.iptr() as *mut _,
     VS: D3D12_SHADER_BYTECODE{pShaderBytecode: vshader.as_ptr() as *const _ ,BytecodeLength: vshader.len() as u32, },
@@ -327,13 +341,13 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
             LogicOp: D3D12_LOGIC_OP_NOOP,
             RenderTargetWriteMask: 15,
           },
-          D3D12_RENDER_TARGET_BLEND_DESC::default(),
-          D3D12_RENDER_TARGET_BLEND_DESC::default(),
-          D3D12_RENDER_TARGET_BLEND_DESC::default(),
-          D3D12_RENDER_TARGET_BLEND_DESC::default(),
-          D3D12_RENDER_TARGET_BLEND_DESC::default(),
-          D3D12_RENDER_TARGET_BLEND_DESC::default(),
-          D3D12_RENDER_TARGET_BLEND_DESC::default(),
+          blend_desc_def,
+          blend_desc_def,
+          blend_desc_def,
+          blend_desc_def,
+          blend_desc_def,
+          blend_desc_def,
+          blend_desc_def,
          ],},
     SampleMask: 0xffffffff,
     RasterizerState : D3D12_RASTERIZER_DESC{
@@ -374,13 +388,13 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     Flags : D3D12_PIPELINE_STATE_FLAG_NONE,         
   };
   info!("Here be dragons");
-  let gps=match dev.create_graphics_pipeline_state(&pso_desc) {
+  let mut gps=match dev.create_graphics_pipeline_state(&pso_desc) {
       Ok(gps) => gps,
       Err(_) => {return Err(info_queue);},
     };
   info!("Graphics pipeline state");
 
-  let command_list : D3D12GraphicsCommandList = dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
+  let mut command_list : D3D12GraphicsCommandList = dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
   info!("Command list");
   command_list.close().unwrap();
   info!("Command list Close");
