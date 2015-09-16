@@ -7,7 +7,7 @@ struct VS_INPUT
 
 struct VS_OUTPUT
 {
-    float4  vPosition : POSITION;
+    float4  vPosition : SV_Position;
     float4  vDiffuse : COLOR;
 };
 
