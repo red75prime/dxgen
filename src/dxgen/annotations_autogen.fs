@@ -90,12 +90,12 @@ let d3d12annotations_prime=
         ],MADontImplement);
         ("Signal",[
           ("This",AThis);
-          ("pFence",ANone);
+          ("pFence",InComPtr);
           ("Value",ANone);
         ],MANone);
         ("Wait",[
           ("This",AThis);
-          ("pFence",ANone);
+          ("pFence",InComPtr);
           ("Value",ANone);
         ],MANone);
         ("GetTimestampFrequency",[

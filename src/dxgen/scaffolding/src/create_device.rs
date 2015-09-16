@@ -16,8 +16,8 @@ extern "system" {
 
 #[link(name="dxgi")]
 extern "system" {
-    pub fn CreateDXGIFactory2(Flags: UINT, riid: REFGUID, ppFactory: *mut *mut c_void) -> HRESULT;
-    pub fn DXGIGetDebugInterface1(Flags: UINT, riid: REFGUID, pDebug: *mut *mut c_void) -> HRESULT;
+//    pub fn CreateDXGIFactory2(Flags: UINT, riid: REFGUID, ppFactory: *mut *mut c_void) -> HRESULT;
+//    pub fn DXGIGetDebugInterface1(Flags: UINT, riid: REFGUID, pDebug: *mut *mut c_void) -> HRESULT;
 }
 
 
@@ -130,11 +130,13 @@ lazy_static! {
 }
 
 pub type ResizeFn=Option<Box<FnMut(i16,i16,u8)->()>>;
+pub type RenderFn=Option<Box<FnMut()->()>>;
 
 struct WndWindow {
   destroyed: bool,
   hwnd: winapi::HWND,
   resize_fn: ResizeFn,
+  render_fn: RenderFn,
 }
 
 fn loword(lparam: winapi::LPARAM) -> i16 {
@@ -211,6 +213,7 @@ pub fn create_window(title: &str, width: i32, height: i32) -> HWnd {
     destroyed: false,
     hwnd: hwnd,
     resize_fn: None,
+    render_fn: None,
     };
   let rhwnd=HWnd(hwnd as usize);
   WND_MAP.lock().unwrap().insert(rhwnd, rwnd);
@@ -220,13 +223,18 @@ pub fn create_window(title: &str, width: i32, height: i32) -> HWnd {
 use self::user32::{GetMessageW,TranslateMessage,DispatchMessageW,PeekMessageW};
 use self::kernel32::{Sleep};
 
-pub fn message_loop() -> winapi::WPARAM {
+pub fn message_loop(main_wnd: HWnd) -> winapi::WPARAM {
   let mut msg: winapi::MSG = unsafe{mem::uninitialized::<_>()};
   loop {
     let ret = unsafe{PeekMessageW(&mut msg, ptr::null_mut(), 0, 0, winapi::PM_REMOVE)};
     //println!("GetMessage returned {:?}. wParam={:?}", ret, msg.wParam);
     if ret == 0 {
-      unsafe{Sleep(1)};
+      if let Some(rwnd)=WND_MAP.lock().unwrap().get_mut(&main_wnd) {
+        if let Some(ref mut boxedfn)=rwnd.render_fn {
+          boxedfn();
+        }
+      }
+      unsafe{Sleep(10)};
     } else {
       if msg.message == winapi::WM_QUIT {return msg.wParam};
       unsafe{TranslateMessage(&mut msg)};
@@ -238,6 +246,12 @@ pub fn message_loop() -> winapi::WPARAM {
 pub fn set_resize_fn(rhwnd: HWnd, resize_fn: ResizeFn) {
   if let Some(rwnd)=WND_MAP.lock().unwrap().get_mut(&rhwnd) {
     rwnd.resize_fn=resize_fn;
+  }
+}
+
+pub fn set_render_fn(rhwnd: HWnd, render_fn: RenderFn) {
+  if let Some(rwnd)=WND_MAP.lock().unwrap().get_mut(&rhwnd) {
+    rwnd.render_fn=render_fn;
   }
 }
 

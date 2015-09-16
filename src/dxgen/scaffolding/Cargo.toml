@@ -12,19 +12,19 @@ d3d12_safe = { version = "*", path = "lib/d3d12" }
 
 [dependencies.winapi]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12_tmp"
 
 [dependencies.dxgi-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12_tmp"
 
 [dependencies.user32-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12_tmp"
 
 [dependencies.kernel32-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12_tmp"
 
 # [dependencies.d3d12_sys]
 # git = "https://github.com/red75prime/winapi-rs/"
@@ -32,4 +32,4 @@ branch = "dx12"
 
 [dependencies.dxguid-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12_tmp"

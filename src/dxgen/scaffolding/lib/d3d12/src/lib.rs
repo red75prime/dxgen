@@ -336,17 +336,17 @@ impl D3D12CommandQueue {
   
   //  Method Signal
   
-  pub fn signal(&mut self, fence: &mut ID3D12Fence, value: UINT64) -> HResult<()> {
+  pub fn signal<T: HasIID>(&mut self, fence: &T, value: UINT64) -> HResult<()> {
   
-    let hr=unsafe { (*self.0).Signal(fence, value) };
+    let hr=unsafe { (*self.0).Signal(fence.iptr() as *mut _ as *mut _ , value) };
     hr2ret(hr,())
   }
   
   //  Method Wait
   
-  pub fn wait(&mut self, fence: &mut ID3D12Fence, value: UINT64) -> HResult<()> {
+  pub fn wait<T: HasIID>(&mut self, fence: &T, value: UINT64) -> HResult<()> {
   
-    let hr=unsafe { (*self.0).Wait(fence, value) };
+    let hr=unsafe { (*self.0).Wait(fence.iptr() as *mut _ as *mut _ , value) };
     hr2ret(hr,())
   }
   

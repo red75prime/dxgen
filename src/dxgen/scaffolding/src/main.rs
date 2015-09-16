@@ -8,6 +8,7 @@ extern crate winapi;
 extern crate d3d12_safe;
 extern crate dxguid_sys;
 extern crate dxgi_sys;
+extern crate kernel32;
 //extern crate d3d12_sys;
 
 mod macros;
@@ -16,6 +17,7 @@ mod create_device;
 use winapi::*;
 use d3d12_safe::*;
 use create_device::*;
+use kernel32::{CreateEventExW, WaitForSingleObject};
 use std::ptr;
 use std::fmt;
 use std::mem;
@@ -35,9 +37,13 @@ fn main() {
     i+=1;
   }
 
-  let wnd=create_window("Hello, world!", 512, 256);
+  let wnd=create_window("Hello, rusty world!", 512, 256);
   match create_appdata(wnd) {
     Ok(appdata) => {
+      set_resize_fn(wnd,Some(Box::new(|w,h,c|{println!("Resize to {},{}",w,h);})));
+      let mut appdata=appdata;
+      set_render_fn(wnd,Some(Box::new(move ||on_render(&mut appdata))));
+      message_loop(wnd);
     },
     Err(iq) => {
       let mut iq=iq;
@@ -66,9 +72,6 @@ fn main() {
       iq.clear_stored_messages();
     },
   };
-
-  set_resize_fn(wnd,Some(Box::new(|w,h,c|{println!("Resize to {},{}",w,h);})));
-  message_loop();
 
   //let dev=match d3d12_create_device(D3D_FEATURE_LEVEL_11_1) {
   //  Ok(dev) => dev,
@@ -135,7 +138,7 @@ fn main() {
 struct AppData {
   viewport : D3D12_VIEWPORT,
   scissor_rect : D3D12_RECT,
-  swap_chain : DXGISwapChain,
+  swap_chain : DXGISwapChain3,
   device : D3D12Device,
   render_targets : Vec<D3D12Resource>,
   command_allocator : D3D12CommandAllocator,
@@ -159,6 +162,7 @@ impl fmt::Debug for AppData {
   }
 }
 
+#[derive(Clone,Copy,Debug)]
 struct Vertex {
   pos: [f32;4],
   color: [f32;4],
@@ -237,11 +241,11 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     Windowed: 1,
     Flags: 0,
   };
-  let mut swap_chain=factory.create_swap_chain(&cqueue, &mut scd).unwrap();
+  let mut swap_chain: DXGISwapChain3 = factory.create_swap_chain(&cqueue, &mut scd).unwrap().query_interface().unwrap();
   info!("Swap chain");
   //println!("{:?}", &scd);
-  //let frameindex=swap_chain.get_current_back_buffer_index();
-  //println!("Frame index: {:?}", &frameindex);
+  let frame_index=swap_chain.get_current_back_buffer_index();
+  println!("Frame index: {}", &frame_index);
   let rtvhd=D3D12_DESCRIPTOR_HEAP_DESC{
     NumDescriptors: FRAME_COUNT,
     Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
@@ -408,10 +412,12 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   info!("Command list Close");
   
   let vtc=vec![
-    Vertex {pos: [0.0,0.0,0.0,0.0],color: [1.0,0.0,0.0,0.5],},
-    Vertex {pos: [1.0,0.0,0.0,0.0],color: [1.0,0.0,0.0,0.5],},
-    Vertex {pos: [0.0,1.0,0.0,0.0],color: [1.0,0.0,0.0,0.5],},
+    Vertex {pos: [0.0, 0.25, 0.0, 0.0],color: [1.0,0.0,0.0,1.0],},
+    Vertex {pos: [0.25, -0.25, 0.0, 0.0],color: [1.0,0.0,0.0,1.0],},
+    Vertex {pos: [-0.25, -0.25, 0.0, 0.0],color: [1.0,0.0,0.0,1.0],},
   ];
+
+  let vbuf_size = mem::size_of_val(&vtc[..]) as UINT64;
 
   let heap_prop=
     D3D12_HEAP_PROPERTIES {
@@ -430,7 +436,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     D3D12_RESOURCE_DESC {
       Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
       Alignment:  0,
-      Width: mem::size_of_val(&vtc[..]) as UINT64,
+      Width: vbuf_size,
       Height: 1,
       DepthOrArraySize: 1,
       MipLevels: 1,
@@ -442,8 +448,117 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   info!("Resource desc: {:#?}", &res_desc);
 
 
-  let vbuf=try!(dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|info_queue.clone()));
+  let mut vbuf=try!(dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|info_queue.clone()));
   info!("Vertex buffer");
+  unsafe {
+    let buf_slice=std::slice::from_raw_parts_mut(vbuf.map(0, None).unwrap() as *mut Vertex, vtc.len());
+    info!("Map vertex buffer");
+    for (place, data) in buf_slice.iter_mut().zip(vtc.iter()) {
+      *place = *data
+    }
+    vbuf.unmap(0, None);
+    info!("Unmap vertex buffer");
+  }
+  
+  let vbview = 
+    D3D12_VERTEX_BUFFER_VIEW {
+      BufferLocation: vbuf.get_gpu_virtual_address(),
+      StrideInBytes: mem::size_of::<Vertex>() as u32,
+      SizeInBytes: vbuf_size as u32,
+  };
 
-  Err(info_queue)
+  let fence=dev.create_fence(0, D3D12_FENCE_FLAG_NONE).unwrap();
+  info!("fence");
+
+  let fence_val=1u64;
+  let fence_event = unsafe{ CreateEventExW(ptr::null_mut(), ptr::null_mut(), 0, 0) };
+  if fence_event == ptr::null_mut() {
+    panic!("Cannot create event");
+  }
+  
+  let mut ret=
+    AppData {
+      viewport: viewport,
+      scissor_rect: sci_rect,
+      swap_chain: swap_chain,
+      device: dev,
+      render_targets: render_targets,
+      command_allocator: callocator,
+      command_queue: cqueue,
+      root_signature: root_sign,
+      rtv_heap: rtvheap,
+      pipeline_state: gps,
+      command_list: command_list,
+      rtv_descriptor_size: rtvdsize,
+      vertex_buffer: vbuf,
+      vertex_buffer_view: vbview,
+      frame_index: frame_index,
+      fence_event: fence_event,
+      fence: fence,
+      fence_value: fence_val,
+    };
+  wait_for_prev_frame(&mut ret);
+  Ok(ret)
+}
+
+fn wait_for_prev_frame(data: &mut AppData) {
+  let fence=data.fence_value;
+  data.command_queue.signal(&mut data.fence, fence).unwrap();
+  data.fence_value += 1;
+  if data.fence.get_completed_value() < fence {
+    data.fence.set_event_on_completion(fence, data.fence_event);
+    unsafe { WaitForSingleObject(data.fence_event, INFINITE) };
+  }
+  data.frame_index = data.swap_chain.get_current_back_buffer_index();
+}
+
+fn populate_command_list(data: &mut AppData) {
+  data.command_allocator.reset().unwrap();
+  data.command_list.reset(&data.command_allocator, Some(&data.pipeline_state)).unwrap();
+  data.command_list.set_graphics_root_signature(&data.root_signature);
+  data.command_list.rs_set_viewports(&mut [data.viewport]);
+  data.command_list.rs_set_scissor_rects(&mut [data.scissor_rect]);
+  let rb=
+    D3D12_RESOURCE_BARRIER {
+      Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+      Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
+      Transition: D3D12_RESOURCE_TRANSITION_BARRIER {
+        pResource: data.render_targets[data.frame_index as usize].iptr() as *mut _,
+        StateBefore: D3D12_RESOURCE_STATE_PRESENT,
+        StateAfter: D3D12_RESOURCE_STATE_RENDER_TARGET,
+        Subresource: D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, 
+      },
+    };
+  data.command_list.resource_barrier(&mut [rb]);
+  let mut rtvh=data.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
+  rtvh.ptr += data.frame_index*data.rtv_descriptor_size;
+  data.command_list.om_set_render_targets(1, &rtvh, None);
+  
+  let mut clear_color = [0.0, 0.2, 0.4, 1.0];
+  data.command_list.clear_render_target_view(rtvh, &mut clear_color, &mut []);
+  data.command_list.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  data.command_list.ia_set_vertex_buffers(0, Some(&mut [data.vertex_buffer_view]));
+  data.command_list.draw_instanced(3, 1, 0, 0);
+  
+  let rb1=
+    D3D12_RESOURCE_BARRIER {
+      Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+      Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
+      Transition: D3D12_RESOURCE_TRANSITION_BARRIER {
+        pResource: data.render_targets[data.frame_index as usize].iptr() as *mut _,
+        StateBefore: D3D12_RESOURCE_STATE_RENDER_TARGET,
+        StateAfter: D3D12_RESOURCE_STATE_PRESENT,
+        Subresource: D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, 
+      },
+    };
+  data.command_list.resource_barrier(&mut [rb1]);
+
+  data.command_list.close().unwrap();
+}
+
+fn on_render(data: &mut AppData) {
+  populate_command_list(data);
+  data.command_queue.execute_command_lists(&[&data.command_list]);
+  data.swap_chain.present(1,0).unwrap();
+  wait_for_prev_frame(data);
 }
