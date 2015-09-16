@@ -13,9 +13,9 @@ libc = "*"
 git = "https://github.com/red75prime/winapi-rs"
 branch = "dx12"
 
-[dependencies.d3d12_sys]
-git = "https://github.com/red75prime/winapi-rs"
-branch = "dx12"
+# [dependencies.d3d12_sys]
+# git = "https://github.com/red75prime/winapi-rs"
+# branch = "dx12"
 
 [dependencies.winapi-build]
 git = "https://github.com/red75prime/winapi-rs"

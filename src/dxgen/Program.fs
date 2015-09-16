@@ -49,6 +49,7 @@ let main argv =
 
                 let types = parse.parse headerPath precompiledHeader includePaths
                 let wapi = sysgen.winapiGen types
+                System.IO.Directory.CreateDirectory(@".\winapi") |> ignore
                 for KeyValue(f,t) in wapi do
                   use sw=new System.IO.StreamWriter(@".\winapi\"+f)
                   sw.Write(t)

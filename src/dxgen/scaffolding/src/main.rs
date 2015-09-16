@@ -8,7 +8,7 @@ extern crate winapi;
 extern crate d3d12_safe;
 extern crate dxguid_sys;
 extern crate dxgi_sys;
-extern crate d3d12_sys;
+//extern crate d3d12_sys;
 
 mod macros;
 mod create_device;

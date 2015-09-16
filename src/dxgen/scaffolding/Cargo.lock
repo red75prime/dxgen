@@ -3,7 +3,6 @@ name = "d3d12_integration_test"
 version = "0.2.0"
 dependencies = [
  "d3d12_safe 0.3.0",
- "d3d12_sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "dxgi-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "dxguid-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "env_logger 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -27,18 +26,7 @@ dependencies = [
 name = "d3d12_safe"
 version = "0.3.0"
 dependencies = [
- "d3d12_sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "dxguid-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
- "libc 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
- "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
-]
-
-[[package]]
-name = "d3d12_sys"
-version = "0.0.1"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#6acd090807ccc420a22baeb18d8171f297b53925"
-dependencies = [
  "libc 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
@@ -47,7 +35,7 @@ dependencies = [
 [[package]]
 name = "dxgi-sys"
 version = "0.0.1"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#6acd090807ccc420a22baeb18d8171f297b53925"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#7fe3b2e317c0ec29d49ab4bc303e36e2cda26d7f"
 dependencies = [
  "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
@@ -56,10 +44,9 @@ dependencies = [
 [[package]]
 name = "dxguid-sys"
 version = "0.0.1"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#6acd090807ccc420a22baeb18d8171f297b53925"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#7fe3b2e317c0ec29d49ab4bc303e36e2cda26d7f"
 dependencies = [
- "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
- "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
+ "winapi 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -74,7 +61,7 @@ dependencies = [
 [[package]]
 name = "kernel32-sys"
 version = "0.1.4"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#6acd090807ccc420a22baeb18d8171f297b53925"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#7fe3b2e317c0ec29d49ab4bc303e36e2cda26d7f"
 dependencies = [
  "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
@@ -124,7 +111,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "user32-sys"
 version = "0.1.2"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#6acd090807ccc420a22baeb18d8171f297b53925"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#7fe3b2e317c0ec29d49ab4bc303e36e2cda26d7f"
 dependencies = [
  "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
@@ -133,10 +120,15 @@ dependencies = [
 [[package]]
 name = "winapi"
 version = "0.2.3"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#6acd090807ccc420a22baeb18d8171f297b53925"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#7fe3b2e317c0ec29d49ab4bc303e36e2cda26d7f"
+
+[[package]]
+name = "winapi"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "winapi-build"
 version = "0.1.1"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#6acd090807ccc420a22baeb18d8171f297b53925"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#7fe3b2e317c0ec29d49ab4bc303e36e2cda26d7f"
 
