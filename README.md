@@ -7,4 +7,4 @@ Reads the DirectX header files using libclang and generates the corresponding ru
 
 The program requires that path to 'libclang.dll' to be in PATH environment variable.
 
-![](http://imgur.com/zLHKwJx)
+![](http://i.imgur.com/zLHKwJx.png?1)
