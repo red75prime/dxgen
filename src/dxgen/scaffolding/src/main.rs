@@ -159,6 +159,11 @@ impl fmt::Debug for AppData {
   }
 }
 
+struct Vertex {
+  pos: [f32;4],
+  color: [f32;4],
+}
+
 fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   let w=1024.;
   let h=1024.;
@@ -226,7 +231,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
         Scaling: DXGI_MODE_SCALING_UNSPECIFIED,
       },
     SampleDesc: DXGI_SAMPLE_DESC {Count:1, Quality: 0,},
-    BufferUsage: 32,//DXGI_USAGE_RENDER_TARGET_OUTPUT,
+    BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
     SwapEffect: DXGI_SWAP_EFFECT_FLIP_DISCARD,
     OutputWindow: hwnd,
     Windowed: 1,
@@ -263,12 +268,13 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     pStaticSamplers: ptr::null(),
     Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
   };
+
   let mut blob=d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1).unwrap();
+
   let mut root_sign=
     unsafe{
       let blob_slice:&[u8]=::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize);
       let mut root_sign=dev.create_root_signature(0, blob_slice).unwrap();
-      ::std::mem::forget(blob_slice);
       root_sign
     };
   info!("Root signature");
@@ -294,7 +300,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
       SemanticIndex: 0, 
       Format: DXGI_FORMAT_R32G32B32A32_FLOAT, 
       InputSlot: 0, 
-      AlignedByteOffset: 12, 
+      AlignedByteOffset: 16, 
       InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 
       InstanceDataStepRate: 0,
     },
@@ -392,11 +398,52 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
       Ok(gps) => gps,
       Err(_) => {return Err(info_queue);},
     };
+  info!("dev.iptr: 0x{:x}, lpVtbl: 0x{:x}", dev.iptr() as usize, unsafe{ (*dev.iptr()).lpVtbl as usize});
   info!("Graphics pipeline state");
-
   let mut command_list : D3D12GraphicsCommandList = dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
+  info!("dev.iptr: 0x{:x}, lpVtbl: 0x{:x}", dev.iptr() as usize, unsafe{ (*dev.iptr()).lpVtbl as usize});
   info!("Command list");
   command_list.close().unwrap();
+  info!("dev.iptr: 0x{:x}, lpVtbl: 0x{:x}", dev.iptr() as usize, unsafe{ (*dev.iptr()).lpVtbl as usize});
   info!("Command list Close");
+  
+  let vtc=vec![
+    Vertex {pos: [0.0,0.0,0.0,0.0],color: [1.0,0.0,0.0,0.5],},
+    Vertex {pos: [1.0,0.0,0.0,0.0],color: [1.0,0.0,0.0,0.5],},
+    Vertex {pos: [0.0,1.0,0.0,0.0],color: [1.0,0.0,0.0,0.5],},
+  ];
+
+  let heap_prop=
+    D3D12_HEAP_PROPERTIES {
+      Type: D3D12_HEAP_TYPE_UPLOAD,
+      CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+      MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
+      CreationNodeMask: 0,
+      VisibleNodeMask: 0,
+  };
+//  let heap_prop=dev.get_custom_heap_properties(0, D3D12_HEAP_TYPE_UPLOAD);
+
+  info!("dev.iptr: 0x{:x}, lpVtbl: 0x{:x}", dev.iptr() as usize, unsafe{ (*dev.iptr()).lpVtbl as usize});
+  info!("Heap properties: {:#?}", &heap_prop);
+  
+  let res_desc =
+    D3D12_RESOURCE_DESC {
+      Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
+      Alignment:  0,
+      Width: mem::size_of_val(&vtc[..]) as UINT64,
+      Height: 1,
+      DepthOrArraySize: 1,
+      MipLevels: 1,
+      Format: DXGI_FORMAT_UNKNOWN,
+      SampleDesc: DXGI_SAMPLE_DESC {Count:1, Quality: 0,},
+      Layout: D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+      Flags: D3D12_RESOURCE_FLAG_NONE,
+  };
+  info!("Resource desc: {:#?}", &res_desc);
+
+
+  let vbuf=try!(dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|info_queue.clone()));
+  info!("Vertex buffer");
+
   Err(info_queue)
 }
