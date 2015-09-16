@@ -1,8 +1,0 @@
-[package]
-name = "d3d12_sys"
-version = "0.3.0"
-authors = ["red75prime <red75prim@gmail.com>"]
-
-[dependencies]
-libc = "0.1.10"
-
