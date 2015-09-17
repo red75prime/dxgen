@@ -17,7 +17,7 @@ mod create_device;
 use winapi::*;
 use d3d12_safe::*;
 use create_device::*;
-use kernel32::{CreateEventExW, WaitForSingleObject};
+use kernel32::{CreateEventW, WaitForSingleObject};
 use std::ptr;
 use std::fmt;
 use std::mem;
@@ -28,6 +28,33 @@ use std::rc::Rc;
 extern {}
 
 const FRAME_COUNT : u32 = 2;
+
+fn dump_info_queue(iq: &mut D3D12InfoQueue) {
+  let mut iq=iq;
+  let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
+  println!("Number of debug messages is {}", mnum);
+  for i in 0..mnum {
+    let mut sz=0;
+    let hr=iq.get_message(i,None,&mut sz);
+    info!("get_message returned {:?}", hr); // It is the case when hr!=0 and it's ok
+    // create buffer to receive message
+    let mut arr: Vec<u8> = Vec::with_capacity(sz as usize); 
+    let mut sz1=sz; 
+    unsafe {
+      // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
+      // it should be Option<&[u8]>, but I don't have annotation for that yet.
+      let hr=iq.get_message(i,Some(mem::transmute(arr.as_ptr())),&mut sz1); 
+      assert_eq!(sz,sz1); // just to be sure. hr is Err(1) on success.
+      // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
+      let msg:D3D12_MESSAGE=unsafe {mem::transmute_copy(&(*arr.as_ptr()))};
+      // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
+      let cdescr=::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
+      let descr=String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
+      println!("{:}",descr);
+    }
+  };
+  iq.clear_stored_messages();
+}
 
 fn main() {
   env_logger::init().unwrap();
@@ -45,31 +72,8 @@ fn main() {
       Ok(appdata) => {
         appdata
       },
-      Err(iq) => {
-        let mut iq=iq;
-        let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
-        println!("Number of debug messages is {}", mnum);
-        for i in 0..mnum {
-          let mut sz=0;
-          let hr=iq.get_message(i,None,&mut sz);
-          info!("get_message returned {:?}", hr); // It is the case when hr!=0 and it's ok
-          // create buffer to receive message
-          let mut arr: Vec<u8> = Vec::with_capacity(sz as usize); 
-          let mut sz1=sz; 
-          unsafe {
-            // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
-            // it should be Option<&[u8]>, but I don't have annotation for that yet.
-            let hr=iq.get_message(i,Some(mem::transmute(arr.as_ptr())),&mut sz1); 
-            assert_eq!(sz,sz1); // just to be sure. hr is Err(1) on success.
-            // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
-            let msg:D3D12_MESSAGE=unsafe {mem::transmute_copy(&(*arr.as_ptr()))};
-            // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
-            let cdescr=::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
-            let descr=String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
-            println!("{:}",descr);
-          }
-        };
-        iq.clear_stored_messages();
+      Err(mut iq) => {
+        dump_info_queue(&mut iq);
         return ();
       },
     };
@@ -174,6 +178,7 @@ struct AppData {
   fence : D3D12Fence,
   fence_value : UINT64,
   tick: f64,
+  iq: D3D12InfoQueue,
 }
 
 impl fmt::Debug for AppData {
@@ -491,7 +496,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   info!("fence");
 
   let fence_val=1u64;
-  let fence_event = unsafe{ CreateEventExW(ptr::null_mut(), ptr::null_mut(), 0, 0) };
+  let fence_event = unsafe{ CreateEventW(ptr::null_mut(), 0, 0, ptr::null_mut()) };
   if fence_event == ptr::null_mut() {
     panic!("Cannot create event");
   }
@@ -518,6 +523,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
       fence: fence,
       fence_value: fence_val,
       tick: 0.0,
+      iq: info_queue,
     };
   wait_for_prev_frame(&mut ret);
   info!("wait_for_prev_frame");
@@ -525,13 +531,16 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
 }
 
 fn wait_for_prev_frame(data: &mut AppData) {
-  let fence=data.fence_value;
-  data.command_queue.signal(&mut data.fence, fence).unwrap();
+  let fence_value=data.fence_value;
+  data.command_queue.signal(&mut data.fence, fence_value).unwrap();
   data.fence_value += 1;
-  if data.fence.get_completed_value() < fence {
-    match data.fence.set_event_on_completion(fence, data.fence_event) {
+  if data.fence.get_completed_value() < fence_value {
+    match data.fence.set_event_on_completion(fence_value, data.fence_event) {
       Ok(_) => (),
-      Err(hr) => panic!("set_event_on_completion error: 0x{:x}",hr),
+      Err(hr) => {
+        dump_info_queue(&mut data.iq);
+        panic!("set_event_on_completion error: 0x{:x}",hr);
+      },
     }
     unsafe { WaitForSingleObject(data.fence_event, INFINITE) };
   }
@@ -590,9 +599,9 @@ fn on_render(data: &mut AppData) {
   let (s,c)=f64::sin_cos(tick);
   let (s,c)=(s as f32, c as f32);
   let vtc=vec![
-    Vertex {pos: [0.25*s, 0.25*c, 0.0, 0.0],color: [1.0,0.0,0.0,1.0],},
-    Vertex {pos: [0.25*c-0.25*s, -0.25*c+0.25*s, 0.0, 0.0],color: [0.0,1.0,0.0,1.0],},
-    Vertex {pos: [-0.25*c-0.25*s, -0.25*c-0.25*s, 0.0, 0.0],color: [0.0,0.0,1.0,1.0],},
+    Vertex {pos: [0.25*s+0.0*c, 0.25*(-c)+0.0*s, 0.0, 0.0],color: [1.0,0.0,0.0,1.0],},
+    Vertex {pos: [-0.25*s-0.25*c, -0.25*(-c)-0.25*s, 0.0, 0.0],color: [0.0,0.0,1.0,1.0],},
+    Vertex {pos: [-0.25*s+0.25*c, -0.25*(-c)+0.25*s, 0.0, 0.0],color: [0.0,1.0,0.0,1.0],},
   ];
 
   unsafe {
