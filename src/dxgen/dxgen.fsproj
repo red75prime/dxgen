@@ -77,6 +77,7 @@
     <Compile Include="SDKLocator.fs" />
     <Compile Include="ModuleBuilder.fs" />
     <Compile Include="Configuration.fs" />
+    <Compile Include="utils.fs" />
     <Compile Include="cdesc.fs" />
     <Compile Include="annotations.fs" />
     <Compile Include="annotations_autogen.fs" />

@@ -181,13 +181,48 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     else
       Function(CFuncDesc(List.rev !args,rety,cc))
 
-
-  let parseStruct (cursor:Cursor)=
+  let rec parseUnion (cursor:Cursor)=
     let tokens=tokenizeFS cursor
     //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
     let fields=ref []
     let parseFieldDecl cursor _ _=
-      if getCursorKind cursor=CursorKind.FieldDecl then
+      let ckind=getCursorKind cursor
+      if ckind=CursorKind.FieldDecl then
+        let ctype=getCursorType cursor
+        let nm=getCursorDisplayNameFS cursor
+        let pointee=getPointeeType ctype
+        let ty=ctype |> typeDesc
+        let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
+        fields := CStructElem(nm, ty, bw) :: !fields
+      else if ckind=CursorKind.StructDecl then
+        fields := CStructElem("", parseStruct cursor, None) :: !fields
+      ChildVisitResult.Continue
+    visitChildrenFS cursor parseFieldDecl () |> ignore
+    let fields = 
+      !fields |> List.rev
+        |> utils.seqPairwise 
+        |> Seq.choose
+          (function
+            |[CStructElem("", (Struct(_) as stc), _); CStructElem(fname, StructRef sref, bw)] when sref.StartsWith("(anonymous struct") ->
+              Some(CStructElem(fname,stc,bw))
+            |[CStructElem(fname, StructRef sref, bw); _] when sref.StartsWith("(anonymous struct") -> 
+              None
+            |[se;_] -> 
+              Some(se)
+            |[CStructElem(fname, StructRef sref, bw)] when sref.StartsWith("(anonymous struct") ->
+              None
+            |[se] ->
+              Some(se)
+            |_ -> raise <| new System.Exception("unreachable")
+          )
+    Union(List.ofSeq fields)
+  and parseStruct (cursor:Cursor)=
+    let tokens=tokenizeFS cursor
+    //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
+    let fields=ref []
+    let parseFieldDecl cursor _ _=
+      let ckind=getCursorKind cursor
+      if ckind=CursorKind.FieldDecl then
         let ctype=getCursorType cursor
         let nm=getCursorDisplayNameFS cursor
         let pointee=getPointeeType ctype
@@ -203,6 +238,8 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
               ctype |> typeDesc
         let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
         fields := CStructElem(nm, ty, bw) :: !fields
+      else if ckind=CursorKind.UnionDecl then
+        fields := CStructElem("", parseUnion cursor, None) :: !fields
       ChildVisitResult.Continue
     visitChildrenFS cursor parseFieldDecl () |> ignore
     Struct(List.rev !fields)

@@ -293,24 +293,6 @@ fn debug_fmt_enum(name : &str, val: u32, opts: &[(&str,u32)], f: &mut fmt::Forma
   createFunctions sb
   sb.ToString()
 
-// Returns pairs of sequense elements, except for last element
-let seqPairwise (s:seq<'t>)=
-  if Seq.isEmpty s then
-    Seq.empty
-  else
-    let s1=s |> Seq.map Some
-    let s2= // shifted sequence
-      seq {
-        yield! s |> Seq.skip 1 |> Seq.map Some
-        yield None
-      }
-    Seq.zip s1 s2 
-      |> Seq.map 
-        (function 
-          |(Some(a),Some(b)) -> [a;b]
-          |(Some(a),None) -> [a]
-          |_ -> raise <| new System.Exception("Unreachable"))
-  
 
 let maxLineLen=99
 let eolAfter=80
@@ -429,14 +411,14 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                   |_ -> None
                 )
           
-          for (fname,parms,rty)::next in fseq |> seqPairwise do
+          for (fname,parms,rty)::next in fseq |> utils.seqPairwise do
             let p1 = "    fn "+fname+"("
             let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
             let parts = 
               seq {
                   yield "&mut self"
                   yield! parms |> Seq.tail |> Seq.map (fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty))
-              } |> seqPairwise |> Seq.map (function |[p;_] -> (p+",") |[p] -> p |_ -> "")
+              } |> utils.seqPairwise |> Seq.map (function |[p;_] -> (p+",") |[p] -> p |_ -> "")
             let v1=p1+System.String.Join(" ",parts)+pend
             if v1.Length > eolAfter then
               let indent = "        "
