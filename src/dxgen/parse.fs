@@ -192,10 +192,13 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
         let nm=getCursorDisplayNameFS cursor
         let pointee=getPointeeType ctype
         let ty=ctype |> typeDesc
+        let sz=ctype |> getSizeOfType
         let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
-        fields := CStructElem(nm, ty, bw) :: !fields
+        fields := (CStructElem(nm, ty, bw),sz) :: !fields
       else if ckind=CursorKind.StructDecl then
-        fields := CStructElem("", parseStruct cursor, None) :: !fields
+        let ctype=getCursorType cursor
+        let sz=ctype |> getSizeOfType
+        fields := (CStructElem("", parseStruct cursor, None),sz) :: !fields
       ChildVisitResult.Continue
     visitChildrenFS cursor parseFieldDecl () |> ignore
     let fields = 
@@ -203,13 +206,13 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
         |> utils.seqPairwise 
         |> Seq.choose
           (function
-            |[CStructElem("", (Struct(_) as stc), _); CStructElem(fname, StructRef sref, bw)] when sref.StartsWith("(anonymous struct") ->
-              Some(CStructElem(fname,stc,bw))
-            |[CStructElem(fname, StructRef sref, bw); _] when sref.StartsWith("(anonymous struct") -> 
+            |[(CStructElem("", (Struct(_) as stc), _), sz); (CStructElem(fname, StructRef sref, bw),_)] when sref.StartsWith("(anonymous struct") ->
+              Some((CStructElem(fname,stc,bw),sz))
+            |[(CStructElem(fname, StructRef sref, bw), _); _] when sref.StartsWith("(anonymous struct") -> 
               None
             |[se;_] -> 
               Some(se)
-            |[CStructElem(fname, StructRef sref, bw)] when sref.StartsWith("(anonymous struct") ->
+            |[(CStructElem(fname, StructRef sref, bw), _)] when sref.StartsWith("(anonymous struct") ->
               None
             |[se] ->
               Some(se)

@@ -104,7 +104,7 @@ type CTypeDesc=
   |Array of CTypeDesc*int64
   |Struct of CStructElem list
   |StructRef of string
-  |Union of CStructElem list
+  |Union of (CStructElem*int64) list // snd is elem's size
   |UnionRef of string
   |UnsizedArray of CTypeDesc
   |Function of CFuncDesc
@@ -113,6 +113,8 @@ and CFuncDesc=CFuncDesc of ((string*CTypeDesc*CParamAnnotation) list)*CTypeDesc*
 and CStructElem=CStructElem of name:string*typeDesc:CTypeDesc*bitWidth:Option<int32>
 
 let rec recursiveTransform f ty=
+  let transformUnionElems ses=
+    ses |> List.map (fun (CStructElem(name, sty, bw), sz) -> (CStructElem(name, recursiveTransform f sty, bw), sz))
   let transformStructElems ses=
     ses |> List.map (fun (CStructElem(name, sty, bw)) -> CStructElem(name, recursiveTransform f sty, bw))
   let transformFuncDesc (CFuncDesc(plist,rety,cc))=
@@ -131,7 +133,7 @@ let rec recursiveTransform f ty=
     |Array(sty,num) -> Array(recursiveTransform f sty, num)
     |Struct ses -> Struct(transformStructElems ses)
     |StructRef _ -> ty
-    |Union ses -> Union(transformStructElems ses)
+    |Union ses -> Union(transformUnionElems ses)
     |UnionRef _ -> ty
     |UnsizedArray sty -> UnsizedArray(recursiveTransform f sty)
     |Function(fd) -> Function(transformFuncDesc fd)
