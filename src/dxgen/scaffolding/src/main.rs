@@ -21,6 +21,8 @@ use kernel32::{CreateEventExW, WaitForSingleObject};
 use std::ptr;
 use std::fmt;
 use std::mem;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[link(name="d3dcompiler")]
 extern {}
@@ -38,40 +40,57 @@ fn main() {
   }
 
   let wnd=create_window("Hello, rusty world!", 512, 256);
-  match create_appdata(wnd) {
-    Ok(appdata) => {
-      set_resize_fn(wnd,Some(Box::new(|w,h,c|{println!("Resize to {},{}",w,h);})));
-      let mut appdata=appdata;
-      set_render_fn(wnd,Some(Box::new(move ||on_render(&mut appdata))));
-      message_loop(wnd);
-    },
-    Err(iq) => {
-      let mut iq=iq;
-      let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
-      println!("Number of debug messages is {}", mnum);
-      for i in 0..mnum {
-        let mut sz=0;
-        let hr=iq.get_message(i,None,&mut sz);
-        info!("get_message returned {:?}", hr); // It is the case when hr!=0 and it's ok
-        // create buffer to receive message
-        let mut arr: Vec<u8> = Vec::with_capacity(sz as usize); 
-        let mut sz1=sz; 
-        unsafe {
-          // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
-          // it should be Option<&[u8]>, but I don't have annotation for that yet.
-          let hr=iq.get_message(i,Some(mem::transmute(arr.as_ptr())),&mut sz1); 
-          assert_eq!(sz,sz1); // just to be sure. hr is Err(1) on success.
-          // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
-          let msg:D3D12_MESSAGE=unsafe {mem::transmute_copy(&(*arr.as_ptr()))};
-          // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
-          let cdescr=::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
-          let descr=String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
-          println!("{:}",descr);
-        }
-      };
-      iq.clear_stored_messages();
-    },
-  };
+  let appdata=
+    match create_appdata(wnd) {
+      Ok(appdata) => {
+        appdata
+      },
+      Err(iq) => {
+        let mut iq=iq;
+        let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
+        println!("Number of debug messages is {}", mnum);
+        for i in 0..mnum {
+          let mut sz=0;
+          let hr=iq.get_message(i,None,&mut sz);
+          info!("get_message returned {:?}", hr); // It is the case when hr!=0 and it's ok
+          // create buffer to receive message
+          let mut arr: Vec<u8> = Vec::with_capacity(sz as usize); 
+          let mut sz1=sz; 
+          unsafe {
+            // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
+            // it should be Option<&[u8]>, but I don't have annotation for that yet.
+            let hr=iq.get_message(i,Some(mem::transmute(arr.as_ptr())),&mut sz1); 
+            assert_eq!(sz,sz1); // just to be sure. hr is Err(1) on success.
+            // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
+            let msg:D3D12_MESSAGE=unsafe {mem::transmute_copy(&(*arr.as_ptr()))};
+            // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
+            let cdescr=::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
+            let descr=String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
+            println!("{:}",descr);
+          }
+        };
+        iq.clear_stored_messages();
+        return ();
+      },
+    };
+  let packed_ad=Rc::new(RefCell::new(appdata));
+  {
+    let rdata=packed_ad.clone();
+    let cl=move |w,h,c| {
+      let mut data=rdata.borrow_mut();
+      println!("Resize to {},{}",w,h);
+      data.swap_chain.resize_buffers(0, w as u32, h as u32, DXGI_FORMAT_UNKNOWN, 0);
+    };
+    set_resize_fn(wnd,Some(Box::new(cl)));
+  }
+  {
+    let rdata=packed_ad.clone();
+    let cl=move||{
+      on_render(&mut *(rdata.borrow_mut()));
+    };
+    set_render_fn(wnd,Some(Box::new(cl)));
+  }
+  message_loop(wnd);
 
   //let dev=match d3d12_create_device(D3D_FEATURE_LEVEL_11_1) {
   //  Ok(dev) => dev,
@@ -154,6 +173,7 @@ struct AppData {
   fence_event : HANDLE,
   fence : D3D12Fence,
   fence_value : UINT64,
+  tick: f64,
 }
 
 impl fmt::Debug for AppData {
@@ -413,8 +433,8 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   
   let vtc=vec![
     Vertex {pos: [0.0, 0.25, 0.0, 0.0],color: [1.0,0.0,0.0,1.0],},
-    Vertex {pos: [0.25, -0.25, 0.0, 0.0],color: [1.0,0.0,0.0,1.0],},
-    Vertex {pos: [-0.25, -0.25, 0.0, 0.0],color: [1.0,0.0,0.0,1.0],},
+    Vertex {pos: [0.25, -0.25, 0.0, 0.0],color: [0.0,1.0,0.0,1.0],},
+    Vertex {pos: [-0.25, -0.25, 0.0, 0.0],color: [0.0,0.0,1.0,1.0],},
   ];
 
   let vbuf_size = mem::size_of_val(&vtc[..]) as UINT64;
@@ -475,6 +495,7 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   if fence_event == ptr::null_mut() {
     panic!("Cannot create event");
   }
+  info!("fence_event");
   
   let mut ret=
     AppData {
@@ -496,8 +517,10 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
       fence_event: fence_event,
       fence: fence,
       fence_value: fence_val,
+      tick: 0.0,
     };
   wait_for_prev_frame(&mut ret);
+  info!("wait_for_prev_frame");
   Ok(ret)
 }
 
@@ -506,7 +529,10 @@ fn wait_for_prev_frame(data: &mut AppData) {
   data.command_queue.signal(&mut data.fence, fence).unwrap();
   data.fence_value += 1;
   if data.fence.get_completed_value() < fence {
-    data.fence.set_event_on_completion(fence, data.fence_event);
+    match data.fence.set_event_on_completion(fence, data.fence_event) {
+      Ok(_) => (),
+      Err(hr) => panic!("set_event_on_completion error: 0x{:x}",hr),
+    }
     unsafe { WaitForSingleObject(data.fence_event, INFINITE) };
   }
   data.frame_index = data.swap_chain.get_current_back_buffer_index();
@@ -556,7 +582,27 @@ fn populate_command_list(data: &mut AppData) {
   data.command_list.close().unwrap();
 }
 
+use std::f64;
+
 fn on_render(data: &mut AppData) {
+  let tick=data.tick;
+  data.tick += 0.01;
+  let (s,c)=f64::sin_cos(tick);
+  let (s,c)=(s as f32, c as f32);
+  let vtc=vec![
+    Vertex {pos: [0.25*s, 0.25*c, 0.0, 0.0],color: [1.0,0.0,0.0,1.0],},
+    Vertex {pos: [0.25*c-0.25*s, -0.25*c+0.25*s, 0.0, 0.0],color: [0.0,1.0,0.0,1.0],},
+    Vertex {pos: [-0.25*c-0.25*s, -0.25*c-0.25*s, 0.0, 0.0],color: [0.0,0.0,1.0,1.0],},
+  ];
+
+  unsafe {
+    let buf_slice=std::slice::from_raw_parts_mut(data.vertex_buffer.map(0, None).unwrap() as *mut Vertex, vtc.len());
+    for (place, data) in buf_slice.iter_mut().zip(vtc.iter()) {
+      *place = *data
+    }
+    data.vertex_buffer.unmap(0, None);
+  }
+
   populate_command_list(data);
   data.command_queue.execute_command_lists(&[&data.command_list]);
   data.swap_chain.present(1,0).unwrap();
