@@ -297,6 +297,34 @@ fn debug_fmt_enum(name : &str, val: u32, opts: &[(&str,u32)], f: &mut fmt::Forma
 let maxLineLen=99
 let eolAfter=80
 
+let wrapOn items (indent:string) eolAfter maxLineLen=
+  let lines = ref []
+  let ll=
+    Seq.tail items |> Seq.fold
+      (fun cl p ->
+        if cl="" then
+          let c = indent + p
+          if c.Length>eolAfter then
+            lines := c :: !lines
+            ""
+          else
+            c
+        else
+          let c=cl+" "+p
+          if c.Length>maxLineLen then
+            lines := cl :: !lines
+            indent+p
+          else if c.Length>eolAfter then
+            lines := c :: !lines
+            ""
+          else
+            c
+      ) (Seq.head items)
+  if ll<>"" then
+    lines := ll :: !lines
+  lines := List.rev !lines
+  !lines  
+
 let winapiGen (types:Map<string,CTypeDesc*CodeLocation>, 
                 enums:Map<string,CTypeDesc*CodeLocation>,
                   structs:Map<string,CTypeDesc*CodeLocation>,
@@ -304,8 +332,14 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                       iids:Map<string,CodeLocation>,
                        defines:Map<string, MacroConst*string*CodeLocation>) : Map<string,System.String>=
   let uncopyableStructs=
-    let isStructUncopyableByItself (ses : CStructElem list)=
-      ses |> List.exists (function |CStructElem(_,Array(_,n),_) when n>32L -> true |_ -> false)
+    let rec isStructUncopyableByItself (ses : CStructElem list)=
+      ses 
+        |> List.exists 
+          (function 
+            |CStructElem(_,Array(_,n),_) when n>32L -> true 
+            |CStructElem(_,Struct(ses),_) -> isStructUncopyableByItself ses
+            |CStructElem(_,Union(ues),_) -> ues |> List.map fst |> isStructUncopyableByItself
+            |_ -> false)
     let rec isStructUncopyable s=
       match s with
       |Struct(ses) ->
@@ -316,6 +350,10 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                 match Map.find sname structs with 
                 |(Struct(_) as s,_) -> isStructUncopyable s
                 |_ -> false
+              |CStructElem(_,(Struct(ses) as sub),_) -> 
+                isStructUncopyable sub
+              |CStructElem(_,(Union(ues) as sub),_) -> 
+                ues |> List.map fst |> Struct |> isStructUncopyable
               |_ -> false)
       |_ -> false
     structs |> Map.toSeq |> Seq.filter (snd >> fst >> isStructUncopyable) |> Seq.map fst |> Set.ofSeq
@@ -366,6 +404,22 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       ;"SECURITY_ATTRIBUTES";"HANDLE";"DWORD";"LPCSTR";"LONG"
       ;"IUnknown"] 
 // ----------------- Create structs ----------------------------------
+  let outputStructDef apl name ses uncopyable=
+    if uncopyable then
+      apl "#[repr(C)] #[derive(Copy)]"
+    else
+      apl "#[repr(C)] #[derive(Clone, Copy, Debug)]"
+    apl <| sprintf "pub struct %s {" name
+    for (fname,fty) in ses |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |_-> raise <| new System.Exception("Bitfields aren't supported")) do
+      apl <| System.String.Format("    pub {0}: {1},", fname, tyToRustGlobal fty)
+    apl "}"
+    apl ""
+    if uncopyable then
+      apl <| sprintf "impl Clone for %s {" name
+      apl "    fn clone(&self) -> Self { *self }"
+      apl "}"
+      apl ""
+
   let createStructs()=
     for (name,sfields,(fname,_,_,_)) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields),loc)) -> (if isDXGI loc then None else Some(name,sfields,loc)) |_ -> None) do
       let f=rsfilename fname
@@ -376,19 +430,46 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
         let nonInterface=List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields
         if nonInterface then
           let uncopyable=Set.contains name uncopyableStructs
-          if uncopyable then
-            apl "#[repr(C)] #[derive(Copy)]"
-          else
-            apl "#[repr(C)] #[derive(Clone, Copy, Debug)]"
-          apl <| System.String.Format("pub struct {0} {{",name)
-          for (fname,fty) in sfields |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |_-> raise <| new System.Exception("Bitfields aren't supported")) do
-            apl <| System.String.Format("    pub {0}: {1},", fname, tyToRustGlobal fty)
-          apl "}"
-          apl ""
-          if uncopyable then
-            apl <| sprintf "impl Clone for %s {" name
-            apl "    fn clone(&self) -> Self { *self }"
-            apl "}"
+          // let's create proxies for unnamed structs in unions
+          let unions=ref []
+          let sfields' =
+            sfields |> List.map
+              (fun (CStructElem(fname, fty, bw)) ->
+                let fname' = if fname="" then "u" else fname
+                let fty' =
+                  match fty with
+                  |Union(ues) ->
+                    // for each union element, I need to create UNION!(base_type, field, selector, selector_mut, selector_type)
+                    let ues'= 
+                      ues |> List.map
+                       (fun ((CStructElem(sname, stype, bw), sz) as ue) ->
+                          match stype with
+                          |Struct(ses) ->
+                            // anonymous struct in union. create proxy.
+                            let proxyname=name+"_"+sname;
+                            outputStructDef apl proxyname ses uncopyable
+                            unions := (name, fname', sname, sname+"_mut", proxyname) :: !unions
+                            (CStructElem(sname, StructRef proxyname, bw), sz)
+                          |_ ->
+                            unions := (name, fname', sname, sname+"_mut", tyToRustGlobal stype) :: !unions
+                            ue
+                          )
+                    // Replace union with its largest element
+                    match ues' |> Seq.sortByDescending snd |> Seq.head |> fst with
+                    |CStructElem(_, fty, _) -> fty
+                  |_ -> fty
+                CStructElem(fname', fty', bw)
+              )
+          outputStructDef apl name sfields' uncopyable
+
+          match !unions with
+          |[] -> ()
+          |_ ->
+            for (name, fname, sname, sname_mut, ty) in !unions do
+              let items=["UNION!("+name+","; fname+","; sname+","; sname_mut+","; ty+");"]
+              let lines=wrapOn items "    " eolAfter maxLineLen
+              for line in lines do
+                apl line
             apl ""
         else
           let (_,basename,fns)=Map.find name dxann

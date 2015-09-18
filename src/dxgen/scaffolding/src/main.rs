@@ -557,7 +557,7 @@ fn populate_command_list(data: &mut AppData) {
     D3D12_RESOURCE_BARRIER {
       Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
       Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
-      Transition: D3D12_RESOURCE_TRANSITION_BARRIER {
+      u: D3D12_RESOURCE_TRANSITION_BARRIER {
         pResource: data.render_targets[data.frame_index as usize].iptr() as *mut _,
         StateBefore: D3D12_RESOURCE_STATE_PRESENT,
         StateAfter: D3D12_RESOURCE_STATE_RENDER_TARGET,
@@ -579,7 +579,7 @@ fn populate_command_list(data: &mut AppData) {
     D3D12_RESOURCE_BARRIER {
       Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
       Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
-      Transition: D3D12_RESOURCE_TRANSITION_BARRIER {
+      u: D3D12_RESOURCE_TRANSITION_BARRIER {
         pResource: data.render_targets[data.frame_index as usize].iptr() as *mut _,
         StateBefore: D3D12_RESOURCE_STATE_RENDER_TARGET,
         StateAfter: D3D12_RESOURCE_STATE_PRESENT,
