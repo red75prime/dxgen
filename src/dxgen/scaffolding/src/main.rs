@@ -59,11 +59,13 @@ fn dump_info_queue(iq: &mut D3D12InfoQueue) {
 fn main() {
   env_logger::init().unwrap();
 
-  let mut factory=create_dxgi_factory1().expect("Cannot create DXGIFactory1. No can do.");
-  let mut i=0;
-  while let Ok(adapter)=factory.enum_adapters(i) {
-//    println!("Adapter {}: {:?}", i, adapter.get_desc());
-    i+=1;
+  {
+    let mut factory: DXGIFactory1 = create_dxgi_factory1().expect("Cannot create DXGIFactory1. No can do.");
+    let mut i=0;
+    while let Ok(adapter)=factory.enum_adapters(i) {
+  //    println!("Adapter {}: {:?}", i, adapter.get_desc());
+      i+=1;
+    }
   }
 
   let wnd=create_window("Hello, rusty world!", 512, 256);
@@ -82,8 +84,29 @@ fn main() {
     let rdata=packed_ad.clone();
     let cl=move |w,h,c| {
       let mut data=rdata.borrow_mut();
-      println!("Resize to {},{}",w,h);
-      data.swap_chain.resize_buffers(0, w as u32, h as u32, DXGI_FORMAT_UNKNOWN, 0);
+      drop_render_targets(&mut *data);
+      let res=data.swap_chain.resize_buffers(0, w as u32, h as u32, DXGI_FORMAT_UNKNOWN, 0);
+      println!("Resize to {},{}. Result:{:?}",w,h,res);
+      match res {
+        Err(_) => dump_info_queue(&mut data.iq),
+        _ => (),
+      };
+      reaquire_render_targets(&mut *data);
+      data.viewport=D3D12_VIEWPORT {
+        TopLeftX: 0.,
+        TopLeftY: 0.,
+        MinDepth: 0.,
+        Width: w as f32,
+        Height: h as f32,
+        MaxDepth: 1.0,
+      };
+      data.scissor_rect=D3D12_RECT {
+        right: w as i32,
+        bottom: h as i32,
+        left: 0,
+        top: 0,
+      };
+
     };
     set_resize_fn(wnd,Some(Box::new(cl)));
   }
@@ -96,66 +119,6 @@ fn main() {
   }
   message_loop(wnd);
 
-  //let dev=match d3d12_create_device(D3D_FEATURE_LEVEL_11_1) {
-  //  Ok(dev) => dev,
-  //  Err(hr) => {
-  //    println!("Cannot create device. Error {:X}", hr);
-  //    return;
-  //  },
-  //};
-  //let mut opts=D3D12_FEATURE_DATA_D3D12_OPTIONS{ ..Default::default() };
-  //dev.check_feature_support_options(&mut opts).unwrap();
-  //println!("{:#?}",opts);
-
-  //let luid=dev.get_adapter_luid();
-  //println!("{:?}", luid);
-
-  //let ca=match dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT) {
-  //  Ok(ca) => ca,
-  //  Err(hr) => {
-  //   println!("Command allocator creation error {:X}",hr);
-  //   return;
-  //  },
-  //};
-  //println!("{:?}", ca.iptr());
-
-  //let cqd=D3D12_COMMAND_QUEUE_DESC { Type : D3D12_COMMAND_LIST_TYPE_DIRECT, ..Default::default() };
-  //let cq=match dev.create_command_queue(&cqd) {
-  //  Ok(cq) => cq,
-  //  Err(hr) => {
-  //   println!("Command queue creation error {:X}",hr);
-  //   return;
-  //  },
-  //};
-  //println!("{:?}", cq.iptr());
- 
-  //if let Ok(factory)=create_dxgi_factory1() {
-  //  if let Ok(adapter0)=factory.enum_adapters1(0) {
-  //    println!("{:?}",adapter0.get_desc().unwrap());
-  //    if let Ok(output0)=adapter0.enum_outputs(0) {
-  //      let desc=output0.get_desc().unwrap();
-  //      println!("{:?}",desc);
-  //      for fnum in 0..130 {
-  //        let format=DXGI_FORMAT(fnum);
-  //        match output0.get_display_mode_list(format, 0, None) {
-  //          Ok(num_modes) => {
-  //            if num_modes!=0 {
-  //              println!("Num modes: {} for {:?}", num_modes, format);
-  //              let mut modes=vec![DXGI_MODE_DESC::default(); num_modes as usize];
-  //              output0.get_display_mode_list(format, 0, Some(&mut modes[..]));
-  //              for mode in modes {
-  //                println!("{:?}", mode);
-  //              }
-  //            }
-  //          },
-  //          Err(hr) => {
-  //            println!("Error 0x{:x}", hr);
-  //          },
-  //        }
-  //      }
-  //    }
-  //  }
-  //}
 }
 
 struct AppData {
@@ -193,6 +156,24 @@ struct Vertex {
   color: [f32;4],
 }
 
+fn drop_render_targets(data: &mut AppData) {
+  data.render_targets.truncate(0);
+}
+
+fn reaquire_render_targets(data: &mut AppData) -> HResult<()> {
+  wait_for_prev_frame(data);
+  let mut cdh=data.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
+  data.render_targets.truncate(0);
+  for i in 0..FRAME_COUNT {
+    let buf=try!(data.swap_chain.get_buffer::<D3D12Resource>(i as u32));
+    data.device.create_render_target_view(Some(&buf), None, cdh);
+    cdh.ptr += data.rtv_descriptor_size;
+    data.render_targets.push(buf);
+  }
+  wait_for_prev_frame(data);
+  Ok(())
+}
+
 fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   let w=1024.;
   let h=1024.;
@@ -217,10 +198,13 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
   info!("Debug");
   debug.enable_debug_layer();
 
-  let mut factory=create_dxgi_factory1().unwrap();
+  let mut factory: DXGIFactory4 = create_dxgi_factory1().unwrap();
   info!("Factory");
-  let mut dev=d3d12_create_device(None, D3D_FEATURE_LEVEL_12_0).unwrap();
+  let mut dev=d3d12_create_device(None, D3D_FEATURE_LEVEL_11_0).unwrap();
   info!("Device");
+
+  let mut info_queue: D3D12InfoQueue = dev.query_interface().unwrap();
+  info!("Info queue");
 
   let mut opts: D3D12_FEATURE_DATA_D3D12_OPTIONS = unsafe{ mem::uninitialized::<_>() };
   dev.check_feature_support_options(&mut opts).unwrap();
@@ -237,9 +221,6 @@ fn create_appdata(hwnd: HWnd) -> Result<AppData,D3D12InfoQueue> {
     };
   dev.check_feature_support_feature_levels(&mut feat_levels).unwrap();
   info!("Max supported feature level: {:?}", feat_levels.MaxSupportedFeatureLevel);
-
-  let mut info_queue: D3D12InfoQueue = dev.query_interface().unwrap();
-  info!("Info queue");
 
   let qd=D3D12_COMMAND_QUEUE_DESC{
     Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -614,6 +595,12 @@ fn on_render(data: &mut AppData) {
 
   populate_command_list(data);
   data.command_queue.execute_command_lists(&[&data.command_list]);
-  data.swap_chain.present(1,0).unwrap();
+  match data.swap_chain.present(1,0) {
+    Err(hr) => {
+      dump_info_queue(&mut data.iq);
+      panic!("Present failed with 0x{:x}", hr);
+    },
+    _ => (),
+  }
   wait_for_prev_frame(data);
 }
