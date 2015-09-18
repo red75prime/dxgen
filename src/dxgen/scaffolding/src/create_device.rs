@@ -102,7 +102,7 @@ extern crate winapi;
 extern crate user32;
 extern crate kernel32;
 
-use self::user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage};
+use self::user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage, LoadCursorW };
 use self::kernel32::{GetModuleHandleW};
 
 use std::ffi::{OsStr, OsString};
@@ -190,7 +190,7 @@ pub fn create_window(title: &str, width: i32, height: i32) -> HWnd {
       cbWndExtra: 0,
       hInstance: h_module,
       hIcon: ptr::null_mut(),
-      hCursor: ptr::null_mut(),
+      hCursor: unsafe{ LoadCursorW(ptr::null_mut(), IDC_ARROW) },
       hbrBackground: ptr::null_mut(),
       lpszMenuName: ptr::null_mut(),
       lpszClassName: class_name.as_ptr(),

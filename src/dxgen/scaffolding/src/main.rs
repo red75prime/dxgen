@@ -86,9 +86,12 @@ fn main() {
       let mut data=rdata.borrow_mut();
       drop_render_targets(&mut *data);
       let res=data.swap_chain.resize_buffers(0, w as u32, h as u32, DXGI_FORMAT_UNKNOWN, 0);
-      println!("Resize to {},{}. Result:{:?}",w,h,res);
+      //println!("Resize to {},{}. Result:{:?}",w,h,res);
       match res {
-        Err(_) => dump_info_queue(&mut data.iq),
+        Err(hr) => {
+          dump_info_queue(&mut data.iq);
+          panic!("resize_buffers returned 0x{:x}", hr);
+        },
         _ => (),
       };
       reaquire_render_targets(&mut *data);
