@@ -60,7 +60,7 @@ let tryParse (s:System.String)=
       try Some(MCFloat(System.Convert.ToDouble(s', invcul) |> float), s') with
       |_ -> None
     else
-      if System.String.IsNullOrEmpty(s) || not <| System.Char.IsDigit(s.[0]) then
+      if System.String.IsNullOrEmpty(s) || not <| (System.Char.IsDigit(s.[0]) || s.StartsWith("-") || s.StartsWith("+")) then
         None
       else if s.EndsWith("ULL", ignorecase) then
         let s'=s.Substring(0,s.Length-3)
