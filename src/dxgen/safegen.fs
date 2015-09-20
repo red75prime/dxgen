@@ -319,7 +319,7 @@ let generateMethodFromRouting
   let ftext=
     System.String.Format(
       @"
-pub {0}fn {1}{2}(&mut self{3}) -> {4} {{
+pub {0}fn {1}{2}(&self{3}) -> {4} {{
 {5}
   let hr=unsafe {{ {6} }};
   {7}
