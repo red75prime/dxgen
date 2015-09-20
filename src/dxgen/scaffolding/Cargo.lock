@@ -11,7 +11,7 @@ dependencies = [
  "libc 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "user32-sys 0.1.2 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
- "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
+ "winapi 0.2.4 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
 ]
 
 [[package]]
@@ -28,23 +28,23 @@ version = "0.3.0"
 dependencies = [
  "dxguid-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "libc 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
+ "winapi 0.2.4 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
 ]
 
 [[package]]
 name = "dxgi-sys"
 version = "0.0.1"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#8ef3ae472760aad60c2a101fdad4f4b20d83be40"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#1fcde3830035bd17b324378f3a802e5d282434d6"
 dependencies = [
- "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
+ "winapi 0.2.4 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
 ]
 
 [[package]]
 name = "dxguid-sys"
 version = "0.0.1"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#8ef3ae472760aad60c2a101fdad4f4b20d83be40"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#1fcde3830035bd17b324378f3a802e5d282434d6"
 dependencies = [
  "winapi 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -61,9 +61,9 @@ dependencies = [
 [[package]]
 name = "kernel32-sys"
 version = "0.1.4"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#8ef3ae472760aad60c2a101fdad4f4b20d83be40"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#1fcde3830035bd17b324378f3a802e5d282434d6"
 dependencies = [
- "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
+ "winapi 0.2.4 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
 ]
 
@@ -111,16 +111,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "user32-sys"
 version = "0.1.2"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#8ef3ae472760aad60c2a101fdad4f4b20d83be40"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#1fcde3830035bd17b324378f3a802e5d282434d6"
 dependencies = [
- "winapi 0.2.3 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
+ "winapi 0.2.4 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
 ]
 
 [[package]]
 name = "winapi"
-version = "0.2.3"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#8ef3ae472760aad60c2a101fdad4f4b20d83be40"
+version = "0.2.4"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#1fcde3830035bd17b324378f3a802e5d282434d6"
 
 [[package]]
 name = "winapi"
@@ -130,5 +130,5 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "winapi-build"
 version = "0.1.1"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#8ef3ae472760aad60c2a101fdad4f4b20d83be40"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=dx12#1fcde3830035bd17b324378f3a802e5d282434d6"
 

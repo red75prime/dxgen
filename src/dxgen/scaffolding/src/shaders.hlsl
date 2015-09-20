@@ -19,5 +19,9 @@ VS_OUTPUT VSMain(VS_INPUT vtx){
 }
 
 float4 PSMain(VS_OUTPUT pv) : SV_Target {
-  return pv.vDiffuse;
+  float4 ret=pv.vDiffuse;
+  float x=pv.vPosition.x-1000;
+  float y=pv.vPosition.y-1000;
+  ret.r += sin(sqrt(x*x+y*y)/10)*0.5;
+  return ret;
 }

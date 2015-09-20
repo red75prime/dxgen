@@ -112,7 +112,7 @@ impl Clone for D3D10Blob {
 impl D3D10Blob {
   //  Method GetBufferPointer
   
-  pub fn get_buffer_pointer(&mut self) -> LPVOID {
+  pub fn get_buffer_pointer(&self) -> LPVOID {
   
     let hr=unsafe { (*self.0).GetBufferPointer() };
     hr
@@ -120,7 +120,7 @@ impl D3D10Blob {
   
   //  Method GetBufferSize
   
-  pub fn get_buffer_size(&mut self) -> SIZE_T {
+  pub fn get_buffer_size(&self) -> SIZE_T {
   
     let hr=unsafe { (*self.0).GetBufferSize() };
     hr
@@ -152,7 +152,7 @@ impl Clone for D3D12CommandAllocator {
 impl D3D12CommandAllocator {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -160,7 +160,7 @@ impl D3D12CommandAllocator {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -168,7 +168,7 @@ impl D3D12CommandAllocator {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -176,7 +176,7 @@ impl D3D12CommandAllocator {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -184,7 +184,7 @@ impl D3D12CommandAllocator {
   
   //  Method Reset
   
-  pub fn reset(&mut self) -> HResult<()> {
+  pub fn reset(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Reset() };
     hr2ret(hr,())
@@ -216,7 +216,7 @@ impl Clone for D3D12CommandList {
 impl D3D12CommandList {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -224,7 +224,7 @@ impl D3D12CommandList {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -232,7 +232,7 @@ impl D3D12CommandList {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -240,7 +240,7 @@ impl D3D12CommandList {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -248,7 +248,7 @@ impl D3D12CommandList {
   
   //  Method GetType
   
-  pub fn get_type(&mut self) -> D3D12_COMMAND_LIST_TYPE {
+  pub fn get_type(&self) -> D3D12_COMMAND_LIST_TYPE {
   
     let hr=unsafe { (*self.0).GetType() };
     hr
@@ -280,7 +280,7 @@ impl Clone for D3D12CommandQueue {
 impl D3D12CommandQueue {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -288,7 +288,7 @@ impl D3D12CommandQueue {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -296,7 +296,7 @@ impl D3D12CommandQueue {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -304,7 +304,7 @@ impl D3D12CommandQueue {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -312,7 +312,7 @@ impl D3D12CommandQueue {
   
   //  Method UpdateTileMappings
   
-  pub fn update_tile_mappings<T: HasIID>(&mut self, resource: &T, resource_region_start_coordinates: Option<&mut [D3D12_TILED_RESOURCE_COORDINATE]>, resource_region_sizes: Option<&mut [D3D12_TILE_REGION_SIZE]>, heap: Option<&mut ID3D12Heap>, range_flags: Option<&mut [D3D12_TILE_RANGE_FLAGS]>, heap_range_start_offsets: Option<&mut [UINT]>, range_tile_counts: Option<&mut [UINT]>, flags: D3D12_TILE_MAPPING_FLAGS) -> () {
+  pub fn update_tile_mappings<T: HasIID>(&self, resource: &T, resource_region_start_coordinates: Option<&mut [D3D12_TILED_RESOURCE_COORDINATE]>, resource_region_sizes: Option<&mut [D3D12_TILE_REGION_SIZE]>, heap: Option<&mut ID3D12Heap>, range_flags: Option<&mut [D3D12_TILE_RANGE_FLAGS]>, heap_range_start_offsets: Option<&mut [UINT]>, range_tile_counts: Option<&mut [UINT]>, flags: D3D12_TILE_MAPPING_FLAGS) -> () {
   
     let hr=unsafe { (*self.0).UpdateTileMappings(resource.iptr() as *mut _ as *mut _ ,  same_length(&[resource_region_start_coordinates.as_ref().map(|a|a.len()),resource_region_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_mut_ptr(&resource_region_start_coordinates) as *mut _, opt_arr_as_mut_ptr(&resource_region_sizes) as *mut _, opt_as_mut_ptr(&heap),  same_length(&[range_flags.as_ref().map(|a|a.len()),heap_range_start_offsets.as_ref().map(|a|a.len()),range_tile_counts.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_mut_ptr(&range_flags) as *mut _, opt_arr_as_mut_ptr(&heap_range_start_offsets) as *mut _, opt_arr_as_mut_ptr(&range_tile_counts) as *mut _, flags) };
     ()
@@ -320,7 +320,7 @@ impl D3D12CommandQueue {
   
   //  Method CopyTileMappings
   
-  pub fn copy_tile_mappings<T: HasIID, T1: HasIID>(&mut self, dst_resource: &T, dst_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, src_resource: &T1, src_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, region_size: &D3D12_TILE_REGION_SIZE, flags: D3D12_TILE_MAPPING_FLAGS) -> () {
+  pub fn copy_tile_mappings<T: HasIID, T1: HasIID>(&self, dst_resource: &T, dst_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, src_resource: &T1, src_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, region_size: &D3D12_TILE_REGION_SIZE, flags: D3D12_TILE_MAPPING_FLAGS) -> () {
   
     let hr=unsafe { (*self.0).CopyTileMappings(dst_resource.iptr() as *mut _ as *mut _ , dst_region_start_coordinate, src_resource.iptr() as *mut _ as *mut _ , src_region_start_coordinate, region_size, flags) };
     ()
@@ -328,7 +328,7 @@ impl D3D12CommandQueue {
   
   //  Method ExecuteCommandLists
   
-  pub fn execute_command_lists<T: HasIID>(&mut self, command_lists: &[&T]) -> () {
+  pub fn execute_command_lists<T: HasIID>(&self, command_lists: &[&T]) -> () {
     let mut lv1: Vec<*mut IUnknown> = command_lists.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).ExecuteCommandLists( same_length(&[Some(command_lists.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     ()
@@ -336,7 +336,7 @@ impl D3D12CommandQueue {
   
   //  Method Signal
   
-  pub fn signal<T: HasIID>(&mut self, fence: &T, value: UINT64) -> HResult<()> {
+  pub fn signal<T: HasIID>(&self, fence: &T, value: UINT64) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Signal(fence.iptr() as *mut _ as *mut _ , value) };
     hr2ret(hr,())
@@ -344,7 +344,7 @@ impl D3D12CommandQueue {
   
   //  Method Wait
   
-  pub fn wait<T: HasIID>(&mut self, fence: &T, value: UINT64) -> HResult<()> {
+  pub fn wait<T: HasIID>(&self, fence: &T, value: UINT64) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Wait(fence.iptr() as *mut _ as *mut _ , value) };
     hr2ret(hr,())
@@ -352,7 +352,7 @@ impl D3D12CommandQueue {
   
   //  Method GetTimestampFrequency
   
-  pub fn get_timestamp_frequency(&mut self) -> HResult<UINT64> {
+  pub fn get_timestamp_frequency(&self) -> HResult<UINT64> {
     let mut lv1: UINT64 = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetTimestampFrequency(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -360,7 +360,7 @@ impl D3D12CommandQueue {
   
   //  Method GetClockCalibration
   
-  pub fn get_clock_calibration(&mut self) -> HResult<GPUCPUTimestamp> {
+  pub fn get_clock_calibration(&self) -> HResult<GPUCPUTimestamp> {
     let mut lv1: GPUCPUTimestamp = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetClockCalibration(&mut (lv1.gpu_timestamp) as *mut _ as *mut _, &mut (lv1.cpu_timestamp) as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -368,7 +368,7 @@ impl D3D12CommandQueue {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> D3D12_COMMAND_QUEUE_DESC {
+  pub fn get_desc(&self) -> D3D12_COMMAND_QUEUE_DESC {
   
     let hr=unsafe { (*self.0).GetDesc() };
     hr
@@ -400,7 +400,7 @@ impl Clone for D3D12CommandSignature {
 impl D3D12CommandSignature {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -408,7 +408,7 @@ impl D3D12CommandSignature {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -416,7 +416,7 @@ impl D3D12CommandSignature {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -424,7 +424,7 @@ impl D3D12CommandSignature {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -456,7 +456,7 @@ impl Clone for D3D12Debug {
 impl D3D12Debug {
   //  Method EnableDebugLayer
   
-  pub fn enable_debug_layer(&mut self) -> () {
+  pub fn enable_debug_layer(&self) -> () {
   
     let hr=unsafe { (*self.0).EnableDebugLayer() };
     ()
@@ -488,7 +488,7 @@ impl Clone for D3D12DescriptorHeap {
 impl D3D12DescriptorHeap {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -496,7 +496,7 @@ impl D3D12DescriptorHeap {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -504,7 +504,7 @@ impl D3D12DescriptorHeap {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -512,7 +512,7 @@ impl D3D12DescriptorHeap {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -520,7 +520,7 @@ impl D3D12DescriptorHeap {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> D3D12_DESCRIPTOR_HEAP_DESC {
+  pub fn get_desc(&self) -> D3D12_DESCRIPTOR_HEAP_DESC {
   
     let hr=unsafe { (*self.0).GetDesc() };
     hr
@@ -528,7 +528,7 @@ impl D3D12DescriptorHeap {
   
   //  Method GetCPUDescriptorHandleForHeapStart
   
-  pub fn get_cpu_descriptor_handle_for_heap_start(&mut self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
+  pub fn get_cpu_descriptor_handle_for_heap_start(&self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
     let mut lv1: D3D12_CPU_DESCRIPTOR_HANDLE = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetCPUDescriptorHandleForHeapStart(&mut lv1 as *mut _ as *mut _) };
     lv1
@@ -536,7 +536,7 @@ impl D3D12DescriptorHeap {
   
   //  Method GetGPUDescriptorHandleForHeapStart
   
-  pub fn get_gpu_descriptor_handle_for_heap_start(&mut self) -> D3D12_GPU_DESCRIPTOR_HANDLE {
+  pub fn get_gpu_descriptor_handle_for_heap_start(&self) -> D3D12_GPU_DESCRIPTOR_HANDLE {
     let mut lv1: D3D12_GPU_DESCRIPTOR_HANDLE = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGPUDescriptorHandleForHeapStart(&mut lv1 as *mut _ as *mut _) };
     lv1
@@ -568,7 +568,7 @@ impl Clone for D3D12DeviceChild {
 impl D3D12DeviceChild {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -576,7 +576,7 @@ impl D3D12DeviceChild {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -584,7 +584,7 @@ impl D3D12DeviceChild {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -592,7 +592,7 @@ impl D3D12DeviceChild {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -624,7 +624,7 @@ impl Clone for D3D12Device {
 impl D3D12Device {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -632,7 +632,7 @@ impl D3D12Device {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -640,7 +640,7 @@ impl D3D12Device {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -648,7 +648,7 @@ impl D3D12Device {
   
   //  Method GetNodeCount
   
-  pub fn get_node_count(&mut self) -> UINT {
+  pub fn get_node_count(&self) -> UINT {
   
     let hr=unsafe { (*self.0).GetNodeCount() };
     hr
@@ -656,7 +656,7 @@ impl D3D12Device {
   
   //  Method CreateCommandQueue
   
-  pub fn create_command_queue(&mut self, desc: &D3D12_COMMAND_QUEUE_DESC) -> HResult<D3D12CommandQueue> {
+  pub fn create_command_queue(&self, desc: &D3D12_COMMAND_QUEUE_DESC) -> HResult<D3D12CommandQueue> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateCommandQueue(desc, D3D12CommandQueue::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12CommandQueue::new(lv1))
@@ -664,7 +664,7 @@ impl D3D12Device {
   
   //  Method CreateCommandAllocator
   
-  pub fn create_command_allocator(&mut self, type_: D3D12_COMMAND_LIST_TYPE) -> HResult<D3D12CommandAllocator> {
+  pub fn create_command_allocator(&self, type_: D3D12_COMMAND_LIST_TYPE) -> HResult<D3D12CommandAllocator> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateCommandAllocator(type_, D3D12CommandAllocator::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12CommandAllocator::new(lv1))
@@ -672,7 +672,7 @@ impl D3D12Device {
   
   //  Method CreateGraphicsPipelineState
   
-  pub fn create_graphics_pipeline_state(&mut self, desc: &D3D12_GRAPHICS_PIPELINE_STATE_DESC) -> HResult<D3D12PipelineState> {
+  pub fn create_graphics_pipeline_state(&self, desc: &D3D12_GRAPHICS_PIPELINE_STATE_DESC) -> HResult<D3D12PipelineState> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateGraphicsPipelineState(desc, D3D12PipelineState::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12PipelineState::new(lv1))
@@ -680,7 +680,7 @@ impl D3D12Device {
   
   //  Method CreateComputePipelineState
   
-  pub fn create_compute_pipeline_state(&mut self, desc: &D3D12_COMPUTE_PIPELINE_STATE_DESC) -> HResult<D3D12PipelineState> {
+  pub fn create_compute_pipeline_state(&self, desc: &D3D12_COMPUTE_PIPELINE_STATE_DESC) -> HResult<D3D12PipelineState> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateComputePipelineState(desc, D3D12PipelineState::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12PipelineState::new(lv1))
@@ -688,7 +688,7 @@ impl D3D12Device {
   
   //  Method CreateCommandList
   
-  pub fn create_command_list<T: HasIID, T1: HasIID>(&mut self, nodeMask: UINT, type_: D3D12_COMMAND_LIST_TYPE, command_allocator: &T, initial_state: Option<&D3D12PipelineState>) -> HResult<T1> {
+  pub fn create_command_list<T: HasIID, T1: HasIID>(&self, nodeMask: UINT, type_: D3D12_COMMAND_LIST_TYPE, command_allocator: &T, initial_state: Option<&D3D12PipelineState>) -> HResult<T1> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateCommandList(nodeMask, type_, command_allocator.iptr() as *mut _ as *mut _ , initial_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, T1::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T1::new(lv1))
@@ -696,42 +696,42 @@ impl D3D12Device {
   
   //  Method CheckFeatureSupport
   
-  pub fn check_feature_support_options(&mut self, feature_support_data: &mut D3D12_FEATURE_DATA_D3D12_OPTIONS) -> HResult<()> {
+  pub fn check_feature_support_options(&self, feature_support_data: &mut D3D12_FEATURE_DATA_D3D12_OPTIONS) -> HResult<()> {
   
     let hr=unsafe { (*self.0).CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(hr,())
   }
   
   
-  pub fn check_feature_support_arch(&mut self, feature_support_data: &mut D3D12_FEATURE_DATA_ARCHITECTURE) -> HResult<()> {
+  pub fn check_feature_support_arch(&self, feature_support_data: &mut D3D12_FEATURE_DATA_ARCHITECTURE) -> HResult<()> {
   
     let hr=unsafe { (*self.0).CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(hr,())
   }
   
   
-  pub fn check_feature_support_feature_levels(&mut self, feature_support_data: &mut D3D12_FEATURE_DATA_FEATURE_LEVELS) -> HResult<()> {
+  pub fn check_feature_support_feature_levels(&self, feature_support_data: &mut D3D12_FEATURE_DATA_FEATURE_LEVELS) -> HResult<()> {
   
     let hr=unsafe { (*self.0).CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(hr,())
   }
   
   
-  pub fn check_feature_support_format_support(&mut self, feature_support_data: &mut D3D12_FEATURE_DATA_FORMAT_SUPPORT) -> HResult<()> {
+  pub fn check_feature_support_format_support(&self, feature_support_data: &mut D3D12_FEATURE_DATA_FORMAT_SUPPORT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(hr,())
   }
   
   
-  pub fn check_feature_support_multisample_quality_levels(&mut self, feature_support_data: &mut D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS) -> HResult<()> {
+  pub fn check_feature_support_multisample_quality_levels(&self, feature_support_data: &mut D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS) -> HResult<()> {
   
     let hr=unsafe { (*self.0).CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(hr,())
   }
   
   
-  pub fn check_feature_support_format_info(&mut self, feature_support_data: &mut D3D12_FEATURE_DATA_FORMAT_INFO) -> HResult<()> {
+  pub fn check_feature_support_format_info(&self, feature_support_data: &mut D3D12_FEATURE_DATA_FORMAT_INFO) -> HResult<()> {
   
     let hr=unsafe { (*self.0).CheckFeatureSupport(D3D12_FEATURE_FORMAT_INFO, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(hr,())
@@ -739,7 +739,7 @@ impl D3D12Device {
   
   //  Method CreateDescriptorHeap
   
-  pub fn create_descriptor_heap(&mut self, descriptor_heap_desc: &D3D12_DESCRIPTOR_HEAP_DESC) -> HResult<D3D12DescriptorHeap> {
+  pub fn create_descriptor_heap(&self, descriptor_heap_desc: &D3D12_DESCRIPTOR_HEAP_DESC) -> HResult<D3D12DescriptorHeap> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateDescriptorHeap(descriptor_heap_desc, D3D12DescriptorHeap::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12DescriptorHeap::new(lv1))
@@ -747,7 +747,7 @@ impl D3D12Device {
   
   //  Method GetDescriptorHandleIncrementSize
   
-  pub fn get_descriptor_handle_increment_size(&mut self, descriptor_heap_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> UINT {
+  pub fn get_descriptor_handle_increment_size(&self, descriptor_heap_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> UINT {
   
     let hr=unsafe { (*self.0).GetDescriptorHandleIncrementSize(descriptor_heap_type) };
     hr
@@ -755,7 +755,7 @@ impl D3D12Device {
   
   //  Method CreateRootSignature
   
-  pub fn create_root_signature<T>(&mut self, nodeMask: UINT, blob_with_root_signature: &[T]) -> HResult<D3D12RootSignature> {
+  pub fn create_root_signature<T>(&self, nodeMask: UINT, blob_with_root_signature: &[T]) -> HResult<D3D12RootSignature> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateRootSignature(nodeMask, blob_with_root_signature.as_ptr() as *const _, (mem::size_of_val(blob_with_root_signature)/1) as SIZE_T, D3D12RootSignature::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12RootSignature::new(lv1))
@@ -763,7 +763,7 @@ impl D3D12Device {
   
   //  Method CreateConstantBufferView
   
-  pub fn create_constant_buffer_view(&mut self, desc: Option<&D3D12_CONSTANT_BUFFER_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  pub fn create_constant_buffer_view(&self, desc: Option<&D3D12_CONSTANT_BUFFER_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
     let hr=unsafe { (*self.0).CreateConstantBufferView(desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
@@ -771,7 +771,7 @@ impl D3D12Device {
   
   //  Method CreateShaderResourceView
   
-  pub fn create_shader_resource_view(&mut self, resource: Option<&mut ID3D12Resource>, desc: Option<&D3D12_SHADER_RESOURCE_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  pub fn create_shader_resource_view(&self, resource: Option<&mut ID3D12Resource>, desc: Option<&D3D12_SHADER_RESOURCE_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
     let hr=unsafe { (*self.0).CreateShaderResourceView(opt_as_mut_ptr(&resource), desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
@@ -779,7 +779,7 @@ impl D3D12Device {
   
   //  Method CreateUnorderedAccessView
   
-  pub fn create_unordered_access_view(&mut self, resource: Option<&mut ID3D12Resource>, counter_resource: Option<&mut ID3D12Resource>, desc: Option<&D3D12_UNORDERED_ACCESS_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  pub fn create_unordered_access_view(&self, resource: Option<&mut ID3D12Resource>, counter_resource: Option<&mut ID3D12Resource>, desc: Option<&D3D12_UNORDERED_ACCESS_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
     let hr=unsafe { (*self.0).CreateUnorderedAccessView(opt_as_mut_ptr(&resource), opt_as_mut_ptr(&counter_resource), desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
@@ -787,7 +787,7 @@ impl D3D12Device {
   
   //  Method CreateRenderTargetView
   
-  pub fn create_render_target_view(&mut self, resource: Option<&D3D12Resource>, desc: Option<&D3D12_RENDER_TARGET_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  pub fn create_render_target_view(&self, resource: Option<&D3D12Resource>, desc: Option<&D3D12_RENDER_TARGET_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
     let hr=unsafe { (*self.0).CreateRenderTargetView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
@@ -795,7 +795,7 @@ impl D3D12Device {
   
   //  Method CreateDepthStencilView
   
-  pub fn create_depth_stencil_view(&mut self, resource: Option<&mut ID3D12Resource>, desc: Option<&D3D12_DEPTH_STENCIL_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  pub fn create_depth_stencil_view(&self, resource: Option<&mut ID3D12Resource>, desc: Option<&D3D12_DEPTH_STENCIL_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
     let hr=unsafe { (*self.0).CreateDepthStencilView(opt_as_mut_ptr(&resource), desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
@@ -803,7 +803,7 @@ impl D3D12Device {
   
   //  Method CreateSampler
   
-  pub fn create_sampler(&mut self, desc: &D3D12_SAMPLER_DESC, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  pub fn create_sampler(&self, desc: &D3D12_SAMPLER_DESC, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
     let hr=unsafe { (*self.0).CreateSampler(desc, dest_descriptor) };
     ()
@@ -811,7 +811,7 @@ impl D3D12Device {
   
   //  Method CopyDescriptors
   
-  pub fn copy_descriptors(&mut self, dest_descriptor_range_starts: &mut [D3D12_CPU_DESCRIPTOR_HANDLE], dest_descriptor_range_sizes: Option<&mut [UINT]>, src_descriptor_range_starts: &mut [D3D12_CPU_DESCRIPTOR_HANDLE], src_descriptor_range_sizes: Option<&mut [UINT]>, descriptor_heaps_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> () {
+  pub fn copy_descriptors(&self, dest_descriptor_range_starts: &mut [D3D12_CPU_DESCRIPTOR_HANDLE], dest_descriptor_range_sizes: Option<&mut [UINT]>, src_descriptor_range_starts: &mut [D3D12_CPU_DESCRIPTOR_HANDLE], src_descriptor_range_sizes: Option<&mut [UINT]>, descriptor_heaps_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> () {
   
     let hr=unsafe { (*self.0).CopyDescriptors( same_length(&[Some(dest_descriptor_range_starts.len()),dest_descriptor_range_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, dest_descriptor_range_starts.as_mut_ptr() as *mut _, opt_arr_as_mut_ptr(&dest_descriptor_range_sizes) as *mut _,  same_length(&[Some(src_descriptor_range_starts.len()),src_descriptor_range_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, src_descriptor_range_starts.as_mut_ptr() as *mut _, opt_arr_as_mut_ptr(&src_descriptor_range_sizes) as *mut _, descriptor_heaps_type) };
     ()
@@ -819,7 +819,7 @@ impl D3D12Device {
   
   //  Method CopyDescriptorsSimple
   
-  pub fn copy_descriptors_simple(&mut self, num_descriptors: UINT, dest_descriptor_range_start: D3D12_CPU_DESCRIPTOR_HANDLE, src_descriptor_range_start: D3D12_CPU_DESCRIPTOR_HANDLE, descriptor_heaps_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> () {
+  pub fn copy_descriptors_simple(&self, num_descriptors: UINT, dest_descriptor_range_start: D3D12_CPU_DESCRIPTOR_HANDLE, src_descriptor_range_start: D3D12_CPU_DESCRIPTOR_HANDLE, descriptor_heaps_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> () {
   
     let hr=unsafe { (*self.0).CopyDescriptorsSimple(num_descriptors, dest_descriptor_range_start, src_descriptor_range_start, descriptor_heaps_type) };
     ()
@@ -827,7 +827,7 @@ impl D3D12Device {
   
   //  Method GetResourceAllocationInfo
   
-  pub fn get_resource_allocation_info(&mut self, visibleMask: UINT, resource_descs: &mut [D3D12_RESOURCE_DESC]) -> D3D12_RESOURCE_ALLOCATION_INFO {
+  pub fn get_resource_allocation_info(&self, visibleMask: UINT, resource_descs: &mut [D3D12_RESOURCE_DESC]) -> D3D12_RESOURCE_ALLOCATION_INFO {
   
     let hr=unsafe { (*self.0).GetResourceAllocationInfo(visibleMask,  same_length(&[Some(resource_descs.len())]).expect("Arrays must have equal sizes") as UINT, resource_descs.as_mut_ptr() as *mut _) };
     hr
@@ -835,7 +835,7 @@ impl D3D12Device {
   
   //  Method GetCustomHeapProperties
   
-  pub fn get_custom_heap_properties(&mut self, nodeMask: UINT, heapType: D3D12_HEAP_TYPE) -> D3D12_HEAP_PROPERTIES {
+  pub fn get_custom_heap_properties(&self, nodeMask: UINT, heapType: D3D12_HEAP_TYPE) -> D3D12_HEAP_PROPERTIES {
   
     let hr=unsafe { (*self.0).GetCustomHeapProperties(nodeMask, heapType) };
     hr
@@ -843,7 +843,7 @@ impl D3D12Device {
   
   //  Method CreateCommittedResource
   
-  pub fn create_committed_resource(&mut self, heap_properties: &D3D12_HEAP_PROPERTIES, heap_flags: D3D12_HEAP_FLAGS, resource_desc: &D3D12_RESOURCE_DESC, initial_resource_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
+  pub fn create_committed_resource(&self, heap_properties: &D3D12_HEAP_PROPERTIES, heap_flags: D3D12_HEAP_FLAGS, resource_desc: &D3D12_RESOURCE_DESC, initial_resource_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateCommittedResource(heap_properties, heap_flags, resource_desc, initial_resource_state, optimized_clear_value.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), D3D12Resource::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12Resource::new(lv1))
@@ -851,7 +851,7 @@ impl D3D12Device {
   
   //  Method CreateHeap
   
-  pub fn create_heap(&mut self, desc: &D3D12_HEAP_DESC) -> HResult<D3D12Heap> {
+  pub fn create_heap(&self, desc: &D3D12_HEAP_DESC) -> HResult<D3D12Heap> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateHeap(desc, D3D12Heap::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12Heap::new(lv1))
@@ -859,7 +859,7 @@ impl D3D12Device {
   
   //  Method CreatePlacedResource
   
-  pub fn create_placed_resource(&mut self, heap: &mut ID3D12Heap, heap_offset: UINT64, desc: &D3D12_RESOURCE_DESC, initial_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
+  pub fn create_placed_resource(&self, heap: &mut ID3D12Heap, heap_offset: UINT64, desc: &D3D12_RESOURCE_DESC, initial_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreatePlacedResource(heap, heap_offset, desc, initial_state, optimized_clear_value.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), D3D12Resource::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12Resource::new(lv1))
@@ -867,7 +867,7 @@ impl D3D12Device {
   
   //  Method CreateReservedResource
   
-  pub fn create_reserved_resource(&mut self, desc: &D3D12_RESOURCE_DESC, initial_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
+  pub fn create_reserved_resource(&self, desc: &D3D12_RESOURCE_DESC, initial_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateReservedResource(desc, initial_state, optimized_clear_value.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), D3D12Resource::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12Resource::new(lv1))
@@ -875,7 +875,7 @@ impl D3D12Device {
   
   //  Method CreateSharedHandle
   
-  pub fn create_shared_handle(&mut self, object: &mut ID3D12DeviceChild, attributes: Option<&SECURITY_ATTRIBUTES>, access: DWORD, name: Cow<str>) -> HResult<HANDLE> {
+  pub fn create_shared_handle(&self, object: &mut ID3D12DeviceChild, attributes: Option<&SECURITY_ATTRIBUTES>, access: DWORD, name: Cow<str>) -> HResult<HANDLE> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let mut lv2: HANDLE = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).CreateSharedHandle(object, attributes.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), access, lv1.as_ptr() as LPCWSTR, &mut lv2 as *mut _ as *mut _) };
@@ -884,7 +884,7 @@ impl D3D12Device {
   
   //  Method OpenSharedHandle
   
-  pub fn open_shared_handle<T: HasIID>(&mut self, n_t_handle: HANDLE) -> HResult<T> {
+  pub fn open_shared_handle<T: HasIID>(&self, n_t_handle: HANDLE) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).OpenSharedHandle(n_t_handle, T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -892,7 +892,7 @@ impl D3D12Device {
   
   //  Method OpenSharedHandleByName
   
-  pub fn open_shared_handle_by_name(&mut self, name: Cow<str>, access: DWORD) -> HResult<HANDLE> {
+  pub fn open_shared_handle_by_name(&self, name: Cow<str>, access: DWORD) -> HResult<HANDLE> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let mut lv2: HANDLE = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).OpenSharedHandleByName(lv1.as_ptr() as LPCWSTR, access, &mut lv2 as *mut _ as *mut _) };
@@ -901,7 +901,7 @@ impl D3D12Device {
   
   //  Method MakeResident
   
-  pub fn make_resident(&mut self, objects: &mut [&mut ID3D12Pageable]) -> HResult<()> {
+  pub fn make_resident(&self, objects: &mut [&mut ID3D12Pageable]) -> HResult<()> {
   
     let hr=unsafe { (*self.0).MakeResident( same_length(&[Some(objects.len())]).expect("Arrays must have equal sizes") as UINT, objects.as_mut_ptr() as *mut _) };
     hr2ret(hr,())
@@ -909,7 +909,7 @@ impl D3D12Device {
   
   //  Method Evict
   
-  pub fn evict(&mut self, objects: &mut [&mut ID3D12Pageable]) -> HResult<()> {
+  pub fn evict(&self, objects: &mut [&mut ID3D12Pageable]) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Evict( same_length(&[Some(objects.len())]).expect("Arrays must have equal sizes") as UINT, objects.as_mut_ptr() as *mut _) };
     hr2ret(hr,())
@@ -917,7 +917,7 @@ impl D3D12Device {
   
   //  Method CreateFence
   
-  pub fn create_fence(&mut self, initial_value: UINT64, flags: D3D12_FENCE_FLAGS) -> HResult<D3D12Fence> {
+  pub fn create_fence(&self, initial_value: UINT64, flags: D3D12_FENCE_FLAGS) -> HResult<D3D12Fence> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateFence(initial_value, flags, D3D12Fence::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12Fence::new(lv1))
@@ -925,7 +925,7 @@ impl D3D12Device {
   
   //  Method GetDeviceRemovedReason
   
-  pub fn get_device_removed_reason(&mut self) -> HResult<()> {
+  pub fn get_device_removed_reason(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetDeviceRemovedReason() };
     hr2ret(hr,())
@@ -933,7 +933,7 @@ impl D3D12Device {
   
   //  Method GetCopyableFootprints
   
-  pub fn get_copyable_footprints(&mut self, resource_desc: &D3D12_RESOURCE_DESC, first_subresource: UINT, base_offset: UINT64, layouts: Option<&mut [D3D12_PLACED_SUBRESOURCE_FOOTPRINT]>, num_rows: Option<&mut [UINT]>, row_size_in_bytes: Option<&mut [UINT64]>, total_bytes: Option<&mut UINT64>) -> () {
+  pub fn get_copyable_footprints(&self, resource_desc: &D3D12_RESOURCE_DESC, first_subresource: UINT, base_offset: UINT64, layouts: Option<&mut [D3D12_PLACED_SUBRESOURCE_FOOTPRINT]>, num_rows: Option<&mut [UINT]>, row_size_in_bytes: Option<&mut [UINT64]>, total_bytes: Option<&mut UINT64>) -> () {
   
     let hr=unsafe { (*self.0).GetCopyableFootprints(resource_desc, first_subresource,  same_length(&[layouts.as_ref().map(|a|a.len()),num_rows.as_ref().map(|a|a.len()),row_size_in_bytes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, base_offset, opt_arr_as_mut_ptr(&layouts) as *mut _, opt_arr_as_mut_ptr(&num_rows) as *mut _, opt_arr_as_mut_ptr(&row_size_in_bytes) as *mut _, opt_as_mut_ptr(&total_bytes)) };
     ()
@@ -941,7 +941,7 @@ impl D3D12Device {
   
   //  Method CreateQueryHeap
   
-  pub fn create_query_heap(&mut self, desc: &D3D12_QUERY_HEAP_DESC) -> HResult<D3D12QueryHeap> {
+  pub fn create_query_heap(&self, desc: &D3D12_QUERY_HEAP_DESC) -> HResult<D3D12QueryHeap> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateQueryHeap(desc, D3D12QueryHeap::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12QueryHeap::new(lv1))
@@ -949,7 +949,7 @@ impl D3D12Device {
   
   //  Method SetStablePowerState
   
-  pub fn set_stable_power_state(&mut self, enable: BOOL) -> HResult<()> {
+  pub fn set_stable_power_state(&self, enable: BOOL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetStablePowerState(enable) };
     hr2ret(hr,())
@@ -957,7 +957,7 @@ impl D3D12Device {
   
   //  Method CreateCommandSignature
   
-  pub fn create_command_signature(&mut self, desc: &D3D12_COMMAND_SIGNATURE_DESC, root_signature: Option<&mut ID3D12RootSignature>) -> HResult<D3D12CommandSignature> {
+  pub fn create_command_signature(&self, desc: &D3D12_COMMAND_SIGNATURE_DESC, root_signature: Option<&mut ID3D12RootSignature>) -> HResult<D3D12CommandSignature> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateCommandSignature(desc, opt_as_mut_ptr(&root_signature), D3D12CommandSignature::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,D3D12CommandSignature::new(lv1))
@@ -965,7 +965,7 @@ impl D3D12Device {
   
   //  Method GetResourceTiling
   
-  pub fn get_resource_tiling<T: HasIID>(&mut self, tiled_resource: &T, num_tiles_for_entire_resource: Option<&mut UINT>, packed_mip_desc: Option<&mut D3D12_PACKED_MIP_INFO>, standard_tile_shape_for_non_packed_mips: Option<&mut D3D12_TILE_SHAPE>, num_subresource_tilings: Option<&mut UINT>, first_subresource_tiling_to_get: UINT) -> D3D12_SUBRESOURCE_TILING {
+  pub fn get_resource_tiling<T: HasIID>(&self, tiled_resource: &T, num_tiles_for_entire_resource: Option<&mut UINT>, packed_mip_desc: Option<&mut D3D12_PACKED_MIP_INFO>, standard_tile_shape_for_non_packed_mips: Option<&mut D3D12_TILE_SHAPE>, num_subresource_tilings: Option<&mut UINT>, first_subresource_tiling_to_get: UINT) -> D3D12_SUBRESOURCE_TILING {
     let mut lv1: D3D12_SUBRESOURCE_TILING = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetResourceTiling(tiled_resource.iptr() as *mut _ as *mut _ , opt_as_mut_ptr(&num_tiles_for_entire_resource), opt_as_mut_ptr(&packed_mip_desc), opt_as_mut_ptr(&standard_tile_shape_for_non_packed_mips), opt_as_mut_ptr(&num_subresource_tilings), first_subresource_tiling_to_get, &mut lv1 as *mut _ as *mut _) };
     lv1
@@ -973,7 +973,7 @@ impl D3D12Device {
   
   //  Method GetAdapterLuid
   
-  pub fn get_adapter_luid(&mut self) -> LUID {
+  pub fn get_adapter_luid(&self) -> LUID {
     let mut lv1: LUID = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetAdapterLuid(&mut lv1 as *mut _ as *mut _) };
     lv1
@@ -1005,7 +1005,7 @@ impl Clone for D3D12Fence {
 impl D3D12Fence {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -1013,7 +1013,7 @@ impl D3D12Fence {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -1021,7 +1021,7 @@ impl D3D12Fence {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -1029,7 +1029,7 @@ impl D3D12Fence {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -1037,7 +1037,7 @@ impl D3D12Fence {
   
   //  Method GetCompletedValue
   
-  pub fn get_completed_value(&mut self) -> UINT64 {
+  pub fn get_completed_value(&self) -> UINT64 {
   
     let hr=unsafe { (*self.0).GetCompletedValue() };
     hr
@@ -1045,7 +1045,7 @@ impl D3D12Fence {
   
   //  Method SetEventOnCompletion
   
-  pub fn set_event_on_completion(&mut self, value: UINT64, hEvent: HANDLE) -> HResult<()> {
+  pub fn set_event_on_completion(&self, value: UINT64, hEvent: HANDLE) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetEventOnCompletion(value, hEvent) };
     hr2ret(hr,())
@@ -1053,7 +1053,7 @@ impl D3D12Fence {
   
   //  Method Signal
   
-  pub fn signal(&mut self, value: UINT64) -> HResult<()> {
+  pub fn signal(&self, value: UINT64) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Signal(value) };
     hr2ret(hr,())
@@ -1085,7 +1085,7 @@ impl Clone for D3D12GraphicsCommandList {
 impl D3D12GraphicsCommandList {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -1093,7 +1093,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -1101,7 +1101,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -1109,7 +1109,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -1117,7 +1117,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method GetType
   
-  pub fn get_type(&mut self) -> D3D12_COMMAND_LIST_TYPE {
+  pub fn get_type(&self) -> D3D12_COMMAND_LIST_TYPE {
   
     let hr=unsafe { (*self.0).GetType() };
     hr
@@ -1125,7 +1125,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method Close
   
-  pub fn close(&mut self) -> HResult<()> {
+  pub fn close(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Close() };
     hr2ret(hr,())
@@ -1133,7 +1133,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method Reset
   
-  pub fn reset<T: HasIID>(&mut self, allocator: &T, initial_state: Option<&D3D12PipelineState>) -> HResult<()> {
+  pub fn reset<T: HasIID>(&self, allocator: &T, initial_state: Option<&D3D12PipelineState>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Reset(allocator.iptr() as *mut _ as *mut _ , initial_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,())
@@ -1141,7 +1141,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ClearState
   
-  pub fn clear_state(&mut self, pipeline_state: Option<&D3D12PipelineState>) -> () {
+  pub fn clear_state(&self, pipeline_state: Option<&D3D12PipelineState>) -> () {
   
     let hr=unsafe { (*self.0).ClearState(pipeline_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
@@ -1149,7 +1149,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method DrawInstanced
   
-  pub fn draw_instanced(&mut self, vertex_count_per_instance: UINT, instance_count: UINT, start_vertex_location: UINT, start_instance_location: UINT) -> () {
+  pub fn draw_instanced(&self, vertex_count_per_instance: UINT, instance_count: UINT, start_vertex_location: UINT, start_instance_location: UINT) -> () {
   
     let hr=unsafe { (*self.0).DrawInstanced(vertex_count_per_instance, instance_count, start_vertex_location, start_instance_location) };
     ()
@@ -1157,7 +1157,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method DrawIndexedInstanced
   
-  pub fn draw_indexed_instanced(&mut self, index_count_per_instance: UINT, instance_count: UINT, start_index_location: UINT, base_vertex_location: INT, start_instance_location: UINT) -> () {
+  pub fn draw_indexed_instanced(&self, index_count_per_instance: UINT, instance_count: UINT, start_index_location: UINT, base_vertex_location: INT, start_instance_location: UINT) -> () {
   
     let hr=unsafe { (*self.0).DrawIndexedInstanced(index_count_per_instance, instance_count, start_index_location, base_vertex_location, start_instance_location) };
     ()
@@ -1165,7 +1165,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method Dispatch
   
-  pub fn dispatch(&mut self, thread_group_count_x: UINT, thread_group_count_y: UINT, thread_group_count_z: UINT) -> () {
+  pub fn dispatch(&self, thread_group_count_x: UINT, thread_group_count_y: UINT, thread_group_count_z: UINT) -> () {
   
     let hr=unsafe { (*self.0).Dispatch(thread_group_count_x, thread_group_count_y, thread_group_count_z) };
     ()
@@ -1173,7 +1173,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method CopyBufferRegion
   
-  pub fn copy_buffer_region<T: HasIID, T1: HasIID>(&mut self, dst_buffer: &T, dst_offset: UINT64, src_buffer: &T1, src_offset: UINT64, num_bytes: UINT64) -> () {
+  pub fn copy_buffer_region<T: HasIID, T1: HasIID>(&self, dst_buffer: &T, dst_offset: UINT64, src_buffer: &T1, src_offset: UINT64, num_bytes: UINT64) -> () {
   
     let hr=unsafe { (*self.0).CopyBufferRegion(dst_buffer.iptr() as *mut _ as *mut _ , dst_offset, src_buffer.iptr() as *mut _ as *mut _ , src_offset, num_bytes) };
     ()
@@ -1181,7 +1181,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method CopyTextureRegion
   
-  pub fn copy_texture_region(&mut self, dst: &D3D12_TEXTURE_COPY_LOCATION, dst_x: UINT, dst_y: UINT, dst_z: UINT, src: &D3D12_TEXTURE_COPY_LOCATION, src_box: Option<&D3D12_BOX>) -> () {
+  pub fn copy_texture_region(&self, dst: &D3D12_TEXTURE_COPY_LOCATION, dst_x: UINT, dst_y: UINT, dst_z: UINT, src: &D3D12_TEXTURE_COPY_LOCATION, src_box: Option<&D3D12_BOX>) -> () {
   
     let hr=unsafe { (*self.0).CopyTextureRegion(dst, dst_x, dst_y, dst_z, src, src_box.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     ()
@@ -1189,7 +1189,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method CopyResource
   
-  pub fn copy_resource<T: HasIID, T1: HasIID>(&mut self, dst_resource: &T, src_resource: &T1) -> () {
+  pub fn copy_resource<T: HasIID, T1: HasIID>(&self, dst_resource: &T, src_resource: &T1) -> () {
   
     let hr=unsafe { (*self.0).CopyResource(dst_resource.iptr() as *mut _ as *mut _ , src_resource.iptr() as *mut _ as *mut _ ) };
     ()
@@ -1197,7 +1197,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method CopyTiles
   
-  pub fn copy_tiles<T: HasIID, T1: HasIID>(&mut self, tiled_resource: &T, tile_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, tile_region_size: &D3D12_TILE_REGION_SIZE, buffer: &T1, buffer_start_offset_in_bytes: UINT64, flags: D3D12_TILE_COPY_FLAGS) -> () {
+  pub fn copy_tiles<T: HasIID, T1: HasIID>(&self, tiled_resource: &T, tile_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, tile_region_size: &D3D12_TILE_REGION_SIZE, buffer: &T1, buffer_start_offset_in_bytes: UINT64, flags: D3D12_TILE_COPY_FLAGS) -> () {
   
     let hr=unsafe { (*self.0).CopyTiles(tiled_resource.iptr() as *mut _ as *mut _ , tile_region_start_coordinate, tile_region_size, buffer.iptr() as *mut _ as *mut _ , buffer_start_offset_in_bytes, flags) };
     ()
@@ -1205,7 +1205,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ResolveSubresource
   
-  pub fn resolve_subresource<T: HasIID, T1: HasIID>(&mut self, dst_resource: &T, dst_subresource: UINT, src_resource: &T1, src_subresource: UINT, format: DXGI_FORMAT) -> () {
+  pub fn resolve_subresource<T: HasIID, T1: HasIID>(&self, dst_resource: &T, dst_subresource: UINT, src_resource: &T1, src_subresource: UINT, format: DXGI_FORMAT) -> () {
   
     let hr=unsafe { (*self.0).ResolveSubresource(dst_resource.iptr() as *mut _ as *mut _ , dst_subresource, src_resource.iptr() as *mut _ as *mut _ , src_subresource, format) };
     ()
@@ -1213,7 +1213,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method IASetPrimitiveTopology
   
-  pub fn ia_set_primitive_topology(&mut self, primitive_topology: D3D12_PRIMITIVE_TOPOLOGY) -> () {
+  pub fn ia_set_primitive_topology(&self, primitive_topology: D3D12_PRIMITIVE_TOPOLOGY) -> () {
   
     let hr=unsafe { (*self.0).IASetPrimitiveTopology(primitive_topology) };
     ()
@@ -1221,7 +1221,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method RSSetViewports
   
-  pub fn rs_set_viewports(&mut self, viewports: &mut [D3D12_VIEWPORT]) -> () {
+  pub fn rs_set_viewports(&self, viewports: &mut [D3D12_VIEWPORT]) -> () {
   
     let hr=unsafe { (*self.0).RSSetViewports( same_length(&[Some(viewports.len())]).expect("Arrays must have equal sizes") as UINT, viewports.as_mut_ptr() as *mut _) };
     ()
@@ -1229,7 +1229,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method RSSetScissorRects
   
-  pub fn rs_set_scissor_rects(&mut self, rects: &mut [D3D12_RECT]) -> () {
+  pub fn rs_set_scissor_rects(&self, rects: &mut [D3D12_RECT]) -> () {
   
     let hr=unsafe { (*self.0).RSSetScissorRects( same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
     ()
@@ -1237,7 +1237,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method OMSetBlendFactor
   
-  pub fn om_set_blend_factor(&mut self, blend_factor: Option<&mut [FLOAT;4]>) -> () {
+  pub fn om_set_blend_factor(&self, blend_factor: Option<&mut [FLOAT;4]>) -> () {
   
     let hr=unsafe { (*self.0).OMSetBlendFactor(opt_as_mut_ptr(&blend_factor)) };
     ()
@@ -1245,7 +1245,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method OMSetStencilRef
   
-  pub fn om_set_stencil_ref(&mut self, stencil_ref: UINT) -> () {
+  pub fn om_set_stencil_ref(&self, stencil_ref: UINT) -> () {
   
     let hr=unsafe { (*self.0).OMSetStencilRef(stencil_ref) };
     ()
@@ -1253,7 +1253,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetPipelineState
   
-  pub fn set_pipeline_state<T: HasIID>(&mut self, pipeline_state: &T) -> () {
+  pub fn set_pipeline_state<T: HasIID>(&self, pipeline_state: &T) -> () {
   
     let hr=unsafe { (*self.0).SetPipelineState(pipeline_state.iptr() as *mut _ as *mut _ ) };
     ()
@@ -1261,7 +1261,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ResourceBarrier
   
-  pub fn resource_barrier(&mut self, barriers: &mut [D3D12_RESOURCE_BARRIER]) -> () {
+  pub fn resource_barrier(&self, barriers: &mut [D3D12_RESOURCE_BARRIER]) -> () {
   
     let hr=unsafe { (*self.0).ResourceBarrier( same_length(&[Some(barriers.len())]).expect("Arrays must have equal sizes") as UINT, barriers.as_mut_ptr() as *mut _) };
     ()
@@ -1269,7 +1269,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ExecuteBundle
   
-  pub fn execute_bundle<T: HasIID>(&mut self, command_list: &T) -> () {
+  pub fn execute_bundle<T: HasIID>(&self, command_list: &T) -> () {
   
     let hr=unsafe { (*self.0).ExecuteBundle(command_list.iptr() as *mut _ as *mut _ ) };
     ()
@@ -1277,7 +1277,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetDescriptorHeaps
   
-  pub fn set_descriptor_heaps<T: HasIID>(&mut self, descriptor_heaps: &[&T]) -> () {
+  pub fn set_descriptor_heaps<T: HasIID>(&self, descriptor_heaps: &[&T]) -> () {
     let mut lv1: Vec<*mut IUnknown> = descriptor_heaps.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).SetDescriptorHeaps( same_length(&[Some(descriptor_heaps.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     ()
@@ -1285,7 +1285,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetComputeRootSignature
   
-  pub fn set_compute_root_signature<T: HasIID>(&mut self, root_signature: &T) -> () {
+  pub fn set_compute_root_signature<T: HasIID>(&self, root_signature: &T) -> () {
   
     let hr=unsafe { (*self.0).SetComputeRootSignature(root_signature.iptr() as *mut _ as *mut _ ) };
     ()
@@ -1293,7 +1293,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetGraphicsRootSignature
   
-  pub fn set_graphics_root_signature<T: HasIID>(&mut self, root_signature: &T) -> () {
+  pub fn set_graphics_root_signature<T: HasIID>(&self, root_signature: &T) -> () {
   
     let hr=unsafe { (*self.0).SetGraphicsRootSignature(root_signature.iptr() as *mut _ as *mut _ ) };
     ()
@@ -1301,7 +1301,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetComputeRootDescriptorTable
   
-  pub fn set_compute_root_descriptor_table(&mut self, root_parameter_index: UINT, base_descriptor: D3D12_GPU_DESCRIPTOR_HANDLE) -> () {
+  pub fn set_compute_root_descriptor_table(&self, root_parameter_index: UINT, base_descriptor: D3D12_GPU_DESCRIPTOR_HANDLE) -> () {
   
     let hr=unsafe { (*self.0).SetComputeRootDescriptorTable(root_parameter_index, base_descriptor) };
     ()
@@ -1309,7 +1309,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetGraphicsRootDescriptorTable
   
-  pub fn set_graphics_root_descriptor_table(&mut self, root_parameter_index: UINT, base_descriptor: D3D12_GPU_DESCRIPTOR_HANDLE) -> () {
+  pub fn set_graphics_root_descriptor_table(&self, root_parameter_index: UINT, base_descriptor: D3D12_GPU_DESCRIPTOR_HANDLE) -> () {
   
     let hr=unsafe { (*self.0).SetGraphicsRootDescriptorTable(root_parameter_index, base_descriptor) };
     ()
@@ -1317,7 +1317,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetComputeRoot32BitConstant
   
-  pub fn set_compute_root32_bit_constant(&mut self, root_parameter_index: UINT, src_data: UINT, dest_offset_in32_bit_values: UINT) -> () {
+  pub fn set_compute_root32_bit_constant(&self, root_parameter_index: UINT, src_data: UINT, dest_offset_in32_bit_values: UINT) -> () {
   
     let hr=unsafe { (*self.0).SetComputeRoot32BitConstant(root_parameter_index, src_data, dest_offset_in32_bit_values) };
     ()
@@ -1325,7 +1325,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetGraphicsRoot32BitConstant
   
-  pub fn set_graphics_root32_bit_constant(&mut self, root_parameter_index: UINT, src_data: UINT, dest_offset_in32_bit_values: UINT) -> () {
+  pub fn set_graphics_root32_bit_constant(&self, root_parameter_index: UINT, src_data: UINT, dest_offset_in32_bit_values: UINT) -> () {
   
     let hr=unsafe { (*self.0).SetGraphicsRoot32BitConstant(root_parameter_index, src_data, dest_offset_in32_bit_values) };
     ()
@@ -1333,7 +1333,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetComputeRoot32BitConstants
   
-  pub fn set_compute_root32_bit_constants<T>(&mut self, root_parameter_index: UINT, src_data: &[T], dest_offset_in32_bit_values: UINT) -> () {
+  pub fn set_compute_root32_bit_constants<T>(&self, root_parameter_index: UINT, src_data: &[T], dest_offset_in32_bit_values: UINT) -> () {
   
     let hr=unsafe { (*self.0).SetComputeRoot32BitConstants(root_parameter_index, (mem::size_of_val(src_data)/4) as UINT, src_data.as_ptr() as *const _, dest_offset_in32_bit_values) };
     ()
@@ -1341,7 +1341,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetGraphicsRoot32BitConstants
   
-  pub fn set_graphics_root32_bit_constants<T>(&mut self, root_parameter_index: UINT, src_data: &[T], dest_offset_in32_bit_values: UINT) -> () {
+  pub fn set_graphics_root32_bit_constants<T>(&self, root_parameter_index: UINT, src_data: &[T], dest_offset_in32_bit_values: UINT) -> () {
   
     let hr=unsafe { (*self.0).SetGraphicsRoot32BitConstants(root_parameter_index, (mem::size_of_val(src_data)/4) as UINT, src_data.as_ptr() as *const _, dest_offset_in32_bit_values) };
     ()
@@ -1349,7 +1349,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetComputeRootConstantBufferView
   
-  pub fn set_compute_root_constant_buffer_view(&mut self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  pub fn set_compute_root_constant_buffer_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
   
     let hr=unsafe { (*self.0).SetComputeRootConstantBufferView(root_parameter_index, buffer_location) };
     ()
@@ -1357,7 +1357,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetGraphicsRootConstantBufferView
   
-  pub fn set_graphics_root_constant_buffer_view(&mut self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  pub fn set_graphics_root_constant_buffer_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
   
     let hr=unsafe { (*self.0).SetGraphicsRootConstantBufferView(root_parameter_index, buffer_location) };
     ()
@@ -1365,7 +1365,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetComputeRootShaderResourceView
   
-  pub fn set_compute_root_shader_resource_view(&mut self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  pub fn set_compute_root_shader_resource_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
   
     let hr=unsafe { (*self.0).SetComputeRootShaderResourceView(root_parameter_index, buffer_location) };
     ()
@@ -1373,7 +1373,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetGraphicsRootShaderResourceView
   
-  pub fn set_graphics_root_shader_resource_view(&mut self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  pub fn set_graphics_root_shader_resource_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
   
     let hr=unsafe { (*self.0).SetGraphicsRootShaderResourceView(root_parameter_index, buffer_location) };
     ()
@@ -1381,7 +1381,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetComputeRootUnorderedAccessView
   
-  pub fn set_compute_root_unordered_access_view(&mut self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  pub fn set_compute_root_unordered_access_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
   
     let hr=unsafe { (*self.0).SetComputeRootUnorderedAccessView(root_parameter_index, buffer_location) };
     ()
@@ -1389,7 +1389,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetGraphicsRootUnorderedAccessView
   
-  pub fn set_graphics_root_unordered_access_view(&mut self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  pub fn set_graphics_root_unordered_access_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
   
     let hr=unsafe { (*self.0).SetGraphicsRootUnorderedAccessView(root_parameter_index, buffer_location) };
     ()
@@ -1397,7 +1397,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method IASetIndexBuffer
   
-  pub fn ia_set_index_buffer(&mut self, view: Option<&D3D12_INDEX_BUFFER_VIEW>) -> () {
+  pub fn ia_set_index_buffer(&self, view: Option<&D3D12_INDEX_BUFFER_VIEW>) -> () {
   
     let hr=unsafe { (*self.0).IASetIndexBuffer(view.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     ()
@@ -1405,7 +1405,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method IASetVertexBuffers
   
-  pub fn ia_set_vertex_buffers(&mut self, start_slot: UINT, views: Option<&mut [D3D12_VERTEX_BUFFER_VIEW]>) -> () {
+  pub fn ia_set_vertex_buffers(&self, start_slot: UINT, views: Option<&mut [D3D12_VERTEX_BUFFER_VIEW]>) -> () {
   
     let hr=unsafe { (*self.0).IASetVertexBuffers(start_slot,  same_length(&[views.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_mut_ptr(&views) as *mut _) };
     ()
@@ -1413,7 +1413,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SOSetTargets
   
-  pub fn so_set_targets(&mut self, start_slot: UINT, views: Option<&mut [D3D12_STREAM_OUTPUT_BUFFER_VIEW]>) -> () {
+  pub fn so_set_targets(&self, start_slot: UINT, views: Option<&mut [D3D12_STREAM_OUTPUT_BUFFER_VIEW]>) -> () {
   
     let hr=unsafe { (*self.0).SOSetTargets(start_slot,  same_length(&[views.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_mut_ptr(&views) as *mut _) };
     ()
@@ -1421,14 +1421,14 @@ impl D3D12GraphicsCommandList {
   
   //  Method OMSetRenderTargets
   
-  pub fn om_set_render_targets(&mut self, num_render_target_descriptors: UINT, render_target_descriptors: &D3D12_CPU_DESCRIPTOR_HANDLE, depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
+  pub fn om_set_render_targets(&self, num_render_target_descriptors: UINT, render_target_descriptors: &D3D12_CPU_DESCRIPTOR_HANDLE, depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
   
     let hr=unsafe { (*self.0).OMSetRenderTargets(num_render_target_descriptors, render_target_descriptors, TRUE, depth_stencil_descriptor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     ()
   }
   
   
-  pub fn om_set_render_targets_arr(&mut self, render_target_descriptors: &mut [D3D12_CPU_DESCRIPTOR_HANDLE], depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
+  pub fn om_set_render_targets_arr(&self, render_target_descriptors: &mut [D3D12_CPU_DESCRIPTOR_HANDLE], depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
   
     let hr=unsafe { (*self.0).OMSetRenderTargets( same_length(&[Some(render_target_descriptors.len())]).expect("Arrays must have equal sizes") as UINT, render_target_descriptors.as_mut_ptr() as *mut _, FALSE, depth_stencil_descriptor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     ()
@@ -1436,7 +1436,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ClearDepthStencilView
   
-  pub fn clear_depth_stencil_view(&mut self, depth_stencil_view: D3D12_CPU_DESCRIPTOR_HANDLE, clear_flags: D3D12_CLEAR_FLAGS, depth: FLOAT, stencil: UINT8, rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_depth_stencil_view(&self, depth_stencil_view: D3D12_CPU_DESCRIPTOR_HANDLE, clear_flags: D3D12_CLEAR_FLAGS, depth: FLOAT, stencil: UINT8, rects: &mut [D3D12_RECT]) -> () {
   
     let hr=unsafe { (*self.0).ClearDepthStencilView(depth_stencil_view, clear_flags, depth, stencil,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
     ()
@@ -1444,7 +1444,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ClearRenderTargetView
   
-  pub fn clear_render_target_view(&mut self, render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE, color_r_g_b_a: &mut [FLOAT;4], rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_render_target_view(&self, render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE, color_r_g_b_a: &mut [FLOAT;4], rects: &mut [D3D12_RECT]) -> () {
   
     let hr=unsafe { (*self.0).ClearRenderTargetView(render_target_view, color_r_g_b_a,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
     ()
@@ -1452,7 +1452,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ClearUnorderedAccessViewUint
   
-  pub fn clear_unordered_access_view_uint<T: HasIID>(&mut self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &mut [UINT;4], rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_unordered_access_view_uint<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &mut [UINT;4], rects: &mut [D3D12_RECT]) -> () {
   
     let hr=unsafe { (*self.0).ClearUnorderedAccessViewUint(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
     ()
@@ -1460,7 +1460,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ClearUnorderedAccessViewFloat
   
-  pub fn clear_unordered_access_view_float<T: HasIID>(&mut self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &mut [FLOAT;4], rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_unordered_access_view_float<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &mut [FLOAT;4], rects: &mut [D3D12_RECT]) -> () {
   
     let hr=unsafe { (*self.0).ClearUnorderedAccessViewFloat(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
     ()
@@ -1468,7 +1468,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method DiscardResource
   
-  pub fn discard_resource<T: HasIID>(&mut self, resource: &T, region: Option<&D3D12_DISCARD_REGION>) -> () {
+  pub fn discard_resource<T: HasIID>(&self, resource: &T, region: Option<&D3D12_DISCARD_REGION>) -> () {
   
     let hr=unsafe { (*self.0).DiscardResource(resource.iptr() as *mut _ as *mut _ , region.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     ()
@@ -1476,7 +1476,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method BeginQuery
   
-  pub fn begin_query<T: HasIID>(&mut self, query_heap: &T, type_: D3D12_QUERY_TYPE, index: UINT) -> () {
+  pub fn begin_query<T: HasIID>(&self, query_heap: &T, type_: D3D12_QUERY_TYPE, index: UINT) -> () {
   
     let hr=unsafe { (*self.0).BeginQuery(query_heap.iptr() as *mut _ as *mut _ , type_, index) };
     ()
@@ -1484,7 +1484,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method EndQuery
   
-  pub fn end_query<T: HasIID>(&mut self, query_heap: &T, type_: D3D12_QUERY_TYPE, index: UINT) -> () {
+  pub fn end_query<T: HasIID>(&self, query_heap: &T, type_: D3D12_QUERY_TYPE, index: UINT) -> () {
   
     let hr=unsafe { (*self.0).EndQuery(query_heap.iptr() as *mut _ as *mut _ , type_, index) };
     ()
@@ -1492,7 +1492,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ResolveQueryData
   
-  pub fn resolve_query_data<T: HasIID, T1: HasIID>(&mut self, query_heap: &T, type_: D3D12_QUERY_TYPE, start_index: UINT, num_queries: UINT, destination_buffer: &T1, aligned_destination_buffer_offset: UINT64) -> () {
+  pub fn resolve_query_data<T: HasIID, T1: HasIID>(&self, query_heap: &T, type_: D3D12_QUERY_TYPE, start_index: UINT, num_queries: UINT, destination_buffer: &T1, aligned_destination_buffer_offset: UINT64) -> () {
   
     let hr=unsafe { (*self.0).ResolveQueryData(query_heap.iptr() as *mut _ as *mut _ , type_, start_index, num_queries, destination_buffer.iptr() as *mut _ as *mut _ , aligned_destination_buffer_offset) };
     ()
@@ -1500,7 +1500,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method SetPredication
   
-  pub fn set_predication(&mut self, buffer: Option<&D3D12Resource>, aligned_buffer_offset: UINT64, operation: D3D12_PREDICATION_OP) -> () {
+  pub fn set_predication(&self, buffer: Option<&D3D12Resource>, aligned_buffer_offset: UINT64, operation: D3D12_PREDICATION_OP) -> () {
   
     let hr=unsafe { (*self.0).SetPredication(buffer.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, aligned_buffer_offset, operation) };
     ()
@@ -1508,7 +1508,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ExecuteIndirect
   
-  pub fn execute_indirect<T: HasIID, T1: HasIID, T2: HasIID>(&mut self, command_signature: &T, max_command_count: UINT, argument_buffer: &T1, argument_buffer_offset: UINT64, count_buffer: &T2, count_buffer_offset: UINT64) -> () {
+  pub fn execute_indirect<T: HasIID, T1: HasIID, T2: HasIID>(&self, command_signature: &T, max_command_count: UINT, argument_buffer: &T1, argument_buffer_offset: UINT64, count_buffer: &T2, count_buffer_offset: UINT64) -> () {
   
     let hr=unsafe { (*self.0).ExecuteIndirect(command_signature.iptr() as *mut _ as *mut _ , max_command_count, argument_buffer.iptr() as *mut _ as *mut _ , argument_buffer_offset, count_buffer.iptr() as *mut _ as *mut _ , count_buffer_offset) };
     ()
@@ -1540,7 +1540,7 @@ impl Clone for D3D12Heap {
 impl D3D12Heap {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -1548,7 +1548,7 @@ impl D3D12Heap {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -1556,7 +1556,7 @@ impl D3D12Heap {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -1564,7 +1564,7 @@ impl D3D12Heap {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -1572,7 +1572,7 @@ impl D3D12Heap {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> D3D12_HEAP_DESC {
+  pub fn get_desc(&self) -> D3D12_HEAP_DESC {
   
     let hr=unsafe { (*self.0).GetDesc() };
     hr
@@ -1604,7 +1604,7 @@ impl Clone for D3D12InfoQueue {
 impl D3D12InfoQueue {
   //  Method SetMessageCountLimit
   
-  pub fn set_message_count_limit(&mut self, message_count_limit: UINT64) -> HResult<()> {
+  pub fn set_message_count_limit(&self, message_count_limit: UINT64) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetMessageCountLimit(message_count_limit) };
     hr2ret(hr,())
@@ -1612,7 +1612,7 @@ impl D3D12InfoQueue {
   
   //  Method ClearStoredMessages
   
-  pub fn clear_stored_messages(&mut self) -> () {
+  pub fn clear_stored_messages(&self) -> () {
   
     let hr=unsafe { (*self.0).ClearStoredMessages() };
     ()
@@ -1620,7 +1620,7 @@ impl D3D12InfoQueue {
   
   //  Method GetMessage
   
-  pub fn get_message(&mut self, message_index: UINT64, message: Option<&mut D3D12_MESSAGE>, message_byte_length: &mut SIZE_T) -> HResult<()> {
+  pub fn get_message(&self, message_index: UINT64, message: Option<&mut D3D12_MESSAGE>, message_byte_length: &mut SIZE_T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetMessage(message_index, opt_as_mut_ptr(&message), message_byte_length) };
     hr2ret(hr,())
@@ -1628,7 +1628,7 @@ impl D3D12InfoQueue {
   
   //  Method GetNumMessagesAllowedByStorageFilter
   
-  pub fn get_num_messages_allowed_by_storage_filter(&mut self) -> UINT64 {
+  pub fn get_num_messages_allowed_by_storage_filter(&self) -> UINT64 {
   
     let hr=unsafe { (*self.0).GetNumMessagesAllowedByStorageFilter() };
     hr
@@ -1636,7 +1636,7 @@ impl D3D12InfoQueue {
   
   //  Method GetNumMessagesDeniedByStorageFilter
   
-  pub fn get_num_messages_denied_by_storage_filter(&mut self) -> UINT64 {
+  pub fn get_num_messages_denied_by_storage_filter(&self) -> UINT64 {
   
     let hr=unsafe { (*self.0).GetNumMessagesDeniedByStorageFilter() };
     hr
@@ -1644,7 +1644,7 @@ impl D3D12InfoQueue {
   
   //  Method GetNumStoredMessages
   
-  pub fn get_num_stored_messages(&mut self) -> UINT64 {
+  pub fn get_num_stored_messages(&self) -> UINT64 {
   
     let hr=unsafe { (*self.0).GetNumStoredMessages() };
     hr
@@ -1652,7 +1652,7 @@ impl D3D12InfoQueue {
   
   //  Method GetNumStoredMessagesAllowedByRetrievalFilter
   
-  pub fn get_num_stored_messages_allowed_by_retrieval_filter(&mut self) -> UINT64 {
+  pub fn get_num_stored_messages_allowed_by_retrieval_filter(&self) -> UINT64 {
   
     let hr=unsafe { (*self.0).GetNumStoredMessagesAllowedByRetrievalFilter() };
     hr
@@ -1660,7 +1660,7 @@ impl D3D12InfoQueue {
   
   //  Method GetNumMessagesDiscardedByMessageCountLimit
   
-  pub fn get_num_messages_discarded_by_message_count_limit(&mut self) -> UINT64 {
+  pub fn get_num_messages_discarded_by_message_count_limit(&self) -> UINT64 {
   
     let hr=unsafe { (*self.0).GetNumMessagesDiscardedByMessageCountLimit() };
     hr
@@ -1668,7 +1668,7 @@ impl D3D12InfoQueue {
   
   //  Method GetMessageCountLimit
   
-  pub fn get_message_count_limit(&mut self) -> UINT64 {
+  pub fn get_message_count_limit(&self) -> UINT64 {
   
     let hr=unsafe { (*self.0).GetMessageCountLimit() };
     hr
@@ -1676,7 +1676,7 @@ impl D3D12InfoQueue {
   
   //  Method AddStorageFilterEntries
   
-  pub fn add_storage_filter_entries(&mut self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<()> {
+  pub fn add_storage_filter_entries(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<()> {
   
     let hr=unsafe { (*self.0).AddStorageFilterEntries(filter) };
     hr2ret(hr,())
@@ -1684,7 +1684,7 @@ impl D3D12InfoQueue {
   
   //  Method GetStorageFilter
   
-  pub fn get_storage_filter(&mut self, filter: &mut D3D12_INFO_QUEUE_FILTER, filter_byte_length: &mut SIZE_T) -> HResult<()> {
+  pub fn get_storage_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER, filter_byte_length: &mut SIZE_T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetStorageFilter(filter, filter_byte_length) };
     hr2ret(hr,())
@@ -1692,7 +1692,7 @@ impl D3D12InfoQueue {
   
   //  Method ClearStorageFilter
   
-  pub fn clear_storage_filter(&mut self) -> () {
+  pub fn clear_storage_filter(&self) -> () {
   
     let hr=unsafe { (*self.0).ClearStorageFilter() };
     ()
@@ -1700,7 +1700,7 @@ impl D3D12InfoQueue {
   
   //  Method PushEmptyStorageFilter
   
-  pub fn push_empty_storage_filter(&mut self) -> HResult<()> {
+  pub fn push_empty_storage_filter(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).PushEmptyStorageFilter() };
     hr2ret(hr,())
@@ -1708,7 +1708,7 @@ impl D3D12InfoQueue {
   
   //  Method PushCopyOfStorageFilter
   
-  pub fn push_copy_of_storage_filter(&mut self) -> HResult<()> {
+  pub fn push_copy_of_storage_filter(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).PushCopyOfStorageFilter() };
     hr2ret(hr,())
@@ -1716,7 +1716,7 @@ impl D3D12InfoQueue {
   
   //  Method PushStorageFilter
   
-  pub fn push_storage_filter(&mut self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<()> {
+  pub fn push_storage_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<()> {
   
     let hr=unsafe { (*self.0).PushStorageFilter(filter) };
     hr2ret(hr,())
@@ -1724,7 +1724,7 @@ impl D3D12InfoQueue {
   
   //  Method PopStorageFilter
   
-  pub fn pop_storage_filter(&mut self) -> () {
+  pub fn pop_storage_filter(&self) -> () {
   
     let hr=unsafe { (*self.0).PopStorageFilter() };
     ()
@@ -1732,7 +1732,7 @@ impl D3D12InfoQueue {
   
   //  Method GetStorageFilterStackSize
   
-  pub fn get_storage_filter_stack_size(&mut self) -> UINT {
+  pub fn get_storage_filter_stack_size(&self) -> UINT {
   
     let hr=unsafe { (*self.0).GetStorageFilterStackSize() };
     hr
@@ -1740,7 +1740,7 @@ impl D3D12InfoQueue {
   
   //  Method AddRetrievalFilterEntries
   
-  pub fn add_retrieval_filter_entries(&mut self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<()> {
+  pub fn add_retrieval_filter_entries(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<()> {
   
     let hr=unsafe { (*self.0).AddRetrievalFilterEntries(filter) };
     hr2ret(hr,())
@@ -1748,7 +1748,7 @@ impl D3D12InfoQueue {
   
   //  Method GetRetrievalFilter
   
-  pub fn get_retrieval_filter(&mut self, filter: &mut D3D12_INFO_QUEUE_FILTER, filter_byte_length: &mut SIZE_T) -> HResult<()> {
+  pub fn get_retrieval_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER, filter_byte_length: &mut SIZE_T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetRetrievalFilter(filter, filter_byte_length) };
     hr2ret(hr,())
@@ -1756,7 +1756,7 @@ impl D3D12InfoQueue {
   
   //  Method ClearRetrievalFilter
   
-  pub fn clear_retrieval_filter(&mut self) -> () {
+  pub fn clear_retrieval_filter(&self) -> () {
   
     let hr=unsafe { (*self.0).ClearRetrievalFilter() };
     ()
@@ -1764,7 +1764,7 @@ impl D3D12InfoQueue {
   
   //  Method PushEmptyRetrievalFilter
   
-  pub fn push_empty_retrieval_filter(&mut self) -> HResult<()> {
+  pub fn push_empty_retrieval_filter(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).PushEmptyRetrievalFilter() };
     hr2ret(hr,())
@@ -1772,7 +1772,7 @@ impl D3D12InfoQueue {
   
   //  Method PushCopyOfRetrievalFilter
   
-  pub fn push_copy_of_retrieval_filter(&mut self) -> HResult<()> {
+  pub fn push_copy_of_retrieval_filter(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).PushCopyOfRetrievalFilter() };
     hr2ret(hr,())
@@ -1780,7 +1780,7 @@ impl D3D12InfoQueue {
   
   //  Method PushRetrievalFilter
   
-  pub fn push_retrieval_filter(&mut self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<()> {
+  pub fn push_retrieval_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<()> {
   
     let hr=unsafe { (*self.0).PushRetrievalFilter(filter) };
     hr2ret(hr,())
@@ -1788,7 +1788,7 @@ impl D3D12InfoQueue {
   
   //  Method PopRetrievalFilter
   
-  pub fn pop_retrieval_filter(&mut self) -> () {
+  pub fn pop_retrieval_filter(&self) -> () {
   
     let hr=unsafe { (*self.0).PopRetrievalFilter() };
     ()
@@ -1796,7 +1796,7 @@ impl D3D12InfoQueue {
   
   //  Method GetRetrievalFilterStackSize
   
-  pub fn get_retrieval_filter_stack_size(&mut self) -> UINT {
+  pub fn get_retrieval_filter_stack_size(&self) -> UINT {
   
     let hr=unsafe { (*self.0).GetRetrievalFilterStackSize() };
     hr
@@ -1804,7 +1804,7 @@ impl D3D12InfoQueue {
   
   //  Method AddMessage
   
-  pub fn add_message(&mut self, category: D3D12_MESSAGE_CATEGORY, severity: D3D12_MESSAGE_SEVERITY, i_d: D3D12_MESSAGE_ID, description: LPCSTR) -> HResult<()> {
+  pub fn add_message(&self, category: D3D12_MESSAGE_CATEGORY, severity: D3D12_MESSAGE_SEVERITY, i_d: D3D12_MESSAGE_ID, description: LPCSTR) -> HResult<()> {
   
     let hr=unsafe { (*self.0).AddMessage(category, severity, i_d, description) };
     hr2ret(hr,())
@@ -1812,7 +1812,7 @@ impl D3D12InfoQueue {
   
   //  Method AddApplicationMessage
   
-  pub fn add_application_message(&mut self, severity: D3D12_MESSAGE_SEVERITY, description: LPCSTR) -> HResult<()> {
+  pub fn add_application_message(&self, severity: D3D12_MESSAGE_SEVERITY, description: LPCSTR) -> HResult<()> {
   
     let hr=unsafe { (*self.0).AddApplicationMessage(severity, description) };
     hr2ret(hr,())
@@ -1820,7 +1820,7 @@ impl D3D12InfoQueue {
   
   //  Method SetBreakOnCategory
   
-  pub fn set_break_on_category(&mut self, category: D3D12_MESSAGE_CATEGORY, bEnable: BOOL) -> HResult<()> {
+  pub fn set_break_on_category(&self, category: D3D12_MESSAGE_CATEGORY, bEnable: BOOL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetBreakOnCategory(category, bEnable) };
     hr2ret(hr,())
@@ -1828,7 +1828,7 @@ impl D3D12InfoQueue {
   
   //  Method SetBreakOnSeverity
   
-  pub fn set_break_on_severity(&mut self, severity: D3D12_MESSAGE_SEVERITY, bEnable: BOOL) -> HResult<()> {
+  pub fn set_break_on_severity(&self, severity: D3D12_MESSAGE_SEVERITY, bEnable: BOOL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetBreakOnSeverity(severity, bEnable) };
     hr2ret(hr,())
@@ -1836,7 +1836,7 @@ impl D3D12InfoQueue {
   
   //  Method SetBreakOnID
   
-  pub fn set_break_on_id(&mut self, i_d: D3D12_MESSAGE_ID, bEnable: BOOL) -> HResult<()> {
+  pub fn set_break_on_id(&self, i_d: D3D12_MESSAGE_ID, bEnable: BOOL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetBreakOnID(i_d, bEnable) };
     hr2ret(hr,())
@@ -1844,7 +1844,7 @@ impl D3D12InfoQueue {
   
   //  Method GetBreakOnCategory
   
-  pub fn get_break_on_category(&mut self, category: D3D12_MESSAGE_CATEGORY) -> BOOL {
+  pub fn get_break_on_category(&self, category: D3D12_MESSAGE_CATEGORY) -> BOOL {
   
     let hr=unsafe { (*self.0).GetBreakOnCategory(category) };
     hr
@@ -1852,7 +1852,7 @@ impl D3D12InfoQueue {
   
   //  Method GetBreakOnSeverity
   
-  pub fn get_break_on_severity(&mut self, severity: D3D12_MESSAGE_SEVERITY) -> BOOL {
+  pub fn get_break_on_severity(&self, severity: D3D12_MESSAGE_SEVERITY) -> BOOL {
   
     let hr=unsafe { (*self.0).GetBreakOnSeverity(severity) };
     hr
@@ -1860,7 +1860,7 @@ impl D3D12InfoQueue {
   
   //  Method GetBreakOnID
   
-  pub fn get_break_on_id(&mut self, i_d: D3D12_MESSAGE_ID) -> BOOL {
+  pub fn get_break_on_id(&self, i_d: D3D12_MESSAGE_ID) -> BOOL {
   
     let hr=unsafe { (*self.0).GetBreakOnID(i_d) };
     hr
@@ -1868,7 +1868,7 @@ impl D3D12InfoQueue {
   
   //  Method SetMuteDebugOutput
   
-  pub fn set_mute_debug_output(&mut self, bMute: BOOL) -> () {
+  pub fn set_mute_debug_output(&self, bMute: BOOL) -> () {
   
     let hr=unsafe { (*self.0).SetMuteDebugOutput(bMute) };
     ()
@@ -1876,7 +1876,7 @@ impl D3D12InfoQueue {
   
   //  Method GetMuteDebugOutput
   
-  pub fn get_mute_debug_output(&mut self) -> BOOL {
+  pub fn get_mute_debug_output(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).GetMuteDebugOutput() };
     hr
@@ -1908,7 +1908,7 @@ impl Clone for D3D12Object {
 impl D3D12Object {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -1916,7 +1916,7 @@ impl D3D12Object {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -1924,7 +1924,7 @@ impl D3D12Object {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -1956,7 +1956,7 @@ impl Clone for D3D12Pageable {
 impl D3D12Pageable {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -1964,7 +1964,7 @@ impl D3D12Pageable {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -1972,7 +1972,7 @@ impl D3D12Pageable {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -1980,7 +1980,7 @@ impl D3D12Pageable {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2012,7 +2012,7 @@ impl Clone for D3D12PipelineState {
 impl D3D12PipelineState {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -2020,7 +2020,7 @@ impl D3D12PipelineState {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -2028,7 +2028,7 @@ impl D3D12PipelineState {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -2036,7 +2036,7 @@ impl D3D12PipelineState {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2068,7 +2068,7 @@ impl Clone for D3D12QueryHeap {
 impl D3D12QueryHeap {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -2076,7 +2076,7 @@ impl D3D12QueryHeap {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -2084,7 +2084,7 @@ impl D3D12QueryHeap {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -2092,7 +2092,7 @@ impl D3D12QueryHeap {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2124,7 +2124,7 @@ impl Clone for D3D12Resource {
 impl D3D12Resource {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -2132,7 +2132,7 @@ impl D3D12Resource {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -2140,7 +2140,7 @@ impl D3D12Resource {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -2148,7 +2148,7 @@ impl D3D12Resource {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2156,7 +2156,7 @@ impl D3D12Resource {
   
   //  Method Map
   
-  pub unsafe fn map(&mut self, subresource: UINT, read_range: Option<&D3D12_RANGE>) -> HResult<*mut ()> {
+  pub unsafe fn map(&self, subresource: UINT, read_range: Option<&D3D12_RANGE>) -> HResult<*mut ()> {
     let mut lv1: *mut () = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).Map(subresource, read_range.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2164,7 +2164,7 @@ impl D3D12Resource {
   
   //  Method Unmap
   
-  pub fn unmap(&mut self, subresource: UINT, written_range: Option<&D3D12_RANGE>) -> () {
+  pub fn unmap(&self, subresource: UINT, written_range: Option<&D3D12_RANGE>) -> () {
   
     let hr=unsafe { (*self.0).Unmap(subresource, written_range.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     ()
@@ -2172,7 +2172,7 @@ impl D3D12Resource {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> D3D12_RESOURCE_DESC {
+  pub fn get_desc(&self) -> D3D12_RESOURCE_DESC {
   
     let hr=unsafe { (*self.0).GetDesc() };
     hr
@@ -2180,7 +2180,7 @@ impl D3D12Resource {
   
   //  Method GetGPUVirtualAddress
   
-  pub fn get_gpu_virtual_address(&mut self) -> D3D12_GPU_VIRTUAL_ADDRESS {
+  pub fn get_gpu_virtual_address(&self) -> D3D12_GPU_VIRTUAL_ADDRESS {
   
     let hr=unsafe { (*self.0).GetGPUVirtualAddress() };
     hr
@@ -2188,7 +2188,7 @@ impl D3D12Resource {
   
   //  Method GetHeapProperties
   
-  pub fn get_heap_properties(&mut self, heap_properties: Option<&mut D3D12_HEAP_PROPERTIES>, heap_flags: Option<&mut D3D12_HEAP_FLAGS>) -> HResult<()> {
+  pub fn get_heap_properties(&self, heap_properties: Option<&mut D3D12_HEAP_PROPERTIES>, heap_flags: Option<&mut D3D12_HEAP_FLAGS>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetHeapProperties(opt_as_mut_ptr(&heap_properties), opt_as_mut_ptr(&heap_flags)) };
     hr2ret(hr,())
@@ -2220,7 +2220,7 @@ impl Clone for D3D12RootSignatureDeserializer {
 impl D3D12RootSignatureDeserializer {
   //  Method GetRootSignatureDesc
   
-  pub fn get_root_signature_desc(&mut self) -> *const D3D12_ROOT_SIGNATURE_DESC {
+  pub fn get_root_signature_desc(&self) -> *const D3D12_ROOT_SIGNATURE_DESC {
   
     let hr=unsafe { (*self.0).GetRootSignatureDesc() };
     hr
@@ -2252,7 +2252,7 @@ impl Clone for D3D12RootSignature {
 impl D3D12RootSignature {
   //  Method GetPrivateData
   
-  pub unsafe fn get_private_data<T>(&mut self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub unsafe fn get_private_data<T>(&self, guid: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -2260,7 +2260,7 @@ impl D3D12RootSignature {
   
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, guid: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, guid: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -2268,7 +2268,7 @@ impl D3D12RootSignature {
   
   //  Method SetName
   
-  pub fn set_name(&mut self, name: Cow<str>) -> HResult<()> {
+  pub fn set_name(&self, name: Cow<str>) -> HResult<()> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let hr=unsafe { (*self.0).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(hr,())
@@ -2276,7 +2276,7 @@ impl D3D12RootSignature {
   
   //  Method GetDevice
   
-  pub fn get_device<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2308,7 +2308,7 @@ impl Clone for DXGIAdapter1 {
 impl DXGIAdapter1 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -2316,7 +2316,7 @@ impl DXGIAdapter1 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -2324,7 +2324,7 @@ impl DXGIAdapter1 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2332,7 +2332,7 @@ impl DXGIAdapter1 {
   
   //  Method EnumOutputs
   
-  pub fn enum_outputs(&mut self, output: UINT) -> HResult<DXGIOutput> {
+  pub fn enum_outputs(&self, output: UINT) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumOutputs(output, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -2340,7 +2340,7 @@ impl DXGIAdapter1 {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_ADAPTER_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_ADAPTER_DESC> {
     let mut lv1: DXGI_ADAPTER_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2348,7 +2348,7 @@ impl DXGIAdapter1 {
   
   //  Method CheckInterfaceSupport
   
-  pub fn check_interface_support(&mut self, interface_name: REFGUID) -> HResult<LARGE_INTEGER> {
+  pub fn check_interface_support(&self, interface_name: REFGUID) -> HResult<LARGE_INTEGER> {
     let mut lv1: LARGE_INTEGER = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).CheckInterfaceSupport(interface_name, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2356,7 +2356,7 @@ impl DXGIAdapter1 {
   
   //  Method GetDesc1
   
-  pub fn get_desc1(&mut self) -> HResult<DXGI_ADAPTER_DESC1> {
+  pub fn get_desc1(&self) -> HResult<DXGI_ADAPTER_DESC1> {
     let mut lv1: DXGI_ADAPTER_DESC1 = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc1(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2388,7 +2388,7 @@ impl Clone for DXGIAdapter2 {
 impl DXGIAdapter2 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -2396,7 +2396,7 @@ impl DXGIAdapter2 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -2404,7 +2404,7 @@ impl DXGIAdapter2 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2412,7 +2412,7 @@ impl DXGIAdapter2 {
   
   //  Method EnumOutputs
   
-  pub fn enum_outputs(&mut self, output: UINT) -> HResult<DXGIOutput> {
+  pub fn enum_outputs(&self, output: UINT) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumOutputs(output, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -2420,7 +2420,7 @@ impl DXGIAdapter2 {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_ADAPTER_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_ADAPTER_DESC> {
     let mut lv1: DXGI_ADAPTER_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2428,7 +2428,7 @@ impl DXGIAdapter2 {
   
   //  Method CheckInterfaceSupport
   
-  pub fn check_interface_support(&mut self, interface_name: REFGUID) -> HResult<LARGE_INTEGER> {
+  pub fn check_interface_support(&self, interface_name: REFGUID) -> HResult<LARGE_INTEGER> {
     let mut lv1: LARGE_INTEGER = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).CheckInterfaceSupport(interface_name, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2436,7 +2436,7 @@ impl DXGIAdapter2 {
   
   //  Method GetDesc1
   
-  pub fn get_desc1(&mut self) -> HResult<DXGI_ADAPTER_DESC1> {
+  pub fn get_desc1(&self) -> HResult<DXGI_ADAPTER_DESC1> {
     let mut lv1: DXGI_ADAPTER_DESC1 = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc1(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2444,7 +2444,7 @@ impl DXGIAdapter2 {
   
   //  Method GetDesc2
   
-  pub fn get_desc2(&mut self) -> HResult<DXGI_ADAPTER_DESC2> {
+  pub fn get_desc2(&self) -> HResult<DXGI_ADAPTER_DESC2> {
     let mut lv1: DXGI_ADAPTER_DESC2 = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc2(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2476,7 +2476,7 @@ impl Clone for DXGIAdapter3 {
 impl DXGIAdapter3 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -2484,7 +2484,7 @@ impl DXGIAdapter3 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -2492,7 +2492,7 @@ impl DXGIAdapter3 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2500,7 +2500,7 @@ impl DXGIAdapter3 {
   
   //  Method EnumOutputs
   
-  pub fn enum_outputs(&mut self, output: UINT) -> HResult<DXGIOutput> {
+  pub fn enum_outputs(&self, output: UINT) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumOutputs(output, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -2508,7 +2508,7 @@ impl DXGIAdapter3 {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_ADAPTER_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_ADAPTER_DESC> {
     let mut lv1: DXGI_ADAPTER_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2516,7 +2516,7 @@ impl DXGIAdapter3 {
   
   //  Method CheckInterfaceSupport
   
-  pub fn check_interface_support(&mut self, interface_name: REFGUID) -> HResult<LARGE_INTEGER> {
+  pub fn check_interface_support(&self, interface_name: REFGUID) -> HResult<LARGE_INTEGER> {
     let mut lv1: LARGE_INTEGER = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).CheckInterfaceSupport(interface_name, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2524,7 +2524,7 @@ impl DXGIAdapter3 {
   
   //  Method GetDesc1
   
-  pub fn get_desc1(&mut self) -> HResult<DXGI_ADAPTER_DESC1> {
+  pub fn get_desc1(&self) -> HResult<DXGI_ADAPTER_DESC1> {
     let mut lv1: DXGI_ADAPTER_DESC1 = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc1(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2532,7 +2532,7 @@ impl DXGIAdapter3 {
   
   //  Method GetDesc2
   
-  pub fn get_desc2(&mut self) -> HResult<DXGI_ADAPTER_DESC2> {
+  pub fn get_desc2(&self) -> HResult<DXGI_ADAPTER_DESC2> {
     let mut lv1: DXGI_ADAPTER_DESC2 = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc2(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2540,7 +2540,7 @@ impl DXGIAdapter3 {
   
   //  Method RegisterHardwareContentProtectionTeardownStatusEvent
   
-  pub fn register_hardware_content_protection_teardown_status_event(&mut self, hEvent: HANDLE) -> HResult<DWORD> {
+  pub fn register_hardware_content_protection_teardown_status_event(&self, hEvent: HANDLE) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterHardwareContentProtectionTeardownStatusEvent(hEvent, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2548,7 +2548,7 @@ impl DXGIAdapter3 {
   
   //  Method UnregisterHardwareContentProtectionTeardownStatus
   
-  pub fn unregister_hardware_content_protection_teardown_status(&mut self, cookie: DWORD) -> () {
+  pub fn unregister_hardware_content_protection_teardown_status(&self, cookie: DWORD) -> () {
   
     let hr=unsafe { (*self.0).UnregisterHardwareContentProtectionTeardownStatus(cookie) };
     ()
@@ -2556,7 +2556,7 @@ impl DXGIAdapter3 {
   
   //  Method QueryVideoMemoryInfo
   
-  pub fn query_video_memory_info(&mut self, node_index: UINT, memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP) -> HResult<DXGI_QUERY_VIDEO_MEMORY_INFO> {
+  pub fn query_video_memory_info(&self, node_index: UINT, memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP) -> HResult<DXGI_QUERY_VIDEO_MEMORY_INFO> {
     let mut lv1: DXGI_QUERY_VIDEO_MEMORY_INFO = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).QueryVideoMemoryInfo(node_index, memory_segment_group, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2564,7 +2564,7 @@ impl DXGIAdapter3 {
   
   //  Method SetVideoMemoryReservation
   
-  pub fn set_video_memory_reservation(&mut self, node_index: UINT, memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP, reservation: UINT64) -> HResult<()> {
+  pub fn set_video_memory_reservation(&self, node_index: UINT, memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP, reservation: UINT64) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetVideoMemoryReservation(node_index, memory_segment_group, reservation) };
     hr2ret(hr,())
@@ -2572,7 +2572,7 @@ impl DXGIAdapter3 {
   
   //  Method RegisterVideoMemoryBudgetChangeNotificationEvent
   
-  pub fn register_video_memory_budget_change_notification_event(&mut self, hEvent: HANDLE) -> HResult<DWORD> {
+  pub fn register_video_memory_budget_change_notification_event(&self, hEvent: HANDLE) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterVideoMemoryBudgetChangeNotificationEvent(hEvent, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2580,7 +2580,7 @@ impl DXGIAdapter3 {
   
   //  Method UnregisterVideoMemoryBudgetChangeNotification
   
-  pub fn unregister_video_memory_budget_change_notification(&mut self, cookie: DWORD) -> () {
+  pub fn unregister_video_memory_budget_change_notification(&self, cookie: DWORD) -> () {
   
     let hr=unsafe { (*self.0).UnregisterVideoMemoryBudgetChangeNotification(cookie) };
     ()
@@ -2612,7 +2612,7 @@ impl Clone for DXGIAdapter {
 impl DXGIAdapter {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -2620,7 +2620,7 @@ impl DXGIAdapter {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -2628,7 +2628,7 @@ impl DXGIAdapter {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2636,7 +2636,7 @@ impl DXGIAdapter {
   
   //  Method EnumOutputs
   
-  pub fn enum_outputs(&mut self, output: UINT) -> HResult<DXGIOutput> {
+  pub fn enum_outputs(&self, output: UINT) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumOutputs(output, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -2644,7 +2644,7 @@ impl DXGIAdapter {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_ADAPTER_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_ADAPTER_DESC> {
     let mut lv1: DXGI_ADAPTER_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2652,7 +2652,7 @@ impl DXGIAdapter {
   
   //  Method CheckInterfaceSupport
   
-  pub fn check_interface_support(&mut self, interface_name: REFGUID) -> HResult<LARGE_INTEGER> {
+  pub fn check_interface_support(&self, interface_name: REFGUID) -> HResult<LARGE_INTEGER> {
     let mut lv1: LARGE_INTEGER = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).CheckInterfaceSupport(interface_name, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2684,7 +2684,7 @@ impl Clone for DXGIDecodeSwapChain {
 impl DXGIDecodeSwapChain {
   //  Method PresentBuffer
   
-  pub fn present_buffer(&mut self, buffer_to_present: UINT, sync_interval: UINT, flags: UINT) -> HResult<()> {
+  pub fn present_buffer(&self, buffer_to_present: UINT, sync_interval: UINT, flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).PresentBuffer(buffer_to_present, sync_interval, flags) };
     hr2ret(hr,())
@@ -2692,7 +2692,7 @@ impl DXGIDecodeSwapChain {
   
   //  Method SetSourceRect
   
-  pub fn set_source_rect(&mut self, rect: &RECT) -> HResult<()> {
+  pub fn set_source_rect(&self, rect: &RECT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetSourceRect(rect) };
     hr2ret(hr,())
@@ -2700,7 +2700,7 @@ impl DXGIDecodeSwapChain {
   
   //  Method SetTargetRect
   
-  pub fn set_target_rect(&mut self, rect: &RECT) -> HResult<()> {
+  pub fn set_target_rect(&self, rect: &RECT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetTargetRect(rect) };
     hr2ret(hr,())
@@ -2708,7 +2708,7 @@ impl DXGIDecodeSwapChain {
   
   //  Method SetDestSize
   
-  pub fn set_dest_size(&mut self, width: UINT, height: UINT) -> HResult<()> {
+  pub fn set_dest_size(&self, width: UINT, height: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetDestSize(width, height) };
     hr2ret(hr,())
@@ -2716,7 +2716,7 @@ impl DXGIDecodeSwapChain {
   
   //  Method GetSourceRect
   
-  pub fn get_source_rect(&mut self) -> HResult<RECT> {
+  pub fn get_source_rect(&self) -> HResult<RECT> {
     let mut lv1: RECT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetSourceRect(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2724,7 +2724,7 @@ impl DXGIDecodeSwapChain {
   
   //  Method GetTargetRect
   
-  pub fn get_target_rect(&mut self) -> HResult<RECT> {
+  pub fn get_target_rect(&self) -> HResult<RECT> {
     let mut lv1: RECT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetTargetRect(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2732,7 +2732,7 @@ impl DXGIDecodeSwapChain {
   
   //  Method GetDestSize
   
-  pub fn get_dest_size(&mut self) -> HResult<DSize> {
+  pub fn get_dest_size(&self) -> HResult<DSize> {
     let mut lv1: DSize = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDestSize(&mut (lv1.width) as *mut _ as *mut _, &mut (lv1.height) as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2740,7 +2740,7 @@ impl DXGIDecodeSwapChain {
   
   //  Method SetColorSpace
   
-  pub fn set_color_space(&mut self, color_space: DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS) -> HResult<()> {
+  pub fn set_color_space(&self, color_space: DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetColorSpace(color_space) };
     hr2ret(hr,())
@@ -2748,7 +2748,7 @@ impl DXGIDecodeSwapChain {
   
   //  Method GetColorSpace
   
-  pub fn get_color_space(&mut self) -> DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS {
+  pub fn get_color_space(&self) -> DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS {
   
     let hr=unsafe { (*self.0).GetColorSpace() };
     hr
@@ -2780,7 +2780,7 @@ impl Clone for DXGIDevice1 {
 impl DXGIDevice1 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -2788,7 +2788,7 @@ impl DXGIDevice1 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -2796,7 +2796,7 @@ impl DXGIDevice1 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2804,7 +2804,7 @@ impl DXGIDevice1 {
   
   //  Method GetAdapter
   
-  pub fn get_adapter(&mut self) -> HResult<DXGIAdapter> {
+  pub fn get_adapter(&self) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).GetAdapter(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -2812,7 +2812,7 @@ impl DXGIDevice1 {
   
   //  Method QueryResourceResidency
   
-  pub fn query_resource_residency<T: HasIID>(&mut self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
+  pub fn query_resource_residency<T: HasIID>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, residency_status.as_mut_ptr() as *mut _,  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
     hr2ret(hr,())
@@ -2820,7 +2820,7 @@ impl DXGIDevice1 {
   
   //  Method SetGPUThreadPriority
   
-  pub fn set_gpu_thread_priority(&mut self, priority: INT) -> HResult<()> {
+  pub fn set_gpu_thread_priority(&self, priority: INT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetGPUThreadPriority(priority) };
     hr2ret(hr,())
@@ -2828,7 +2828,7 @@ impl DXGIDevice1 {
   
   //  Method GetGPUThreadPriority
   
-  pub fn get_gpu_thread_priority(&mut self) -> HResult<INT> {
+  pub fn get_gpu_thread_priority(&self) -> HResult<INT> {
     let mut lv1: INT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGPUThreadPriority(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2836,7 +2836,7 @@ impl DXGIDevice1 {
   
   //  Method SetMaximumFrameLatency
   
-  pub fn set_maximum_frame_latency(&mut self, max_latency: UINT) -> HResult<()> {
+  pub fn set_maximum_frame_latency(&self, max_latency: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetMaximumFrameLatency(max_latency) };
     hr2ret(hr,())
@@ -2844,7 +2844,7 @@ impl DXGIDevice1 {
   
   //  Method GetMaximumFrameLatency
   
-  pub fn get_maximum_frame_latency(&mut self) -> HResult<UINT> {
+  pub fn get_maximum_frame_latency(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetMaximumFrameLatency(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2876,7 +2876,7 @@ impl Clone for DXGIDevice2 {
 impl DXGIDevice2 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -2884,7 +2884,7 @@ impl DXGIDevice2 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -2892,7 +2892,7 @@ impl DXGIDevice2 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -2900,7 +2900,7 @@ impl DXGIDevice2 {
   
   //  Method GetAdapter
   
-  pub fn get_adapter(&mut self) -> HResult<DXGIAdapter> {
+  pub fn get_adapter(&self) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).GetAdapter(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -2908,7 +2908,7 @@ impl DXGIDevice2 {
   
   //  Method QueryResourceResidency
   
-  pub fn query_resource_residency<T: HasIID>(&mut self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
+  pub fn query_resource_residency<T: HasIID>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, residency_status.as_mut_ptr() as *mut _,  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
     hr2ret(hr,())
@@ -2916,7 +2916,7 @@ impl DXGIDevice2 {
   
   //  Method SetGPUThreadPriority
   
-  pub fn set_gpu_thread_priority(&mut self, priority: INT) -> HResult<()> {
+  pub fn set_gpu_thread_priority(&self, priority: INT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetGPUThreadPriority(priority) };
     hr2ret(hr,())
@@ -2924,7 +2924,7 @@ impl DXGIDevice2 {
   
   //  Method GetGPUThreadPriority
   
-  pub fn get_gpu_thread_priority(&mut self) -> HResult<INT> {
+  pub fn get_gpu_thread_priority(&self) -> HResult<INT> {
     let mut lv1: INT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGPUThreadPriority(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2932,7 +2932,7 @@ impl DXGIDevice2 {
   
   //  Method SetMaximumFrameLatency
   
-  pub fn set_maximum_frame_latency(&mut self, max_latency: UINT) -> HResult<()> {
+  pub fn set_maximum_frame_latency(&self, max_latency: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetMaximumFrameLatency(max_latency) };
     hr2ret(hr,())
@@ -2940,7 +2940,7 @@ impl DXGIDevice2 {
   
   //  Method GetMaximumFrameLatency
   
-  pub fn get_maximum_frame_latency(&mut self) -> HResult<UINT> {
+  pub fn get_maximum_frame_latency(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetMaximumFrameLatency(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -2948,7 +2948,7 @@ impl DXGIDevice2 {
   
   //  Method OfferResources
   
-  pub fn offer_resources<T: HasIID>(&mut self, resources: &[&T], priority: DXGI_OFFER_RESOURCE_PRIORITY) -> HResult<()> {
+  pub fn offer_resources<T: HasIID>(&self, resources: &[&T], priority: DXGI_OFFER_RESOURCE_PRIORITY) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).OfferResources( same_length(&[Some(resources.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, priority) };
     hr2ret(hr,())
@@ -2956,7 +2956,7 @@ impl DXGIDevice2 {
   
   //  Method ReclaimResources
   
-  pub fn reclaim_resources<T: HasIID>(&mut self, resources: &[&T], discarded: Option<&mut [BOOL]>) -> HResult<()> {
+  pub fn reclaim_resources<T: HasIID>(&self, resources: &[&T], discarded: Option<&mut [BOOL]>) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).ReclaimResources( same_length(&[Some(resources.len()),discarded.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, opt_arr_as_mut_ptr(&discarded) as *mut _) };
     hr2ret(hr,())
@@ -2964,7 +2964,7 @@ impl DXGIDevice2 {
   
   //  Method EnqueueSetEvent
   
-  pub fn enqueue_set_event(&mut self, hEvent: HANDLE) -> HResult<()> {
+  pub fn enqueue_set_event(&self, hEvent: HANDLE) -> HResult<()> {
   
     let hr=unsafe { (*self.0).EnqueueSetEvent(hEvent) };
     hr2ret(hr,())
@@ -2996,7 +2996,7 @@ impl Clone for DXGIDevice3 {
 impl DXGIDevice3 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -3004,7 +3004,7 @@ impl DXGIDevice3 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -3012,7 +3012,7 @@ impl DXGIDevice3 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -3020,7 +3020,7 @@ impl DXGIDevice3 {
   
   //  Method GetAdapter
   
-  pub fn get_adapter(&mut self) -> HResult<DXGIAdapter> {
+  pub fn get_adapter(&self) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).GetAdapter(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -3028,7 +3028,7 @@ impl DXGIDevice3 {
   
   //  Method QueryResourceResidency
   
-  pub fn query_resource_residency<T: HasIID>(&mut self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
+  pub fn query_resource_residency<T: HasIID>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, residency_status.as_mut_ptr() as *mut _,  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
     hr2ret(hr,())
@@ -3036,7 +3036,7 @@ impl DXGIDevice3 {
   
   //  Method SetGPUThreadPriority
   
-  pub fn set_gpu_thread_priority(&mut self, priority: INT) -> HResult<()> {
+  pub fn set_gpu_thread_priority(&self, priority: INT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetGPUThreadPriority(priority) };
     hr2ret(hr,())
@@ -3044,7 +3044,7 @@ impl DXGIDevice3 {
   
   //  Method GetGPUThreadPriority
   
-  pub fn get_gpu_thread_priority(&mut self) -> HResult<INT> {
+  pub fn get_gpu_thread_priority(&self) -> HResult<INT> {
     let mut lv1: INT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGPUThreadPriority(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3052,7 +3052,7 @@ impl DXGIDevice3 {
   
   //  Method SetMaximumFrameLatency
   
-  pub fn set_maximum_frame_latency(&mut self, max_latency: UINT) -> HResult<()> {
+  pub fn set_maximum_frame_latency(&self, max_latency: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetMaximumFrameLatency(max_latency) };
     hr2ret(hr,())
@@ -3060,7 +3060,7 @@ impl DXGIDevice3 {
   
   //  Method GetMaximumFrameLatency
   
-  pub fn get_maximum_frame_latency(&mut self) -> HResult<UINT> {
+  pub fn get_maximum_frame_latency(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetMaximumFrameLatency(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3068,7 +3068,7 @@ impl DXGIDevice3 {
   
   //  Method OfferResources
   
-  pub fn offer_resources<T: HasIID>(&mut self, resources: &[&T], priority: DXGI_OFFER_RESOURCE_PRIORITY) -> HResult<()> {
+  pub fn offer_resources<T: HasIID>(&self, resources: &[&T], priority: DXGI_OFFER_RESOURCE_PRIORITY) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).OfferResources( same_length(&[Some(resources.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, priority) };
     hr2ret(hr,())
@@ -3076,7 +3076,7 @@ impl DXGIDevice3 {
   
   //  Method ReclaimResources
   
-  pub fn reclaim_resources<T: HasIID>(&mut self, resources: &[&T], discarded: Option<&mut [BOOL]>) -> HResult<()> {
+  pub fn reclaim_resources<T: HasIID>(&self, resources: &[&T], discarded: Option<&mut [BOOL]>) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).ReclaimResources( same_length(&[Some(resources.len()),discarded.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, opt_arr_as_mut_ptr(&discarded) as *mut _) };
     hr2ret(hr,())
@@ -3084,7 +3084,7 @@ impl DXGIDevice3 {
   
   //  Method EnqueueSetEvent
   
-  pub fn enqueue_set_event(&mut self, hEvent: HANDLE) -> HResult<()> {
+  pub fn enqueue_set_event(&self, hEvent: HANDLE) -> HResult<()> {
   
     let hr=unsafe { (*self.0).EnqueueSetEvent(hEvent) };
     hr2ret(hr,())
@@ -3092,7 +3092,7 @@ impl DXGIDevice3 {
   
   //  Method Trim
   
-  pub fn trim(&mut self) -> () {
+  pub fn trim(&self) -> () {
   
     let hr=unsafe { (*self.0).Trim() };
     ()
@@ -3124,7 +3124,7 @@ impl Clone for DXGIDeviceSubObject {
 impl DXGIDeviceSubObject {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -3132,7 +3132,7 @@ impl DXGIDeviceSubObject {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -3140,7 +3140,7 @@ impl DXGIDeviceSubObject {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -3172,7 +3172,7 @@ impl Clone for DXGIDevice {
 impl DXGIDevice {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -3180,7 +3180,7 @@ impl DXGIDevice {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -3188,7 +3188,7 @@ impl DXGIDevice {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -3196,7 +3196,7 @@ impl DXGIDevice {
   
   //  Method GetAdapter
   
-  pub fn get_adapter(&mut self) -> HResult<DXGIAdapter> {
+  pub fn get_adapter(&self) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).GetAdapter(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -3204,7 +3204,7 @@ impl DXGIDevice {
   
   //  Method QueryResourceResidency
   
-  pub fn query_resource_residency<T: HasIID>(&mut self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
+  pub fn query_resource_residency<T: HasIID>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, residency_status.as_mut_ptr() as *mut _,  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
     hr2ret(hr,())
@@ -3212,7 +3212,7 @@ impl DXGIDevice {
   
   //  Method SetGPUThreadPriority
   
-  pub fn set_gpu_thread_priority(&mut self, priority: INT) -> HResult<()> {
+  pub fn set_gpu_thread_priority(&self, priority: INT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetGPUThreadPriority(priority) };
     hr2ret(hr,())
@@ -3220,7 +3220,7 @@ impl DXGIDevice {
   
   //  Method GetGPUThreadPriority
   
-  pub fn get_gpu_thread_priority(&mut self) -> HResult<INT> {
+  pub fn get_gpu_thread_priority(&self) -> HResult<INT> {
     let mut lv1: INT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGPUThreadPriority(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3252,7 +3252,7 @@ impl Clone for DXGIDisplayControl {
 impl DXGIDisplayControl {
   //  Method IsStereoEnabled
   
-  pub fn is_stereo_enabled(&mut self) -> BOOL {
+  pub fn is_stereo_enabled(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsStereoEnabled() };
     hr
@@ -3260,7 +3260,7 @@ impl DXGIDisplayControl {
   
   //  Method SetStereoEnabled
   
-  pub fn set_stereo_enabled(&mut self, enabled: BOOL) -> () {
+  pub fn set_stereo_enabled(&self, enabled: BOOL) -> () {
   
     let hr=unsafe { (*self.0).SetStereoEnabled(enabled) };
     ()
@@ -3292,7 +3292,7 @@ impl Clone for DXGIFactory1 {
 impl DXGIFactory1 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -3300,7 +3300,7 @@ impl DXGIFactory1 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -3308,7 +3308,7 @@ impl DXGIFactory1 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -3316,7 +3316,7 @@ impl DXGIFactory1 {
   
   //  Method EnumAdapters
   
-  pub fn enum_adapters(&mut self, adapter: UINT) -> HResult<DXGIAdapter> {
+  pub fn enum_adapters(&self, adapter: UINT) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumAdapters(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -3324,7 +3324,7 @@ impl DXGIFactory1 {
   
   //  Method MakeWindowAssociation
   
-  pub fn make_window_association(&mut self, window_handle: HWND, flags: UINT) -> HResult<()> {
+  pub fn make_window_association(&self, window_handle: HWND, flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).MakeWindowAssociation(window_handle, flags) };
     hr2ret(hr,())
@@ -3332,7 +3332,7 @@ impl DXGIFactory1 {
   
   //  Method GetWindowAssociation
   
-  pub fn get_window_association(&mut self) -> HResult<HWND> {
+  pub fn get_window_association(&self) -> HResult<HWND> {
     let mut lv1: HWND = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetWindowAssociation(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3340,7 +3340,7 @@ impl DXGIFactory1 {
   
   //  Method CreateSwapChain
   
-  pub fn create_swap_chain<T: HasIID>(&mut self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
+  pub fn create_swap_chain<T: HasIID>(&self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
     let mut lv1: *mut IDXGISwapChain = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChain(device.iptr() as *mut _ as *mut _ , desc, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain::new(lv1 as *mut _))
@@ -3348,7 +3348,7 @@ impl DXGIFactory1 {
   
   //  Method CreateSoftwareAdapter
   
-  pub fn create_software_adapter(&mut self, module: HMODULE) -> HResult<DXGIAdapter> {
+  pub fn create_software_adapter(&self, module: HMODULE) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSoftwareAdapter(module, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -3356,7 +3356,7 @@ impl DXGIFactory1 {
   
   //  Method EnumAdapters1
   
-  pub fn enum_adapters1(&mut self, adapter: UINT) -> HResult<DXGIAdapter1> {
+  pub fn enum_adapters1(&self, adapter: UINT) -> HResult<DXGIAdapter1> {
     let mut lv1: *mut IDXGIAdapter1 = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumAdapters1(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter1::new(lv1 as *mut _))
@@ -3364,7 +3364,7 @@ impl DXGIFactory1 {
   
   //  Method IsCurrent
   
-  pub fn is_current(&mut self) -> BOOL {
+  pub fn is_current(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsCurrent() };
     hr
@@ -3396,7 +3396,7 @@ impl Clone for DXGIFactory2 {
 impl DXGIFactory2 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -3404,7 +3404,7 @@ impl DXGIFactory2 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -3412,7 +3412,7 @@ impl DXGIFactory2 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -3420,7 +3420,7 @@ impl DXGIFactory2 {
   
   //  Method EnumAdapters
   
-  pub fn enum_adapters(&mut self, adapter: UINT) -> HResult<DXGIAdapter> {
+  pub fn enum_adapters(&self, adapter: UINT) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumAdapters(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -3428,7 +3428,7 @@ impl DXGIFactory2 {
   
   //  Method MakeWindowAssociation
   
-  pub fn make_window_association(&mut self, window_handle: HWND, flags: UINT) -> HResult<()> {
+  pub fn make_window_association(&self, window_handle: HWND, flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).MakeWindowAssociation(window_handle, flags) };
     hr2ret(hr,())
@@ -3436,7 +3436,7 @@ impl DXGIFactory2 {
   
   //  Method GetWindowAssociation
   
-  pub fn get_window_association(&mut self) -> HResult<HWND> {
+  pub fn get_window_association(&self) -> HResult<HWND> {
     let mut lv1: HWND = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetWindowAssociation(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3444,7 +3444,7 @@ impl DXGIFactory2 {
   
   //  Method CreateSwapChain
   
-  pub fn create_swap_chain<T: HasIID>(&mut self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
+  pub fn create_swap_chain<T: HasIID>(&self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
     let mut lv1: *mut IDXGISwapChain = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChain(device.iptr() as *mut _ as *mut _ , desc, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain::new(lv1 as *mut _))
@@ -3452,7 +3452,7 @@ impl DXGIFactory2 {
   
   //  Method CreateSoftwareAdapter
   
-  pub fn create_software_adapter(&mut self, module: HMODULE) -> HResult<DXGIAdapter> {
+  pub fn create_software_adapter(&self, module: HMODULE) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSoftwareAdapter(module, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -3460,7 +3460,7 @@ impl DXGIFactory2 {
   
   //  Method EnumAdapters1
   
-  pub fn enum_adapters1(&mut self, adapter: UINT) -> HResult<DXGIAdapter1> {
+  pub fn enum_adapters1(&self, adapter: UINT) -> HResult<DXGIAdapter1> {
     let mut lv1: *mut IDXGIAdapter1 = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumAdapters1(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter1::new(lv1 as *mut _))
@@ -3468,7 +3468,7 @@ impl DXGIFactory2 {
   
   //  Method IsCurrent
   
-  pub fn is_current(&mut self) -> BOOL {
+  pub fn is_current(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsCurrent() };
     hr
@@ -3476,7 +3476,7 @@ impl DXGIFactory2 {
   
   //  Method IsWindowedStereoEnabled
   
-  pub fn is_windowed_stereo_enabled(&mut self) -> BOOL {
+  pub fn is_windowed_stereo_enabled(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsWindowedStereoEnabled() };
     hr
@@ -3484,7 +3484,7 @@ impl DXGIFactory2 {
   
   //  Method CreateSwapChainForHwnd
   
-  pub fn create_swap_chain_for_hwnd<T: HasIID>(&mut self, device: &T, hWnd: HWND, desc: &DXGI_SWAP_CHAIN_DESC1, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
+  pub fn create_swap_chain_for_hwnd<T: HasIID>(&self, device: &T, hWnd: HWND, desc: &DXGI_SWAP_CHAIN_DESC1, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
     let mut lv1: *mut IDXGISwapChain1 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChainForHwnd(device.iptr() as *mut _ as *mut _ , hWnd, desc, fullscreen_desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain1::new(lv1 as *mut _))
@@ -3492,7 +3492,7 @@ impl DXGIFactory2 {
   
   //  Method CreateSwapChainForCoreWindow
   
-  pub fn create_swap_chain_for_core_window<T: HasIID, T1: HasIID>(&mut self, device: &T, window: &T1, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
+  pub fn create_swap_chain_for_core_window<T: HasIID, T1: HasIID>(&self, device: &T, window: &T1, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
     let mut lv1: *mut IDXGISwapChain1 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChainForCoreWindow(device.iptr() as *mut _ as *mut _ , window.iptr() as *mut _ as *mut _ , desc, restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain1::new(lv1 as *mut _))
@@ -3500,7 +3500,7 @@ impl DXGIFactory2 {
   
   //  Method GetSharedResourceAdapterLuid
   
-  pub fn get_shared_resource_adapter_luid(&mut self, hResource: HANDLE) -> HResult<LUID> {
+  pub fn get_shared_resource_adapter_luid(&self, hResource: HANDLE) -> HResult<LUID> {
     let mut lv1: LUID = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetSharedResourceAdapterLuid(hResource, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3508,7 +3508,7 @@ impl DXGIFactory2 {
   
   //  Method RegisterStereoStatusWindow
   
-  pub fn register_stereo_status_window(&mut self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
+  pub fn register_stereo_status_window(&self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterStereoStatusWindow(window_handle, wMsg, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3516,7 +3516,7 @@ impl DXGIFactory2 {
   
   //  Method RegisterStereoStatusEvent
   
-  pub fn register_stereo_status_event(&mut self, hEvent: HANDLE) -> HResult<DWORD> {
+  pub fn register_stereo_status_event(&self, hEvent: HANDLE) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterStereoStatusEvent(hEvent, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3524,7 +3524,7 @@ impl DXGIFactory2 {
   
   //  Method UnregisterStereoStatus
   
-  pub fn unregister_stereo_status(&mut self, cookie: DWORD) -> () {
+  pub fn unregister_stereo_status(&self, cookie: DWORD) -> () {
   
     let hr=unsafe { (*self.0).UnregisterStereoStatus(cookie) };
     ()
@@ -3532,7 +3532,7 @@ impl DXGIFactory2 {
   
   //  Method RegisterOcclusionStatusWindow
   
-  pub fn register_occlusion_status_window(&mut self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
+  pub fn register_occlusion_status_window(&self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterOcclusionStatusWindow(window_handle, wMsg, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3540,7 +3540,7 @@ impl DXGIFactory2 {
   
   //  Method RegisterOcclusionStatusEvent
   
-  pub fn register_occlusion_status_event(&mut self, hEvent: HANDLE) -> HResult<DWORD> {
+  pub fn register_occlusion_status_event(&self, hEvent: HANDLE) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterOcclusionStatusEvent(hEvent, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3548,7 +3548,7 @@ impl DXGIFactory2 {
   
   //  Method UnregisterOcclusionStatus
   
-  pub fn unregister_occlusion_status(&mut self, cookie: DWORD) -> () {
+  pub fn unregister_occlusion_status(&self, cookie: DWORD) -> () {
   
     let hr=unsafe { (*self.0).UnregisterOcclusionStatus(cookie) };
     ()
@@ -3556,7 +3556,7 @@ impl DXGIFactory2 {
   
   //  Method CreateSwapChainForComposition
   
-  pub fn create_swap_chain_for_composition<T: HasIID>(&mut self, device: &T, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
+  pub fn create_swap_chain_for_composition<T: HasIID>(&self, device: &T, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
     let mut lv1: *mut IDXGISwapChain1 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChainForComposition(device.iptr() as *mut _ as *mut _ , desc, restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain1::new(lv1 as *mut _))
@@ -3588,7 +3588,7 @@ impl Clone for DXGIFactory3 {
 impl DXGIFactory3 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -3596,7 +3596,7 @@ impl DXGIFactory3 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -3604,7 +3604,7 @@ impl DXGIFactory3 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -3612,7 +3612,7 @@ impl DXGIFactory3 {
   
   //  Method EnumAdapters
   
-  pub fn enum_adapters(&mut self, adapter: UINT) -> HResult<DXGIAdapter> {
+  pub fn enum_adapters(&self, adapter: UINT) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumAdapters(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -3620,7 +3620,7 @@ impl DXGIFactory3 {
   
   //  Method MakeWindowAssociation
   
-  pub fn make_window_association(&mut self, window_handle: HWND, flags: UINT) -> HResult<()> {
+  pub fn make_window_association(&self, window_handle: HWND, flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).MakeWindowAssociation(window_handle, flags) };
     hr2ret(hr,())
@@ -3628,7 +3628,7 @@ impl DXGIFactory3 {
   
   //  Method GetWindowAssociation
   
-  pub fn get_window_association(&mut self) -> HResult<HWND> {
+  pub fn get_window_association(&self) -> HResult<HWND> {
     let mut lv1: HWND = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetWindowAssociation(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3636,7 +3636,7 @@ impl DXGIFactory3 {
   
   //  Method CreateSwapChain
   
-  pub fn create_swap_chain<T: HasIID>(&mut self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
+  pub fn create_swap_chain<T: HasIID>(&self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
     let mut lv1: *mut IDXGISwapChain = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChain(device.iptr() as *mut _ as *mut _ , desc, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain::new(lv1 as *mut _))
@@ -3644,7 +3644,7 @@ impl DXGIFactory3 {
   
   //  Method CreateSoftwareAdapter
   
-  pub fn create_software_adapter(&mut self, module: HMODULE) -> HResult<DXGIAdapter> {
+  pub fn create_software_adapter(&self, module: HMODULE) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSoftwareAdapter(module, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -3652,7 +3652,7 @@ impl DXGIFactory3 {
   
   //  Method EnumAdapters1
   
-  pub fn enum_adapters1(&mut self, adapter: UINT) -> HResult<DXGIAdapter1> {
+  pub fn enum_adapters1(&self, adapter: UINT) -> HResult<DXGIAdapter1> {
     let mut lv1: *mut IDXGIAdapter1 = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumAdapters1(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter1::new(lv1 as *mut _))
@@ -3660,7 +3660,7 @@ impl DXGIFactory3 {
   
   //  Method IsCurrent
   
-  pub fn is_current(&mut self) -> BOOL {
+  pub fn is_current(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsCurrent() };
     hr
@@ -3668,7 +3668,7 @@ impl DXGIFactory3 {
   
   //  Method IsWindowedStereoEnabled
   
-  pub fn is_windowed_stereo_enabled(&mut self) -> BOOL {
+  pub fn is_windowed_stereo_enabled(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsWindowedStereoEnabled() };
     hr
@@ -3676,7 +3676,7 @@ impl DXGIFactory3 {
   
   //  Method CreateSwapChainForHwnd
   
-  pub fn create_swap_chain_for_hwnd<T: HasIID>(&mut self, device: &T, hWnd: HWND, desc: &DXGI_SWAP_CHAIN_DESC1, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
+  pub fn create_swap_chain_for_hwnd<T: HasIID>(&self, device: &T, hWnd: HWND, desc: &DXGI_SWAP_CHAIN_DESC1, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
     let mut lv1: *mut IDXGISwapChain1 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChainForHwnd(device.iptr() as *mut _ as *mut _ , hWnd, desc, fullscreen_desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain1::new(lv1 as *mut _))
@@ -3684,7 +3684,7 @@ impl DXGIFactory3 {
   
   //  Method CreateSwapChainForCoreWindow
   
-  pub fn create_swap_chain_for_core_window<T: HasIID, T1: HasIID>(&mut self, device: &T, window: &T1, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
+  pub fn create_swap_chain_for_core_window<T: HasIID, T1: HasIID>(&self, device: &T, window: &T1, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
     let mut lv1: *mut IDXGISwapChain1 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChainForCoreWindow(device.iptr() as *mut _ as *mut _ , window.iptr() as *mut _ as *mut _ , desc, restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain1::new(lv1 as *mut _))
@@ -3692,7 +3692,7 @@ impl DXGIFactory3 {
   
   //  Method GetSharedResourceAdapterLuid
   
-  pub fn get_shared_resource_adapter_luid(&mut self, hResource: HANDLE) -> HResult<LUID> {
+  pub fn get_shared_resource_adapter_luid(&self, hResource: HANDLE) -> HResult<LUID> {
     let mut lv1: LUID = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetSharedResourceAdapterLuid(hResource, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3700,7 +3700,7 @@ impl DXGIFactory3 {
   
   //  Method RegisterStereoStatusWindow
   
-  pub fn register_stereo_status_window(&mut self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
+  pub fn register_stereo_status_window(&self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterStereoStatusWindow(window_handle, wMsg, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3708,7 +3708,7 @@ impl DXGIFactory3 {
   
   //  Method RegisterStereoStatusEvent
   
-  pub fn register_stereo_status_event(&mut self, hEvent: HANDLE) -> HResult<DWORD> {
+  pub fn register_stereo_status_event(&self, hEvent: HANDLE) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterStereoStatusEvent(hEvent, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3716,7 +3716,7 @@ impl DXGIFactory3 {
   
   //  Method UnregisterStereoStatus
   
-  pub fn unregister_stereo_status(&mut self, cookie: DWORD) -> () {
+  pub fn unregister_stereo_status(&self, cookie: DWORD) -> () {
   
     let hr=unsafe { (*self.0).UnregisterStereoStatus(cookie) };
     ()
@@ -3724,7 +3724,7 @@ impl DXGIFactory3 {
   
   //  Method RegisterOcclusionStatusWindow
   
-  pub fn register_occlusion_status_window(&mut self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
+  pub fn register_occlusion_status_window(&self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterOcclusionStatusWindow(window_handle, wMsg, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3732,7 +3732,7 @@ impl DXGIFactory3 {
   
   //  Method RegisterOcclusionStatusEvent
   
-  pub fn register_occlusion_status_event(&mut self, hEvent: HANDLE) -> HResult<DWORD> {
+  pub fn register_occlusion_status_event(&self, hEvent: HANDLE) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterOcclusionStatusEvent(hEvent, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3740,7 +3740,7 @@ impl DXGIFactory3 {
   
   //  Method UnregisterOcclusionStatus
   
-  pub fn unregister_occlusion_status(&mut self, cookie: DWORD) -> () {
+  pub fn unregister_occlusion_status(&self, cookie: DWORD) -> () {
   
     let hr=unsafe { (*self.0).UnregisterOcclusionStatus(cookie) };
     ()
@@ -3748,7 +3748,7 @@ impl DXGIFactory3 {
   
   //  Method CreateSwapChainForComposition
   
-  pub fn create_swap_chain_for_composition<T: HasIID>(&mut self, device: &T, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
+  pub fn create_swap_chain_for_composition<T: HasIID>(&self, device: &T, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
     let mut lv1: *mut IDXGISwapChain1 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChainForComposition(device.iptr() as *mut _ as *mut _ , desc, restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain1::new(lv1 as *mut _))
@@ -3756,7 +3756,7 @@ impl DXGIFactory3 {
   
   //  Method GetCreationFlags
   
-  pub fn get_creation_flags(&mut self) -> UINT {
+  pub fn get_creation_flags(&self) -> UINT {
   
     let hr=unsafe { (*self.0).GetCreationFlags() };
     hr
@@ -3788,7 +3788,7 @@ impl Clone for DXGIFactory4 {
 impl DXGIFactory4 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -3796,7 +3796,7 @@ impl DXGIFactory4 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -3804,7 +3804,7 @@ impl DXGIFactory4 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -3812,7 +3812,7 @@ impl DXGIFactory4 {
   
   //  Method EnumAdapters
   
-  pub fn enum_adapters(&mut self, adapter: UINT) -> HResult<DXGIAdapter> {
+  pub fn enum_adapters(&self, adapter: UINT) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumAdapters(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -3820,7 +3820,7 @@ impl DXGIFactory4 {
   
   //  Method MakeWindowAssociation
   
-  pub fn make_window_association(&mut self, window_handle: HWND, flags: UINT) -> HResult<()> {
+  pub fn make_window_association(&self, window_handle: HWND, flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).MakeWindowAssociation(window_handle, flags) };
     hr2ret(hr,())
@@ -3828,7 +3828,7 @@ impl DXGIFactory4 {
   
   //  Method GetWindowAssociation
   
-  pub fn get_window_association(&mut self) -> HResult<HWND> {
+  pub fn get_window_association(&self) -> HResult<HWND> {
     let mut lv1: HWND = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetWindowAssociation(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3836,7 +3836,7 @@ impl DXGIFactory4 {
   
   //  Method CreateSwapChain
   
-  pub fn create_swap_chain<T: HasIID>(&mut self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
+  pub fn create_swap_chain<T: HasIID>(&self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
     let mut lv1: *mut IDXGISwapChain = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChain(device.iptr() as *mut _ as *mut _ , desc, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain::new(lv1 as *mut _))
@@ -3844,7 +3844,7 @@ impl DXGIFactory4 {
   
   //  Method CreateSoftwareAdapter
   
-  pub fn create_software_adapter(&mut self, module: HMODULE) -> HResult<DXGIAdapter> {
+  pub fn create_software_adapter(&self, module: HMODULE) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSoftwareAdapter(module, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -3852,7 +3852,7 @@ impl DXGIFactory4 {
   
   //  Method EnumAdapters1
   
-  pub fn enum_adapters1(&mut self, adapter: UINT) -> HResult<DXGIAdapter1> {
+  pub fn enum_adapters1(&self, adapter: UINT) -> HResult<DXGIAdapter1> {
     let mut lv1: *mut IDXGIAdapter1 = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumAdapters1(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter1::new(lv1 as *mut _))
@@ -3860,7 +3860,7 @@ impl DXGIFactory4 {
   
   //  Method IsCurrent
   
-  pub fn is_current(&mut self) -> BOOL {
+  pub fn is_current(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsCurrent() };
     hr
@@ -3868,7 +3868,7 @@ impl DXGIFactory4 {
   
   //  Method IsWindowedStereoEnabled
   
-  pub fn is_windowed_stereo_enabled(&mut self) -> BOOL {
+  pub fn is_windowed_stereo_enabled(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsWindowedStereoEnabled() };
     hr
@@ -3876,7 +3876,7 @@ impl DXGIFactory4 {
   
   //  Method CreateSwapChainForHwnd
   
-  pub fn create_swap_chain_for_hwnd<T: HasIID>(&mut self, device: &T, hWnd: HWND, desc: &DXGI_SWAP_CHAIN_DESC1, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
+  pub fn create_swap_chain_for_hwnd<T: HasIID>(&self, device: &T, hWnd: HWND, desc: &DXGI_SWAP_CHAIN_DESC1, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
     let mut lv1: *mut IDXGISwapChain1 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChainForHwnd(device.iptr() as *mut _ as *mut _ , hWnd, desc, fullscreen_desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain1::new(lv1 as *mut _))
@@ -3884,7 +3884,7 @@ impl DXGIFactory4 {
   
   //  Method CreateSwapChainForCoreWindow
   
-  pub fn create_swap_chain_for_core_window<T: HasIID, T1: HasIID>(&mut self, device: &T, window: &T1, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
+  pub fn create_swap_chain_for_core_window<T: HasIID, T1: HasIID>(&self, device: &T, window: &T1, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
     let mut lv1: *mut IDXGISwapChain1 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChainForCoreWindow(device.iptr() as *mut _ as *mut _ , window.iptr() as *mut _ as *mut _ , desc, restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain1::new(lv1 as *mut _))
@@ -3892,7 +3892,7 @@ impl DXGIFactory4 {
   
   //  Method GetSharedResourceAdapterLuid
   
-  pub fn get_shared_resource_adapter_luid(&mut self, hResource: HANDLE) -> HResult<LUID> {
+  pub fn get_shared_resource_adapter_luid(&self, hResource: HANDLE) -> HResult<LUID> {
     let mut lv1: LUID = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetSharedResourceAdapterLuid(hResource, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3900,7 +3900,7 @@ impl DXGIFactory4 {
   
   //  Method RegisterStereoStatusWindow
   
-  pub fn register_stereo_status_window(&mut self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
+  pub fn register_stereo_status_window(&self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterStereoStatusWindow(window_handle, wMsg, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3908,7 +3908,7 @@ impl DXGIFactory4 {
   
   //  Method RegisterStereoStatusEvent
   
-  pub fn register_stereo_status_event(&mut self, hEvent: HANDLE) -> HResult<DWORD> {
+  pub fn register_stereo_status_event(&self, hEvent: HANDLE) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterStereoStatusEvent(hEvent, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3916,7 +3916,7 @@ impl DXGIFactory4 {
   
   //  Method UnregisterStereoStatus
   
-  pub fn unregister_stereo_status(&mut self, cookie: DWORD) -> () {
+  pub fn unregister_stereo_status(&self, cookie: DWORD) -> () {
   
     let hr=unsafe { (*self.0).UnregisterStereoStatus(cookie) };
     ()
@@ -3924,7 +3924,7 @@ impl DXGIFactory4 {
   
   //  Method RegisterOcclusionStatusWindow
   
-  pub fn register_occlusion_status_window(&mut self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
+  pub fn register_occlusion_status_window(&self, window_handle: HWND, wMsg: UINT) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterOcclusionStatusWindow(window_handle, wMsg, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3932,7 +3932,7 @@ impl DXGIFactory4 {
   
   //  Method RegisterOcclusionStatusEvent
   
-  pub fn register_occlusion_status_event(&mut self, hEvent: HANDLE) -> HResult<DWORD> {
+  pub fn register_occlusion_status_event(&self, hEvent: HANDLE) -> HResult<DWORD> {
     let mut lv1: DWORD = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).RegisterOcclusionStatusEvent(hEvent, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -3940,7 +3940,7 @@ impl DXGIFactory4 {
   
   //  Method UnregisterOcclusionStatus
   
-  pub fn unregister_occlusion_status(&mut self, cookie: DWORD) -> () {
+  pub fn unregister_occlusion_status(&self, cookie: DWORD) -> () {
   
     let hr=unsafe { (*self.0).UnregisterOcclusionStatus(cookie) };
     ()
@@ -3948,7 +3948,7 @@ impl DXGIFactory4 {
   
   //  Method CreateSwapChainForComposition
   
-  pub fn create_swap_chain_for_composition<T: HasIID>(&mut self, device: &T, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
+  pub fn create_swap_chain_for_composition<T: HasIID>(&self, device: &T, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
     let mut lv1: *mut IDXGISwapChain1 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChainForComposition(device.iptr() as *mut _ as *mut _ , desc, restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain1::new(lv1 as *mut _))
@@ -3956,7 +3956,7 @@ impl DXGIFactory4 {
   
   //  Method GetCreationFlags
   
-  pub fn get_creation_flags(&mut self) -> UINT {
+  pub fn get_creation_flags(&self) -> UINT {
   
     let hr=unsafe { (*self.0).GetCreationFlags() };
     hr
@@ -3964,7 +3964,7 @@ impl DXGIFactory4 {
   
   //  Method EnumAdapterByLuid
   
-  pub fn enum_adapter_by_luid<T: HasIID>(&mut self, adapter_luid: LUID) -> HResult<T> {
+  pub fn enum_adapter_by_luid<T: HasIID>(&self, adapter_luid: LUID) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumAdapterByLuid(adapter_luid, T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -3972,7 +3972,7 @@ impl DXGIFactory4 {
   
   //  Method EnumWarpAdapter
   
-  pub fn enum_warp_adapter<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn enum_warp_adapter<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumWarpAdapter(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -4004,7 +4004,7 @@ impl Clone for DXGIFactoryMedia {
 impl DXGIFactoryMedia {
   //  Method CreateSwapChainForCompositionSurfaceHandle
   
-  pub fn create_swap_chain_for_composition_surface_handle<T: HasIID>(&mut self, device: &T, hSurface: HANDLE, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
+  pub fn create_swap_chain_for_composition_surface_handle<T: HasIID>(&self, device: &T, hSurface: HANDLE, desc: &DXGI_SWAP_CHAIN_DESC1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGISwapChain1> {
     let mut lv1: *mut IDXGISwapChain1 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChainForCompositionSurfaceHandle(device.iptr() as *mut _ as *mut _ , hSurface, desc, restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain1::new(lv1 as *mut _))
@@ -4012,7 +4012,7 @@ impl DXGIFactoryMedia {
   
   //  Method CreateDecodeSwapChainForCompositionSurfaceHandle
   
-  pub fn create_decode_swap_chain_for_composition_surface_handle<T: HasIID, T1: HasIID>(&mut self, device: &T, hSurface: HANDLE, desc: &mut DXGI_DECODE_SWAP_CHAIN_DESC, yuv_decode_buffers: &T1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGIDecodeSwapChain> {
+  pub fn create_decode_swap_chain_for_composition_surface_handle<T: HasIID, T1: HasIID>(&self, device: &T, hSurface: HANDLE, desc: &mut DXGI_DECODE_SWAP_CHAIN_DESC, yuv_decode_buffers: &T1, restrict_to_output: Option<&DXGIOutput>) -> HResult<DXGIDecodeSwapChain> {
     let mut lv1: *mut IDXGIDecodeSwapChain = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateDecodeSwapChainForCompositionSurfaceHandle(device.iptr() as *mut _ as *mut _ , hSurface, desc, yuv_decode_buffers.iptr() as *mut _ as *mut _ , restrict_to_output.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIDecodeSwapChain::new(lv1 as *mut _))
@@ -4044,7 +4044,7 @@ impl Clone for DXGIFactory {
 impl DXGIFactory {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -4052,7 +4052,7 @@ impl DXGIFactory {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -4060,7 +4060,7 @@ impl DXGIFactory {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -4068,7 +4068,7 @@ impl DXGIFactory {
   
   //  Method EnumAdapters
   
-  pub fn enum_adapters(&mut self, adapter: UINT) -> HResult<DXGIAdapter> {
+  pub fn enum_adapters(&self, adapter: UINT) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).EnumAdapters(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -4076,7 +4076,7 @@ impl DXGIFactory {
   
   //  Method MakeWindowAssociation
   
-  pub fn make_window_association(&mut self, window_handle: HWND, flags: UINT) -> HResult<()> {
+  pub fn make_window_association(&self, window_handle: HWND, flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).MakeWindowAssociation(window_handle, flags) };
     hr2ret(hr,())
@@ -4084,7 +4084,7 @@ impl DXGIFactory {
   
   //  Method GetWindowAssociation
   
-  pub fn get_window_association(&mut self) -> HResult<HWND> {
+  pub fn get_window_association(&self) -> HResult<HWND> {
     let mut lv1: HWND = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetWindowAssociation(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4092,7 +4092,7 @@ impl DXGIFactory {
   
   //  Method CreateSwapChain
   
-  pub fn create_swap_chain<T: HasIID>(&mut self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
+  pub fn create_swap_chain<T: HasIID>(&self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
     let mut lv1: *mut IDXGISwapChain = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSwapChain(device.iptr() as *mut _ as *mut _ , desc, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISwapChain::new(lv1 as *mut _))
@@ -4100,7 +4100,7 @@ impl DXGIFactory {
   
   //  Method CreateSoftwareAdapter
   
-  pub fn create_software_adapter(&mut self, module: HMODULE) -> HResult<DXGIAdapter> {
+  pub fn create_software_adapter(&self, module: HMODULE) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSoftwareAdapter(module, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIAdapter::new(lv1 as *mut _))
@@ -4132,7 +4132,7 @@ impl Clone for DXGIKeyedMutex {
 impl DXGIKeyedMutex {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -4140,7 +4140,7 @@ impl DXGIKeyedMutex {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -4148,7 +4148,7 @@ impl DXGIKeyedMutex {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -4156,7 +4156,7 @@ impl DXGIKeyedMutex {
   
   //  Method AcquireSync
   
-  pub fn acquire_sync(&mut self, key: UINT64, milliseconds: DWORD) -> HResult<()> {
+  pub fn acquire_sync(&self, key: UINT64, milliseconds: DWORD) -> HResult<()> {
   
     let hr=unsafe { (*self.0).AcquireSync(key, milliseconds) };
     hr2ret(hr,())
@@ -4164,7 +4164,7 @@ impl DXGIKeyedMutex {
   
   //  Method ReleaseSync
   
-  pub fn release_sync(&mut self, key: UINT64) -> HResult<()> {
+  pub fn release_sync(&self, key: UINT64) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ReleaseSync(key) };
     hr2ret(hr,())
@@ -4196,7 +4196,7 @@ impl Clone for DXGIObject {
 impl DXGIObject {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -4204,7 +4204,7 @@ impl DXGIObject {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -4212,7 +4212,7 @@ impl DXGIObject {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -4244,7 +4244,7 @@ impl Clone for DXGIOutput1 {
 impl DXGIOutput1 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -4252,7 +4252,7 @@ impl DXGIOutput1 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -4260,7 +4260,7 @@ impl DXGIOutput1 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -4268,7 +4268,7 @@ impl DXGIOutput1 {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_OUTPUT_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_OUTPUT_DESC> {
     let mut lv1: DXGI_OUTPUT_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4276,7 +4276,7 @@ impl DXGIOutput1 {
   
   //  Method GetDisplayModeList
   
-  pub fn get_display_mode_list(&mut self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
+  pub fn get_display_mode_list(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
     let mut lv1: UINT = desc.as_ref().map(|v|v.len()).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetDisplayModeList(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
     hr2ret(hr,lv1)
@@ -4284,7 +4284,7 @@ impl DXGIOutput1 {
   
   //  Method FindClosestMatchingMode
   
-  pub fn find_closest_matching_mode(&mut self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
+  pub fn find_closest_matching_mode(&self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
     let mut lv1: DXGI_MODE_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).FindClosestMatchingMode(mode_to_match, &mut lv1 as *mut _ as *mut _, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4292,7 +4292,7 @@ impl DXGIOutput1 {
   
   //  Method WaitForVBlank
   
-  pub fn wait_for_v_blank(&mut self) -> HResult<()> {
+  pub fn wait_for_v_blank(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).WaitForVBlank() };
     hr2ret(hr,())
@@ -4300,7 +4300,7 @@ impl DXGIOutput1 {
   
   //  Method TakeOwnership
   
-  pub fn take_ownership<T: HasIID>(&mut self, device: &T, exclusive: BOOL) -> HResult<()> {
+  pub fn take_ownership<T: HasIID>(&self, device: &T, exclusive: BOOL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).TakeOwnership(device.iptr() as *mut _ as *mut _ , exclusive) };
     hr2ret(hr,())
@@ -4308,7 +4308,7 @@ impl DXGIOutput1 {
   
   //  Method ReleaseOwnership
   
-  pub fn release_ownership(&mut self) -> () {
+  pub fn release_ownership(&self) -> () {
   
     let hr=unsafe { (*self.0).ReleaseOwnership() };
     ()
@@ -4316,7 +4316,7 @@ impl DXGIOutput1 {
   
   //  Method GetGammaControlCapabilities
   
-  pub fn get_gamma_control_capabilities(&mut self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
+  pub fn get_gamma_control_capabilities(&self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
     let mut lv1: DXGI_GAMMA_CONTROL_CAPABILITIES = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGammaControlCapabilities(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4324,7 +4324,7 @@ impl DXGIOutput1 {
   
   //  Method SetGammaControl
   
-  pub fn set_gamma_control(&mut self, array: &DXGI_GAMMA_CONTROL) -> HResult<()> {
+  pub fn set_gamma_control(&self, array: &DXGI_GAMMA_CONTROL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetGammaControl(array) };
     hr2ret(hr,())
@@ -4332,7 +4332,7 @@ impl DXGIOutput1 {
   
   //  Method GetGammaControl
   
-  pub fn get_gamma_control(&mut self) -> HResult<DXGI_GAMMA_CONTROL> {
+  pub fn get_gamma_control(&self) -> HResult<DXGI_GAMMA_CONTROL> {
     let mut lv1: DXGI_GAMMA_CONTROL = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGammaControl(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4340,7 +4340,7 @@ impl DXGIOutput1 {
   
   //  Method SetDisplaySurface
   
-  pub fn set_display_surface<T: HasIID>(&mut self, scanout_surface: &T) -> HResult<()> {
+  pub fn set_display_surface<T: HasIID>(&self, scanout_surface: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetDisplaySurface(scanout_surface.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4348,7 +4348,7 @@ impl DXGIOutput1 {
   
   //  Method GetDisplaySurfaceData
   
-  pub fn get_display_surface_data<T: HasIID>(&mut self, destination: &T) -> HResult<()> {
+  pub fn get_display_surface_data<T: HasIID>(&self, destination: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetDisplaySurfaceData(destination.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4356,7 +4356,7 @@ impl DXGIOutput1 {
   
   //  Method GetFrameStatistics
   
-  pub fn get_frame_statistics(&mut self) -> HResult<DXGI_FRAME_STATISTICS> {
+  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4366,7 +4366,7 @@ impl DXGIOutput1 {
   //  Error: pNumModes parameter: OutOptionalOfSize shouldn't have references. But references are [("pDesc", OutOptionalArrayOfSize "pNumModes", Ptr (StructRef "DXGI_MODE_DESC1"))]
   //  Method FindClosestMatchingMode1
   
-  pub fn find_closest_matching_mode1(&mut self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<()> {
+  pub fn find_closest_matching_mode1(&self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).FindClosestMatchingMode1(mode_to_match, closest_match, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,())
@@ -4374,7 +4374,7 @@ impl DXGIOutput1 {
   
   //  Method GetDisplaySurfaceData1
   
-  pub fn get_display_surface_data1<T: HasIID>(&mut self, destination: &T) -> HResult<()> {
+  pub fn get_display_surface_data1<T: HasIID>(&self, destination: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetDisplaySurfaceData1(destination.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4382,7 +4382,7 @@ impl DXGIOutput1 {
   
   //  Method DuplicateOutput
   
-  pub fn duplicate_output<T: HasIID>(&mut self, device: &T) -> HResult<DXGIOutputDuplication> {
+  pub fn duplicate_output<T: HasIID>(&self, device: &T) -> HResult<DXGIOutputDuplication> {
     let mut lv1: *mut IDXGIOutputDuplication = ptr::null_mut();
     let hr=unsafe { (*self.0).DuplicateOutput(device.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutputDuplication::new(lv1 as *mut _))
@@ -4414,7 +4414,7 @@ impl Clone for DXGIOutput2 {
 impl DXGIOutput2 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -4422,7 +4422,7 @@ impl DXGIOutput2 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -4430,7 +4430,7 @@ impl DXGIOutput2 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -4438,7 +4438,7 @@ impl DXGIOutput2 {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_OUTPUT_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_OUTPUT_DESC> {
     let mut lv1: DXGI_OUTPUT_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4446,7 +4446,7 @@ impl DXGIOutput2 {
   
   //  Method GetDisplayModeList
   
-  pub fn get_display_mode_list(&mut self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
+  pub fn get_display_mode_list(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
     let mut lv1: UINT = desc.as_ref().map(|v|v.len()).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetDisplayModeList(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
     hr2ret(hr,lv1)
@@ -4454,7 +4454,7 @@ impl DXGIOutput2 {
   
   //  Method FindClosestMatchingMode
   
-  pub fn find_closest_matching_mode(&mut self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
+  pub fn find_closest_matching_mode(&self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
     let mut lv1: DXGI_MODE_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).FindClosestMatchingMode(mode_to_match, &mut lv1 as *mut _ as *mut _, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4462,7 +4462,7 @@ impl DXGIOutput2 {
   
   //  Method WaitForVBlank
   
-  pub fn wait_for_v_blank(&mut self) -> HResult<()> {
+  pub fn wait_for_v_blank(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).WaitForVBlank() };
     hr2ret(hr,())
@@ -4470,7 +4470,7 @@ impl DXGIOutput2 {
   
   //  Method TakeOwnership
   
-  pub fn take_ownership<T: HasIID>(&mut self, device: &T, exclusive: BOOL) -> HResult<()> {
+  pub fn take_ownership<T: HasIID>(&self, device: &T, exclusive: BOOL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).TakeOwnership(device.iptr() as *mut _ as *mut _ , exclusive) };
     hr2ret(hr,())
@@ -4478,7 +4478,7 @@ impl DXGIOutput2 {
   
   //  Method ReleaseOwnership
   
-  pub fn release_ownership(&mut self) -> () {
+  pub fn release_ownership(&self) -> () {
   
     let hr=unsafe { (*self.0).ReleaseOwnership() };
     ()
@@ -4486,7 +4486,7 @@ impl DXGIOutput2 {
   
   //  Method GetGammaControlCapabilities
   
-  pub fn get_gamma_control_capabilities(&mut self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
+  pub fn get_gamma_control_capabilities(&self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
     let mut lv1: DXGI_GAMMA_CONTROL_CAPABILITIES = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGammaControlCapabilities(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4494,7 +4494,7 @@ impl DXGIOutput2 {
   
   //  Method SetGammaControl
   
-  pub fn set_gamma_control(&mut self, array: &DXGI_GAMMA_CONTROL) -> HResult<()> {
+  pub fn set_gamma_control(&self, array: &DXGI_GAMMA_CONTROL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetGammaControl(array) };
     hr2ret(hr,())
@@ -4502,7 +4502,7 @@ impl DXGIOutput2 {
   
   //  Method GetGammaControl
   
-  pub fn get_gamma_control(&mut self) -> HResult<DXGI_GAMMA_CONTROL> {
+  pub fn get_gamma_control(&self) -> HResult<DXGI_GAMMA_CONTROL> {
     let mut lv1: DXGI_GAMMA_CONTROL = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGammaControl(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4510,7 +4510,7 @@ impl DXGIOutput2 {
   
   //  Method SetDisplaySurface
   
-  pub fn set_display_surface<T: HasIID>(&mut self, scanout_surface: &T) -> HResult<()> {
+  pub fn set_display_surface<T: HasIID>(&self, scanout_surface: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetDisplaySurface(scanout_surface.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4518,7 +4518,7 @@ impl DXGIOutput2 {
   
   //  Method GetDisplaySurfaceData
   
-  pub fn get_display_surface_data<T: HasIID>(&mut self, destination: &T) -> HResult<()> {
+  pub fn get_display_surface_data<T: HasIID>(&self, destination: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetDisplaySurfaceData(destination.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4526,7 +4526,7 @@ impl DXGIOutput2 {
   
   //  Method GetFrameStatistics
   
-  pub fn get_frame_statistics(&mut self) -> HResult<DXGI_FRAME_STATISTICS> {
+  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4536,7 +4536,7 @@ impl DXGIOutput2 {
   //  Error: pNumModes parameter: OutOptionalOfSize shouldn't have references. But references are [("pDesc", OutOptionalArrayOfSize "pNumModes", Ptr (StructRef "DXGI_MODE_DESC1"))]
   //  Method FindClosestMatchingMode1
   
-  pub fn find_closest_matching_mode1(&mut self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<()> {
+  pub fn find_closest_matching_mode1(&self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).FindClosestMatchingMode1(mode_to_match, closest_match, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,())
@@ -4544,7 +4544,7 @@ impl DXGIOutput2 {
   
   //  Method GetDisplaySurfaceData1
   
-  pub fn get_display_surface_data1<T: HasIID>(&mut self, destination: &T) -> HResult<()> {
+  pub fn get_display_surface_data1<T: HasIID>(&self, destination: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetDisplaySurfaceData1(destination.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4552,7 +4552,7 @@ impl DXGIOutput2 {
   
   //  Method DuplicateOutput
   
-  pub fn duplicate_output<T: HasIID>(&mut self, device: &T) -> HResult<DXGIOutputDuplication> {
+  pub fn duplicate_output<T: HasIID>(&self, device: &T) -> HResult<DXGIOutputDuplication> {
     let mut lv1: *mut IDXGIOutputDuplication = ptr::null_mut();
     let hr=unsafe { (*self.0).DuplicateOutput(device.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutputDuplication::new(lv1 as *mut _))
@@ -4560,7 +4560,7 @@ impl DXGIOutput2 {
   
   //  Method SupportsOverlays
   
-  pub fn supports_overlays(&mut self) -> BOOL {
+  pub fn supports_overlays(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).SupportsOverlays() };
     hr
@@ -4592,7 +4592,7 @@ impl Clone for DXGIOutput3 {
 impl DXGIOutput3 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -4600,7 +4600,7 @@ impl DXGIOutput3 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -4608,7 +4608,7 @@ impl DXGIOutput3 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -4616,7 +4616,7 @@ impl DXGIOutput3 {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_OUTPUT_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_OUTPUT_DESC> {
     let mut lv1: DXGI_OUTPUT_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4624,7 +4624,7 @@ impl DXGIOutput3 {
   
   //  Method GetDisplayModeList
   
-  pub fn get_display_mode_list(&mut self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
+  pub fn get_display_mode_list(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
     let mut lv1: UINT = desc.as_ref().map(|v|v.len()).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetDisplayModeList(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
     hr2ret(hr,lv1)
@@ -4632,7 +4632,7 @@ impl DXGIOutput3 {
   
   //  Method FindClosestMatchingMode
   
-  pub fn find_closest_matching_mode(&mut self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
+  pub fn find_closest_matching_mode(&self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
     let mut lv1: DXGI_MODE_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).FindClosestMatchingMode(mode_to_match, &mut lv1 as *mut _ as *mut _, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4640,7 +4640,7 @@ impl DXGIOutput3 {
   
   //  Method WaitForVBlank
   
-  pub fn wait_for_v_blank(&mut self) -> HResult<()> {
+  pub fn wait_for_v_blank(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).WaitForVBlank() };
     hr2ret(hr,())
@@ -4648,7 +4648,7 @@ impl DXGIOutput3 {
   
   //  Method TakeOwnership
   
-  pub fn take_ownership<T: HasIID>(&mut self, device: &T, exclusive: BOOL) -> HResult<()> {
+  pub fn take_ownership<T: HasIID>(&self, device: &T, exclusive: BOOL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).TakeOwnership(device.iptr() as *mut _ as *mut _ , exclusive) };
     hr2ret(hr,())
@@ -4656,7 +4656,7 @@ impl DXGIOutput3 {
   
   //  Method ReleaseOwnership
   
-  pub fn release_ownership(&mut self) -> () {
+  pub fn release_ownership(&self) -> () {
   
     let hr=unsafe { (*self.0).ReleaseOwnership() };
     ()
@@ -4664,7 +4664,7 @@ impl DXGIOutput3 {
   
   //  Method GetGammaControlCapabilities
   
-  pub fn get_gamma_control_capabilities(&mut self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
+  pub fn get_gamma_control_capabilities(&self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
     let mut lv1: DXGI_GAMMA_CONTROL_CAPABILITIES = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGammaControlCapabilities(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4672,7 +4672,7 @@ impl DXGIOutput3 {
   
   //  Method SetGammaControl
   
-  pub fn set_gamma_control(&mut self, array: &DXGI_GAMMA_CONTROL) -> HResult<()> {
+  pub fn set_gamma_control(&self, array: &DXGI_GAMMA_CONTROL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetGammaControl(array) };
     hr2ret(hr,())
@@ -4680,7 +4680,7 @@ impl DXGIOutput3 {
   
   //  Method GetGammaControl
   
-  pub fn get_gamma_control(&mut self) -> HResult<DXGI_GAMMA_CONTROL> {
+  pub fn get_gamma_control(&self) -> HResult<DXGI_GAMMA_CONTROL> {
     let mut lv1: DXGI_GAMMA_CONTROL = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGammaControl(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4688,7 +4688,7 @@ impl DXGIOutput3 {
   
   //  Method SetDisplaySurface
   
-  pub fn set_display_surface<T: HasIID>(&mut self, scanout_surface: &T) -> HResult<()> {
+  pub fn set_display_surface<T: HasIID>(&self, scanout_surface: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetDisplaySurface(scanout_surface.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4696,7 +4696,7 @@ impl DXGIOutput3 {
   
   //  Method GetDisplaySurfaceData
   
-  pub fn get_display_surface_data<T: HasIID>(&mut self, destination: &T) -> HResult<()> {
+  pub fn get_display_surface_data<T: HasIID>(&self, destination: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetDisplaySurfaceData(destination.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4704,7 +4704,7 @@ impl DXGIOutput3 {
   
   //  Method GetFrameStatistics
   
-  pub fn get_frame_statistics(&mut self) -> HResult<DXGI_FRAME_STATISTICS> {
+  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4714,7 +4714,7 @@ impl DXGIOutput3 {
   //  Error: pNumModes parameter: OutOptionalOfSize shouldn't have references. But references are [("pDesc", OutOptionalArrayOfSize "pNumModes", Ptr (StructRef "DXGI_MODE_DESC1"))]
   //  Method FindClosestMatchingMode1
   
-  pub fn find_closest_matching_mode1(&mut self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<()> {
+  pub fn find_closest_matching_mode1(&self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).FindClosestMatchingMode1(mode_to_match, closest_match, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,())
@@ -4722,7 +4722,7 @@ impl DXGIOutput3 {
   
   //  Method GetDisplaySurfaceData1
   
-  pub fn get_display_surface_data1<T: HasIID>(&mut self, destination: &T) -> HResult<()> {
+  pub fn get_display_surface_data1<T: HasIID>(&self, destination: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetDisplaySurfaceData1(destination.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4730,7 +4730,7 @@ impl DXGIOutput3 {
   
   //  Method DuplicateOutput
   
-  pub fn duplicate_output<T: HasIID>(&mut self, device: &T) -> HResult<DXGIOutputDuplication> {
+  pub fn duplicate_output<T: HasIID>(&self, device: &T) -> HResult<DXGIOutputDuplication> {
     let mut lv1: *mut IDXGIOutputDuplication = ptr::null_mut();
     let hr=unsafe { (*self.0).DuplicateOutput(device.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutputDuplication::new(lv1 as *mut _))
@@ -4738,7 +4738,7 @@ impl DXGIOutput3 {
   
   //  Method SupportsOverlays
   
-  pub fn supports_overlays(&mut self) -> BOOL {
+  pub fn supports_overlays(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).SupportsOverlays() };
     hr
@@ -4746,7 +4746,7 @@ impl DXGIOutput3 {
   
   //  Method CheckOverlaySupport
   
-  pub fn check_overlay_support<T: HasIID>(&mut self, enum_format: DXGI_FORMAT, concerned_device: &T) -> HResult<UINT> {
+  pub fn check_overlay_support<T: HasIID>(&self, enum_format: DXGI_FORMAT, concerned_device: &T) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).CheckOverlaySupport(enum_format, concerned_device.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4778,7 +4778,7 @@ impl Clone for DXGIOutput4 {
 impl DXGIOutput4 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -4786,7 +4786,7 @@ impl DXGIOutput4 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -4794,7 +4794,7 @@ impl DXGIOutput4 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -4802,7 +4802,7 @@ impl DXGIOutput4 {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_OUTPUT_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_OUTPUT_DESC> {
     let mut lv1: DXGI_OUTPUT_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4810,7 +4810,7 @@ impl DXGIOutput4 {
   
   //  Method GetDisplayModeList
   
-  pub fn get_display_mode_list(&mut self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
+  pub fn get_display_mode_list(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
     let mut lv1: UINT = desc.as_ref().map(|v|v.len()).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetDisplayModeList(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
     hr2ret(hr,lv1)
@@ -4818,7 +4818,7 @@ impl DXGIOutput4 {
   
   //  Method FindClosestMatchingMode
   
-  pub fn find_closest_matching_mode(&mut self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
+  pub fn find_closest_matching_mode(&self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
     let mut lv1: DXGI_MODE_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).FindClosestMatchingMode(mode_to_match, &mut lv1 as *mut _ as *mut _, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4826,7 +4826,7 @@ impl DXGIOutput4 {
   
   //  Method WaitForVBlank
   
-  pub fn wait_for_v_blank(&mut self) -> HResult<()> {
+  pub fn wait_for_v_blank(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).WaitForVBlank() };
     hr2ret(hr,())
@@ -4834,7 +4834,7 @@ impl DXGIOutput4 {
   
   //  Method TakeOwnership
   
-  pub fn take_ownership<T: HasIID>(&mut self, device: &T, exclusive: BOOL) -> HResult<()> {
+  pub fn take_ownership<T: HasIID>(&self, device: &T, exclusive: BOOL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).TakeOwnership(device.iptr() as *mut _ as *mut _ , exclusive) };
     hr2ret(hr,())
@@ -4842,7 +4842,7 @@ impl DXGIOutput4 {
   
   //  Method ReleaseOwnership
   
-  pub fn release_ownership(&mut self) -> () {
+  pub fn release_ownership(&self) -> () {
   
     let hr=unsafe { (*self.0).ReleaseOwnership() };
     ()
@@ -4850,7 +4850,7 @@ impl DXGIOutput4 {
   
   //  Method GetGammaControlCapabilities
   
-  pub fn get_gamma_control_capabilities(&mut self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
+  pub fn get_gamma_control_capabilities(&self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
     let mut lv1: DXGI_GAMMA_CONTROL_CAPABILITIES = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGammaControlCapabilities(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4858,7 +4858,7 @@ impl DXGIOutput4 {
   
   //  Method SetGammaControl
   
-  pub fn set_gamma_control(&mut self, array: &DXGI_GAMMA_CONTROL) -> HResult<()> {
+  pub fn set_gamma_control(&self, array: &DXGI_GAMMA_CONTROL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetGammaControl(array) };
     hr2ret(hr,())
@@ -4866,7 +4866,7 @@ impl DXGIOutput4 {
   
   //  Method GetGammaControl
   
-  pub fn get_gamma_control(&mut self) -> HResult<DXGI_GAMMA_CONTROL> {
+  pub fn get_gamma_control(&self) -> HResult<DXGI_GAMMA_CONTROL> {
     let mut lv1: DXGI_GAMMA_CONTROL = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGammaControl(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4874,7 +4874,7 @@ impl DXGIOutput4 {
   
   //  Method SetDisplaySurface
   
-  pub fn set_display_surface<T: HasIID>(&mut self, scanout_surface: &T) -> HResult<()> {
+  pub fn set_display_surface<T: HasIID>(&self, scanout_surface: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetDisplaySurface(scanout_surface.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4882,7 +4882,7 @@ impl DXGIOutput4 {
   
   //  Method GetDisplaySurfaceData
   
-  pub fn get_display_surface_data<T: HasIID>(&mut self, destination: &T) -> HResult<()> {
+  pub fn get_display_surface_data<T: HasIID>(&self, destination: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetDisplaySurfaceData(destination.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4890,7 +4890,7 @@ impl DXGIOutput4 {
   
   //  Method GetFrameStatistics
   
-  pub fn get_frame_statistics(&mut self) -> HResult<DXGI_FRAME_STATISTICS> {
+  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4900,7 +4900,7 @@ impl DXGIOutput4 {
   //  Error: pNumModes parameter: OutOptionalOfSize shouldn't have references. But references are [("pDesc", OutOptionalArrayOfSize "pNumModes", Ptr (StructRef "DXGI_MODE_DESC1"))]
   //  Method FindClosestMatchingMode1
   
-  pub fn find_closest_matching_mode1(&mut self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<()> {
+  pub fn find_closest_matching_mode1(&self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).FindClosestMatchingMode1(mode_to_match, closest_match, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,())
@@ -4908,7 +4908,7 @@ impl DXGIOutput4 {
   
   //  Method GetDisplaySurfaceData1
   
-  pub fn get_display_surface_data1<T: HasIID>(&mut self, destination: &T) -> HResult<()> {
+  pub fn get_display_surface_data1<T: HasIID>(&self, destination: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetDisplaySurfaceData1(destination.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -4916,7 +4916,7 @@ impl DXGIOutput4 {
   
   //  Method DuplicateOutput
   
-  pub fn duplicate_output<T: HasIID>(&mut self, device: &T) -> HResult<DXGIOutputDuplication> {
+  pub fn duplicate_output<T: HasIID>(&self, device: &T) -> HResult<DXGIOutputDuplication> {
     let mut lv1: *mut IDXGIOutputDuplication = ptr::null_mut();
     let hr=unsafe { (*self.0).DuplicateOutput(device.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutputDuplication::new(lv1 as *mut _))
@@ -4924,7 +4924,7 @@ impl DXGIOutput4 {
   
   //  Method SupportsOverlays
   
-  pub fn supports_overlays(&mut self) -> BOOL {
+  pub fn supports_overlays(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).SupportsOverlays() };
     hr
@@ -4932,7 +4932,7 @@ impl DXGIOutput4 {
   
   //  Method CheckOverlaySupport
   
-  pub fn check_overlay_support<T: HasIID>(&mut self, enum_format: DXGI_FORMAT, concerned_device: &T) -> HResult<UINT> {
+  pub fn check_overlay_support<T: HasIID>(&self, enum_format: DXGI_FORMAT, concerned_device: &T) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).CheckOverlaySupport(enum_format, concerned_device.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4940,7 +4940,7 @@ impl DXGIOutput4 {
   
   //  Method CheckOverlayColorSpaceSupport
   
-  pub fn check_overlay_color_space_support<T: HasIID>(&mut self, format: DXGI_FORMAT, color_space: DXGI_COLOR_SPACE_TYPE, concerned_device: &T) -> HResult<UINT> {
+  pub fn check_overlay_color_space_support<T: HasIID>(&self, format: DXGI_FORMAT, color_space: DXGI_COLOR_SPACE_TYPE, concerned_device: &T) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).CheckOverlayColorSpaceSupport(format, color_space, concerned_device.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -4972,7 +4972,7 @@ impl Clone for DXGIOutputDuplication {
 impl DXGIOutputDuplication {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -4980,7 +4980,7 @@ impl DXGIOutputDuplication {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -4988,7 +4988,7 @@ impl DXGIOutputDuplication {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -4996,7 +4996,7 @@ impl DXGIOutputDuplication {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> DXGI_OUTDUPL_DESC {
+  pub fn get_desc(&self) -> DXGI_OUTDUPL_DESC {
     let mut lv1: DXGI_OUTDUPL_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     lv1
@@ -5004,7 +5004,7 @@ impl DXGIOutputDuplication {
   
   //  Method AcquireNextFrame
   
-  pub fn acquire_next_frame(&mut self, timeout_in_milliseconds: UINT, frame_info: &mut DXGI_OUTDUPL_FRAME_INFO) -> HResult<DXGIResource> {
+  pub fn acquire_next_frame(&self, timeout_in_milliseconds: UINT, frame_info: &mut DXGI_OUTDUPL_FRAME_INFO) -> HResult<DXGIResource> {
     let mut lv1: *mut IDXGIResource = ptr::null_mut();
     let hr=unsafe { (*self.0).AcquireNextFrame(timeout_in_milliseconds, frame_info, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIResource::new(lv1 as *mut _))
@@ -5012,7 +5012,7 @@ impl DXGIOutputDuplication {
   
   //  Method GetFrameDirtyRects
   
-  pub fn get_frame_dirty_rects(&mut self, dirty_rects_buffer: &mut [RECT], dirty_rects_buffer_size_required: &mut UINT) -> HResult<()> {
+  pub fn get_frame_dirty_rects(&self, dirty_rects_buffer: &mut [RECT], dirty_rects_buffer_size_required: &mut UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetFrameDirtyRects((mem::size_of_val(dirty_rects_buffer)/1) as UINT, dirty_rects_buffer.as_mut_ptr() as *mut _, dirty_rects_buffer_size_required) };
     hr2ret(hr,())
@@ -5020,7 +5020,7 @@ impl DXGIOutputDuplication {
   
   //  Method GetFrameMoveRects
   
-  pub fn get_frame_move_rects(&mut self, move_rect_buffer: &mut [DXGI_OUTDUPL_MOVE_RECT], move_rects_buffer_size_required: &mut UINT) -> HResult<()> {
+  pub fn get_frame_move_rects(&self, move_rect_buffer: &mut [DXGI_OUTDUPL_MOVE_RECT], move_rects_buffer_size_required: &mut UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetFrameMoveRects((mem::size_of_val(move_rect_buffer)/1) as UINT, move_rect_buffer.as_mut_ptr() as *mut _, move_rects_buffer_size_required) };
     hr2ret(hr,())
@@ -5028,7 +5028,7 @@ impl DXGIOutputDuplication {
   
   //  Method GetFramePointerShape
   
-  pub fn get_frame_pointer_shape<T>(&mut self, pointer_shape_buffer: &mut [T], pointer_shape_buffer_size_required: &mut UINT, pointer_shape_info: &mut DXGI_OUTDUPL_POINTER_SHAPE_INFO) -> HResult<()> {
+  pub fn get_frame_pointer_shape<T>(&self, pointer_shape_buffer: &mut [T], pointer_shape_buffer_size_required: &mut UINT, pointer_shape_info: &mut DXGI_OUTDUPL_POINTER_SHAPE_INFO) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetFramePointerShape((mem::size_of_val(pointer_shape_buffer)/1) as UINT, pointer_shape_buffer.as_mut_ptr() as *mut _, pointer_shape_buffer_size_required, pointer_shape_info) };
     hr2ret(hr,())
@@ -5036,7 +5036,7 @@ impl DXGIOutputDuplication {
   
   //  Method MapDesktopSurface
   
-  pub fn map_desktop_surface(&mut self) -> HResult<DXGI_MAPPED_RECT> {
+  pub fn map_desktop_surface(&self) -> HResult<DXGI_MAPPED_RECT> {
     let mut lv1: DXGI_MAPPED_RECT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).MapDesktopSurface(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5044,7 +5044,7 @@ impl DXGIOutputDuplication {
   
   //  Method UnMapDesktopSurface
   
-  pub fn un_map_desktop_surface(&mut self) -> HResult<()> {
+  pub fn un_map_desktop_surface(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).UnMapDesktopSurface() };
     hr2ret(hr,())
@@ -5052,7 +5052,7 @@ impl DXGIOutputDuplication {
   
   //  Method ReleaseFrame
   
-  pub fn release_frame(&mut self) -> HResult<()> {
+  pub fn release_frame(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ReleaseFrame() };
     hr2ret(hr,())
@@ -5084,7 +5084,7 @@ impl Clone for DXGIOutput {
 impl DXGIOutput {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -5092,7 +5092,7 @@ impl DXGIOutput {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -5100,7 +5100,7 @@ impl DXGIOutput {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5108,7 +5108,7 @@ impl DXGIOutput {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_OUTPUT_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_OUTPUT_DESC> {
     let mut lv1: DXGI_OUTPUT_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5116,7 +5116,7 @@ impl DXGIOutput {
   
   //  Method GetDisplayModeList
   
-  pub fn get_display_mode_list(&mut self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
+  pub fn get_display_mode_list(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
     let mut lv1: UINT = desc.as_ref().map(|v|v.len()).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetDisplayModeList(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
     hr2ret(hr,lv1)
@@ -5124,7 +5124,7 @@ impl DXGIOutput {
   
   //  Method FindClosestMatchingMode
   
-  pub fn find_closest_matching_mode(&mut self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
+  pub fn find_closest_matching_mode(&self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
     let mut lv1: DXGI_MODE_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).FindClosestMatchingMode(mode_to_match, &mut lv1 as *mut _ as *mut _, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5132,7 +5132,7 @@ impl DXGIOutput {
   
   //  Method WaitForVBlank
   
-  pub fn wait_for_v_blank(&mut self) -> HResult<()> {
+  pub fn wait_for_v_blank(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).WaitForVBlank() };
     hr2ret(hr,())
@@ -5140,7 +5140,7 @@ impl DXGIOutput {
   
   //  Method TakeOwnership
   
-  pub fn take_ownership<T: HasIID>(&mut self, device: &T, exclusive: BOOL) -> HResult<()> {
+  pub fn take_ownership<T: HasIID>(&self, device: &T, exclusive: BOOL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).TakeOwnership(device.iptr() as *mut _ as *mut _ , exclusive) };
     hr2ret(hr,())
@@ -5148,7 +5148,7 @@ impl DXGIOutput {
   
   //  Method ReleaseOwnership
   
-  pub fn release_ownership(&mut self) -> () {
+  pub fn release_ownership(&self) -> () {
   
     let hr=unsafe { (*self.0).ReleaseOwnership() };
     ()
@@ -5156,7 +5156,7 @@ impl DXGIOutput {
   
   //  Method GetGammaControlCapabilities
   
-  pub fn get_gamma_control_capabilities(&mut self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
+  pub fn get_gamma_control_capabilities(&self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
     let mut lv1: DXGI_GAMMA_CONTROL_CAPABILITIES = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGammaControlCapabilities(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5164,7 +5164,7 @@ impl DXGIOutput {
   
   //  Method SetGammaControl
   
-  pub fn set_gamma_control(&mut self, array: &DXGI_GAMMA_CONTROL) -> HResult<()> {
+  pub fn set_gamma_control(&self, array: &DXGI_GAMMA_CONTROL) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetGammaControl(array) };
     hr2ret(hr,())
@@ -5172,7 +5172,7 @@ impl DXGIOutput {
   
   //  Method GetGammaControl
   
-  pub fn get_gamma_control(&mut self) -> HResult<DXGI_GAMMA_CONTROL> {
+  pub fn get_gamma_control(&self) -> HResult<DXGI_GAMMA_CONTROL> {
     let mut lv1: DXGI_GAMMA_CONTROL = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetGammaControl(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5180,7 +5180,7 @@ impl DXGIOutput {
   
   //  Method SetDisplaySurface
   
-  pub fn set_display_surface<T: HasIID>(&mut self, scanout_surface: &T) -> HResult<()> {
+  pub fn set_display_surface<T: HasIID>(&self, scanout_surface: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetDisplaySurface(scanout_surface.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -5188,7 +5188,7 @@ impl DXGIOutput {
   
   //  Method GetDisplaySurfaceData
   
-  pub fn get_display_surface_data<T: HasIID>(&mut self, destination: &T) -> HResult<()> {
+  pub fn get_display_surface_data<T: HasIID>(&self, destination: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).GetDisplaySurfaceData(destination.iptr() as *mut _ as *mut _ ) };
     hr2ret(hr,())
@@ -5196,7 +5196,7 @@ impl DXGIOutput {
   
   //  Method GetFrameStatistics
   
-  pub fn get_frame_statistics(&mut self) -> HResult<DXGI_FRAME_STATISTICS> {
+  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5228,7 +5228,7 @@ impl Clone for DXGIResource1 {
 impl DXGIResource1 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -5236,7 +5236,7 @@ impl DXGIResource1 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -5244,7 +5244,7 @@ impl DXGIResource1 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5252,7 +5252,7 @@ impl DXGIResource1 {
   
   //  Method GetSharedHandle
   
-  pub fn get_shared_handle(&mut self) -> HResult<HANDLE> {
+  pub fn get_shared_handle(&self) -> HResult<HANDLE> {
     let mut lv1: HANDLE = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetSharedHandle(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5260,7 +5260,7 @@ impl DXGIResource1 {
   
   //  Method GetUsage
   
-  pub fn get_usage(&mut self) -> HResult<DXGI_USAGE> {
+  pub fn get_usage(&self) -> HResult<DXGI_USAGE> {
     let mut lv1: DXGI_USAGE = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetUsage(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5268,7 +5268,7 @@ impl DXGIResource1 {
   
   //  Method SetEvictionPriority
   
-  pub fn set_eviction_priority(&mut self, eviction_priority: UINT) -> HResult<()> {
+  pub fn set_eviction_priority(&self, eviction_priority: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetEvictionPriority(eviction_priority) };
     hr2ret(hr,())
@@ -5276,7 +5276,7 @@ impl DXGIResource1 {
   
   //  Method GetEvictionPriority
   
-  pub fn get_eviction_priority(&mut self) -> HResult<UINT> {
+  pub fn get_eviction_priority(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetEvictionPriority(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5284,7 +5284,7 @@ impl DXGIResource1 {
   
   //  Method CreateSubresourceSurface
   
-  pub fn create_subresource_surface(&mut self, index: UINT) -> HResult<DXGISurface2> {
+  pub fn create_subresource_surface(&self, index: UINT) -> HResult<DXGISurface2> {
     let mut lv1: *mut IDXGISurface2 = ptr::null_mut();
     let hr=unsafe { (*self.0).CreateSubresourceSurface(index, &mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGISurface2::new(lv1 as *mut _))
@@ -5292,7 +5292,7 @@ impl DXGIResource1 {
   
   //  Method CreateSharedHandle
   
-  pub fn create_shared_handle(&mut self, attributes: Option<&SECURITY_ATTRIBUTES>, access: DWORD, lpName: Cow<str>) -> HResult<HANDLE> {
+  pub fn create_shared_handle(&self, attributes: Option<&SECURITY_ATTRIBUTES>, access: DWORD, lpName: Cow<str>) -> HResult<HANDLE> {
     let lv1: Vec<u16> = str_to_vec_u16(lpName);
     let mut lv2: HANDLE = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).CreateSharedHandle(attributes.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), access, lv1.as_ptr() as LPCWSTR, &mut lv2 as *mut _ as *mut _) };
@@ -5325,7 +5325,7 @@ impl Clone for DXGIResource {
 impl DXGIResource {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -5333,7 +5333,7 @@ impl DXGIResource {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -5341,7 +5341,7 @@ impl DXGIResource {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5349,7 +5349,7 @@ impl DXGIResource {
   
   //  Method GetSharedHandle
   
-  pub fn get_shared_handle(&mut self) -> HResult<HANDLE> {
+  pub fn get_shared_handle(&self) -> HResult<HANDLE> {
     let mut lv1: HANDLE = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetSharedHandle(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5357,7 +5357,7 @@ impl DXGIResource {
   
   //  Method GetUsage
   
-  pub fn get_usage(&mut self) -> HResult<DXGI_USAGE> {
+  pub fn get_usage(&self) -> HResult<DXGI_USAGE> {
     let mut lv1: DXGI_USAGE = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetUsage(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5365,7 +5365,7 @@ impl DXGIResource {
   
   //  Method SetEvictionPriority
   
-  pub fn set_eviction_priority(&mut self, eviction_priority: UINT) -> HResult<()> {
+  pub fn set_eviction_priority(&self, eviction_priority: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetEvictionPriority(eviction_priority) };
     hr2ret(hr,())
@@ -5373,7 +5373,7 @@ impl DXGIResource {
   
   //  Method GetEvictionPriority
   
-  pub fn get_eviction_priority(&mut self) -> HResult<UINT> {
+  pub fn get_eviction_priority(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetEvictionPriority(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5405,7 +5405,7 @@ impl Clone for DXGISurface1 {
 impl DXGISurface1 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -5413,7 +5413,7 @@ impl DXGISurface1 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -5421,7 +5421,7 @@ impl DXGISurface1 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5429,7 +5429,7 @@ impl DXGISurface1 {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_SURFACE_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_SURFACE_DESC> {
     let mut lv1: DXGI_SURFACE_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5437,7 +5437,7 @@ impl DXGISurface1 {
   
   //  Method Map
   
-  pub fn map(&mut self, map_flags: UINT) -> HResult<DXGI_MAPPED_RECT> {
+  pub fn map(&self, map_flags: UINT) -> HResult<DXGI_MAPPED_RECT> {
     let mut lv1: DXGI_MAPPED_RECT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).Map(&mut lv1 as *mut _ as *mut _, map_flags) };
     hr2ret(hr,lv1)
@@ -5445,7 +5445,7 @@ impl DXGISurface1 {
   
   //  Method Unmap
   
-  pub fn unmap(&mut self) -> HResult<()> {
+  pub fn unmap(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Unmap() };
     hr2ret(hr,())
@@ -5453,7 +5453,7 @@ impl DXGISurface1 {
   
   //  Method GetDC
   
-  pub fn get_d_c(&mut self, discard: BOOL) -> HResult<HDC> {
+  pub fn get_d_c(&self, discard: BOOL) -> HResult<HDC> {
     let mut lv1: HDC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDC(discard, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5461,7 +5461,7 @@ impl DXGISurface1 {
   
   //  Method ReleaseDC
   
-  pub fn release_d_c(&mut self, dirty_rect: Option<&mut RECT>) -> HResult<()> {
+  pub fn release_d_c(&self, dirty_rect: Option<&mut RECT>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ReleaseDC(opt_as_mut_ptr(&dirty_rect)) };
     hr2ret(hr,())
@@ -5493,7 +5493,7 @@ impl Clone for DXGISurface2 {
 impl DXGISurface2 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -5501,7 +5501,7 @@ impl DXGISurface2 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -5509,7 +5509,7 @@ impl DXGISurface2 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5517,7 +5517,7 @@ impl DXGISurface2 {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_SURFACE_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_SURFACE_DESC> {
     let mut lv1: DXGI_SURFACE_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5525,7 +5525,7 @@ impl DXGISurface2 {
   
   //  Method Map
   
-  pub fn map(&mut self, map_flags: UINT) -> HResult<DXGI_MAPPED_RECT> {
+  pub fn map(&self, map_flags: UINT) -> HResult<DXGI_MAPPED_RECT> {
     let mut lv1: DXGI_MAPPED_RECT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).Map(&mut lv1 as *mut _ as *mut _, map_flags) };
     hr2ret(hr,lv1)
@@ -5533,7 +5533,7 @@ impl DXGISurface2 {
   
   //  Method Unmap
   
-  pub fn unmap(&mut self) -> HResult<()> {
+  pub fn unmap(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Unmap() };
     hr2ret(hr,())
@@ -5541,7 +5541,7 @@ impl DXGISurface2 {
   
   //  Method GetDC
   
-  pub fn get_d_c(&mut self, discard: BOOL) -> HResult<HDC> {
+  pub fn get_d_c(&self, discard: BOOL) -> HResult<HDC> {
     let mut lv1: HDC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDC(discard, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5549,7 +5549,7 @@ impl DXGISurface2 {
   
   //  Method ReleaseDC
   
-  pub fn release_d_c(&mut self, dirty_rect: Option<&mut RECT>) -> HResult<()> {
+  pub fn release_d_c(&self, dirty_rect: Option<&mut RECT>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ReleaseDC(opt_as_mut_ptr(&dirty_rect)) };
     hr2ret(hr,())
@@ -5557,7 +5557,7 @@ impl DXGISurface2 {
   
   //  Method GetResource
   
-  pub fn get_resource<T: HasIID>(&mut self, subresource_index: &mut UINT) -> HResult<T> {
+  pub fn get_resource<T: HasIID>(&self, subresource_index: &mut UINT) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetResource(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void, subresource_index) };
     hr2ret(hr,T::new(lv1))
@@ -5589,7 +5589,7 @@ impl Clone for DXGISurface {
 impl DXGISurface {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -5597,7 +5597,7 @@ impl DXGISurface {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -5605,7 +5605,7 @@ impl DXGISurface {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5613,7 +5613,7 @@ impl DXGISurface {
   
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_SURFACE_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_SURFACE_DESC> {
     let mut lv1: DXGI_SURFACE_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5621,7 +5621,7 @@ impl DXGISurface {
   
   //  Method Map
   
-  pub fn map(&mut self, map_flags: UINT) -> HResult<DXGI_MAPPED_RECT> {
+  pub fn map(&self, map_flags: UINT) -> HResult<DXGI_MAPPED_RECT> {
     let mut lv1: DXGI_MAPPED_RECT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).Map(&mut lv1 as *mut _ as *mut _, map_flags) };
     hr2ret(hr,lv1)
@@ -5629,7 +5629,7 @@ impl DXGISurface {
   
   //  Method Unmap
   
-  pub fn unmap(&mut self) -> HResult<()> {
+  pub fn unmap(&self) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Unmap() };
     hr2ret(hr,())
@@ -5661,7 +5661,7 @@ impl Clone for DXGISwapChain1 {
 impl DXGISwapChain1 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -5669,7 +5669,7 @@ impl DXGISwapChain1 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -5677,7 +5677,7 @@ impl DXGISwapChain1 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5685,7 +5685,7 @@ impl DXGISwapChain1 {
   
   //  Method Present
   
-  pub fn present(&mut self, sync_interval: UINT, flags: UINT) -> HResult<()> {
+  pub fn present(&self, sync_interval: UINT, flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Present(sync_interval, flags) };
     hr2ret(hr,())
@@ -5693,7 +5693,7 @@ impl DXGISwapChain1 {
   
   //  Method GetBuffer
   
-  pub fn get_buffer<T: HasIID>(&mut self, buffer: UINT) -> HResult<T> {
+  pub fn get_buffer<T: HasIID>(&self, buffer: UINT) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetBuffer(buffer, T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5701,7 +5701,7 @@ impl DXGISwapChain1 {
   
   //  Method SetFullscreenState
   
-  pub fn set_fullscreen_state(&mut self, fullscreen: BOOL, target: Option<&DXGIOutput>) -> HResult<()> {
+  pub fn set_fullscreen_state(&self, fullscreen: BOOL, target: Option<&DXGIOutput>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetFullscreenState(fullscreen, target.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,())
@@ -5711,7 +5711,7 @@ impl DXGISwapChain1 {
   //  Error: ppTarget parameter: ANone annotation cannot be used with double indirection
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
     let mut lv1: DXGI_SWAP_CHAIN_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5719,7 +5719,7 @@ impl DXGISwapChain1 {
   
   //  Method ResizeBuffers
   
-  pub fn resize_buffers(&mut self, buffer_count: UINT, width: UINT, height: UINT, new_format: DXGI_FORMAT, swap_chain_flags: UINT) -> HResult<()> {
+  pub fn resize_buffers(&self, buffer_count: UINT, width: UINT, height: UINT, new_format: DXGI_FORMAT, swap_chain_flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ResizeBuffers(buffer_count, width, height, new_format, swap_chain_flags) };
     hr2ret(hr,())
@@ -5727,7 +5727,7 @@ impl DXGISwapChain1 {
   
   //  Method ResizeTarget
   
-  pub fn resize_target(&mut self, new_target_parameters: &DXGI_MODE_DESC) -> HResult<()> {
+  pub fn resize_target(&self, new_target_parameters: &DXGI_MODE_DESC) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ResizeTarget(new_target_parameters) };
     hr2ret(hr,())
@@ -5735,7 +5735,7 @@ impl DXGISwapChain1 {
   
   //  Method GetContainingOutput
   
-  pub fn get_containing_output(&mut self) -> HResult<DXGIOutput> {
+  pub fn get_containing_output(&self) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).GetContainingOutput(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -5743,7 +5743,7 @@ impl DXGISwapChain1 {
   
   //  Method GetFrameStatistics
   
-  pub fn get_frame_statistics(&mut self) -> HResult<DXGI_FRAME_STATISTICS> {
+  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5751,7 +5751,7 @@ impl DXGISwapChain1 {
   
   //  Method GetLastPresentCount
   
-  pub fn get_last_present_count(&mut self) -> HResult<UINT> {
+  pub fn get_last_present_count(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetLastPresentCount(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5759,7 +5759,7 @@ impl DXGISwapChain1 {
   
   //  Method GetDesc1
   
-  pub fn get_desc1(&mut self) -> HResult<DXGI_SWAP_CHAIN_DESC1> {
+  pub fn get_desc1(&self) -> HResult<DXGI_SWAP_CHAIN_DESC1> {
     let mut lv1: DXGI_SWAP_CHAIN_DESC1 = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc1(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5767,7 +5767,7 @@ impl DXGISwapChain1 {
   
   //  Method GetFullscreenDesc
   
-  pub fn get_fullscreen_desc(&mut self) -> HResult<DXGI_SWAP_CHAIN_FULLSCREEN_DESC> {
+  pub fn get_fullscreen_desc(&self) -> HResult<DXGI_SWAP_CHAIN_FULLSCREEN_DESC> {
     let mut lv1: DXGI_SWAP_CHAIN_FULLSCREEN_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFullscreenDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5775,7 +5775,7 @@ impl DXGISwapChain1 {
   
   //  Method GetHwnd
   
-  pub fn get_hwnd(&mut self) -> HResult<HWND> {
+  pub fn get_hwnd(&self) -> HResult<HWND> {
     let mut lv1: HWND = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetHwnd(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5783,7 +5783,7 @@ impl DXGISwapChain1 {
   
   //  Method GetCoreWindow
   
-  pub fn get_core_window<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_core_window<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetCoreWindow(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5791,7 +5791,7 @@ impl DXGISwapChain1 {
   
   //  Method Present1
   
-  pub fn present1(&mut self, sync_interval: UINT, present_flags: UINT, present_parameters: &DXGI_PRESENT_PARAMETERS) -> HResult<()> {
+  pub fn present1(&self, sync_interval: UINT, present_flags: UINT, present_parameters: &DXGI_PRESENT_PARAMETERS) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Present1(sync_interval, present_flags, present_parameters) };
     hr2ret(hr,())
@@ -5799,7 +5799,7 @@ impl DXGISwapChain1 {
   
   //  Method IsTemporaryMonoSupported
   
-  pub fn is_temporary_mono_supported(&mut self) -> BOOL {
+  pub fn is_temporary_mono_supported(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsTemporaryMonoSupported() };
     hr
@@ -5807,7 +5807,7 @@ impl DXGISwapChain1 {
   
   //  Method GetRestrictToOutput
   
-  pub fn get_restrict_to_output(&mut self) -> HResult<DXGIOutput> {
+  pub fn get_restrict_to_output(&self) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).GetRestrictToOutput(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -5815,7 +5815,7 @@ impl DXGISwapChain1 {
   
   //  Method SetBackgroundColor
   
-  pub fn set_background_color(&mut self, color: &DXGI_RGBA) -> HResult<()> {
+  pub fn set_background_color(&self, color: &DXGI_RGBA) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetBackgroundColor(color) };
     hr2ret(hr,())
@@ -5823,7 +5823,7 @@ impl DXGISwapChain1 {
   
   //  Method GetBackgroundColor
   
-  pub fn get_background_color(&mut self) -> HResult<DXGI_RGBA> {
+  pub fn get_background_color(&self) -> HResult<DXGI_RGBA> {
     let mut lv1: DXGI_RGBA = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetBackgroundColor(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5831,7 +5831,7 @@ impl DXGISwapChain1 {
   
   //  Method SetRotation
   
-  pub fn set_rotation(&mut self, rotation: DXGI_MODE_ROTATION) -> HResult<()> {
+  pub fn set_rotation(&self, rotation: DXGI_MODE_ROTATION) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetRotation(rotation) };
     hr2ret(hr,())
@@ -5839,7 +5839,7 @@ impl DXGISwapChain1 {
   
   //  Method GetRotation
   
-  pub fn get_rotation(&mut self) -> HResult<DXGI_MODE_ROTATION> {
+  pub fn get_rotation(&self) -> HResult<DXGI_MODE_ROTATION> {
     let mut lv1: DXGI_MODE_ROTATION = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetRotation(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5871,7 +5871,7 @@ impl Clone for DXGISwapChain2 {
 impl DXGISwapChain2 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -5879,7 +5879,7 @@ impl DXGISwapChain2 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -5887,7 +5887,7 @@ impl DXGISwapChain2 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5895,7 +5895,7 @@ impl DXGISwapChain2 {
   
   //  Method Present
   
-  pub fn present(&mut self, sync_interval: UINT, flags: UINT) -> HResult<()> {
+  pub fn present(&self, sync_interval: UINT, flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Present(sync_interval, flags) };
     hr2ret(hr,())
@@ -5903,7 +5903,7 @@ impl DXGISwapChain2 {
   
   //  Method GetBuffer
   
-  pub fn get_buffer<T: HasIID>(&mut self, buffer: UINT) -> HResult<T> {
+  pub fn get_buffer<T: HasIID>(&self, buffer: UINT) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetBuffer(buffer, T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -5911,7 +5911,7 @@ impl DXGISwapChain2 {
   
   //  Method SetFullscreenState
   
-  pub fn set_fullscreen_state(&mut self, fullscreen: BOOL, target: Option<&DXGIOutput>) -> HResult<()> {
+  pub fn set_fullscreen_state(&self, fullscreen: BOOL, target: Option<&DXGIOutput>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetFullscreenState(fullscreen, target.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,())
@@ -5921,7 +5921,7 @@ impl DXGISwapChain2 {
   //  Error: ppTarget parameter: ANone annotation cannot be used with double indirection
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
     let mut lv1: DXGI_SWAP_CHAIN_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5929,7 +5929,7 @@ impl DXGISwapChain2 {
   
   //  Method ResizeBuffers
   
-  pub fn resize_buffers(&mut self, buffer_count: UINT, width: UINT, height: UINT, new_format: DXGI_FORMAT, swap_chain_flags: UINT) -> HResult<()> {
+  pub fn resize_buffers(&self, buffer_count: UINT, width: UINT, height: UINT, new_format: DXGI_FORMAT, swap_chain_flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ResizeBuffers(buffer_count, width, height, new_format, swap_chain_flags) };
     hr2ret(hr,())
@@ -5937,7 +5937,7 @@ impl DXGISwapChain2 {
   
   //  Method ResizeTarget
   
-  pub fn resize_target(&mut self, new_target_parameters: &DXGI_MODE_DESC) -> HResult<()> {
+  pub fn resize_target(&self, new_target_parameters: &DXGI_MODE_DESC) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ResizeTarget(new_target_parameters) };
     hr2ret(hr,())
@@ -5945,7 +5945,7 @@ impl DXGISwapChain2 {
   
   //  Method GetContainingOutput
   
-  pub fn get_containing_output(&mut self) -> HResult<DXGIOutput> {
+  pub fn get_containing_output(&self) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).GetContainingOutput(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -5953,7 +5953,7 @@ impl DXGISwapChain2 {
   
   //  Method GetFrameStatistics
   
-  pub fn get_frame_statistics(&mut self) -> HResult<DXGI_FRAME_STATISTICS> {
+  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5961,7 +5961,7 @@ impl DXGISwapChain2 {
   
   //  Method GetLastPresentCount
   
-  pub fn get_last_present_count(&mut self) -> HResult<UINT> {
+  pub fn get_last_present_count(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetLastPresentCount(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5969,7 +5969,7 @@ impl DXGISwapChain2 {
   
   //  Method GetDesc1
   
-  pub fn get_desc1(&mut self) -> HResult<DXGI_SWAP_CHAIN_DESC1> {
+  pub fn get_desc1(&self) -> HResult<DXGI_SWAP_CHAIN_DESC1> {
     let mut lv1: DXGI_SWAP_CHAIN_DESC1 = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc1(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5977,7 +5977,7 @@ impl DXGISwapChain2 {
   
   //  Method GetFullscreenDesc
   
-  pub fn get_fullscreen_desc(&mut self) -> HResult<DXGI_SWAP_CHAIN_FULLSCREEN_DESC> {
+  pub fn get_fullscreen_desc(&self) -> HResult<DXGI_SWAP_CHAIN_FULLSCREEN_DESC> {
     let mut lv1: DXGI_SWAP_CHAIN_FULLSCREEN_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFullscreenDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5985,7 +5985,7 @@ impl DXGISwapChain2 {
   
   //  Method GetHwnd
   
-  pub fn get_hwnd(&mut self) -> HResult<HWND> {
+  pub fn get_hwnd(&self) -> HResult<HWND> {
     let mut lv1: HWND = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetHwnd(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -5993,7 +5993,7 @@ impl DXGISwapChain2 {
   
   //  Method GetCoreWindow
   
-  pub fn get_core_window<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_core_window<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetCoreWindow(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -6001,7 +6001,7 @@ impl DXGISwapChain2 {
   
   //  Method Present1
   
-  pub fn present1(&mut self, sync_interval: UINT, present_flags: UINT, present_parameters: &DXGI_PRESENT_PARAMETERS) -> HResult<()> {
+  pub fn present1(&self, sync_interval: UINT, present_flags: UINT, present_parameters: &DXGI_PRESENT_PARAMETERS) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Present1(sync_interval, present_flags, present_parameters) };
     hr2ret(hr,())
@@ -6009,7 +6009,7 @@ impl DXGISwapChain2 {
   
   //  Method IsTemporaryMonoSupported
   
-  pub fn is_temporary_mono_supported(&mut self) -> BOOL {
+  pub fn is_temporary_mono_supported(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsTemporaryMonoSupported() };
     hr
@@ -6017,7 +6017,7 @@ impl DXGISwapChain2 {
   
   //  Method GetRestrictToOutput
   
-  pub fn get_restrict_to_output(&mut self) -> HResult<DXGIOutput> {
+  pub fn get_restrict_to_output(&self) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).GetRestrictToOutput(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -6025,7 +6025,7 @@ impl DXGISwapChain2 {
   
   //  Method SetBackgroundColor
   
-  pub fn set_background_color(&mut self, color: &DXGI_RGBA) -> HResult<()> {
+  pub fn set_background_color(&self, color: &DXGI_RGBA) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetBackgroundColor(color) };
     hr2ret(hr,())
@@ -6033,7 +6033,7 @@ impl DXGISwapChain2 {
   
   //  Method GetBackgroundColor
   
-  pub fn get_background_color(&mut self) -> HResult<DXGI_RGBA> {
+  pub fn get_background_color(&self) -> HResult<DXGI_RGBA> {
     let mut lv1: DXGI_RGBA = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetBackgroundColor(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6041,7 +6041,7 @@ impl DXGISwapChain2 {
   
   //  Method SetRotation
   
-  pub fn set_rotation(&mut self, rotation: DXGI_MODE_ROTATION) -> HResult<()> {
+  pub fn set_rotation(&self, rotation: DXGI_MODE_ROTATION) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetRotation(rotation) };
     hr2ret(hr,())
@@ -6049,7 +6049,7 @@ impl DXGISwapChain2 {
   
   //  Method GetRotation
   
-  pub fn get_rotation(&mut self) -> HResult<DXGI_MODE_ROTATION> {
+  pub fn get_rotation(&self) -> HResult<DXGI_MODE_ROTATION> {
     let mut lv1: DXGI_MODE_ROTATION = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetRotation(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6057,7 +6057,7 @@ impl DXGISwapChain2 {
   
   //  Method SetSourceSize
   
-  pub fn set_source_size(&mut self, width: UINT, height: UINT) -> HResult<()> {
+  pub fn set_source_size(&self, width: UINT, height: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetSourceSize(width, height) };
     hr2ret(hr,())
@@ -6065,7 +6065,7 @@ impl DXGISwapChain2 {
   
   //  Method GetSourceSize
   
-  pub fn get_source_size(&mut self) -> HResult<DSize> {
+  pub fn get_source_size(&self) -> HResult<DSize> {
     let mut lv1: DSize = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetSourceSize(&mut (lv1.width) as *mut _ as *mut _, &mut (lv1.height) as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6073,7 +6073,7 @@ impl DXGISwapChain2 {
   
   //  Method SetMaximumFrameLatency
   
-  pub fn set_maximum_frame_latency(&mut self, max_latency: UINT) -> HResult<()> {
+  pub fn set_maximum_frame_latency(&self, max_latency: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetMaximumFrameLatency(max_latency) };
     hr2ret(hr,())
@@ -6081,7 +6081,7 @@ impl DXGISwapChain2 {
   
   //  Method GetMaximumFrameLatency
   
-  pub fn get_maximum_frame_latency(&mut self) -> HResult<UINT> {
+  pub fn get_maximum_frame_latency(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetMaximumFrameLatency(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6089,7 +6089,7 @@ impl DXGISwapChain2 {
   
   //  Method GetFrameLatencyWaitableObject
   
-  pub fn get_frame_latency_waitable_object(&mut self) -> HANDLE {
+  pub fn get_frame_latency_waitable_object(&self) -> HANDLE {
   
     let hr=unsafe { (*self.0).GetFrameLatencyWaitableObject() };
     hr
@@ -6097,7 +6097,7 @@ impl DXGISwapChain2 {
   
   //  Method SetMatrixTransform
   
-  pub fn set_matrix_transform(&mut self, matrix: &DXGI_MATRIX_3X2_F) -> HResult<()> {
+  pub fn set_matrix_transform(&self, matrix: &DXGI_MATRIX_3X2_F) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetMatrixTransform(matrix) };
     hr2ret(hr,())
@@ -6105,7 +6105,7 @@ impl DXGISwapChain2 {
   
   //  Method GetMatrixTransform
   
-  pub fn get_matrix_transform(&mut self) -> HResult<DXGI_MATRIX_3X2_F> {
+  pub fn get_matrix_transform(&self) -> HResult<DXGI_MATRIX_3X2_F> {
     let mut lv1: DXGI_MATRIX_3X2_F = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetMatrixTransform(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6137,7 +6137,7 @@ impl Clone for DXGISwapChain3 {
 impl DXGISwapChain3 {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -6145,7 +6145,7 @@ impl DXGISwapChain3 {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -6153,7 +6153,7 @@ impl DXGISwapChain3 {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -6161,7 +6161,7 @@ impl DXGISwapChain3 {
   
   //  Method Present
   
-  pub fn present(&mut self, sync_interval: UINT, flags: UINT) -> HResult<()> {
+  pub fn present(&self, sync_interval: UINT, flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Present(sync_interval, flags) };
     hr2ret(hr,())
@@ -6169,7 +6169,7 @@ impl DXGISwapChain3 {
   
   //  Method GetBuffer
   
-  pub fn get_buffer<T: HasIID>(&mut self, buffer: UINT) -> HResult<T> {
+  pub fn get_buffer<T: HasIID>(&self, buffer: UINT) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetBuffer(buffer, T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -6177,7 +6177,7 @@ impl DXGISwapChain3 {
   
   //  Method SetFullscreenState
   
-  pub fn set_fullscreen_state(&mut self, fullscreen: BOOL, target: Option<&DXGIOutput>) -> HResult<()> {
+  pub fn set_fullscreen_state(&self, fullscreen: BOOL, target: Option<&DXGIOutput>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetFullscreenState(fullscreen, target.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,())
@@ -6187,7 +6187,7 @@ impl DXGISwapChain3 {
   //  Error: ppTarget parameter: ANone annotation cannot be used with double indirection
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
     let mut lv1: DXGI_SWAP_CHAIN_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6195,7 +6195,7 @@ impl DXGISwapChain3 {
   
   //  Method ResizeBuffers
   
-  pub fn resize_buffers(&mut self, buffer_count: UINT, width: UINT, height: UINT, new_format: DXGI_FORMAT, swap_chain_flags: UINT) -> HResult<()> {
+  pub fn resize_buffers(&self, buffer_count: UINT, width: UINT, height: UINT, new_format: DXGI_FORMAT, swap_chain_flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ResizeBuffers(buffer_count, width, height, new_format, swap_chain_flags) };
     hr2ret(hr,())
@@ -6203,7 +6203,7 @@ impl DXGISwapChain3 {
   
   //  Method ResizeTarget
   
-  pub fn resize_target(&mut self, new_target_parameters: &DXGI_MODE_DESC) -> HResult<()> {
+  pub fn resize_target(&self, new_target_parameters: &DXGI_MODE_DESC) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ResizeTarget(new_target_parameters) };
     hr2ret(hr,())
@@ -6211,7 +6211,7 @@ impl DXGISwapChain3 {
   
   //  Method GetContainingOutput
   
-  pub fn get_containing_output(&mut self) -> HResult<DXGIOutput> {
+  pub fn get_containing_output(&self) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).GetContainingOutput(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -6219,7 +6219,7 @@ impl DXGISwapChain3 {
   
   //  Method GetFrameStatistics
   
-  pub fn get_frame_statistics(&mut self) -> HResult<DXGI_FRAME_STATISTICS> {
+  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6227,7 +6227,7 @@ impl DXGISwapChain3 {
   
   //  Method GetLastPresentCount
   
-  pub fn get_last_present_count(&mut self) -> HResult<UINT> {
+  pub fn get_last_present_count(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetLastPresentCount(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6235,7 +6235,7 @@ impl DXGISwapChain3 {
   
   //  Method GetDesc1
   
-  pub fn get_desc1(&mut self) -> HResult<DXGI_SWAP_CHAIN_DESC1> {
+  pub fn get_desc1(&self) -> HResult<DXGI_SWAP_CHAIN_DESC1> {
     let mut lv1: DXGI_SWAP_CHAIN_DESC1 = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc1(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6243,7 +6243,7 @@ impl DXGISwapChain3 {
   
   //  Method GetFullscreenDesc
   
-  pub fn get_fullscreen_desc(&mut self) -> HResult<DXGI_SWAP_CHAIN_FULLSCREEN_DESC> {
+  pub fn get_fullscreen_desc(&self) -> HResult<DXGI_SWAP_CHAIN_FULLSCREEN_DESC> {
     let mut lv1: DXGI_SWAP_CHAIN_FULLSCREEN_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFullscreenDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6251,7 +6251,7 @@ impl DXGISwapChain3 {
   
   //  Method GetHwnd
   
-  pub fn get_hwnd(&mut self) -> HResult<HWND> {
+  pub fn get_hwnd(&self) -> HResult<HWND> {
     let mut lv1: HWND = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetHwnd(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6259,7 +6259,7 @@ impl DXGISwapChain3 {
   
   //  Method GetCoreWindow
   
-  pub fn get_core_window<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_core_window<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetCoreWindow(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -6267,7 +6267,7 @@ impl DXGISwapChain3 {
   
   //  Method Present1
   
-  pub fn present1(&mut self, sync_interval: UINT, present_flags: UINT, present_parameters: &DXGI_PRESENT_PARAMETERS) -> HResult<()> {
+  pub fn present1(&self, sync_interval: UINT, present_flags: UINT, present_parameters: &DXGI_PRESENT_PARAMETERS) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Present1(sync_interval, present_flags, present_parameters) };
     hr2ret(hr,())
@@ -6275,7 +6275,7 @@ impl DXGISwapChain3 {
   
   //  Method IsTemporaryMonoSupported
   
-  pub fn is_temporary_mono_supported(&mut self) -> BOOL {
+  pub fn is_temporary_mono_supported(&self) -> BOOL {
   
     let hr=unsafe { (*self.0).IsTemporaryMonoSupported() };
     hr
@@ -6283,7 +6283,7 @@ impl DXGISwapChain3 {
   
   //  Method GetRestrictToOutput
   
-  pub fn get_restrict_to_output(&mut self) -> HResult<DXGIOutput> {
+  pub fn get_restrict_to_output(&self) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).GetRestrictToOutput(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -6291,7 +6291,7 @@ impl DXGISwapChain3 {
   
   //  Method SetBackgroundColor
   
-  pub fn set_background_color(&mut self, color: &DXGI_RGBA) -> HResult<()> {
+  pub fn set_background_color(&self, color: &DXGI_RGBA) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetBackgroundColor(color) };
     hr2ret(hr,())
@@ -6299,7 +6299,7 @@ impl DXGISwapChain3 {
   
   //  Method GetBackgroundColor
   
-  pub fn get_background_color(&mut self) -> HResult<DXGI_RGBA> {
+  pub fn get_background_color(&self) -> HResult<DXGI_RGBA> {
     let mut lv1: DXGI_RGBA = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetBackgroundColor(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6307,7 +6307,7 @@ impl DXGISwapChain3 {
   
   //  Method SetRotation
   
-  pub fn set_rotation(&mut self, rotation: DXGI_MODE_ROTATION) -> HResult<()> {
+  pub fn set_rotation(&self, rotation: DXGI_MODE_ROTATION) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetRotation(rotation) };
     hr2ret(hr,())
@@ -6315,7 +6315,7 @@ impl DXGISwapChain3 {
   
   //  Method GetRotation
   
-  pub fn get_rotation(&mut self) -> HResult<DXGI_MODE_ROTATION> {
+  pub fn get_rotation(&self) -> HResult<DXGI_MODE_ROTATION> {
     let mut lv1: DXGI_MODE_ROTATION = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetRotation(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6323,7 +6323,7 @@ impl DXGISwapChain3 {
   
   //  Method SetSourceSize
   
-  pub fn set_source_size(&mut self, width: UINT, height: UINT) -> HResult<()> {
+  pub fn set_source_size(&self, width: UINT, height: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetSourceSize(width, height) };
     hr2ret(hr,())
@@ -6331,7 +6331,7 @@ impl DXGISwapChain3 {
   
   //  Method GetSourceSize
   
-  pub fn get_source_size(&mut self) -> HResult<DSize> {
+  pub fn get_source_size(&self) -> HResult<DSize> {
     let mut lv1: DSize = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetSourceSize(&mut (lv1.width) as *mut _ as *mut _, &mut (lv1.height) as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6339,7 +6339,7 @@ impl DXGISwapChain3 {
   
   //  Method SetMaximumFrameLatency
   
-  pub fn set_maximum_frame_latency(&mut self, max_latency: UINT) -> HResult<()> {
+  pub fn set_maximum_frame_latency(&self, max_latency: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetMaximumFrameLatency(max_latency) };
     hr2ret(hr,())
@@ -6347,7 +6347,7 @@ impl DXGISwapChain3 {
   
   //  Method GetMaximumFrameLatency
   
-  pub fn get_maximum_frame_latency(&mut self) -> HResult<UINT> {
+  pub fn get_maximum_frame_latency(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetMaximumFrameLatency(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6355,7 +6355,7 @@ impl DXGISwapChain3 {
   
   //  Method GetFrameLatencyWaitableObject
   
-  pub fn get_frame_latency_waitable_object(&mut self) -> HANDLE {
+  pub fn get_frame_latency_waitable_object(&self) -> HANDLE {
   
     let hr=unsafe { (*self.0).GetFrameLatencyWaitableObject() };
     hr
@@ -6363,7 +6363,7 @@ impl DXGISwapChain3 {
   
   //  Method SetMatrixTransform
   
-  pub fn set_matrix_transform(&mut self, matrix: &DXGI_MATRIX_3X2_F) -> HResult<()> {
+  pub fn set_matrix_transform(&self, matrix: &DXGI_MATRIX_3X2_F) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetMatrixTransform(matrix) };
     hr2ret(hr,())
@@ -6371,7 +6371,7 @@ impl DXGISwapChain3 {
   
   //  Method GetMatrixTransform
   
-  pub fn get_matrix_transform(&mut self) -> HResult<DXGI_MATRIX_3X2_F> {
+  pub fn get_matrix_transform(&self) -> HResult<DXGI_MATRIX_3X2_F> {
     let mut lv1: DXGI_MATRIX_3X2_F = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetMatrixTransform(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6379,7 +6379,7 @@ impl DXGISwapChain3 {
   
   //  Method GetCurrentBackBufferIndex
   
-  pub fn get_current_back_buffer_index(&mut self) -> UINT {
+  pub fn get_current_back_buffer_index(&self) -> UINT {
   
     let hr=unsafe { (*self.0).GetCurrentBackBufferIndex() };
     hr
@@ -6387,7 +6387,7 @@ impl DXGISwapChain3 {
   
   //  Method CheckColorSpaceSupport
   
-  pub fn check_color_space_support(&mut self, color_space: DXGI_COLOR_SPACE_TYPE) -> HResult<UINT> {
+  pub fn check_color_space_support(&self, color_space: DXGI_COLOR_SPACE_TYPE) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).CheckColorSpaceSupport(color_space, &mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6395,7 +6395,7 @@ impl DXGISwapChain3 {
   
   //  Method SetColorSpace1
   
-  pub fn set_color_space1(&mut self, color_space: DXGI_COLOR_SPACE_TYPE) -> HResult<()> {
+  pub fn set_color_space1(&self, color_space: DXGI_COLOR_SPACE_TYPE) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetColorSpace1(color_space) };
     hr2ret(hr,())
@@ -6403,7 +6403,7 @@ impl DXGISwapChain3 {
   
   //  Method ResizeBuffers1
   
-  pub fn resize_buffers1<T: HasIID>(&mut self, width: UINT, height: UINT, format: DXGI_FORMAT, swap_chain_flags: UINT, creation_node_mask: &mut [UINT], present_queue: &[&T]) -> HResult<()> {
+  pub fn resize_buffers1<T: HasIID>(&self, width: UINT, height: UINT, format: DXGI_FORMAT, swap_chain_flags: UINT, creation_node_mask: &mut [UINT], present_queue: &[&T]) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = present_queue.iter().map(|o|o.iptr()).collect();
     let hr=unsafe { (*self.0).ResizeBuffers1( same_length(&[Some(creation_node_mask.len()),Some(present_queue.len())]).expect("Arrays must have equal sizes") as UINT, width, height, format, swap_chain_flags, creation_node_mask.as_mut_ptr() as *mut _, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     hr2ret(hr,())
@@ -6435,7 +6435,7 @@ impl Clone for DXGISwapChainMedia {
 impl DXGISwapChainMedia {
   //  Method GetFrameStatisticsMedia
   
-  pub fn get_frame_statistics_media(&mut self) -> HResult<DXGI_FRAME_STATISTICS_MEDIA> {
+  pub fn get_frame_statistics_media(&self) -> HResult<DXGI_FRAME_STATISTICS_MEDIA> {
     let mut lv1: DXGI_FRAME_STATISTICS_MEDIA = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFrameStatisticsMedia(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6443,7 +6443,7 @@ impl DXGISwapChainMedia {
   
   //  Method SetPresentDuration
   
-  pub fn set_present_duration(&mut self, duration: UINT) -> HResult<()> {
+  pub fn set_present_duration(&self, duration: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPresentDuration(duration) };
     hr2ret(hr,())
@@ -6451,7 +6451,7 @@ impl DXGISwapChainMedia {
   
   //  Method CheckPresentDurationSupport
   
-  pub fn check_present_duration_support(&mut self, desired_present_duration: UINT, closest_smaller_present_duration: &mut UINT, closest_larger_present_duration: &mut UINT) -> HResult<()> {
+  pub fn check_present_duration_support(&self, desired_present_duration: UINT, closest_smaller_present_duration: &mut UINT, closest_larger_present_duration: &mut UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).CheckPresentDurationSupport(desired_present_duration, closest_smaller_present_duration, closest_larger_present_duration) };
     hr2ret(hr,())
@@ -6483,7 +6483,7 @@ impl Clone for DXGISwapChain {
 impl DXGISwapChain {
   //  Method SetPrivateData
   
-  pub fn set_private_data<T>(&mut self, name: REFGUID, data: &T) -> HResult<()> {
+  pub fn set_private_data<T>(&self, name: REFGUID, data: &T) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(hr,())
@@ -6491,7 +6491,7 @@ impl DXGISwapChain {
   
   //  Method GetPrivateData
   
-  pub fn get_private_data<T>(&mut self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
+  pub fn get_private_data<T>(&self, name: REFGUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
     let hr=unsafe { (*self.0).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(hr,lv1)
@@ -6499,7 +6499,7 @@ impl DXGISwapChain {
   
   //  Method GetParent
   
-  pub fn get_parent<T: HasIID>(&mut self) -> HResult<T> {
+  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -6507,7 +6507,7 @@ impl DXGISwapChain {
   
   //  Method Present
   
-  pub fn present(&mut self, sync_interval: UINT, flags: UINT) -> HResult<()> {
+  pub fn present(&self, sync_interval: UINT, flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).Present(sync_interval, flags) };
     hr2ret(hr,())
@@ -6515,7 +6515,7 @@ impl DXGISwapChain {
   
   //  Method GetBuffer
   
-  pub fn get_buffer<T: HasIID>(&mut self, buffer: UINT) -> HResult<T> {
+  pub fn get_buffer<T: HasIID>(&self, buffer: UINT) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let hr=unsafe { (*self.0).GetBuffer(buffer, T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(hr,T::new(lv1))
@@ -6523,7 +6523,7 @@ impl DXGISwapChain {
   
   //  Method SetFullscreenState
   
-  pub fn set_fullscreen_state(&mut self, fullscreen: BOOL, target: Option<&DXGIOutput>) -> HResult<()> {
+  pub fn set_fullscreen_state(&self, fullscreen: BOOL, target: Option<&DXGIOutput>) -> HResult<()> {
   
     let hr=unsafe { (*self.0).SetFullscreenState(fullscreen, target.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(hr,())
@@ -6533,7 +6533,7 @@ impl DXGISwapChain {
   //  Error: ppTarget parameter: ANone annotation cannot be used with double indirection
   //  Method GetDesc
   
-  pub fn get_desc(&mut self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
+  pub fn get_desc(&self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
     let mut lv1: DXGI_SWAP_CHAIN_DESC = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6541,7 +6541,7 @@ impl DXGISwapChain {
   
   //  Method ResizeBuffers
   
-  pub fn resize_buffers(&mut self, buffer_count: UINT, width: UINT, height: UINT, new_format: DXGI_FORMAT, swap_chain_flags: UINT) -> HResult<()> {
+  pub fn resize_buffers(&self, buffer_count: UINT, width: UINT, height: UINT, new_format: DXGI_FORMAT, swap_chain_flags: UINT) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ResizeBuffers(buffer_count, width, height, new_format, swap_chain_flags) };
     hr2ret(hr,())
@@ -6549,7 +6549,7 @@ impl DXGISwapChain {
   
   //  Method ResizeTarget
   
-  pub fn resize_target(&mut self, new_target_parameters: &DXGI_MODE_DESC) -> HResult<()> {
+  pub fn resize_target(&self, new_target_parameters: &DXGI_MODE_DESC) -> HResult<()> {
   
     let hr=unsafe { (*self.0).ResizeTarget(new_target_parameters) };
     hr2ret(hr,())
@@ -6557,7 +6557,7 @@ impl DXGISwapChain {
   
   //  Method GetContainingOutput
   
-  pub fn get_containing_output(&mut self) -> HResult<DXGIOutput> {
+  pub fn get_containing_output(&self) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
     let hr=unsafe { (*self.0).GetContainingOutput(&mut lv1 as *mut *mut _) };
     hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
@@ -6565,7 +6565,7 @@ impl DXGISwapChain {
   
   //  Method GetFrameStatistics
   
-  pub fn get_frame_statistics(&mut self) -> HResult<DXGI_FRAME_STATISTICS> {
+  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)
@@ -6573,7 +6573,7 @@ impl DXGISwapChain {
   
   //  Method GetLastPresentCount
   
-  pub fn get_last_present_count(&mut self) -> HResult<UINT> {
+  pub fn get_last_present_count(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
     let hr=unsafe { (*self.0).GetLastPresentCount(&mut lv1 as *mut _ as *mut _) };
     hr2ret(hr,lv1)

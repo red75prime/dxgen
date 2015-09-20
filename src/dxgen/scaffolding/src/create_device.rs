@@ -16,8 +16,8 @@ extern "system" {
 
 #[link(name="dxgi")]
 extern "system" {
-//    pub fn CreateDXGIFactory2(Flags: UINT, riid: REFGUID, ppFactory: *mut *mut c_void) -> HRESULT;
-//    pub fn DXGIGetDebugInterface1(Flags: UINT, riid: REFGUID, pDebug: *mut *mut c_void) -> HRESULT;
+    pub fn CreateDXGIFactory2(Flags: UINT, riid: REFGUID, ppFactory: *mut *mut c_void) -> HRESULT;
+    pub fn DXGIGetDebugInterface1(Flags: UINT, riid: REFGUID, pDebug: *mut *mut c_void) -> HRESULT;
 }
 
 
@@ -33,7 +33,7 @@ pub fn d3d12_create_device(adapter: Option<&DXGIAdapter>, min_feat_level: D3D_FE
 
 pub fn create_dxgi_factory1<T: HasIID>() -> HResult<T> {
   let mut p_fac : *mut IUnknown = ptr::null_mut();
-  let hr=unsafe {CreateDXGIFactory1(T::iid(), &mut p_fac as *mut *mut _ as *mut *mut _) }; 
+  let hr=unsafe {CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, T::iid(), &mut p_fac as *mut *mut _ as *mut *mut _) }; 
   if hr==0 {
     Ok(T::new(p_fac))
   } else {
@@ -73,7 +73,7 @@ pub fn d3d_compile_from_file(file_name: &str, entry: &str, target: &str, flags: 
   let mut blob2: *mut ID3D10Blob = ptr::null_mut();
   let hr=unsafe{D3DCompileFromFile(w_file_name.as_ptr(), ptr::null_mut(), ptr::null_mut(), w_entry.as_ptr(), w_target.as_ptr(), flags, 0, &mut blob1, &mut blob2)};
   if blob2 != ptr::null_mut() {
-    let mut blob=D3D10Blob::new(blob2 as *mut _);
+    let blob=D3D10Blob::new(blob2 as *mut _);
     unsafe{
       let blob_slice:&[u8]=::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize);
       let mut ret=vec![];
@@ -84,7 +84,7 @@ pub fn d3d_compile_from_file(file_name: &str, entry: &str, target: &str, flags: 
   } else {
     if hr==0 {
       assert!(blob1 != ptr::null_mut());
-      let mut blob=D3D10Blob::new(blob1 as *mut _);
+      let blob=D3D10Blob::new(blob1 as *mut _);
       let mut ret=vec![];
       unsafe {
         let blob_slice:&[u8]=::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize);
@@ -122,143 +122,3 @@ pub fn str_to_cstring(s : &str) -> CString {
   CString::new(s).unwrap()
 }
 
-use std::collections::HashMap;
-use std::sync::Mutex;
-
-lazy_static! {
-  static ref WND_MAP: Mutex<HashMap<HWnd, WndWindow>> = {Mutex::new(HashMap::new())};
-}
-
-pub type ResizeFn=Option<Box<FnMut(i16,i16,u8)->()>>;
-pub type RenderFn=Option<Box<FnMut()->()>>;
-
-struct WndWindow {
-  destroyed: bool,
-  hwnd: winapi::HWND,
-  resize_fn: ResizeFn,
-  render_fn: RenderFn,
-}
-
-fn loword(lparam: winapi::LPARAM) -> i16 {
-  (lparam & 0xFFFF) as i16
-}
-
-fn hiword(lparam: winapi::LPARAM) -> i16 {
-  ((lparam/65536) & 0xFFFF) as i16
-}
-
-
-unsafe impl Sync for WndWindow {}
-unsafe impl Send for WndWindow {}
-
-#[derive(Debug,PartialEq,Eq,Hash,Clone,Copy)]
-pub struct HWnd(usize);
-
-unsafe extern "system" fn wnd_callback(hwnd: winapi::HWND, uMsg: UINT, wParam: winapi::WPARAM, lParam: winapi::LPARAM ) -> winapi::LRESULT {
-  {
-    if let Some(rwnd)=WND_MAP.lock().unwrap().get_mut(&HWnd(hwnd as usize)) {
-      match uMsg {
-        winapi::WM_DESTROY => {
-          println!("WM_DESTROY");
-          unsafe {PostQuitMessage(0)};
-          return 0;
-        },
-        winapi::WM_SIZE => {
-          if let Some(ref mut boxedfn)=rwnd.resize_fn {
-            (*boxedfn)(loword(lParam),hiword(lParam),wParam as u8);
-          }
-          return 0;
-        },
-        _ => { },
-      }
-    } else {
-      // Window is being created
-    }
-  }
-  DefWindowProcW(hwnd, uMsg, wParam, lParam)
-}
-
-// We cannot place WndWindow on stack, as window contains pointer to this struct
-pub fn create_window(title: &str, width: i32, height: i32) -> HWnd {
-  let class_name=str_to_vec_u16("RustMainWndClass_14f22");
-  let h_module=unsafe{GetModuleHandleW(ptr::null_mut())};
-  let mut class=winapi::WNDCLASSEXW{
-      cbSize: mem::size_of::<winapi::WNDCLASSEXW>() as UINT,
-      style: winapi::CS_DBLCLKS | winapi::CS_HREDRAW | winapi::CS_VREDRAW,
-      lpfnWndProc: Some(wnd_callback),
-      cbClsExtra: 0,
-      cbWndExtra: 0,
-      hInstance: h_module,
-      hIcon: ptr::null_mut(),
-      hCursor: unsafe{ LoadCursorW(ptr::null_mut(), IDC_ARROW) },
-      hbrBackground: ptr::null_mut(),
-      lpszMenuName: ptr::null_mut(),
-      lpszClassName: class_name.as_ptr(),
-      hIconSm: ptr::null_mut(),
-    };
-  if unsafe{GetClassInfoExW(h_module, class_name.as_ptr(), &mut class as *mut _)} == 0 {
-    unsafe{RegisterClassExW(&mut class as *mut _)};
-  }
-
-  let w_title=str_to_vec_u16(title);
-  let hwnd=unsafe {CreateWindowExW(0, class_name.as_ptr() ,w_title.as_ptr(), 
-                winapi::WS_VISIBLE | winapi::WS_OVERLAPPEDWINDOW,
-                winapi::CW_USEDEFAULT, winapi::CW_USEDEFAULT, 
-                width as libc::c_int, height as libc::c_int, 
-                ptr::null_mut(), ptr::null_mut(), h_module, ptr::null_mut())};
-  if hwnd == ptr::null_mut() {
-    panic!();
-  }
-  let rwnd=WndWindow {
-    destroyed: false,
-    hwnd: hwnd,
-    resize_fn: None,
-    render_fn: None,
-    };
-  let rhwnd=HWnd(hwnd as usize);
-  WND_MAP.lock().unwrap().insert(rhwnd, rwnd);
-  rhwnd
-}
-
-use self::user32::{GetMessageW,TranslateMessage,DispatchMessageW,PeekMessageW};
-use self::kernel32::{Sleep};
-
-pub fn message_loop(main_wnd: HWnd) -> winapi::WPARAM {
-  let mut msg: winapi::MSG = unsafe{mem::uninitialized::<_>()};
-  loop {
-    let ret = unsafe{PeekMessageW(&mut msg, ptr::null_mut(), 0, 0, winapi::PM_REMOVE)};
-    //println!("GetMessage returned {:?}. wParam={:?}", ret, msg.wParam);
-    if ret == 0 {
-      if let Some(rwnd)=WND_MAP.lock().unwrap().get_mut(&main_wnd) {
-        if let Some(ref mut boxedfn)=rwnd.render_fn {
-          boxedfn();
-        }
-      }
-      unsafe{Sleep(10)};
-    } else {
-      if msg.message == winapi::WM_QUIT {return msg.wParam};
-      unsafe{TranslateMessage(&mut msg)};
-      unsafe{DispatchMessageW(&mut msg)};
-    }
-  }
-}
-
-pub fn set_resize_fn(rhwnd: HWnd, resize_fn: ResizeFn) {
-  if let Some(rwnd)=WND_MAP.lock().unwrap().get_mut(&rhwnd) {
-    rwnd.resize_fn=resize_fn;
-  }
-}
-
-pub fn set_render_fn(rhwnd: HWnd, render_fn: RenderFn) {
-  if let Some(rwnd)=WND_MAP.lock().unwrap().get_mut(&rhwnd) {
-    rwnd.render_fn=render_fn;
-  }
-}
-
-pub fn get_hwnd(rhwnd: HWnd) -> Option<HWND> {
-  if let Some(rwnd)=WND_MAP.lock().unwrap().get(&rhwnd) {
-    Some(rwnd.hwnd as HWND)
-  } else {
-    None
-  }
-}

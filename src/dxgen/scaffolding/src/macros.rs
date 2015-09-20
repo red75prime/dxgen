@@ -13,3 +13,10 @@ macro_rules! write_delimited {
         Ok(())
     }}
 }
+
+macro_rules! offset_of {
+  ($type_:ident, $field:ident) => {{
+    let tmp: $type_ = unsafe{ ::std::mem::uninitialized::<_>()};
+    (&tmp.$field as *const _ as usize) - (&tmp as *const _ as usize)
+  }}
+}
