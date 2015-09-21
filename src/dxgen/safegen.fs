@@ -523,6 +523,14 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         match refs with
         |[] ->
           match pty with
+          |Ptr(Ptr(Primitive Void)) ->
+            match pannot with
+            |InOutOptional |OutOptional ->
+              let gt=newGenType ""
+              addSafeParm safeParmName (ROption(RMutBorrow(RMutPtr(RGeneric(gt,"")))))
+              addNativeParm pname (Some(safeParmName)) ("opt_as_mut_ptr(&"+safeParmName+") as *mut *mut _")
+            |_ -> 
+              addError (sprintf "%s parameter: InOut, InOptional annotation cannot be applied to void pointer. Size is unknown" pname)
           |_ when isVoidPtr pty ->
             addError (sprintf "%s parameter: InOut annotation cannot be applied to void pointer. Size is unknown" pname)
           |_ when (match (removeConst pty) with Ptr(Ptr(_)) -> true |_ -> false) ->

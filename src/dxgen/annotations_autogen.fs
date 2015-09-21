@@ -247,7 +247,7 @@ let d3d12annotations_prime=
         ],MANone);
         ("CreateShaderResourceView",[
           ("This",AThis);
-          ("pResource",InOptional);
+          ("pResource",InOptionalComPtr);
           ("pDesc",InOptional);
           ("DestDescriptor",ANone);
         ],MANone);
@@ -914,7 +914,7 @@ let d3d12annotations_prime=
           ("This",AThis);
           ("Subresource",ANone);
           ("pReadRange",InOptional);
-          ("ppData",OutReturnBarePointer);
+          ("ppData",OutOptional);
         ],MAUnsafe); // TODO: Mapping and unmapping call for RAII guards
         ("Unmap",[
           ("This",AThis);
@@ -934,7 +934,7 @@ let d3d12annotations_prime=
           ("pSrcData",ANone);
           ("SrcRowPitch",ANone);
           ("SrcDepthPitch",ANone);
-        ],MADontImplement); // TODO: Unsafe. Method can read past the end of provided buffer
+        ],MAUnsafe); // TODO: Unsafe. Method can read past the end of provided buffer
         ("ReadFromSubresource",[
           ("This",AThis);
           ("pDstData",ANone);
