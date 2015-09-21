@@ -10,6 +10,7 @@ extern crate d3d12_safe;
 extern crate dxgi_sys;
 extern crate kernel32;
 //extern crate d3d12_sys;
+extern crate rand;
 
 #[macro_use] mod macros;
 mod create_device;
@@ -764,8 +765,8 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
       SizeInBytes: vbuf_size as u32,
   };
 
-  let tex_w=1024usize;
-  let tex_h=1024usize;
+  let tex_w=256usize;
+  let tex_h=256usize;
 
   let tex_desc =
     D3D12_RESOURCE_DESC {
@@ -790,7 +791,12 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
       error!("Error 0x{}",hr);
       return Err(info_queue.clone());
     }
-    let texdata :Vec<u32> = vec![0xff00ffff; tex_w*tex_h as usize];
+    let mut texdata: Vec<u32> = vec![0xff00ffff; tex_w*tex_h as usize];
+//    let mut c = 0u32;
+    for v in &mut texdata[..] {
+      *v=rand::random();
+//      c += 2;
+    }
     debug!("Write to subresource");
     tex_resource.write_to_subresource(0, None, &texdata[..], (4*tex_w) as UINT, (4*tex_w*tex_h) as UINT).unwrap(); // Yes, "magic" constant 
     

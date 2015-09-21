@@ -9,6 +9,7 @@ lazy_static = "*"
 log = "*"
 env_logger = "*"
 d3d12_safe = { version = "*", path = "lib/d3d12" }
+rand = "0.3"
 
 [dependencies.winapi]
 git = "https://github.com/red75prime/winapi-rs/"
