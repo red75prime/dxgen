@@ -771,9 +771,9 @@ impl D3D12Device {
   
   //  Method CreateShaderResourceView
   
-  pub fn create_shader_resource_view(&self, resource: Option<&mut ID3D12Resource>, desc: Option<&D3D12_SHADER_RESOURCE_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  pub fn create_shader_resource_view(&self, resource: Option<&D3D12Resource>, desc: Option<&D3D12_SHADER_RESOURCE_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
-    let hr=unsafe { (*self.0).CreateShaderResourceView(opt_as_mut_ptr(&resource), desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
+    let hr=unsafe { (*self.0).CreateShaderResourceView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
   }
   
@@ -2156,10 +2156,10 @@ impl D3D12Resource {
   
   //  Method Map
   
-  pub unsafe fn map(&self, subresource: UINT, read_range: Option<&D3D12_RANGE>) -> HResult<*mut ()> {
-    let mut lv1: *mut () = unsafe {mem::uninitialized::<_>()};
-    let hr=unsafe { (*self.0).Map(subresource, read_range.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
-    hr2ret(hr,lv1)
+  pub unsafe fn map<T>(&self, subresource: UINT, read_range: Option<&D3D12_RANGE>, data: Option<&mut *mut T>) -> HResult<()> {
+  
+    let hr=unsafe { (*self.0).Map(subresource, read_range.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), opt_as_mut_ptr(&data) as *mut *mut _) };
+    hr2ret(hr,())
   }
   
   //  Method Unmap
@@ -2184,6 +2184,14 @@ impl D3D12Resource {
   
     let hr=unsafe { (*self.0).GetGPUVirtualAddress() };
     hr
+  }
+  
+  //  Method WriteToSubresource
+  
+  pub unsafe fn write_to_subresource<T>(&self, dst_subresource: UINT, dst_box: Option<&D3D12_BOX>, src_data: &[T], src_row_pitch: UINT, src_depth_pitch: UINT) -> HResult<()> {
+  
+    let hr=unsafe { (*self.0).WriteToSubresource(dst_subresource, dst_box.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), src_data.as_ptr() as *const _, src_row_pitch, src_depth_pitch) };
+    hr2ret(hr,())
   }
   
   //  Method GetHeapProperties

@@ -138,7 +138,9 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
   ];
 
   unsafe {
-    let buf_slice=std::slice::from_raw_parts_mut(data.vertex_buffer.map(0, None).unwrap() as *mut Vertex, vtc.len());
+    let mut p_buf: *mut Vertex = ptr::null_mut();
+    data.vertex_buffer.map(0, None, Some(&mut p_buf)).unwrap();
+    let buf_slice=std::slice::from_raw_parts_mut(p_buf, vtc.len());
     for (place, data) in buf_slice.iter_mut().zip(vtc.iter()) {
       *place = *data
     }
@@ -174,6 +176,8 @@ struct AppData {
   rtv_descriptor_size: SIZE_T,
   vertex_buffer: D3D12Resource,
   vertex_buffer_view: D3D12_VERTEX_BUFFER_VIEW,
+  tex_resource: D3D12Resource,
+  tex_view: D3D12_SHADER_RESOURCE_VIEW_DESC,
   frame_index: UINT,
   fence_event: HANDLE,
   fence: D3D12Fence,
@@ -225,7 +229,6 @@ fn populate_command_list(data: &mut AppData) {
   if d_info {debug!("Set descriptor heaps")};
   data.command_list.set_descriptor_heaps(&[&data.srv_heap, &data.sam_heap]);
   
-
   let gpu_dh=data.srv_heap.get_gpu_descriptor_handle_for_heap_start();
   if d_info {debug!("Set graphics root descriptor table 0")};
   data.command_list.set_graphics_root_descriptor_table(0, gpu_dh);
@@ -235,6 +238,9 @@ fn populate_command_list(data: &mut AppData) {
   data.command_list.rs_set_viewports(&mut [data.viewport]);
   if d_info {debug!("Set scissor rects")};
   data.command_list.rs_set_scissor_rects(&mut [data.scissor_rect]);
+
+//  data.command_list.set_graphics_root_shader_resource_view(0, data.tex_resource.get_gpu_virtual_address());
+
   let rb=
     D3D12_RESOURCE_BARRIER {
       Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
@@ -251,7 +257,7 @@ fn populate_command_list(data: &mut AppData) {
   rtvh.ptr += (data.frame_index as SIZE_T)*data.rtv_descriptor_size;
   data.command_list.om_set_render_targets(1, &rtvh, None);
 
-  let mut clear_color = [0.01, 0.01, 0.01, 1.0];
+  let mut clear_color = [0.01, 0.01, 0.05, 1.0];
   data.command_list.clear_render_target_view(rtvh, &mut clear_color, &mut []);
   data.command_list.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
   data.command_list.ia_set_vertex_buffers(0, Some(&mut [data.vertex_buffer_view]));
@@ -446,26 +452,6 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
   debug!("SRV descriptor heap");
   let srv_heap=dev.create_descriptor_heap(&srv_hd).unwrap();
 
-  let mut srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
-    Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-    ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
-    Shader4ComponentMapping: shader_4component_mapping(0, 1, 2, 3),
-    u: D3D12_BUFFER_SRV { FirstElement: 0, NumElements: 0, StructureByteStride: 0, Flags: D3D12_BUFFER_SRV_FLAGS(0),},
-  };
-  unsafe {
-    *srv_desc.Texture2D_mut() = D3D12_TEX2D_SRV {
-      MostDetailedMip: 0,
-      MipLevels: 1,
-      PlaneSlice: 0,
-      ResourceMinLODClamp: 0.0,
-    };
-  };
-
-  //let srv_dsize=dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
-  let srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
-  debug!("Create shader resource view");
-  dev.create_shader_resource_view(None, Some(&srv_desc), srv_dh);
-
   let sam_hd=D3D12_DESCRIPTOR_HEAP_DESC{
     NumDescriptors: 1,
     Type: D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
@@ -483,7 +469,7 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
     MinLOD: 0.0,
     MaxLOD: D3D12_FLOAT32_MAX,
     MipLODBias: 0.0,
-    MaxAnisotropy: 1,
+    MaxAnisotropy: 16,
     ComparisonFunc: D3D12_COMPARISON_FUNC_ALWAYS,
     BorderColor: [1.0,1.0,1.0,1.0],
   };
@@ -723,7 +709,7 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
     Vertex {pos: [0.0, 0.5, 0.0, 0.0], color: [1.0,0.0,0.0,1.0], texc0: [1.0, 1.0, 0.0, 0.0],},
     Vertex {pos: [0.5, -0.5, 0.0, 0.0], color: [0.0,1.0,0.0,1.0], texc0: [1.0, 0.0, 0.0, 0.0],},
     Vertex {pos: [-0.5, -0.5, 0.0, 0.0], color: [0.0,0.0,1.0,1.0], texc0: [0.0, 0.0, 0.0, 0.0],},
-    Vertex {pos: [0.0, -1.5, 0.0, 0.0], color: [0.0,0.0,1.0,1.0], texc0: [1.0, 0.0, 0.0, 0.0],},
+    Vertex {pos: [0.0, -1.5, 0.0, 0.0], color: [0.0,0.0,1.0,1.0], texc0: [0.0, 1.0, 0.0, 0.0],},
   ];
 
   let vbuf_size = mem::size_of_val(&vtc[..]) as UINT64;
@@ -761,7 +747,9 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
   let vbuf=try!(dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|info_queue.clone()));
   unsafe {
     debug!("Map vertex buffer");
-    let buf_slice=std::slice::from_raw_parts_mut(vbuf.map(0, None).unwrap() as *mut Vertex, vtc.len());
+    let mut p_buf: *mut Vertex = ptr::null_mut();
+    vbuf.map(0, None, Some(&mut p_buf)).unwrap();
+    let buf_slice=std::slice::from_raw_parts_mut(p_buf, vtc.len());
     for (place, data) in buf_slice.iter_mut().zip(vtc.iter()) {
       *place = *data
     }
@@ -775,6 +763,75 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
       StrideInBytes: mem::size_of::<Vertex>() as u32,
       SizeInBytes: vbuf_size as u32,
   };
+
+  let tex_w=1024usize;
+  let tex_h=1024usize;
+
+  let tex_desc =
+    D3D12_RESOURCE_DESC {
+      Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+      Alignment:  0,
+      Width: tex_w as u64,
+      Height: tex_h as u32,
+      DepthOrArraySize: 1,
+      MipLevels: 1,
+      Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+      SampleDesc: DXGI_SAMPLE_DESC {Count:1, Quality: 0,},
+      Layout: D3D12_TEXTURE_LAYOUT_UNKNOWN,
+      Flags: D3D12_RESOURCE_FLAG_NONE,
+  };
+  info!("Texture desc: {:#?}", &res_desc);
+
+  debug!("Texture resource");
+  let tex_resource=try!(dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|info_queue.clone()));
+  unsafe {
+    debug!("Map texture");
+    if let Err(hr)=tex_resource.map::<()>(0, None, None) {
+      error!("Error 0x{}",hr);
+      return Err(info_queue.clone());
+    }
+    let texdata :Vec<u32> = vec![0xff00ffff; tex_w*tex_h as usize];
+    debug!("Write to subresource");
+    tex_resource.write_to_subresource(0, None, &texdata[..], (4*tex_w) as UINT, (4*tex_w*tex_h) as UINT).unwrap(); // Yes, "magic" constant 
+    
+    debug!("Unmap texture");
+    tex_resource.unmap(0, None);
+  }
+
+  let mut tex_view = D3D12_SHADER_RESOURCE_VIEW_DESC {
+    Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+    ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
+    Shader4ComponentMapping: shader_4component_mapping(0,1,2,3),
+    u: unsafe{ mem::uninitialized() },
+  };
+  unsafe {
+    *tex_view.Texture2D_mut() = D3D12_TEX2D_SRV {
+      MostDetailedMip: 0,
+      MipLevels: 1,
+      PlaneSlice: 0,
+      ResourceMinLODClamp: 0.0,
+    };
+  };
+
+  let mut srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
+    Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+    ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
+    Shader4ComponentMapping: shader_4component_mapping(0, 1, 2, 3),
+    u: unsafe{ ::std::mem::uninitialized() },
+  };
+  unsafe {
+    *srv_desc.Texture2D_mut() = D3D12_TEX2D_SRV {
+      MostDetailedMip: 0,
+      MipLevels: 1,
+      PlaneSlice: 0,
+      ResourceMinLODClamp: 0.0,
+    };
+  };
+
+  //let srv_dsize=dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
+  let srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
+  debug!("Create shader resource view");
+  dev.create_shader_resource_view(Some(&tex_resource), Some(&srv_desc), srv_dh);
 
   debug!("fence");
   let fence=dev.create_fence(0, D3D12_FENCE_FLAG_NONE).unwrap();
@@ -804,6 +861,8 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
       rtv_descriptor_size: rtvdsize,
       vertex_buffer: vbuf,
       vertex_buffer_view: vbview,
+      tex_resource: tex_resource,
+      tex_view: tex_view,
       frame_index: frame_index,
       fence_event: fence_event,
       fence: fence,
