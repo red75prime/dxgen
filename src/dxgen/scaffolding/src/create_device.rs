@@ -1,10 +1,10 @@
 use winapi::*;
 use d3d12_safe::*;
 //use d3d12_sys::*;
-use dxguid_sys::*;
-use dxgi_sys::*;
+//use dxguid_sys::*;
+//use dxgi_sys::*;
 use std::ptr;
-use libc;
+//use libc;
 
 #[link(name="d3d12")]
 extern "system" {
@@ -51,12 +51,27 @@ pub fn get_debug_interface() -> HResult<D3D12Debug> {
   }
 }
 
+pub fn blob_to_string(blob: &D3D10Blob) -> String {
+  if blob.get_buffer_size() == 0 {
+    "".into()
+  } else {
+    let blob_slice:&[u8] = unsafe{ ::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize) };
+    let mut ret=vec![];
+    ret.extend(blob_slice);
+    String::from_utf8_lossy(&ret[..]).into_owned()
+  }
+}
+
 pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC, ver: D3D_ROOT_SIGNATURE_VERSION) -> HResult<D3D10Blob> {
-  let mut p_blob : *mut IUnknown = ptr::null_mut();
-  let hr=unsafe {D3D12SerializeRootSignature(root_signature, ver, &mut p_blob as *mut *mut _ as *mut *mut _, ptr::null_mut()) }; 
+  let mut p_blob: *mut IUnknown = ptr::null_mut();
+  let mut p_err: *mut IUnknown = ptr::null_mut();
+  let hr=unsafe {D3D12SerializeRootSignature(root_signature, ver, &mut p_blob as *mut *mut _ as *mut *mut _, &mut p_err as *mut *mut _ as *mut *mut _ ) }; 
   if hr==0 {
     Ok(D3D10Blob::new(p_blob))
   } else {
+    if p_err != ptr::null_mut() {
+      error!("{}", blob_to_string(&D3D10Blob::new(p_err)));
+    }
     Err(hr)
   }
 }
@@ -74,13 +89,7 @@ pub fn d3d_compile_from_file(file_name: &str, entry: &str, target: &str, flags: 
   let hr=unsafe{D3DCompileFromFile(w_file_name.as_ptr(), ptr::null_mut(), ptr::null_mut(), w_entry.as_ptr(), w_target.as_ptr(), flags, 0, &mut blob1, &mut blob2)};
   if blob2 != ptr::null_mut() {
     let blob=D3D10Blob::new(blob2 as *mut _);
-    unsafe{
-      let blob_slice:&[u8]=::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize);
-      let mut ret=vec![];
-      ret.extend(blob_slice);
-      mem::forget(blob_slice);
-      Err(String::from_utf8_lossy(&ret[..]).into_owned())
-    }
+    Err(blob_to_string(&blob))
   } else {
     if hr==0 {
       assert!(blob1 != ptr::null_mut());
@@ -89,7 +98,6 @@ pub fn d3d_compile_from_file(file_name: &str, entry: &str, target: &str, flags: 
       unsafe {
         let blob_slice:&[u8]=::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize);
         ret.extend(blob_slice);
-        mem::forget(blob_slice);
       }
       Ok(ret)
     } else {
@@ -98,18 +106,9 @@ pub fn d3d_compile_from_file(file_name: &str, entry: &str, target: &str, flags: 
   }
 }
 
-extern crate winapi;
-extern crate user32;
-extern crate kernel32;
-
-use self::user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage, LoadCursorW };
-use self::kernel32::{GetModuleHandleW};
-
-use std::ffi::{OsStr, OsString};
+use std::ffi::{OsString};
 use std::os::windows::ffi::OsStrExt;
 use std::mem;
-use std::borrow::Cow;
-use std::cell::RefCell;
 
 fn str_to_vec_u16(s : &str) -> Vec<u16> {
   let osstr = OsString::from(s);

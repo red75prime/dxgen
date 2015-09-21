@@ -8,24 +8,19 @@ use self::kernel32::{GetModuleHandleW};
 use std::ptr;
 use libc;
 
-use std::ffi::{OsStr, OsString};
+use std::ffi::{OsString};
 use std::os::windows::ffi::OsStrExt;
 use std::mem;
 use std::cell::RefCell;
 
-use self::user32::{GetMessageW,TranslateMessage,DispatchMessageW,PeekMessageW,PostMessageW};
-use self::kernel32::{Sleep};
+use self::user32::{GetMessageW,TranslateMessage,DispatchMessageW,PeekMessageW};
+//use self::kernel32::{Sleep};
 
 fn str_to_vec_u16(s : &str) -> Vec<u16> {
   let osstr = OsString::from(s);
   osstr.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
 }
 
-use std::ffi::CString;
-
-fn str_to_cstring(s : &str) -> CString {
-  CString::new(s).unwrap()
-}
 
 pub struct Window {
   hwnd: HWND,
@@ -47,10 +42,12 @@ impl<'a> Iterator for PollEventIterator<'a> {
       //debug!("Windows message:{}", msg.message);
       if msg.message == WM_QUIT {
         None
-      } else {
+      } else if msg.hwnd == self.wnd.hwnd {
         unsafe{TranslateMessage(&mut msg)};
         unsafe{DispatchMessageW(&mut msg)};
         Some(Some(msg))
+      } else {
+        Some(None)
       }
     }
   }
@@ -88,14 +85,6 @@ impl Copy for Window {}
 impl !Send for Window {}
 impl !Sync for Window {}
 
-pub fn loword(lparam: winapi::LPARAM) -> i16 {
-  (lparam & 0xFFFF) as i16
-}
-
-pub fn hiword(lparam: winapi::LPARAM) -> i16 {
-  ((lparam/65536) & 0xFFFF) as i16
-}
-
 type ResizeFn = Box<FnMut(u32, u32, u32) -> ()>;
 
 struct ThreadLocalData {
@@ -109,7 +98,7 @@ unsafe extern "system" fn wnd_callback(hwnd: HWND, msg: UINT, wparam: WPARAM, lp
   match msg {
     WM_DESTROY => {
       println!("WM_DESTROY");
-      unsafe {PostQuitMessage(0)};
+      PostQuitMessage(0);
       return 0;
     },
     WM_SIZE => {
