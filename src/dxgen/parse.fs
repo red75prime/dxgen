@@ -104,6 +104,8 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     seq {
        yield "-x"
        yield "c"
+       yield "--target=x86_64-pc-win32"
+       yield ""
        yield "-std=c11"
        yield "-fms-extensions"
        yield "-fms-compatiblity"
