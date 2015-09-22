@@ -75,7 +75,7 @@ fn main() {
     }
   }
 
-  let wnd=create_window("Hello, rusty world!", 512, 256);
+  let wnd=create_window("D3D12 Hello, rusty world!", 512, 256);
   let data=
     match create_appdata(&wnd) {
       Ok(appdata) => {
@@ -364,6 +364,9 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
         d3d12_create_device(Some(&warp), D3D_FEATURE_LEVEL_11_0).expect("Cannot create warp device")
       },
     };
+  debug!("LUID");
+  let luid=dev.get_adapter_luid();
+  println!("Adapter LUID {:?}", luid);
 
   debug!("Info queue");
   let info_queue: D3D12InfoQueue = dev.query_interface().unwrap();

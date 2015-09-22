@@ -28,6 +28,6 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   float x=pv.vPosition.x-1000;
   float y=pv.vPosition.y-1000;
   ret.r += sin(sqrt(x*x+y*y)/10)*0.5;
-  ret = testTex.Sample(testSamp, pv.texc0.xy);
+  ret *= testTex.Sample(testSamp, pv.texc0.xy);
   return ret;
 }
