@@ -1,4 +1,5 @@
 #![feature(optin_builtin_traits)]
+#![feature(clone_from_slice)]
 
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
@@ -15,6 +16,7 @@ extern crate rand;
 #[macro_use] mod macros;
 mod create_device;
 mod window;
+mod structwrappers;
 
 use winapi::*;
 use d3d12_safe::*;
@@ -26,6 +28,7 @@ use std::mem;
 use std::cell::RefCell;
 use std::rc::Rc;
 use window::*;
+use structwrappers::*;
 
 #[link(name="d3dcompiler")]
 extern {}
@@ -36,48 +39,19 @@ fn shader_4component_mapping(a: u32, b: u32, c: u32, d: u32) -> UINT {
   (0x1000 | (a & 7) | ((b & 7)*8) | ((c & 7)*8*8) | ((d & 7)*8*8*8)) as UINT
 }
 
-fn dump_info_queue(iq: &D3D12InfoQueue) {
-  let iq=iq;
-  let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
-  //println!("Number of debug messages is {}", mnum);
-  for i in 0..mnum {
-    let mut sz = 0;
-    let _ = iq.get_message(i, None,&mut sz);
-    //info!("get_message returned {:?}", hr); // It is the case when hr!=0 and it's ok
-    // create buffer to receive message
-    let mut arr: Vec<u8> = Vec::with_capacity(sz as usize); 
-    let mut sz1=sz; 
-    unsafe {
-      // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
-      // it should be Option<&[u8]>, but I don't have annotation for that yet.
-      let _ = iq.get_message(i, Some(mem::transmute(arr.as_ptr())), &mut sz1); 
-      assert_eq!(sz, sz1); // just to be sure. hr is Err(1) on success.
-      // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
-      let msg: D3D12_MESSAGE = mem::transmute_copy(&(*arr.as_ptr()));
-      // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
-      let cdescr = ::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
-      let descr = String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
-      warn!("{:}", descr);
-    }
-  };
-  iq.clear_stored_messages();
-}
-
 fn main() {
   env_logger::init().unwrap();
 
-  {
-    let factory: DXGIFactory4 = create_dxgi_factory1().expect("Cannot create DXGIFactory1. No can do.");
-    let mut i=0;
-    while let Ok(adapter)=factory.enum_adapters1(i) {
-      println!("Adapter {} dedicated video memory: {}MiB", i, adapter.get_desc1().unwrap().DedicatedVideoMemory/1024/1024);
-      i+=1;
-    }
+  let factory: DXGIFactory4 = create_dxgi_factory1().expect("Cannot create DXGIFactory1. No can do.");
+  let mut i=0;
+  while let Ok(adapter)=factory.enum_adapters1(i) {
+    println!("Adapter {} dedicated video memory: {}MiB", i, adapter.get_desc1().unwrap().DedicatedVideoMemory/1024/1024);
+    i+=1;
   }
 
   let wnd=create_window("D3D12 Hello, rusty world!", 512, 256);
   let data=
-    match create_appdata(&wnd) {
+    match create_appdata(&wnd, Some(&factory.enum_adapters1(1).unwrap().query_interface().unwrap())) {
       Ok(appdata) => {
         Rc::new(RefCell::new(appdata))
       },
@@ -140,7 +114,13 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
 
   unsafe {
     let mut p_buf: *mut Vertex = ptr::null_mut();
-    data.vertex_buffer.map(0, None, Some(&mut p_buf)).unwrap();
+    match data.vertex_buffer.map(0, None, Some(&mut p_buf)) {
+      Ok(_) => (),
+      Err(hr) => {
+        dump_info_queue(&data.iq);
+        panic!("vertex_buffer.map");
+      },
+    };
     let buf_slice=std::slice::from_raw_parts_mut(p_buf, vtc.len());
     for (place, data) in buf_slice.iter_mut().zip(vtc.iter()) {
       *place = *data
@@ -242,18 +222,10 @@ fn populate_command_list(data: &mut AppData) {
 
 //  data.command_list.set_graphics_root_shader_resource_view(0, data.tex_resource.get_gpu_virtual_address());
 
-  let rb=
-    D3D12_RESOURCE_BARRIER {
-      Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-      Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
-      u: D3D12_RESOURCE_TRANSITION_BARRIER {
-        pResource: data.render_targets[data.frame_index as usize].iptr() as *mut _,
-        StateBefore: D3D12_RESOURCE_STATE_PRESENT,
-        StateAfter: D3D12_RESOURCE_STATE_RENDER_TARGET,
-        Subresource: D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, 
-      },
-    };
-  data.command_list.resource_barrier(&mut [rb]);
+  data.command_list.resource_barrier(
+      &mut [resource_barrier_transition(&data.render_targets[data.frame_index as usize],
+      D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET)]);
+
   let mut rtvh=data.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
   rtvh.ptr += (data.frame_index as SIZE_T)*data.rtv_descriptor_size;
   data.command_list.om_set_render_targets(1, &rtvh, None);
@@ -264,18 +236,9 @@ fn populate_command_list(data: &mut AppData) {
   data.command_list.ia_set_vertex_buffers(0, Some(&mut [data.vertex_buffer_view]));
   data.command_list.draw_instanced(4, 1, 0, 0);
   
-  let rb1=
-    D3D12_RESOURCE_BARRIER {
-      Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-      Flags: D3D12_RESOURCE_BARRIER_FLAG_NONE,
-      u: D3D12_RESOURCE_TRANSITION_BARRIER {
-        pResource: data.render_targets[data.frame_index as usize].iptr() as *mut _,
-        StateBefore: D3D12_RESOURCE_STATE_RENDER_TARGET,
-        StateAfter: D3D12_RESOURCE_STATE_PRESENT,
-        Subresource: D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, 
-      },
-    };
-  data.command_list.resource_barrier(&mut [rb1]);
+  data.command_list.resource_barrier(
+      &mut [resource_barrier_transition(&data.render_targets[data.frame_index as usize],
+      D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
 
   data.command_list.close().unwrap();
 }
@@ -327,7 +290,59 @@ fn reaquire_render_targets(data: &mut AppData) -> HResult<()> {
   Ok(())
 }
 
-fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
+fn upload_into_texture(clist: &D3D12GraphicsCommandList, tex: &D3D12Resource, w: usize, h: usize, data: &[u32]) -> HResult<D3D12Resource> {
+  debug!("upload_into_texture");
+  debug!("get_desc tex.iptr(): 0x{:x}, vtbl: 0x{:x}, vtbl[0]: 0x{:x}", tex.iptr() as usize, unsafe{((*tex.iptr()).lpVtbl) as usize}, unsafe{(*(*tex.iptr()).lpVtbl).QueryInterface as usize});
+  let desc = tex.get_desc();
+  debug!("get_device");
+  let dev: D3D12Device = try!(tex.get_device());
+  let mut num_rows = [0];
+  let mut row_size_bytes = [0];
+  let mut total_size_bytes = 0;
+  let mut psfp: [D3D12_PLACED_SUBRESOURCE_FOOTPRINT; 1] = [unsafe{ ::std::mem::uninitialized() }];
+  debug!("get_copyable_footprints");
+  // Microsoft sample application uses HeapAlloc for footprint and other arguments
+  // TODO: investigate
+  dev.get_copyable_footprints(&desc, 0, 0, Some(&mut psfp), Some(&mut num_rows), Some(&mut row_size_bytes), Some(&mut total_size_bytes));
+  let rows = num_rows[0] as usize;
+  let row_len = (row_size_bytes[0]/4) as usize;
+  let row_pitch = (psfp[0].Footprint.RowPitch/4) as usize;
+  let total_len = (total_size_bytes/4) as usize;
+  debug!("Placed subres. footprint:{:?}", psfp[0]);
+  debug!("Rows:{}, Row len:{}, Row pitch:{}  Total len:{}", rows, row_len, row_pitch, total_len);
+
+  debug!("create_committed_resource");
+  let res_buf=try!(dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(total_size_bytes), D3D12_RESOURCE_STATE_GENERIC_READ, None));
+  res_buf.set_name("Temporary texture buffer".into());  
+
+  let mut temp_buf = Vec::with_capacity(total_len);
+  unsafe {
+    temp_buf.set_len(total_len);
+  };
+  for y in 0..rows {
+    &temp_buf[y*row_pitch..y*row_pitch+w].clone_from_slice(&data[y*w..y*w+w]);
+  }
+
+  unsafe {
+    debug!("Map buffer");
+    let mut p_map = ptr::null_mut();
+    try!(res_buf.map::<u32>(0, None, Some(&mut p_map)));
+    debug!("Write to buffer");
+    let map_slice=std::slice::from_raw_parts_mut(p_map, total_len);
+    map_slice.clone_from_slice(&temp_buf[..]);
+//    tex.write_to_subresource(0, None, &temp_buf[..], row_size_bytes[0] as UINT, (row_size_bytes[0] as UINT)*num_rows[0]).unwrap(); 
+  };
+  debug!("Unmap buffer");
+  res_buf.unmap(0, None);
+
+  let dest = texture_copy_location_index(&tex, 0);
+  let src = texture_copy_location_footprint(&res_buf, &psfp[0]);
+  clist.copy_texture_region(&dest, 0, 0, 0, &src, None); 
+
+  Ok(res_buf)
+}
+
+fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData,D3D12InfoQueue> {
   let w=1024.;
   let h=1024.;
   let hwnd=wnd.get_hwnd();
@@ -355,7 +370,7 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
   let factory: DXGIFactory4 = create_dxgi_factory1().unwrap();
   debug!("Device");
   let dev = 
-    match d3d12_create_device(None, D3D_FEATURE_LEVEL_11_0) {
+    match d3d12_create_device(adapter, D3D_FEATURE_LEVEL_11_0) {
       Ok(dev) => dev,
       Err(_) => {
         warn!("Fallback to warp adapter");
@@ -374,7 +389,7 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
   let mut opts: D3D12_FEATURE_DATA_D3D12_OPTIONS = unsafe{ mem::uninitialized::<_>() };
   debug!("Check feature support: options");
   dev.check_feature_support_options(&mut opts).unwrap();
-  info!("{:#?}",opts);
+  println!("{:#?}",opts);
 
   let fl_array=[D3D_FEATURE_LEVEL_9_1, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_3, 
                 D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_11_0, 
@@ -522,31 +537,25 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
   let mut rs_parms = vec![
     D3D12_ROOT_PARAMETER {
       ParameterType: D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-      u: D3D12_ROOT_DESCRIPTOR_TABLE {
-        NumDescriptorRanges: 1,
-        pDescriptorRanges: desc_ranges[0..0].as_ptr(),
-      },
+      u: unsafe { ::std::mem::uninitialized() },
       ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
     },    
     D3D12_ROOT_PARAMETER {
       ParameterType: D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-      u: D3D12_ROOT_DESCRIPTOR_TABLE {
-        NumDescriptorRanges: 1,
-        pDescriptorRanges: desc_ranges[1..1].as_ptr(),
-      },
+      u: unsafe { ::std::mem::uninitialized() },
       ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
     },    
   ];
-//  unsafe{
-//    *rs_parms[0].DescriptorTable_mut() = D3D12_ROOT_DESCRIPTOR_TABLE {
-//      NumDescriptorRanges: 1,
-//      pDescriptorRanges: desc_ranges[0..0].as_ptr(),
-//    };
-//    *rs_parms[1].DescriptorTable_mut() = D3D12_ROOT_DESCRIPTOR_TABLE {
-//      NumDescriptorRanges: 1,
-//      pDescriptorRanges: desc_ranges[1..1].as_ptr(),
-//    };
-//  };
+  unsafe{
+    *rs_parms[0].DescriptorTable_mut() = D3D12_ROOT_DESCRIPTOR_TABLE {
+      NumDescriptorRanges: 1,
+      pDescriptorRanges: desc_ranges[0..0].as_ptr(),
+    };
+    *rs_parms[1].DescriptorTable_mut() = D3D12_ROOT_DESCRIPTOR_TABLE {
+      NumDescriptorRanges: 1,
+      pDescriptorRanges: desc_ranges[1..1].as_ptr(),
+    };
+  };
   debug!("Size of D3D12_ROOT_PARAMETER:{}", ::std::mem::size_of_val(&rs_parms[0]));
 
   let rsd=D3D12_ROOT_SIGNATURE_DESC{
@@ -705,9 +714,6 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
   debug!("Command list");
   let command_list : D3D12GraphicsCommandList = dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
   debug!("dev.iptr: 0x{:x}, lpVtbl: 0x{:x}", dev.iptr() as usize, unsafe{ (*dev.iptr()).lpVtbl as usize});
-  debug!("Command list Close");
-  command_list.close().unwrap();
-  debug!("dev.iptr: 0x{:x}, lpVtbl: 0x{:x}", dev.iptr() as usize, unsafe{ (*dev.iptr()).lpVtbl as usize});
   
   let vtc=vec![
     Vertex {pos: [0.0, 0.5, 0.0, 0.0], color: [1.0,0.0,0.0,1.0], texc0: [1.0, 1.0, 0.0, 0.0],},
@@ -716,34 +722,15 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
     Vertex {pos: [0.0, -1.5, 0.0, 0.0], color: [0.0,0.0,1.0,1.0], texc0: [0.0, 1.0, 0.0, 0.0],},
   ];
 
-  let vbuf_size = mem::size_of_val(&vtc[..]) as UINT64;
+  let vbuf_size = mem::size_of_val(&vtc[..]);
 
-  let heap_prop=
-    D3D12_HEAP_PROPERTIES {
-      Type: D3D12_HEAP_TYPE_UPLOAD,
-      CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
-      MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
-      CreationNodeMask: 0,
-      VisibleNodeMask: 0,
-  };
+  let heap_prop = heap_properties_upload();
 //  let heap_prop=dev.get_custom_heap_properties(0, D3D12_HEAP_TYPE_UPLOAD);
 
 //  debug!("dev.iptr: 0x{:x}, lpVtbl: 0x{:x}", dev.iptr() as usize, unsafe{ (*dev.iptr()).lpVtbl as usize});
 //  debug!("Heap properties: {:#?}", &heap_prop);
   
-  let res_desc =
-    D3D12_RESOURCE_DESC {
-      Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
-      Alignment:  0,
-      Width: vbuf_size,
-      Height: 1,
-      DepthOrArraySize: 1,
-      MipLevels: 1,
-      Format: DXGI_FORMAT_UNKNOWN,
-      SampleDesc: DXGI_SAMPLE_DESC {Count:1, Quality: 0,},
-      Layout: D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-      Flags: D3D12_RESOURCE_FLAG_NONE,
-  };
+  let res_desc = resource_desc_buffer(vbuf_size as u64);
   info!("Resource desc: {:#?}", &res_desc);
 
 
@@ -787,25 +774,17 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
   info!("Texture desc: {:#?}", &res_desc);
 
   debug!("Texture resource");
-  let tex_resource=try!(dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|info_queue.clone()));
-  unsafe {
-    debug!("Map texture");
-    if let Err(hr)=tex_resource.map::<()>(0, None, None) {
-      error!("Error 0x{}",hr);
-      return Err(info_queue.clone());
-    }
-    let mut texdata: Vec<u32> = vec![0xff00ffff; tex_w*tex_h as usize];
-//    let mut c = 0u32;
-    for v in &mut texdata[..] {
-      *v=rand::random();
-//      c += 2;
-    }
-    debug!("Write to subresource");
-    tex_resource.write_to_subresource(0, None, &texdata[..], (4*tex_w) as UINT, (4*tex_w*tex_h) as UINT).unwrap(); // Yes, "magic" constant 
-    
-    debug!("Unmap texture");
-    tex_resource.unmap(0, None);
+  let tex_resource=try!(dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST, None).map_err(|_|info_queue.clone()));
+  
+
+  let mut texdata: Vec<u32> = vec![0xff00ffff; tex_w*tex_h as usize];
+  for v in &mut texdata[..] {
+    *v=rand::random();
   }
+  // temporary buffer should live until the start of command list execution
+  let temp_buf=try!(upload_into_texture(&command_list, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|info_queue.clone()));
+
+  command_list.resource_barrier(&mut [resource_barrier_transition(&tex_resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
   let mut tex_view = D3D12_SHADER_RESOURCE_VIEW_DESC {
     Format: DXGI_FORMAT_R8G8B8A8_UNORM,
@@ -879,8 +858,42 @@ fn create_appdata(wnd: &Window) -> Result<AppData,D3D12InfoQueue> {
       tick: 0.0,
       iq: info_queue,
     };
+  
+  ret.command_list.close().unwrap();
+  debug!("dev.iptr: 0x{:x}, lpVtbl: 0x{:x}", ret.device.iptr() as usize, unsafe{ (*ret.device.iptr()).lpVtbl as usize});
+
+  ret.command_queue.execute_command_lists(&[&ret.command_list]);
+  debug!("Command list Close");
+
   debug!("wait_for_prev_frame");
   wait_for_prev_frame(&mut ret);
   Ok(ret)
+}
+
+fn dump_info_queue(iq: &D3D12InfoQueue) {
+  let iq=iq;
+  let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
+  //println!("Number of debug messages is {}", mnum);
+  for i in 0..mnum {
+    let mut sz = 0;
+    let _ = iq.get_message(i, None,&mut sz);
+    //info!("get_message returned {:?}", hr); // It is the case when hr!=0 and it's ok
+    // create buffer to receive message
+    let mut arr: Vec<u8> = Vec::with_capacity(sz as usize); 
+    let mut sz1=sz; 
+    unsafe {
+      // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
+      // it should be Option<&[u8]>, but I don't have annotation for that yet.
+      let _ = iq.get_message(i, Some(mem::transmute(arr.as_ptr())), &mut sz1); 
+      assert_eq!(sz, sz1); // just to be sure. hr is Err(1) on success.
+      // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
+      let msg: D3D12_MESSAGE = mem::transmute_copy(&(*arr.as_ptr()));
+      // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
+      let cdescr = ::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
+      let descr = String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
+      warn!("{:}", descr);
+    }
+  };
+  iq.clear_stored_messages();
 }
 

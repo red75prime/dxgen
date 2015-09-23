@@ -369,9 +369,9 @@ impl D3D12CommandQueue {
   //  Method GetDesc
   
   pub fn get_desc(&self) -> D3D12_COMMAND_QUEUE_DESC {
-  
-    let hr=unsafe { (*self.0).GetDesc() };
-    hr
+    let mut lv1: D3D12_COMMAND_QUEUE_DESC = unsafe {mem::uninitialized::<_>()};
+    let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    lv1
   }
   
   
@@ -521,9 +521,9 @@ impl D3D12DescriptorHeap {
   //  Method GetDesc
   
   pub fn get_desc(&self) -> D3D12_DESCRIPTOR_HEAP_DESC {
-  
-    let hr=unsafe { (*self.0).GetDesc() };
-    hr
+    let mut lv1: D3D12_DESCRIPTOR_HEAP_DESC = unsafe {mem::uninitialized::<_>()};
+    let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    lv1
   }
   
   //  Method GetCPUDescriptorHandleForHeapStart
@@ -828,17 +828,17 @@ impl D3D12Device {
   //  Method GetResourceAllocationInfo
   
   pub fn get_resource_allocation_info(&self, visibleMask: UINT, resource_descs: &mut [D3D12_RESOURCE_DESC]) -> D3D12_RESOURCE_ALLOCATION_INFO {
-  
-    let hr=unsafe { (*self.0).GetResourceAllocationInfo(visibleMask,  same_length(&[Some(resource_descs.len())]).expect("Arrays must have equal sizes") as UINT, resource_descs.as_mut_ptr() as *mut _) };
-    hr
+    let mut lv1: D3D12_RESOURCE_ALLOCATION_INFO = unsafe {mem::uninitialized::<_>()};
+    let hr=unsafe { (*self.0).GetResourceAllocationInfo(visibleMask,  same_length(&[Some(resource_descs.len())]).expect("Arrays must have equal sizes") as UINT, resource_descs.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
+    lv1
   }
   
   //  Method GetCustomHeapProperties
   
   pub fn get_custom_heap_properties(&self, nodeMask: UINT, heapType: D3D12_HEAP_TYPE) -> D3D12_HEAP_PROPERTIES {
-  
-    let hr=unsafe { (*self.0).GetCustomHeapProperties(nodeMask, heapType) };
-    hr
+    let mut lv1: D3D12_HEAP_PROPERTIES = unsafe {mem::uninitialized::<_>()};
+    let hr=unsafe { (*self.0).GetCustomHeapProperties(nodeMask, heapType, &mut lv1 as *mut _ as *mut _) };
+    lv1
   }
   
   //  Method CreateCommittedResource
@@ -1573,9 +1573,9 @@ impl D3D12Heap {
   //  Method GetDesc
   
   pub fn get_desc(&self) -> D3D12_HEAP_DESC {
-  
-    let hr=unsafe { (*self.0).GetDesc() };
-    hr
+    let mut lv1: D3D12_HEAP_DESC = unsafe {mem::uninitialized::<_>()};
+    let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    lv1
   }
   
   
@@ -2173,9 +2173,9 @@ impl D3D12Resource {
   //  Method GetDesc
   
   pub fn get_desc(&self) -> D3D12_RESOURCE_DESC {
-  
-    let hr=unsafe { (*self.0).GetDesc() };
-    hr
+    let mut lv1: D3D12_RESOURCE_DESC = unsafe {mem::uninitialized::<_>()};
+    let hr=unsafe { (*self.0).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    lv1
   }
   
   //  Method GetGPUVirtualAddress
