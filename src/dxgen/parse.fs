@@ -164,6 +164,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
         let (pname,ptype,pannot)=(getCursorDisplayNameFS cursor |> (fun pname -> if pname="type" then "type_" else pname), getCursorType cursor |> typeDesc, cannot)
         let pdesc=
           match ptype with
+          |Array(Const(_),_) as arr -> (pname, Ptr(Const(arr)), pannot)
           |Array(_,_) as arr -> (pname, Ptr(arr), pannot)
 //          |Ptr(TypedefRef "IUnknown")
 //          |Ptr(Const(TypedefRef "IUnknown")) ->

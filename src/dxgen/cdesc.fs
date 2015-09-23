@@ -218,7 +218,10 @@ let rec typeDesc (ty: Type)=
   |TypeKind.ULongLong -> Primitive UInt64
   |TypeKind.UShort -> Primitive UInt16
   |TypeKind.ConstantArray ->
-    Array(getArrayElementType ty |> typeDesc, getArraySize ty)
+    if isConstQualifiedTypeFS (getArrayElementType ty) then
+      Array(Const(getArrayElementType ty |> typeDesc), getArraySize ty)
+    else
+      Array(getArrayElementType ty |> typeDesc, getArraySize ty)
   |TypeKind.Enum -> 
     EnumRef (getTypeSpellingFS ty)
   |TypeKind.Record ->
@@ -286,7 +289,8 @@ and
     |"" -> "_ : "+(tyToRust ty)
     |_ -> 
       match ty with
-      |Array(_,_) -> name+": &"+(tyToRust ty)
+      |Array(Const(_),_) -> name+": &"+(tyToRust ty)
+      |Array(_,_) -> name+": &mut "+(tyToRust ty)
       |_ -> name+": "+(tyToRust ty)
 
 let rec tyToRustGlobal (ty:CTypeDesc)=
@@ -319,6 +323,8 @@ let rec tyToRustGlobal (ty:CTypeDesc)=
   |StructRef tyn -> "::"+tyn
   |EnumRef tyn -> "::"+tyn
   |Array(uty,size) -> "["+(tyToRustGlobal uty)+"; "+size.ToString()+"]"
+  |Ptr(Array(Const(uty),size)) -> "*const ["+(tyToRustGlobal uty)+"; "+size.ToString()+"]"
+  |Ptr(Array(uty,size)) -> "*mut ["+(tyToRustGlobal uty)+"; "+size.ToString()+"]"
   |Ptr(Const(uty)) -> "*const "+(tyToRustGlobal uty)
   |Ptr(Function(CFuncDesc(args,rty,cc))) ->
     "extern "+(ccToRust cc)+" fn ("+((List.map funcArgToRustGlobal args) |> String.concat(", "))+") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)
@@ -332,7 +338,8 @@ and
     |"" -> "_ : "+(tyToRustGlobal ty)
     |_ -> 
       match ty with
-      |Array(_,_) -> name+": &"+(tyToRustGlobal ty)
+      |Array(Const(_),_) -> name+": *"+(tyToRustGlobal ty)
+      |Array(_,_) -> name+": *mut "+(tyToRustGlobal ty)
       |_ -> name+": "+(tyToRustGlobal ty)
 
 type MacroConst=

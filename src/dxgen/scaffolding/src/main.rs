@@ -17,6 +17,7 @@ extern crate rand;
 mod create_device;
 mod window;
 mod structwrappers;
+mod utils;
 
 use winapi::*;
 use d3d12_safe::*;
@@ -29,6 +30,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use window::*;
 use structwrappers::*;
+use utils::*;
 
 #[link(name="d3dcompiler")]
 extern {}
@@ -45,13 +47,15 @@ fn main() {
   let factory: DXGIFactory4 = create_dxgi_factory1().expect("Cannot create DXGIFactory1. No can do.");
   let mut i=0;
   while let Ok(adapter)=factory.enum_adapters1(i) {
-    println!("Adapter {} dedicated video memory: {}MiB", i, adapter.get_desc1().unwrap().DedicatedVideoMemory/1024/1024);
+    let descr=adapter.get_desc1().unwrap();
+    println!("Adapter {}: {}", i, wchar_array_to_string_lossy(&descr.Description));
+    println!("   Dedicated video memory: {}MiB", descr.DedicatedVideoMemory/1024/1024);
     i+=1;
   }
 
   let wnd=create_window("D3D12 Hello, rusty world!", 512, 256);
   let data=
-    match create_appdata(&wnd, Some(&factory.enum_adapters1(1).unwrap().query_interface().unwrap())) {
+    match create_appdata(&wnd, None) { //Some(&factory.enum_adapters1(2).unwrap().query_interface().unwrap())) {
       Ok(appdata) => {
         Rc::new(RefCell::new(appdata))
       },
@@ -782,7 +786,8 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
     *v=rand::random();
   }
   // temporary buffer should live until the start of command list execution
-  let temp_buf=try!(upload_into_texture(&command_list, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|info_queue.clone()));
+  //#[allow(unused_variables)]
+  let _temp_buf=try!(upload_into_texture(&command_list, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|info_queue.clone()));
 
   command_list.resource_barrier(&mut [resource_barrier_transition(&tex_resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
@@ -859,12 +864,12 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
       iq: info_queue,
     };
   
-  ret.command_list.close().unwrap();
-  debug!("dev.iptr: 0x{:x}, lpVtbl: 0x{:x}", ret.device.iptr() as usize, unsafe{ (*ret.device.iptr()).lpVtbl as usize});
-
-  ret.command_queue.execute_command_lists(&[&ret.command_list]);
   debug!("Command list Close");
+  ret.command_list.close().unwrap();
 
+  debug!("Command queue execute");
+  ret.command_queue.execute_command_lists(&[&ret.command_list]);
+  
   debug!("wait_for_prev_frame");
   wait_for_prev_frame(&mut ret);
   Ok(ret)

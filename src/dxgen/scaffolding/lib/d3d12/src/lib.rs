@@ -1237,9 +1237,9 @@ impl D3D12GraphicsCommandList {
   
   //  Method OMSetBlendFactor
   
-  pub fn om_set_blend_factor(&self, blend_factor: Option<&mut [FLOAT;4]>) -> () {
+  pub fn om_set_blend_factor(&self, blend_factor: Option<&[FLOAT;4]>) -> () {
   
-    let hr=unsafe { (*self.0).OMSetBlendFactor(opt_as_mut_ptr(&blend_factor)) };
+    let hr=unsafe { (*self.0).OMSetBlendFactor(blend_factor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     ()
   }
   
@@ -1444,7 +1444,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ClearRenderTargetView
   
-  pub fn clear_render_target_view(&self, render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE, color_r_g_b_a: &mut [FLOAT;4], rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_render_target_view(&self, render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE, color_r_g_b_a: &[FLOAT;4], rects: &mut [D3D12_RECT]) -> () {
   
     let hr=unsafe { (*self.0).ClearRenderTargetView(render_target_view, color_r_g_b_a,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
     ()
@@ -1452,7 +1452,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ClearUnorderedAccessViewUint
   
-  pub fn clear_unordered_access_view_uint<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &mut [UINT;4], rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_unordered_access_view_uint<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[UINT;4], rects: &mut [D3D12_RECT]) -> () {
   
     let hr=unsafe { (*self.0).ClearUnorderedAccessViewUint(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
     ()
@@ -1460,7 +1460,7 @@ impl D3D12GraphicsCommandList {
   
   //  Method ClearUnorderedAccessViewFloat
   
-  pub fn clear_unordered_access_view_float<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &mut [FLOAT;4], rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_unordered_access_view_float<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[FLOAT;4], rects: &mut [D3D12_RECT]) -> () {
   
     let hr=unsafe { (*self.0).ClearUnorderedAccessViewFloat(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
     ()
