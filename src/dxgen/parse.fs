@@ -176,8 +176,9 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       raise <| System.Exception("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
     let retyname=getTypeSpellingFS(getCanonicalType(getResultType(fType)))
     let retysize=getSizeOfType(getResultType(fType))
-    if retysize>0L && retysize<=8L && (retyname.StartsWith("struct ") || (retyname.Contains(" struct ") && retyname.Contains("*")=false)) then
+    if (retyname.StartsWith("struct ") || (retyname.Contains(" struct ") && retyname.Contains("*")=false)) then
       // C returns those structs thru EAX:EDX, C++ thru reference
+      // and Rust do something different
       args := ("__ret_val",Ptr(rety), Out) :: !args
       Function(CFuncDesc(List.rev !args, Ptr(rety),cc))
     else

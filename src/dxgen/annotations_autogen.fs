@@ -109,6 +109,7 @@ let d3d12annotations_prime=
         ],MANone);
         ("GetDesc",[
           ("This",AThis);
+          ("__ret_val",OutReturn);
         ],MANone);
       ]);
       ("ID3D12CommandSignatureVtbl",IAAutogen, "ID3D12PageableVtbl", []);
@@ -156,6 +157,7 @@ let d3d12annotations_prime=
       ("ID3D12DescriptorHeapVtbl",IAAutogen, "ID3D12PageableVtbl", [
         ("GetDesc",[
           ("This",AThis);
+          ("__ret_val",OutReturn);
         ],MANone);
         ("GetCPUDescriptorHandleForHeapStart",[
           ("This",AThis);
@@ -297,11 +299,13 @@ let d3d12annotations_prime=
           ("visibleMask",ANone);
           ("numResourceDescs",ANone);
           ("pResourceDescs",InArrayOfSize "numResourceDescs");
+          ("__ret_val",OutReturn);
         ],MANone);
         ("GetCustomHeapProperties",[
           ("This",AThis);
           ("nodeMask",ANone);
           ("heapType",ANone);
+          ("__ret_val",OutReturn);
         ],MANone);
         ("CreateCommittedResource",[
           ("This",AThis);
@@ -740,6 +744,7 @@ let d3d12annotations_prime=
       ("ID3D12HeapVtbl",IAAutogen, "ID3D12PageableVtbl",  [
         ("GetDesc",[
           ("This",AThis);
+          ("__ret_val",OutReturn);
         ],MANone);
       ]);
       ("ID3D12InfoQueueVtbl",IAAutogen, "IUnknownVtbl", [ //TODO: Annotate debug interfaces
@@ -923,6 +928,7 @@ let d3d12annotations_prime=
         ],MANone); // TODO: Find some way of dealing with unbounded memory areas in safe rust
         ("GetDesc",[
           ("This",AThis);
+          ("__ret_val",OutReturn);
         ],MANone);
         ("GetGPUVirtualAddress",[
           ("This",AThis);
@@ -1737,7 +1743,7 @@ let enum_annotations=
     ("D3D12_FILTER_TYPE",EAEnum);
     ("D3D12_FORMAT_SUPPORT1",EAFlags);
     ("D3D12_FORMAT_SUPPORT2",EAFlags);
-    ("D3D12_HEAP_FLAGS",EAEnum);
+    ("D3D12_HEAP_FLAGS",EAFlags);
     ("D3D12_HEAP_TYPE",EAEnum);
     ("D3D12_INDEX_BUFFER_STRIP_CUT_VALUE",EAEnum);
     ("D3D12_INDIRECT_ARGUMENT_TYPE",EAEnum);
@@ -1814,8 +1820,8 @@ let enum_annotations=
     ("DXGI_SWAP_EFFECT",EAEnum);
     ("_D3D_CBUFFER_TYPE",EAEnum);
     ("_D3D_INCLUDE_TYPE",EAEnum);
-    ("_D3D_PARAMETER_FLAGS",EAEnum);
-    ("_D3D_SHADER_CBUFFER_FLAGS",EAEnum);
+    ("_D3D_PARAMETER_FLAGS",EAFlags);
+    ("_D3D_SHADER_CBUFFER_FLAGS",EAFlags);
     ("_D3D_SHADER_INPUT_FLAGS",EAFlags);
     ("_D3D_SHADER_INPUT_TYPE",EAEnum);
     ("_D3D_SHADER_VARIABLE_CLASS",EAEnum);
