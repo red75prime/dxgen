@@ -132,21 +132,25 @@ let rec subtypes ty =
     // incomplete pattern matches warning is ok
     let gen (rety :: sts) = CFuncDesc(List.map2 (fun (pname, _ , pannot) ty -> (pname, ty, pannot)) plist sts,rety,cc)
     (elems, gen)
+  let unwrap sts=
+    match sts with
+    |[ty] -> ty
+    |_ -> raise <| new System.Exception ("Error in type processing")
   match ty with
   |Primitive _ -> ([], (fun _ -> ty))
   |Unimplemented _ -> ([], (fun _ -> ty))
-  |Typedef sty -> let (sts, fn) = subtypes sty in (sts, fun sts -> Typedef(fn sts))
+  |Typedef sty -> ([sty], unwrap >> Typedef)
   |TypedefRef _ -> ([], (fun _ -> ty))
   |Enum _ -> ([], (fun _ -> ty))
   |EnumRef _ -> ([], (fun _ -> ty))
-  |Ptr sty -> let (sts, fn) = subtypes sty in (sts, fun sts -> Ptr(fn sts))
-  |Const sty -> let (sts, fn) = subtypes sty in (sts, fun sts -> Const(fn sts))
-  |Array(sty, num) -> let (sts, fn) = subtypes sty in (sts, fun sts -> Array(fn sts, num))
+  |Ptr sty -> ([sty], unwrap >> Ptr)
+  |Const sty -> ([sty], unwrap >> Const)
+  |Array(sty, num) -> ([sty], unwrap >> (fun ty -> Array(ty, num)))
   |Struct ses -> let (sts, fn) = subtypesStruct ses in (sts, fun sts -> Struct(fn sts))
   |StructRef _ -> ([], (fun _ -> ty))
   |Union ues -> let (sts, fn) = subtypesUnion ues in (sts, fun sts -> Union(fn sts))
   |UnionRef _ -> ([], (fun _ -> ty))
-  |UnsizedArray sty -> let (sts, fn) = subtypes sty in (sts, fun sts -> UnsizedArray(fn sts))
+  |UnsizedArray sty -> ([sty], unwrap >> UnsizedArray)
   |Function(fd) -> let (sts, fn) = subtypesFunc fd in (sts, fun sts -> Function(fn sts))
 
 
@@ -155,7 +159,7 @@ let rec recursiveTransform f ty=
   |Some(ty) -> ty
   |_ ->
     let (elems, gen)=subtypes ty
-    gen <| (elems |> List.map (fun ty -> match f ty with |Some(ty) -> ty |None -> recursiveTransform f ty ))
+    gen <| (elems |> List.map (fun ty -> match f ty with |Some(ty') -> ty' |None -> recursiveTransform f ty ))
 
 let rec removeConst ty=
   match ty with
