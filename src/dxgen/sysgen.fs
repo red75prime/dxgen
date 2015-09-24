@@ -430,6 +430,21 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
         let nonInterface=List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields
         if nonInterface then
           let uncopyable=Set.contains name uncopyableStructs
+          // check precondition. Unnamed unions within unnamed unions isn't supported
+          let checkPrecond ty=
+            let rec secondLevel ty=
+              match ty with
+              |Union(_) -> raise <| new System.Exception("Unnamed unions within unnamed unions isn't supported")
+              |_ -> let (stys, _) = subtypes ty in List.iter secondLevel stys
+            let rec firstLevel ty=
+              let nextfn=
+                match ty with
+                |Union(_) -> secondLevel
+                |_ -> firstLevel
+              let (stys, _) = subtypes ty
+              List.iter nextfn stys
+            firstLevel ty
+          checkPrecond (Struct(sfields))
           // let's create proxies for unnamed structs in unions
           let unions=ref []
           let sfields' =
@@ -454,14 +469,62 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                             unions := (name, fname', sname, sname+"_mut", tyToRustGlobal stype) :: !unions
                             ue
                           )
-                    // Replace union with its largest element
-                    match ues' |> Seq.sortByDescending snd |> Seq.head |> fst with
-                    |CStructElem(_, fty, _) -> fty
+                    Union(ues')
                   |_ -> fty
                 CStructElem(fname', fty', bw)
               )
-          outputStructDef apl name sfields' uncopyable
-
+          // I need to find largest element in union for each compile target 
+          let compileTargets=
+            sfields' |> List.collect (function |CStructElem(_,Union(ues),_) -> List.collect (snd >> (List.map fst)) ues  |_ -> []) |> Set.ofList |> List.ofSeq
+          if List.isEmpty compileTargets then
+            //no unions
+            outputStructDef apl name sfields' uncopyable
+          else
+            // split by compile targets
+            let variants=
+              compileTargets 
+                |> List.map 
+                  (fun ct ->
+                      let selectCT=
+                        sfields' |> 
+                          List.map 
+                            (fun (CStructElem(fname, ty, bw) as el) ->
+                              match ty with
+                              |Union(ues) ->
+                                let uname = if fname="" then "u" else fname
+                                let (CStructElem(_,ty',_), _) = 
+                                  ues |> List.maxBy 
+                                    (fun (_, sz) ->
+                                      sz |> List.find (fst >> ((=)ct)) |> snd
+                                    )
+                                CStructElem(uname, ty', bw)
+                              |_ -> el)
+                      (ct, selectCT)
+                  )
+            // check if all variants are the same
+            if variants 
+              |> List.forall
+                (fun (ct1, sfs1) ->
+                    variants 
+                      |> List.forall 
+                        (fun (ct2, sfs2) ->
+                          if ct1=ct2 then true
+                          else
+                            List.forall2 (fun (CStructElem(_, ty1, _)) (CStructElem(_, ty2, _)) -> ty1=ty2) sfs1 sfs2
+                        ) 
+                ) then
+              outputStructDef apl name (variants |> List.head |> snd) uncopyable
+            else
+              for (ct, sfs) in variants do
+                match ct with
+                |TargetX86 -> 
+                  apl @"#[cfg(target_pointer_width = ""32"")]"
+                |TargetX64 -> 
+                  apl @"#[cfg(target_pointer_width = ""64"")]"
+                |TargetUnknown ->
+                  raise <| new System.Exception("TagetUnknown shouldn't be here")  
+                outputStructDef apl name sfs uncopyable
+                
           match !unions with
           |[] -> ()
           |_ ->
@@ -492,6 +555,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                   |_ -> None
                 )
           
+          // incomplete pattern matches warning is ok
           for (fname,parms,rty)::next in fseq |> utils.seqPairwise do
             let p1 = "    fn "+fname+"("
             let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")

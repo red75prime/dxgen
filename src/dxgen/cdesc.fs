@@ -93,6 +93,11 @@ let removeOpt pa=
   |InOutUpdatesBytes _ |OutWrites _ |OutWritesBytes _ | OutWritesTo _ 
   |COMOutptr |InRange _ |FieldSize _ |OutWritesBytes _ |OutptrResultBytebuffer  -> pa
 
+type Target = 
+  |TargetUnknown
+  |TargetX86
+  |TargetX64
+
 type CTypeDesc=
   |Primitive of CPrimitiveType
   |Unimplemented of string
@@ -105,41 +110,52 @@ type CTypeDesc=
   |Array of CTypeDesc*int64
   |Struct of CStructElem list
   |StructRef of string
-  |Union of (CStructElem*int64) list // snd is elem's size
+  |Union of (CStructElem*((Target*int64) list)) list // snd is list of (target, elem size)
   |UnionRef of string
   |UnsizedArray of CTypeDesc
   |Function of CFuncDesc
-  |Interface of (string*CFuncDesc) list // 
 and CFuncDesc=CFuncDesc of ((string*CTypeDesc*CParamAnnotation) list)*CTypeDesc*CallingConv
 and CStructElem=CStructElem of name:string*typeDesc:CTypeDesc*bitWidth:Option<int32>
 
+// retuns tuple (list of subtypes, function to generate type from list of subtypes)
+let rec subtypes ty = 
+  let subtypesUnion ses=
+    let elems = ses |> List.map (fun (CStructElem(name, sty, bw), sz) -> sty)
+    let gen sts = List.map2 (fun (CStructElem(name, _, bw), sz) ty -> (CStructElem(name, ty, bw), sz)) ses sts
+    (elems, gen)
+  let subtypesStruct ses=
+    let elems = ses |> List.map (fun (CStructElem(name, sty, bw)) -> sty)
+    let gen sts = List.map2 (fun (CStructElem(name, _, bw)) ty -> (CStructElem(name, ty, bw))) ses sts
+    (elems, gen)
+  let subtypesFunc (CFuncDesc(plist,rety,cc))=
+    let elems = rety :: (plist |> List.map (fun (_,ty,_) -> ty))
+    // incomplete pattern matches warning is ok
+    let gen (rety :: sts) = CFuncDesc(List.map2 (fun (pname, _ , pannot) ty -> (pname, ty, pannot)) plist sts,rety,cc)
+    (elems, gen)
+  match ty with
+  |Primitive _ -> ([], (fun _ -> ty))
+  |Unimplemented _ -> ([], (fun _ -> ty))
+  |Typedef sty -> let (sts, fn) = subtypes sty in (sts, fun sts -> Typedef(fn sts))
+  |TypedefRef _ -> ([], (fun _ -> ty))
+  |Enum _ -> ([], (fun _ -> ty))
+  |EnumRef _ -> ([], (fun _ -> ty))
+  |Ptr sty -> let (sts, fn) = subtypes sty in (sts, fun sts -> Ptr(fn sts))
+  |Const sty -> let (sts, fn) = subtypes sty in (sts, fun sts -> Const(fn sts))
+  |Array(sty, num) -> let (sts, fn) = subtypes sty in (sts, fun sts -> Array(fn sts, num))
+  |Struct ses -> let (sts, fn) = subtypesStruct ses in (sts, fun sts -> Struct(fn sts))
+  |StructRef _ -> ([], (fun _ -> ty))
+  |Union ues -> let (sts, fn) = subtypesUnion ues in (sts, fun sts -> Union(fn sts))
+  |UnionRef _ -> ([], (fun _ -> ty))
+  |UnsizedArray sty -> let (sts, fn) = subtypes sty in (sts, fun sts -> UnsizedArray(fn sts))
+  |Function(fd) -> let (sts, fn) = subtypesFunc fd in (sts, fun sts -> Function(fn sts))
+
+
 let rec recursiveTransform f ty=
-  let transformUnionElems ses=
-    ses |> List.map (fun (CStructElem(name, sty, bw), sz) -> (CStructElem(name, recursiveTransform f sty, bw), sz))
-  let transformStructElems ses=
-    ses |> List.map (fun (CStructElem(name, sty, bw)) -> CStructElem(name, recursiveTransform f sty, bw))
-  let transformFuncDesc (CFuncDesc(plist,rety,cc))=
-    CFuncDesc(plist |> List.map (fun (n,t,a) -> (n,recursiveTransform f t,a)) ,recursiveTransform f rety,cc)
   match f ty with
-  |None ->
-    match ty with
-    |Primitive _ -> ty
-    |Unimplemented _ -> ty
-    |Typedef sty -> Typedef(recursiveTransform f sty)
-    |TypedefRef _ -> ty
-    |Enum _ -> ty
-    |EnumRef _ -> ty
-    |Ptr sty -> Ptr(recursiveTransform f sty)
-    |Const sty -> Const(recursiveTransform f sty)
-    |Array(sty,num) -> Array(recursiveTransform f sty, num)
-    |Struct ses -> Struct(transformStructElems ses)
-    |StructRef _ -> ty
-    |Union ses -> Union(transformUnionElems ses)
-    |UnionRef _ -> ty
-    |UnsizedArray sty -> UnsizedArray(recursiveTransform f sty)
-    |Function(fd) -> Function(transformFuncDesc fd)
-    |Interface meths -> Interface(meths |> List.map (fun (n,fd) -> (n,transformFuncDesc fd)))
-  |Some v -> v
+  |Some(ty) -> ty
+  |_ ->
+    let (elems, gen)=subtypes ty
+    gen <| (elems |> List.map (fun ty -> match f ty with |Some(ty) -> ty |None -> recursiveTransform f ty ))
 
 let rec removeConst ty=
   match ty with

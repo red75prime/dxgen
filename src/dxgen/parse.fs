@@ -98,14 +98,16 @@ let tryParse (s:System.String)=
                 try Some(MCDouble(System.Convert.ToDouble(s, invcul)), s) with
                 |_ -> None
 
-let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq)=
+let keys m=
+  m |> Map.toSeq |> Seq.map fst |> Set.ofSeq
+
+let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) (target:string)=
   // Let's use clean C interface. Those fancy C++ classes with inheritance and whistles aren't good for rust codegen.
   let options = 
     seq {
        yield "-x"
        yield "c"
-       yield "--target=x86_64-pc-win32"
-       yield ""
+       yield "--target="+target
        yield "-std=c11"
        yield "-fms-extensions"
        yield "-fms-compatiblity"
@@ -198,11 +200,11 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
         let ty=ctype |> typeDesc
         let sz=ctype |> getSizeOfType
         let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
-        fields := (CStructElem(nm, ty, bw),sz) :: !fields
+        fields := (CStructElem(nm, ty, bw), [TargetUnknown, sz]) :: !fields
       else if ckind=CursorKind.StructDecl then
         let ctype=getCursorType cursor
         let sz=ctype |> getSizeOfType
-        fields := (CStructElem("", parseStruct cursor, None),sz) :: !fields
+        fields := (CStructElem("", parseStruct cursor, None), [TargetUnknown, sz]) :: !fields
       ChildVisitResult.Continue
     visitChildrenFS cursor parseFieldDecl () |> ignore
     let fields = 
@@ -265,6 +267,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     let cursorKind=getCursorKind cursor
 
     if cursorKind=CursorKind.MacroDefinition then
+      // incomplete pattern matches warning is ok
       let mname :: tokens = (tokenizeFS cursor)
       // rudimentary parsing of macro defined constants
       // expressions aren't supported
@@ -328,21 +331,21 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
   try
     visitChildrenFS cursor childVisitor () |> ignore
 
-    for KeyValue(en,ty) in !enums do
-      match ty with
-      |Enum(values=vals), _ ->
-        let (_,isect)=vals |> List.map snd |> List.filter (fun n -> n<>0xffffUL && n<>0xffffffffUL && n<>0xffffffffffffffffUL) |> List.fold (fun (acc,isec) n -> (acc|||n,isec || (acc&&&n<>0UL) )) (0x0UL,false)
-        if isect then
-          printfn "  (\"%s\",EAEnum);" en
-        else 
-          if en.Contains("FLAGS") then
-            printfn "  (\"%s\",EAFlags);" en
-          else if (List.length vals)<4 then
-            printfn "  (\"%s\",EAEnum);" en
-          else
-            printfn "  (\"%s\",EAFlags);" en
-      | _ -> ()
-
+//    for KeyValue(en,ty) in !enums do
+//      match ty with
+//      |Enum(values=vals), _ ->
+//        let (_,isect)=vals |> List.map snd |> List.filter (fun n -> n<>0xffffUL && n<>0xffffffffUL && n<>0xffffffffffffffffUL) |> List.fold (fun (acc,isec) n -> (acc|||n,isec || (acc&&&n<>0UL) )) (0x0UL,false)
+//        if isect then
+//          printfn "  (\"%s\",EAEnum);" en
+//        else 
+//          if en.Contains("FLAGS") then
+//            printfn "  (\"%s\",EAFlags);" en
+//          else if (List.length vals)<4 then
+//            printfn "  (\"%s\",EAEnum);" en
+//          else
+//            printfn "  (\"%s\",EAFlags);" en
+//      | _ -> ()
+//
     // let's replace all "typedef struct BlaSmth {} Bla;" with "struct Bla {};"
     // No need to follow C quirks.
     let typedef2struct=
@@ -396,3 +399,63 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
         pch.Delete()
     } |> ignore
 
+let zipStructs () = ()
+
+let rec setTarget ty target =
+  ty |> recursiveTransform 
+    (fun ty ->
+      match ty with
+      |Union ues ->
+        let ues'=
+          ues |> List.map 
+            (fun (CStructElem(ename, ty, bw), s) ->
+              (CStructElem(ename, setTarget ty target, bw), s |> List.map (fun (_, sz) -> (target, sz)))
+            )
+        Some(Union(ues'))
+      |_ -> None)
+
+let rec combineTargets ty1 ty2 =
+  let combineUnions ues1 ues2=
+    List.map2 
+      (fun (CStructElem(fname1, ty1, bw1) ,sz1) (CStructElem(fname2, ty2, bw2), sz2) -> 
+        assert(fname1=fname2)
+        assert(bw1=bw2)
+        (CStructElem(fname1, combineTargets ty1 ty2, bw1), List.concat [sz1;sz2])
+         ) ues1 ues2
+  match (ty1, ty2) with
+  |(Union ues1, Union ues2) ->
+    Union(combineUnions ues1 ues2)
+  |_ ->
+    let (sty1, gen) = subtypes ty1
+    let (sty2, _) = subtypes ty2
+    gen <| List.map2 combineTargets sty1 sty2
+
+// It parses code as 32-bit then as 64-bit and then it zips results
+// Some unions need different rust representation in 32/64 bits
+let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) =
+  let (types32, enums32, structs32', funcs32, iids32, defines32) as p32=
+    parse headerLocation pchLocation includePaths "i686-pc-win32"
+  let (types64, enums64, structs64', funcs64, iids64, defines64) as p32=
+    parse headerLocation pchLocation includePaths "x86_64-pc-win32"
+  // ensure that parse results contain same items
+  assert (keys types32 = keys types64)
+  assert (keys enums32 = keys enums64)
+  assert (keys structs32' = keys structs64')
+  assert (keys funcs32 = keys funcs64)
+  assert (keys iids32 = keys iids64)
+  assert (keys defines32 = keys defines64)
+  let structs32 = 
+    structs32' |>
+      Map.map (fun _ (ty,locInfo) -> (setTarget ty TargetX86, locInfo))
+
+  let structs64 = 
+    structs64' |>
+      Map.map (fun _ (ty,locInfo) -> (setTarget ty TargetX64, locInfo))
+
+  let structsCombined=
+    let combine (k1,(v1, locInfo)) (k2, (v2, _)) =
+      assert(k1=k2)
+      (k1, (combineTargets v1 v2, locInfo))
+    Seq.map2 combine (Map.toSeq structs32) (Map.toSeq structs64) |> Map.ofSeq
+
+  (types64, enums64, structsCombined, funcs64, iids64, defines64)

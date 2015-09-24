@@ -47,7 +47,7 @@ let main argv =
                 let includePaths=
                   codeModule.IncludePaths |> Seq.map (fun incPath -> Path.Combine(sdkLocation, incPath))
 
-                let types = parse.parse headerPath precompiledHeader includePaths
+                let types = parse.combinedParse headerPath precompiledHeader includePaths
                 let wapi = sysgen.winapiGen types
                 System.IO.Directory.CreateDirectory(@".\winapi") |> ignore
                 for KeyValue(f,t) in wapi do
