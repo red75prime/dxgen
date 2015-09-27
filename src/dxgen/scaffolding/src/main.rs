@@ -1,6 +1,7 @@
 #![feature(optin_builtin_traits)]
 #![feature(clone_from_slice)]
 
+//#[macro_use] extern crate gfx;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate log;
 extern crate env_logger;
@@ -18,6 +19,7 @@ mod create_device;
 mod window;
 mod structwrappers;
 mod utils;
+mod gfx_d3d12;
 
 use winapi::*;
 use d3d12_safe::*;
@@ -126,9 +128,7 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
       },
     };
     let buf_slice=std::slice::from_raw_parts_mut(p_buf, vtc.len());
-    for (place, data) in buf_slice.iter_mut().zip(vtc.iter()) {
-      *place = *data
-    }
+    buf_slice.clone_from_slice(&vtc[..]);
     data.vertex_buffer.unmap(0, None);
   }
 
@@ -227,8 +227,8 @@ fn populate_command_list(data: &mut AppData) {
 //  data.command_list.set_graphics_root_shader_resource_view(0, data.tex_resource.get_gpu_virtual_address());
 
   data.command_list.resource_barrier(
-      &mut [resource_barrier_transition(&data.render_targets[data.frame_index as usize],
-      D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET)]);
+      &mut [*ResourceBarrier::transition(&data.render_targets[data.frame_index as usize],
+      D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET).flags(D3D12_RESOURCE_BARRIER_FLAG_NONE)]);
 
   let mut rtvh=data.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
   rtvh.ptr += (data.frame_index as SIZE_T)*data.rtv_descriptor_size;
@@ -241,7 +241,7 @@ fn populate_command_list(data: &mut AppData) {
   data.command_list.draw_instanced(4, 1, 0, 0);
   
   data.command_list.resource_barrier(
-      &mut [resource_barrier_transition(&data.render_targets[data.frame_index as usize],
+      &mut [*ResourceBarrier::transition(&data.render_targets[data.frame_index as usize],
       D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
 
   data.command_list.close().unwrap();
@@ -539,27 +539,9 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   ];
 
   let mut rs_parms = vec![
-    D3D12_ROOT_PARAMETER {
-      ParameterType: D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-      u: unsafe { ::std::mem::uninitialized() },
-      ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
-    },    
-    D3D12_ROOT_PARAMETER {
-      ParameterType: D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
-      u: unsafe { ::std::mem::uninitialized() },
-      ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
-    },    
+    *RootParameter::descriptor_table(&desc_ranges[0..1], D3D12_SHADER_VISIBILITY_PIXEL),
+    *RootParameter::descriptor_table(&desc_ranges[1..2], D3D12_SHADER_VISIBILITY_PIXEL),
   ];
-  unsafe{
-    *rs_parms[0].DescriptorTable_mut() = D3D12_ROOT_DESCRIPTOR_TABLE {
-      NumDescriptorRanges: 1,
-      pDescriptorRanges: desc_ranges[0..0].as_ptr(),
-    };
-    *rs_parms[1].DescriptorTable_mut() = D3D12_ROOT_DESCRIPTOR_TABLE {
-      NumDescriptorRanges: 1,
-      pDescriptorRanges: desc_ranges[1..1].as_ptr(),
-    };
-  };
   debug!("Size of D3D12_ROOT_PARAMETER:{}", ::std::mem::size_of_val(&rs_parms[0]));
 
   let rsd=D3D12_ROOT_SIGNATURE_DESC{
@@ -789,7 +771,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   //#[allow(unused_variables)]
   let _temp_buf=try!(upload_into_texture(&command_list, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|info_queue.clone()));
 
-  command_list.resource_barrier(&mut [resource_barrier_transition(&tex_resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
+  command_list.resource_barrier(&mut [*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
   let mut tex_view = D3D12_SHADER_RESOURCE_VIEW_DESC {
     Format: DXGI_FORMAT_R8G8B8A8_UNORM,
