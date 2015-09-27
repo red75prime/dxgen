@@ -89,6 +89,8 @@ fn main() {
       //std::thread::sleep_ms(1);
     }
   }
+  // Application should exit fullscreen state before terminating. 
+  data.borrow().swap_chain.set_fullscreen_state(0, None).unwrap();
   // copy info queue
   let iq=data.borrow().iq.clone();
   // release resources
@@ -498,7 +500,6 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   };
   debug!("Sampler");
   dev.create_sampler(&sampler_desc, sam_heap.get_cpu_descriptor_handle_for_heap_start());
-
 
   debug!("Command allocator");
   let callocator=dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT).unwrap();
