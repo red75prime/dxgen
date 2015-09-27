@@ -38,6 +38,7 @@ typedef int INT;
 typedef unsigned int UINT;
 typedef unsigned long SIZE_T;
 typedef unsigned long ULONG;
+typedef unsigned short USHORT;
 typedef unsigned int HRESULT;
 typedef void* HDC;
 typedef void* HMODULE;
@@ -46,12 +47,13 @@ typedef float FLOAT;
 typedef long long LARGE_INTEGER;
 typedef unsigned long long UINT64;
 typedef unsigned short UINT16;
+typedef unsigned __int64 ULONGLONG;
 
 typedef struct _GUID {
-	DWORD Data1;
-	WORD  Data2;
-	WORD  Data3;
-	BYTE  Data4[8];
+  DWORD Data1;
+  WORD  Data2;
+  WORD  Data3;
+  BYTE  Data4[8];
 } GUID;
 
 typedef const GUID* REFGUID;
@@ -59,29 +61,35 @@ typedef const GUID* REFGUID;
 typedef GUID IID;
 
 typedef struct _LUID {
-	DWORD LowPart;
-	LONG  HighPart;
+  DWORD LowPart;
+  LONG  HighPart;
 } LUID;
 
 typedef struct _RECT {
-	LONG left;
-	LONG top;
-	LONG right;
-	LONG bottom;
+  LONG left;
+  LONG top;
+  LONG right;
+  LONG bottom;
 } RECT;
 
 typedef struct tagPOINT
 {
-	LONG  x;
-	LONG  y;
+  LONG  x;
+  LONG  y;
 } POINT;
+
+typedef struct tagSIZE
+{
+  LONG cx;
+  LONG cy;
+}   SIZE;
 
 #define D3DCOLORVALUE_DEFINED
 typedef struct _D3DCOLORVALUE {
-	float r;
-	float g;
-	float b;
-	float a;
+  float r;
+  float g;
+  float b;
+  float a;
 } D3DCOLORVALUE;
 
 #define REFIID REFGUID
@@ -91,10 +99,11 @@ typedef struct _D3DCOLORVALUE {
 #define STDMETHODCALLTYPE __stdcall
 #define MIDL_INTERFACE(x) class __attribute__((annotate("GUID(\"" ## x ##"\")")))
 // #define interface ;\/\/
-
+#define DECLSPEC_UUID(x)
 
 #define DEFINE_GUID(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12)
 
+#define CONST const
 // C interfaces are better suited for the task. 
 
 //#define CINTERFACE
@@ -103,6 +112,7 @@ typedef struct _D3DCOLORVALUE {
 #define END_INTERFACE
 
 typedef const char * LPCSTR;
+typedef char * LPSTR;
 typedef const WCHAR * LPCWSTR;
 
 #define CONST_VTBL
@@ -111,7 +121,7 @@ typedef const WCHAR * LPCWSTR;
                                 } iface; \
                                 typedef struct iface##Vtbl iface##Vtbl; \
                                 struct iface##Vtbl
-//#define DECLARE_INTERFACE_(iface, baseiface)    DECLARE_INTERFACE(iface)
+#define DECLARE_INTERFACE_(iface, baseiface)    DECLARE_INTERFACE(iface)
 //#define DECLARE_INTERFACE_IID(iface, iid)               DECLARE_INTERFACE(iface)
 //#define DECLARE_INTERFACE_IID_(iface, baseiface, iid)   DECLARE_INTERFACE_(iface, baseiface)
 #define PURE
@@ -121,7 +131,12 @@ typedef void* RPC_IF_HANDLE;
 
 #define WINAPI_FAMILY_PARTITION(p) 1
 
-#define STDMETHODCALLTYPE __stdcall
+#ifdef _WIN64
+  #define STDMETHODCALLTYPE 
+#else
+  #define STDMETHODCALLTYPE __stdcall
+#endif
+
 #define STDMETHOD(method)       HRESULT (STDMETHODCALLTYPE * method)
 #define STDMETHOD_(type,method) type (STDMETHODCALLTYPE * method)
 #define STDMETHODV(method)       HRESULT (STDMETHODVCALLTYPE * method)
@@ -133,6 +148,7 @@ typedef void* RPC_IF_HANDLE;
 #define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE)
 
 //typedef unsigned int DXGI_FORMAT;
+
 #define _In_                             __attribute__((annotate("In")))
 #define _In_z_                           __attribute__((annotate("InZ")))
 #define _In_opt_                         __attribute__((annotate("InOpt")))
@@ -140,22 +156,22 @@ typedef void* RPC_IF_HANDLE;
 #define _Out_opt_                        __attribute__((annotate("OutOpt")))
 #define _Inout_                          __attribute__((annotate("InOut")))
 #define _Inout_opt_                      __attribute__((annotate("InOutOpt")))
-#define _In_reads_(x)					 __attribute__((annotate("InReads(" #x ")")))
-#define _In_reads_opt_(x)				 __attribute__((annotate("InReadsOpt(" #x ")")))
+#define _In_reads_(x)          __attribute__((annotate("InReads(" #x ")")))
+#define _In_reads_opt_(x)        __attribute__((annotate("InReadsOpt(" #x ")")))
 #define _In_reads_bytes_(x)              __attribute__((annotate("InReadsBytes(" #x" )")))
 #define _In_reads_bytes_opt_(x)          __attribute__((annotate("InReadsBytesOpt(" #x ")")))
 #define _Inout_updates_bytes_(x)         __attribute__((annotate("InOutUpdatesBytes(" #x ")")))
-#define _Out_writes_(x)			         __attribute__((annotate("OutWrites(" #x ")")))
-#define _Out_writes_opt_(x) 			 __attribute__((annotate("OutWritesOpt(" #x ")")))
+#define _Out_writes_(x)              __attribute__((annotate("OutWrites(" #x ")")))
+#define _Out_writes_opt_(x)        __attribute__((annotate("OutWritesOpt(" #x ")")))
 #define _Out_writes_bytes_(x)            __attribute__((annotate("OutWritesBytes(" #x ")")))
 #define _Out_writes_to_opt_(size, count) __attribute__((annotate("OutWritesToOpt(" #size ", " #count")")))
 #define _Out_writes_bytes_opt_(x)        __attribute__((annotate("OutWritesBytesOpt(" #x ")")))
 #define _COM_Outptr_                     __attribute__((annotate("COMOutptr")))
 #define _COM_Outptr_opt_                 __attribute__((annotate("COMOutptrOpt")))
 #define _In_range_(a,b)                  __attribute__((annotate("InRange(" #a ", " #b ")")))
-#define _Field_size_(x)					 __attribute__((annotate("Fieldsize(" #x ")")))
+#define _Field_size_(x)          __attribute__((annotate("Fieldsize(" #x ")")))
 #define _Outptr_opt_result_bytebuffer_(b) __attribute__((annotate("OutptrOptResultBytebuffer")))
-#define _Outptr_opt_result_maybenull_	 __attribute__((annotate("OutptrOptResultMayBeNull")))
+#define _Outptr_opt_result_maybenull_  __attribute__((annotate("OutptrOptResultMayBeNull")))
 #define _COM_Outptr_opt_result_maybenull_ __attribute__((annotate("COMOutptrOptResultMayBeNull")))
 #define _Always_(x) x
 //TODO: Add to cdesc
@@ -163,6 +179,11 @@ typedef void* RPC_IF_HANDLE;
 #define _Field_size_bytes_full_(x) 
 #define _Out_writes_bytes_to_(x,y)
 #define _Out_writes_all_opt_(x)
+#define _Outptr_
+#define _Outptr_result_maybenull_
+#define _Field_size_opt_(x)
+#define _Outptr_result_bytebuffer_(x)
+#define _Inout_opt_bytecount_(c)
 
 #include <dxgi1_2.h>
 #include <dxgi1_3.h>

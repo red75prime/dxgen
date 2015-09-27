@@ -15,9 +15,11 @@ modules:
       include-path: 
         - ./Include/10.0.10240.0/um/
         - ./Include/10.0.10240.0/shared/
+        - ./Include/10.0.10240.0/ucrt/
       precompiled-header: ./PCH/DXGI_PCH.h
       headers:
           - d3d12.h
+#          - d3d11on12.h
 
 #    - name: dx_d3dcompiler
 #      output-path: ../../dx_dxgi/src/

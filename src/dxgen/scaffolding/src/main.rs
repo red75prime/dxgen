@@ -109,7 +109,7 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
   data.tick += 0.01;
   let aspect=data.viewport.Height/data.viewport.Width;
   
-  let tick=f64::atan2(x as f64, y as f64);
+  let tick=f64::atan2(x as f64, y as f64)*4.0;
 
   let (s,c)=f64::sin_cos(tick); // f32 is too small for time counting
   let (s,c)=(s as f32, c as f32);

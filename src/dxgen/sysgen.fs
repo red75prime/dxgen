@@ -385,7 +385,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
     for (name,uty,vals,(fname,_,_,_)) in enums |> Seq.choose (function |KeyValue(name,(Enum(uty, vals),loc)) -> (if isDXGI loc then None else Some(name,uty,vals,loc)) |_ -> None) do
       let f=rsfilename fname
       let apl=apl f
-      let annot=Map.find name enum_annotations
+      let annot=match Map.tryFind name enum_annotations with |Some(v) ->v |None -> EAFlags
       let convhex=fun (v:uint64) -> "0x" + v.ToString("X")
       let convdec=fun (v:uint64) -> v.ToString()
       let (macro,convf)=if annot=EAEnum then ("ENUM!", convdec)  else ("FLAGS!", convhex)

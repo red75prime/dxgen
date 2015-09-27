@@ -155,6 +155,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     let nArgs=getNumArgTypes(fType)
     let cc=getFunctionTypeCallingConv(fType)
     let rety=getResultType(fType) |> typeDesc
+    let typedef = ref None
     let args=ref []
     let argsVisitor (cursor:Cursor) _ _=
       if cursor.kind=CursorKind.ParmDecl then
@@ -168,24 +169,25 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           match ptype with
           |Array(Const(_),_) as arr -> (pname, Ptr(Const(arr)), pannot)
           |Array(_,_) as arr -> (pname, Ptr(arr), pannot)
-//          |Ptr(TypedefRef "IUnknown")
-//          |Ptr(Const(TypedefRef "IUnknown")) ->
-//              (pname, Ptr(Ptr(Primitive Void)), pannot)
           |_ -> (pname, ptype, pannot)
         args := pdesc :: !args
       ChildVisitResult.Continue
     visitChildrenFS cursor argsVisitor () |> ignore
-    if (List.length !args <> nArgs) then
-      raise <| System.Exception("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
-    let retyname=getTypeSpellingFS(getCanonicalType(getResultType(fType)))
-    let retysize=getSizeOfType(getResultType(fType))
-    if (retyname.StartsWith("struct ") || (retyname.Contains(" struct ") && retyname.Contains("*")=false)) then
-      // C returns those structs thru EAX:EDX, C++ thru reference
-      // and Rust do something different
-      args := ("__ret_val",Ptr(rety), Out) :: !args
-      Function(CFuncDesc(List.rev !args, Ptr(rety),cc))
-    else
-      Function(CFuncDesc(List.rev !args,rety,cc))
+    match !typedef with
+    |Some(td) ->
+      TypedefRef td
+    |None ->
+      if (List.length !args <> nArgs) then
+        raise <| System.Exception("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
+      let retyname=getTypeSpellingFS(getCanonicalType(getResultType(fType)))
+      let retysize=getSizeOfType(getResultType(fType))
+      if (retyname.StartsWith("struct ") || (retyname.Contains(" struct ") && retyname.Contains("*")=false)) then
+        // C returns those structs thru EAX:EDX, C++ thru reference
+        // and Rust do something different
+        args := ("__ret_val",Ptr(rety), Out) :: !args
+        Function(CFuncDesc(List.rev !args, Ptr(rety),cc))
+      else
+        Function(CFuncDesc(List.rev !args,rety,cc))
 
   let rec parseUnion (cursor:Cursor)=
     let tokens=tokenizeFS cursor
