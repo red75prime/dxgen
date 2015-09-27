@@ -225,6 +225,35 @@ impl<'a> RootParameter<'a> {
       data: ret,
     }
   }
+
+  fn other<'b>(shader_register: u32, register_space: u32, visibility: D3D12_SHADER_VISIBILITY, rptype: D3D12_ROOT_PARAMETER_TYPE) -> RootParameter<'b> {
+    let mut ret = D3D12_ROOT_PARAMETER {
+      ParameterType: rptype,
+      u: unsafe { ::std::mem::uninitialized() },
+      ShaderVisibility: visibility,
+    };
+    unsafe{
+      *ret.Descriptor_mut() = D3D12_ROOT_DESCRIPTOR {
+        ShaderRegister: shader_register,
+        RegisterSpace: register_space,
+      };
+    };
+    RootParameter::Other {
+      data: ret,
+    }
+  }
+
+  pub fn cbv<'b>(shader_register: u32, register_space: u32, visibility: D3D12_SHADER_VISIBILITY) -> RootParameter<'b> {
+    Self::other(shader_register, register_space, visibility, D3D12_ROOT_PARAMETER_TYPE_CBV)
+  }
+
+  pub fn srv<'b>(shader_register: u32, register_space: u32, visibility: D3D12_SHADER_VISIBILITY) -> RootParameter<'b> {
+    Self::other(shader_register, register_space, visibility, D3D12_ROOT_PARAMETER_TYPE_SRV)
+  }
+
+  pub fn uav<'b>(shader_register: u32, register_space: u32, visibility: D3D12_SHADER_VISIBILITY) -> RootParameter<'b> {
+    Self::other(shader_register, register_space, visibility, D3D12_ROOT_PARAMETER_TYPE_UAV)
+  }
 }
 
 pub fn texture_copy_location_footprint(res: &D3D12Resource, footprint: &D3D12_PLACED_SUBRESOURCE_FOOTPRINT) -> D3D12_TEXTURE_COPY_LOCATION {
