@@ -3,6 +3,7 @@ name = "d3d12_integration_test"
 version = "0.2.0"
 dependencies = [
  "cgmath 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clock_ticks 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "d3d12_safe 0.3.0",
  "dxgi-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "dxguid-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
@@ -41,6 +42,14 @@ dependencies = [
  "num 0.1.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "rustc-serialize 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "clock_ticks"
+version = "0.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

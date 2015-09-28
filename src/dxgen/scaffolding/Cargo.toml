@@ -4,14 +4,15 @@ version = "0.2.0"
 authors = ["red75prime <red75prim@gmail.com>"]
 
 [dependencies]
-libc = "*"
-lazy_static = "*"
-log = "*"
-env_logger = "*"
+libc = "0.1"
+lazy_static = "0.1"
+log = "0.3"
+env_logger = "0.3"
 d3d12_safe = { version = "*", path = "lib/d3d12" }
 # gfx = { version = "*", path = "lib/core" }
 rand = "0.3"
 cgmath = "0.3"
+clock_ticks = "*"
 
 [dependencies.winapi]
 git = "https://github.com/red75prime/winapi-rs/"
