@@ -318,9 +318,12 @@ pub fn shader_resource_view_tex2d_default(format: DXGI_FORMAT) -> D3D12_SHADER_R
   shader_resource_view_tex2d(format, shader_4component_mapping(0,1,2,3), 0, 1, 0, 0.0)
 }
 
+pub fn depth_stencil_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_DEPTH_STENCIL_VIEW_DESC {
+  let mut ret = D3D12_DEPTH_STENCIL_VIEW_DESC {
     Format: format,
     ViewDimension: D3D12_DSV_DIMENSION_TEXTURE2D,
     Flags: D3D12_DSV_FLAG_NONE,
+    u: unsafe{ mem::uninitialized() },
   };
   unsafe {
     *ret.Texture2D_mut() = D3D12_TEX2D_DSV {
