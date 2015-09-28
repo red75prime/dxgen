@@ -152,6 +152,7 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
   dump_info_queue(&data.iq);
 }
 
+// TODO: split this into something more manageable.
 struct AppData {
   viewport: D3D12_VIEWPORT,
   scissor_rect: D3D12_RECT,
@@ -164,6 +165,7 @@ struct AppData {
   rtv_heap: D3D12DescriptorHeap,
   srv_heap: D3D12DescriptorHeap,
   sam_heap: D3D12DescriptorHeap,
+  dsd_heap: D3D12DescriptorHeap,
   pipeline_state: D3D12PipelineState,
   command_list: D3D12GraphicsCommandList,
   rtv_descriptor_size: SIZE_T,
@@ -171,6 +173,7 @@ struct AppData {
   vertex_buffer_view: D3D12_VERTEX_BUFFER_VIEW,
   constant_buffer: D3D12Resource,
   tex_resource: D3D12Resource,
+  depth_stencil: Option<D3D12Resource>,
   frame_index: UINT,
   fence_event: HANDLE,
   fence: D3D12Fence,
@@ -240,16 +243,21 @@ fn populate_command_list(data: &mut AppData) {
 
 //  data.command_list.set_graphics_root_shader_resource_view(0, data.tex_resource.get_gpu_virtual_address());
 
+  if d_info {debug!("Resource barrier")};
   data.command_list.resource_barrier(
       &mut [*ResourceBarrier::transition(&data.render_targets[data.frame_index as usize],
       D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET).flags(D3D12_RESOURCE_BARRIER_FLAG_NONE)]);
 
   let mut rtvh=data.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
   rtvh.ptr += (data.frame_index as SIZE_T)*data.rtv_descriptor_size;
-  data.command_list.om_set_render_targets(1, &rtvh, None);
+  let dsvh = data.dsd_heap.get_cpu_descriptor_handle_for_heap_start();
+  if d_info {debug!("OM set render targets")};
+  data.command_list.om_set_render_targets(1, &rtvh, Some(&dsvh));
 
   let mut clear_color = [0.01, 0.01, 0.05, 1.0];
+  if d_info {debug!("clear render target view")};
   data.command_list.clear_render_target_view(rtvh, &mut clear_color, &mut []);
+  data.command_list.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &mut []);
   data.command_list.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
   data.command_list.ia_set_vertex_buffers(0, Some(&mut [data.vertex_buffer_view]));
 
@@ -272,7 +280,8 @@ fn populate_command_list(data: &mut AppData) {
 fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
    wait_for_prev_frame(data);
    drop_render_targets(data);
-   let res=data.swap_chain.resize_buffers(0, w, h, DXGI_FORMAT_UNKNOWN, 0);
+   let desc=data.swap_chain.get_desc().unwrap();
+   let res=data.swap_chain.resize_buffers(0, w, h, desc.BufferDesc.Format, desc.Flags);
    println!("Resize to {},{}. Result:{:?}",w,h,res);
    match res {
      Err(hr) => {
@@ -372,8 +381,8 @@ fn upload_into_texture(clist: &D3D12GraphicsCommandList, tex: &D3D12Resource, w:
 }
 
 fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData,D3D12InfoQueue> {
-  let w=1024.;
-  let h=1024.;
+  let w=512.;
+  let h=256.;
   let hwnd=wnd.get_hwnd();
   debug!("HWND");
   let viewport=D3D12_VIEWPORT {
@@ -509,6 +518,14 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   };
   debug!("Sampler descriptor heap");
   let sam_heap=dev.create_descriptor_heap(&sam_hd).unwrap();
+
+  let dsd_hd=D3D12_DESCRIPTOR_HEAP_DESC{
+    NumDescriptors: 1,
+    Type: D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
+    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+    NodeMask: 0,
+  };
+  let dsd_heap=dev.create_descriptor_heap(&dsd_hd).unwrap();
 
   let sampler_desc = D3D12_SAMPLER_DESC {
     Filter: D3D12_FILTER_MIN_MAG_MIP_LINEAR,
@@ -699,7 +716,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
     SampleMask: 0xffffffff,
     RasterizerState : D3D12_RASTERIZER_DESC{
       FillMode: D3D12_FILL_MODE_SOLID,
-      CullMode: D3D12_CULL_MODE_BACK,
+      CullMode: D3D12_CULL_MODE_NONE,
       FrontCounterClockwise: 0,
       DepthBias: 0,
       SlopeScaledDepthBias: 0.0,
@@ -711,7 +728,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
       ConservativeRaster: D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
     },
     DepthStencilState : D3D12_DEPTH_STENCIL_DESC{
-      DepthEnable: 0,
+      DepthEnable: 1,
       DepthWriteMask: D3D12_DEPTH_WRITE_MASK_ALL,
       DepthFunc: D3D12_COMPARISON_FUNC_LESS,
       StencilEnable: 0,
@@ -728,7 +745,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
     PrimitiveTopologyType : D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
     NumRenderTargets : 1,
     RTVFormats : [DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, ],
-    DSVFormat : DXGI_FORMAT_UNKNOWN, 
+    DSVFormat : DXGI_FORMAT_D32_FLOAT, 
     SampleDesc : DXGI_SAMPLE_DESC{Count:1, Quality: 0,},
     NodeMask : 0,
     CachedPSO : D3D12_CACHED_PIPELINE_STATE{pCachedBlob: ptr::null(), CachedBlobSizeInBytes: 0,},
@@ -745,10 +762,10 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   // ------------------- Vertex buffer resource init begin ----------------------------
 
   let vtc=vec![
-    Vertex {pos: [0.0, 0.5, 0.0],   color: [1.0,0.0,0.0], texc0: [1.0, 1.0], norm: [0.0, 0.0, -1.0]},
-    Vertex {pos: [0.5, -0.5, 0.0],  color: [0.0,1.0,0.0], texc0: [1.0, 0.0], norm: [0.0, 0.0, -1.0]},
-    Vertex {pos: [-0.5, -0.5, 0.0], color: [0.0,0.0,1.0], texc0: [0.0, 0.0], norm: [0.0, 0.0, -1.0]},
-    Vertex {pos: [0.0, -1.5, 0.0],  color: [0.0,0.0,1.0], texc0: [0.0, 1.0], norm: [0.0, 0.0, -1.0]},
+    Vertex {pos: [0.0, 0.5, 2.0],   color: [1.0,0.0,0.0], texc0: [0.0, 0.16667], norm: [0.0, 0.0, -1.0]},
+    Vertex {pos: [0.5, -0.5, 2.0],  color: [0.0,1.0,0.0], texc0: [0.66667, 0.0], norm: [0.0, 0.0, -1.0]},
+    Vertex {pos: [-0.5, -0.5, 2.0], color: [0.0,0.0,1.0], texc0: [0.66667, 0.33333], norm: [0.0, 0.0, -1.0]},
+    Vertex {pos: [0.0, -1.0, 2.0],  color: [0.0,0.7,0.7], texc0: [1.0, 0.16667], norm: [0.0, 0.0, -1.0]},
   ];
 
   let vbuf_size = mem::size_of_val(&vtc[..]);
@@ -803,28 +820,17 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
 
   // ------------------- Constant buffer resource init end  -----------------------------
 
+  // ------------------- Texture resource init begin  -----------------------------
+
   let tex_w=256usize;
   let tex_h=256usize;
 
-  let tex_desc =
-    D3D12_RESOURCE_DESC {
-      Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-      Alignment:  0,
-      Width: tex_w as u64,
-      Height: tex_h as u32,
-      DepthOrArraySize: 1,
-      MipLevels: 1,
-      Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-      SampleDesc: DXGI_SAMPLE_DESC {Count:1, Quality: 0,},
-      Layout: D3D12_TEXTURE_LAYOUT_UNKNOWN,
-      Flags: D3D12_RESOURCE_FLAG_NONE,
-  };
+  let tex_desc = resource_desc_tex2d_nomip(tex_w as u64, tex_h as u32, DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_FLAG_NONE);
   info!("Texture desc: {:#?}", &res_desc);
 
   debug!("Texture resource");
   let tex_resource=try!(dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST, None).map_err(|_|info_queue.clone()));
   
-
   let mut texdata: Vec<u32> = vec![0xff00ffff; tex_w*tex_h as usize];
   for v in &mut texdata[..] {
     *v=rand::random();
@@ -840,6 +846,22 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   let mut srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
   debug!("Create shader resource view: texture");
   dev.create_shader_resource_view(Some(&tex_resource), Some(&srv_desc), srv_dh);
+
+  // Data transfer from upload buffer into texture will be performed at execute_command_lists below.
+  // ------------------- Texture resource init end  -----------------------------
+
+  // ------------------- Depth stencil buffer init begin ------------------------
+  
+  let ds_format = DXGI_FORMAT_D32_FLOAT;
+  let ds_desc = resource_desc_tex2d_nomip(w as u64, h as u32, ds_format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+  debug!("Depth stencil resource");
+  let ds_res=try!(dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &ds_desc, D3D12_RESOURCE_STATE_COMMON, None).map_err(|_|info_queue.clone()));
+
+  let dsv_desc = depth_stencil_view_desc_tex2d_default(ds_format);
+
+  dev.create_depth_stencil_view(Some(&ds_res), Some(&dsv_desc), dsd_heap.get_cpu_descriptor_handle_for_heap_start());
+
+  // ------------------- Depth stencil buffer init end --------------------------
 
   debug!("fence");
   let fence=dev.create_fence(0, D3D12_FENCE_FLAG_NONE).unwrap();
@@ -864,6 +886,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
       rtv_heap: rtvheap,
       srv_heap: srv_heap,
       sam_heap: sam_heap,
+      dsd_heap: dsd_heap,
       pipeline_state: gps,
       command_list: command_list,
       rtv_descriptor_size: rtvdsize,
@@ -871,6 +894,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
       vertex_buffer_view: vbview,
       constant_buffer: cbuf,
       tex_resource: tex_resource,
+      depth_stencil: Some(ds_res),
       frame_index: frame_index,
       fence_event: fence_event,
       fence: fence,

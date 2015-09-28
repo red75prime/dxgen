@@ -795,9 +795,9 @@ impl D3D12Device {
   
   //  Method CreateDepthStencilView
   
-  pub fn create_depth_stencil_view(&self, resource: Option<&mut ID3D12Resource>, desc: Option<&D3D12_DEPTH_STENCIL_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  pub fn create_depth_stencil_view(&self, resource: Option<&D3D12Resource>, desc: Option<&D3D12_DEPTH_STENCIL_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
-    let hr=unsafe { (*self.0).CreateDepthStencilView(opt_as_mut_ptr(&resource), desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
+    let hr=unsafe { (*self.0).CreateDepthStencilView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
   }
   

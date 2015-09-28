@@ -23,6 +23,7 @@ struct VS_OUTPUT
 VS_OUTPUT VSMain(VS_INPUT vtx){
   VS_OUTPUT ret;
   ret.vPosition = mul(mul(float4(vtx.vPosition, 1), world), view);
+  ret.vPosition.z=0.5;
   
   ret.vDiffuse.rgb = vtx.vColor;
   ret.vDiffuse.a = 1;

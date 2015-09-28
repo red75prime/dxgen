@@ -268,7 +268,7 @@ let d3d12annotations_prime=
         ],MANone);
         ("CreateDepthStencilView",[
           ("This",AThis);
-          ("pResource",InOptional);
+          ("pResource",InOptionalComPtr);
           ("pDesc",InOptional);
           ("DestDescriptor",ANone);
         ],MANone);

@@ -23,6 +23,21 @@ pub fn resource_desc_buffer(size_in_bytes: u64) -> D3D12_RESOURCE_DESC {
   }
 }
 
+pub fn resource_desc_tex2d_nomip(width: u64, height: u32, format: DXGI_FORMAT, flags: D3D12_RESOURCE_FLAGS) -> D3D12_RESOURCE_DESC {
+  D3D12_RESOURCE_DESC {
+    Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+    Alignment:  0,
+    Width: width,
+    Height: height,
+    DepthOrArraySize: 1,
+    MipLevels: 1,
+    Format: format,
+    SampleDesc: DXGI_SAMPLE_DESC {Count:1, Quality: 0,},
+    Layout: D3D12_TEXTURE_LAYOUT_UNKNOWN,
+    Flags: flags,
+  }
+}
+
 pub fn heap_properties_upload() -> D3D12_HEAP_PROPERTIES {
   D3D12_HEAP_PROPERTIES {
     Type: D3D12_HEAP_TYPE_UPLOAD,
@@ -301,4 +316,16 @@ pub fn shader_resource_view_tex2d(format : DXGI_FORMAT, four_comp_map: UINT, mos
 
 pub fn shader_resource_view_tex2d_default(format: DXGI_FORMAT) -> D3D12_SHADER_RESOURCE_VIEW_DESC {
   shader_resource_view_tex2d(format, shader_4component_mapping(0,1,2,3), 0, 1, 0, 0.0)
+}
+
+    Format: format,
+    ViewDimension: D3D12_DSV_DIMENSION_TEXTURE2D,
+    Flags: D3D12_DSV_FLAG_NONE,
+  };
+  unsafe {
+    *ret.Texture2D_mut() = D3D12_TEX2D_DSV {
+      MipSlice: 0,
+    };
+  };
+  ret
 }
