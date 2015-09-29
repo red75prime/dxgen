@@ -291,6 +291,10 @@ fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
      _ => (),
    };
    reaquire_render_targets(data).unwrap();
+   // create new depth stencil
+   let ds_format = DXGI_FORMAT_D32_FLOAT;
+   data.depth_stencil = Some(create_depth_stencil(w as u64, h as u32, ds_format, &data.device, &data.dsd_heap, 0).unwrap());
+  
    data.viewport=D3D12_VIEWPORT {
      TopLeftX: 0.,
      TopLeftY: 0.,
@@ -305,7 +309,7 @@ fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
      left: 0,
      top: 0,
    };
-  on_render(data, 1, 1);
+  //on_render(data, 1, 1);
 }
 
 fn drop_render_targets(data: &mut AppData) {
@@ -853,13 +857,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   // ------------------- Depth stencil buffer init begin ------------------------
   
   let ds_format = DXGI_FORMAT_D32_FLOAT;
-  let ds_desc = resource_desc_tex2d_nomip(w as u64, h as u32, ds_format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
-  debug!("Depth stencil resource");
-  let ds_res=try!(dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &ds_desc, D3D12_RESOURCE_STATE_COMMON, None).map_err(|_|info_queue.clone()));
-
-  let dsv_desc = depth_stencil_view_desc_tex2d_default(ds_format);
-
-  dev.create_depth_stencil_view(Some(&ds_res), Some(&dsv_desc), dsd_heap.get_cpu_descriptor_handle_for_heap_start());
+  let ds_res = try!(create_depth_stencil(w as u64, h as u32, ds_format, &dev, &dsd_heap, 0).map_err(|_|info_queue.clone()));
 
   // ------------------- Depth stencil buffer init end --------------------------
 
@@ -941,3 +939,22 @@ fn dump_info_queue(iq: &D3D12InfoQueue) {
   iq.clear_stored_messages();
 }
 
+fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12Device, 
+                        dsd_heap: &D3D12DescriptorHeap, heap_offset: u32) -> HResult<D3D12Resource> {
+  let offset = 
+    if heap_offset == 0 { 0 } 
+    else {
+      dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_DSV)*heap_offset
+    };
+  let ds_desc = resource_desc_tex2d_nomip(w, h, ds_format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+  debug!("Depth stencil resource");
+  let ds_res=try!(dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &ds_desc, 
+                                          D3D12_RESOURCE_STATE_COMMON, Some(&depth_stencil_clear_value_depth_f32())));
+
+  let dsv_desc = depth_stencil_view_desc_tex2d_default(ds_format);
+  let mut handle = dsd_heap.get_cpu_descriptor_handle_for_heap_start();
+  handle.ptr += offset as SIZE_T;
+  dev.create_depth_stencil_view(Some(&ds_res), Some(&dsv_desc), handle);
+
+  Ok(ds_res)
+}

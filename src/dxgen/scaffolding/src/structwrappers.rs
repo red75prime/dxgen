@@ -332,3 +332,17 @@ pub fn depth_stencil_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_DEPTH
   };
   ret
 }
+
+pub fn depth_stencil_clear_value_depth_f32() -> D3D12_CLEAR_VALUE {
+  let mut ret = D3D12_CLEAR_VALUE {
+    Format: DXGI_FORMAT_D32_FLOAT,
+    u: unsafe{ mem::uninitialized() },
+  };
+  unsafe {
+    *ret.DepthStencil_mut() = D3D12_DEPTH_STENCIL_VALUE {
+      Depth: 1.0,
+      Stencil: 0,
+    };
+  };
+  ret
+}
