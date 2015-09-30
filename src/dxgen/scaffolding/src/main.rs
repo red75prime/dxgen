@@ -14,6 +14,7 @@ extern crate kernel32;
 //extern crate d3d12_sys;
 extern crate rand;
 extern crate clock_ticks;
+extern crate cgmath;
 
 #[macro_use] mod macros;
 mod create_device;
@@ -21,6 +22,7 @@ mod window;
 mod structwrappers;
 mod utils;
 mod gfx_d3d12;
+mod shape_gen;
 
 use winapi::*;
 use d3d12_safe::*;
@@ -35,6 +37,8 @@ use window::*;
 use structwrappers::*;
 use utils::*;
 use clock_ticks::*;
+use cgmath::*;
+use shape_gen::*;
 
 #[link(name="d3dcompiler")]
 extern {}
@@ -132,12 +136,39 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
 //  unsafe {
 //    upload_into_buffer(&data.vertex_buffer, &vtc[..]);
 //  }
+  let z=(f64::sin(data.tick*10.)*2.) as f32;
 
-  let world_matrix: [[f32;4];4] = [[c, s, 0.,0.],[-s, c, 0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
-  let view_matrix:  [[f32;4];4] = [[aspect,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
+  let mut d=f32::sqrt(x*x+y*y);
+  d = if d == 0. {1.} else {d};
+
+  let mut wm: Matrix4<f32> = Matrix4::from(Matrix3::from(Basis3::from_axis_angle(&Vector3::new(y/d, x/d, 0.0),rad(d/200.))));
+  wm.w.w = 1.;
+
+  let world_matrix = matrix4_to_4x4(&wm); //[[c, s, 0.,0.],[-s, c, 0.,0.],[0.,c ,1.,0.],[0.,0.,0.,1.],];
+
+  let mut wm_normal=wm;
+  wm.invert_self();
+  wm.transpose_self();
+  
+  let world_normal_matrix = matrix4_to_4x4(&wm_normal);
+  
+//  let vm = Matrix4::look_at(&Point3::new(0., 0., 3.), &Point3::new(0., 0., 0.), &Vector3::new(0., 1., 0.));
+
+//  let view_matrix:  [[f32;4];4] = vm.into();
+  let view_matrix:  [[f32;4];4] = [[1., 0., 0.,0.],[0., 1., 0.,0.],[0.,0.,1.,3.],[0.,0.,0.,1.],];
+
+//  println!("view: {:?}", &view_matrix);
+  
+//  let pm = cgmath::perspective(deg(30.), aspect, 20., 0.1);
+  let zfar=20.;
+  let znear=0.1;
+  let q = zfar/(zfar-znear);
+  let proj_matrix: [[f32;4];4] = [[aspect, 0., 0., 0.,], [0., 1., 0., 0., ], [0., 0., q, -q*znear], [0., 0., 1., 0.], ];
+
+//  println!("proj: {:?}", &proj_matrix);
 
   unsafe {
-    upload_into_buffer(&data.constant_buffer, &[world_matrix, view_matrix]);
+    upload_into_buffer(&data.constant_buffer, &[world_matrix, view_matrix, proj_matrix, world_normal_matrix]);
   };
 
   populate_command_list(data);
@@ -194,6 +225,25 @@ struct Vertex {
   color: [f32;3],
   texc0: [f32;2],
   norm: [f32;3],
+}
+
+impl GenVertex for Vertex {
+  fn new_vertex(p: &Vector3<f32>) -> Vertex {
+    Vertex {
+      pos: [p.x, p.y, p.z],
+      color: [1.,0.5,0.5,],
+      texc0: [0., 0.],
+      norm: [1., 0., 0.],
+    }
+  }
+  
+  fn set_uv(self, u: f32, v: f32) -> Vertex {
+    Vertex {texc0: [u,v], ..self}
+  }
+
+  fn set_normal(self, n: &Vector3<f32>) -> Vertex {
+    Vertex {norm: [n.x, n.y, n.z], ..self}
+  }
 }
 
 fn wait_for_prev_frame(data: &mut AppData) {
@@ -258,7 +308,7 @@ fn populate_command_list(data: &mut AppData) {
   if d_info {debug!("clear render target view")};
   data.command_list.clear_render_target_view(rtvh, &mut clear_color, &mut []);
   data.command_list.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &mut []);
-  data.command_list.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+  data.command_list.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   data.command_list.ia_set_vertex_buffers(0, Some(&mut [data.vertex_buffer_view]));
 
   let num_vtx=data.vertex_buffer_view.SizeInBytes/data.vertex_buffer_view.StrideInBytes;
@@ -381,6 +431,7 @@ fn upload_into_texture(clist: &D3D12GraphicsCommandList, tex: &D3D12Resource, w:
   let src = texture_copy_location_footprint(&res_buf, &psfp[0]);
   clist.copy_texture_region(&dest, 0, 0, 0, &src, None); 
 
+  // TODO: make wrapper for D3D12GraphicsCommand list to keep referenced resources alive
   Ok(res_buf)
 }
 
@@ -765,12 +816,14 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   
   // ------------------- Vertex buffer resource init begin ----------------------------
 
-  let vtc=vec![
-    Vertex {pos: [0.0, 0.5, 2.0],   color: [1.0,0.0,0.0], texc0: [0.0, 0.16667], norm: [0.0, 0.0, -1.0]},
-    Vertex {pos: [0.5, -0.5, 2.0],  color: [0.0,1.0,0.0], texc0: [0.66667, 0.0], norm: [0.0, 0.0, -1.0]},
-    Vertex {pos: [-0.5, -0.5, 2.0], color: [0.0,0.0,1.0], texc0: [0.66667, 0.33333], norm: [0.0, 0.0, -1.0]},
-    Vertex {pos: [0.0, -1.0, 2.0],  color: [0.0,0.7,0.7], texc0: [1.0, 0.16667], norm: [0.0, 0.0, -1.0]},
-  ];
+//  let vtc=vec![
+//    Vertex {pos: [0.0, 0.5, 2.0],   color: [1.0,0.0,0.0], texc0: [0.0, 0.16667], norm: [0.0, 0.0, -1.0]},
+//    Vertex {pos: [0.5, -0.5, 2.0],  color: [0.0,1.0,0.0], texc0: [0.66667, 0.0], norm: [0.0, 0.0, -1.0]},
+//    Vertex {pos: [-0.5, -0.5, 2.0], color: [0.0,0.0,1.0], texc0: [0.66667, 0.33333], norm: [0.0, 0.0, -1.0]},
+//    Vertex {pos: [0.0, -1.0, 2.0],  color: [0.0,0.7,0.7], texc0: [1.0, 0.16667], norm: [0.0, 0.0, -1.0]},
+//  ];
+
+  let (_,vtc) = cube::<Vertex>(0.5);
 
   let vbuf_size = mem::size_of_val(&vtc[..]);
 
@@ -802,7 +855,8 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   // ------------------- Constant buffer resource init begin ----------------------------
   let world_matrix: [[f32;4];4] = [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
   let view_matrix: [[f32;4];4] = [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
-  let cbuf_data = [world_matrix, view_matrix];
+  let proj_matrix: [[f32;4];4] = [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
+  let cbuf_data = [world_matrix, view_matrix, proj_matrix, world_matrix];
   let cbsize = mem::size_of_val(&cbuf_data);
 
   let cbuf = dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(cbsize as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None).unwrap();
@@ -957,4 +1011,11 @@ fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12Devic
   dev.create_depth_stencil_view(Some(&ds_res), Some(&dsv_desc), handle);
 
   Ok(ds_res)
+}
+
+fn matrix4_to_4x4(m: &Matrix4<f32>) -> [[f32;4];4] {
+  [ [m.x.x, m.x.y, m.x.z, m.x.w],
+    [m.y.x, m.y.y, m.y.z, m.y.w],
+    [m.z.x, m.z.y, m.z.z, m.z.w],
+    [m.w.x, m.w.y, m.w.z, m.w.w] ]
 }
