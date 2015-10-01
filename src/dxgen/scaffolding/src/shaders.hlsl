@@ -36,8 +36,8 @@ VS_OUTPUT VSMain(VS_INPUT vtx){
   ret.vDiffuse.a = 1;
   ret.texc0 = vtx.texc0;
   ret.norm.xyz = mul(float4(vtx.norm,1), n_model).xyz;
-  ret.vPosition.z = 0.01;
-  ret.vPosition.w = 1;
+//  ret.vPosition.z = 0.01;
+//  ret.vPosition.w = 1;
   return ret;
 }
 

@@ -294,23 +294,11 @@ fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_alloca
 
   if d_info {debug!("Set descriptor heaps")};
   command_list.set_descriptor_heaps(&[srv_heap, &data.sam_heap]);
-  
-  let mut gpu_dh=srv_heap.get_gpu_descriptor_handle_for_heap_start();
-  if d_info {debug!("Set graphics root descriptor table 0")};
-  command_list.set_graphics_root_descriptor_table(0, gpu_dh);
 
-  if d_info {debug!("Set graphics root descriptor table 1")};
-//  gpu_dh.ptr += data.device.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
-  command_list.set_graphics_root_descriptor_table(1, gpu_dh);
-
-  if d_info {debug!("Set graphics root descriptor table 2")};
-  command_list.set_graphics_root_descriptor_table(2, data.sam_heap.get_gpu_descriptor_handle_for_heap_start());
   if d_info {debug!("Set viepowrts")};
   command_list.rs_set_viewports(&[data.viewport]);
   if d_info {debug!("Set scissor rects")};
   command_list.rs_set_scissor_rects(&[data.scissor_rect]);
-
-//  command_list.set_graphics_root_shader_resource_view(0, data.tex_resource.get_gpu_virtual_address());
 
   if d_info {debug!("Resource barrier")};
   command_list.resource_barrier(
@@ -327,6 +315,20 @@ fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_alloca
   if d_info {debug!("clear render target view")};
   command_list.clear_render_target_view(rtvh, &clear_color, &[]);
   command_list.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
+  
+  let mut gpu_dh=srv_heap.get_gpu_descriptor_handle_for_heap_start();
+  if d_info {debug!("Set graphics root descriptor table 0")};
+  command_list.set_graphics_root_descriptor_table(0, gpu_dh);
+
+  if d_info {debug!("Set graphics root descriptor table 1")};
+//  gpu_dh.ptr += data.device.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
+  command_list.set_graphics_root_descriptor_table(1, gpu_dh);
+
+  if d_info {debug!("Set graphics root descriptor table 2")};
+  command_list.set_graphics_root_descriptor_table(2, data.sam_heap.get_gpu_descriptor_handle_for_heap_start());
+
+//  command_list.set_graphics_root_shader_resource_view(0, data.tex_resource.get_gpu_virtual_address());
+
   command_list.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
   command_list.ia_set_vertex_buffers(0, Some(&[data.vertex_buffer_view]));
 

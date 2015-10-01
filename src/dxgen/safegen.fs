@@ -690,7 +690,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             match pannot with
             |InArrayOfSize _ ->
               addSafeParm safeParmName (RBorrow(RSlice(ruty)))
-              addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ptr() as *const _")
+              addNativeParm pname (Some(safeParmName)) ("slice_as_ptr("+safeParmName+")")
             |InOptionalArrayOfSize _ ->
               addSafeParm safeParmName (ROption(RBorrow(RSlice(ruty))))
               addNativeParm pname (Some(safeParmName)) ("opt_arr_as_ptr(&"+safeParmName+") as *const _") // TODO: Use FFI option optimization
@@ -1046,6 +1046,10 @@ fn opt_arr_as_ptr<T>(opt: &Option<&[T]>) -> *const T {
 
 fn opt_as_mut_ptr<T>(opt: &Option<&mut T>) -> *mut T {
   opt.as_ref().map(|v|*v as *const _ as *mut _).unwrap_or(ptr::null_mut())
+}
+
+fn slice_as_ptr<T>(s: &[T]) -> *const T {
+  if s.len()==0 {ptr::null()} else {s.as_ptr()}
 }
 
 fn str_to_vec_u16(s : Cow<str>) -> Vec<u16> {
