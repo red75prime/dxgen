@@ -778,7 +778,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
             DestBlendAlpha: D3D12_BLEND_ZERO,
             BlendOpAlpha: D3D12_BLEND_OP_ADD,
             LogicOp: D3D12_LOGIC_OP_NOOP,
-            RenderTargetWriteMask: 15,
+            RenderTargetWriteMask: D3D12_COLOR_WRITE_ENABLE_ALL.0 as u8,
           },
           blend_desc_def,
           blend_desc_def,
@@ -793,9 +793,9 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
       FillMode: D3D12_FILL_MODE_SOLID,
       CullMode: D3D12_CULL_MODE_NONE,
       FrontCounterClockwise: 0,
-      DepthBias: 0,
-      SlopeScaledDepthBias: 0.0,
-      DepthBiasClamp: 0.0,
+      DepthBias: D3D12_DEFAULT_DEPTH_BIAS as i32,
+      SlopeScaledDepthBias: D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+      DepthBiasClamp: D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
       DepthClipEnable: 1,
       MultisampleEnable: 0,
       AntialiasedLineEnable: 0,
@@ -807,8 +807,8 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
       DepthWriteMask: D3D12_DEPTH_WRITE_MASK_ALL,
       DepthFunc: D3D12_COMPARISON_FUNC_LESS,
       StencilEnable: 0,
-      StencilReadMask: 0xff,
-      StencilWriteMask: 0xff,
+      StencilReadMask: D3D12_DEFAULT_STENCIL_READ_MASK as u8,
+      StencilWriteMask: D3D12_DEFAULT_STENCIL_READ_MASK as u8,
       FrontFace: def_stencil_op_desc,
       BackFace: def_stencil_op_desc,
       },
@@ -1007,7 +1007,15 @@ fn dump_info_queue(iq: &D3D12InfoQueue) {
       // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
       let cdescr = ::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
       let descr = String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
-      warn!("{:}", descr);
+      match msg.Severity {
+        D3D12_MESSAGE_SEVERITY_CORRUPTION |
+        D3D12_MESSAGE_SEVERITY_ERROR =>
+          {error!("{:}", descr)},
+        D3D12_MESSAGE_SEVERITY_WARNING =>
+          {warn!("{:}", descr)},
+        _ =>
+          {debug!("{:}", descr)},
+      }
     }
   };
   iq.clear_stored_messages();
@@ -1023,7 +1031,7 @@ fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12Devic
   let ds_desc = resource_desc_tex2d_nomip(w, h, ds_format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
   debug!("Depth stencil resource");
   let ds_res=try!(dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &ds_desc, 
-                                          D3D12_RESOURCE_STATE_COMMON, Some(&depth_stencil_clear_value_depth_f32())));
+                                          D3D12_RESOURCE_STATE_DEPTH_WRITE, Some(&depth_stencil_clear_value_depth_f32())));
 
   let dsv_desc = depth_stencil_view_desc_tex2d_default(ds_format);
   let mut handle = dsd_heap.get_cpu_descriptor_handle_for_heap_start();

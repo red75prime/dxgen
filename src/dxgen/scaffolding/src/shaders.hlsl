@@ -24,19 +24,20 @@ struct VS_OUTPUT
 
 VS_OUTPUT VSMain(VS_INPUT vtx){
   VS_OUTPUT ret;
-  ret.vPosition =float4(vtx.vPosition, 1);
-//  ret.vPosition = mul(float4(vtx.vPosition, 1), model);
+//  ret.vPosition =float4(vtx.vPosition, 1);
+  ret.vPosition = mul(float4(vtx.vPosition, 1), model);
   ret.w_pos = ret.vPosition.xyz;
   float z= ret.vPosition.z;
-//  ret.vPosition = mul(ret.vPosition, view);
-//  ret.vPosition = mul(ret.vPosition, proj);
+  ret.vPosition = mul(ret.vPosition, view);
+  ret.vPosition = mul(ret.vPosition, proj);
   
   ret.vDiffuse.rgb = vtx.vColor;
   ret.vDiffuse.r += z;
   ret.vDiffuse.a = 1;
   ret.texc0 = vtx.texc0;
   ret.norm.xyz = mul(float4(vtx.norm,1), n_model).xyz;
-  ret.vPosition.z = 0.5;
+  ret.vPosition.z = 0.01;
+  ret.vPosition.w = 1;
   return ret;
 }
 
@@ -59,6 +60,5 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   float s2=1.0001-s*s;
   float s3=1-clamp(s2,0,0.001)/0.001;
   ret = texel*(0.1+l)+float4(s3,s3,s3,1)*sb*0.5;
-  ret = float4(1,1,1,1);
   return ret;
 }
