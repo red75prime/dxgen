@@ -1,8 +1,11 @@
 ﻿module annotations
 
+type InterfaceOptions =
+  |IOSend
+
 type InterfaceAnnotation=
-  |IAAutogen
   |IAManual
+  |IAAutogen of Set<InterfaceOptions>
 
 // ----------------- Outdated description of safe rust code generation -----------------------------
 // AThis : self.0

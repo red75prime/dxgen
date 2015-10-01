@@ -22,6 +22,10 @@ fn opt_arr_as_mut_ptr<T>(opt: &Option<&mut [T]>) -> *mut T {
   opt.as_ref().map(|v|(*v).as_ptr() as *mut _).unwrap_or(ptr::null_mut())
 }
 
+fn opt_arr_as_ptr<T>(opt: &Option<&[T]>) -> *const T {
+  opt.as_ref().map(|v|(*v).as_ptr()).unwrap_or(ptr::null())
+}
+
 fn opt_as_mut_ptr<T>(opt: &Option<&mut T>) -> *mut T {
   opt.as_ref().map(|v|*v as *const _ as *mut _).unwrap_or(ptr::null_mut())
 }
@@ -312,9 +316,9 @@ impl D3D12CommandQueue {
   
   //  Method UpdateTileMappings
   
-  pub fn update_tile_mappings<T: HasIID>(&self, resource: &T, resource_region_start_coordinates: Option<&mut [D3D12_TILED_RESOURCE_COORDINATE]>, resource_region_sizes: Option<&mut [D3D12_TILE_REGION_SIZE]>, heap: Option<&mut ID3D12Heap>, range_flags: Option<&mut [D3D12_TILE_RANGE_FLAGS]>, heap_range_start_offsets: Option<&mut [UINT]>, range_tile_counts: Option<&mut [UINT]>, flags: D3D12_TILE_MAPPING_FLAGS) -> () {
+  pub fn update_tile_mappings<T: HasIID>(&self, resource: &T, resource_region_start_coordinates: Option<&[D3D12_TILED_RESOURCE_COORDINATE]>, resource_region_sizes: Option<&[D3D12_TILE_REGION_SIZE]>, heap: Option<&mut ID3D12Heap>, range_flags: Option<&[D3D12_TILE_RANGE_FLAGS]>, heap_range_start_offsets: Option<&[UINT]>, range_tile_counts: Option<&[UINT]>, flags: D3D12_TILE_MAPPING_FLAGS) -> () {
   
-    let hr=unsafe { (*self.0).UpdateTileMappings(resource.iptr() as *mut _ as *mut _ ,  same_length(&[resource_region_start_coordinates.as_ref().map(|a|a.len()),resource_region_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_mut_ptr(&resource_region_start_coordinates) as *mut _, opt_arr_as_mut_ptr(&resource_region_sizes) as *mut _, opt_as_mut_ptr(&heap),  same_length(&[range_flags.as_ref().map(|a|a.len()),heap_range_start_offsets.as_ref().map(|a|a.len()),range_tile_counts.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_mut_ptr(&range_flags) as *mut _, opt_arr_as_mut_ptr(&heap_range_start_offsets) as *mut _, opt_arr_as_mut_ptr(&range_tile_counts) as *mut _, flags) };
+    let hr=unsafe { (*self.0).UpdateTileMappings(resource.iptr() as *mut _ as *mut _ ,  same_length(&[resource_region_start_coordinates.as_ref().map(|a|a.len()),resource_region_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_ptr(&resource_region_start_coordinates) as *const _, opt_arr_as_ptr(&resource_region_sizes) as *const _, opt_as_mut_ptr(&heap),  same_length(&[range_flags.as_ref().map(|a|a.len()),heap_range_start_offsets.as_ref().map(|a|a.len()),range_tile_counts.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_ptr(&range_flags) as *const _, opt_arr_as_ptr(&heap_range_start_offsets) as *const _, opt_arr_as_ptr(&range_tile_counts) as *const _, flags) };
     ()
   }
   
@@ -811,9 +815,9 @@ impl D3D12Device {
   
   //  Method CopyDescriptors
   
-  pub fn copy_descriptors(&self, dest_descriptor_range_starts: &mut [D3D12_CPU_DESCRIPTOR_HANDLE], dest_descriptor_range_sizes: Option<&mut [UINT]>, src_descriptor_range_starts: &mut [D3D12_CPU_DESCRIPTOR_HANDLE], src_descriptor_range_sizes: Option<&mut [UINT]>, descriptor_heaps_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> () {
+  pub fn copy_descriptors(&self, dest_descriptor_range_starts: &[D3D12_CPU_DESCRIPTOR_HANDLE], dest_descriptor_range_sizes: Option<&[UINT]>, src_descriptor_range_starts: &[D3D12_CPU_DESCRIPTOR_HANDLE], src_descriptor_range_sizes: Option<&[UINT]>, descriptor_heaps_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> () {
   
-    let hr=unsafe { (*self.0).CopyDescriptors( same_length(&[Some(dest_descriptor_range_starts.len()),dest_descriptor_range_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, dest_descriptor_range_starts.as_mut_ptr() as *mut _, opt_arr_as_mut_ptr(&dest_descriptor_range_sizes) as *mut _,  same_length(&[Some(src_descriptor_range_starts.len()),src_descriptor_range_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, src_descriptor_range_starts.as_mut_ptr() as *mut _, opt_arr_as_mut_ptr(&src_descriptor_range_sizes) as *mut _, descriptor_heaps_type) };
+    let hr=unsafe { (*self.0).CopyDescriptors( same_length(&[Some(dest_descriptor_range_starts.len()),dest_descriptor_range_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, dest_descriptor_range_starts.as_ptr() as *const _, opt_arr_as_ptr(&dest_descriptor_range_sizes) as *const _,  same_length(&[Some(src_descriptor_range_starts.len()),src_descriptor_range_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, src_descriptor_range_starts.as_ptr() as *const _, opt_arr_as_ptr(&src_descriptor_range_sizes) as *const _, descriptor_heaps_type) };
     ()
   }
   
@@ -827,9 +831,9 @@ impl D3D12Device {
   
   //  Method GetResourceAllocationInfo
   
-  pub fn get_resource_allocation_info(&self, visibleMask: UINT, resource_descs: &mut [D3D12_RESOURCE_DESC]) -> D3D12_RESOURCE_ALLOCATION_INFO {
+  pub fn get_resource_allocation_info(&self, visibleMask: UINT, resource_descs: &[D3D12_RESOURCE_DESC]) -> D3D12_RESOURCE_ALLOCATION_INFO {
     let mut lv1: D3D12_RESOURCE_ALLOCATION_INFO = unsafe {mem::uninitialized::<_>()};
-    let hr=unsafe { (*self.0).GetResourceAllocationInfo(visibleMask,  same_length(&[Some(resource_descs.len())]).expect("Arrays must have equal sizes") as UINT, resource_descs.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
+    let hr=unsafe { (*self.0).GetResourceAllocationInfo(visibleMask,  same_length(&[Some(resource_descs.len())]).expect("Arrays must have equal sizes") as UINT, resource_descs.as_ptr() as *const _, &mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
@@ -1221,17 +1225,17 @@ impl D3D12GraphicsCommandList {
   
   //  Method RSSetViewports
   
-  pub fn rs_set_viewports(&self, viewports: &mut [D3D12_VIEWPORT]) -> () {
+  pub fn rs_set_viewports(&self, viewports: &[D3D12_VIEWPORT]) -> () {
   
-    let hr=unsafe { (*self.0).RSSetViewports( same_length(&[Some(viewports.len())]).expect("Arrays must have equal sizes") as UINT, viewports.as_mut_ptr() as *mut _) };
+    let hr=unsafe { (*self.0).RSSetViewports( same_length(&[Some(viewports.len())]).expect("Arrays must have equal sizes") as UINT, viewports.as_ptr() as *const _) };
     ()
   }
   
   //  Method RSSetScissorRects
   
-  pub fn rs_set_scissor_rects(&self, rects: &mut [D3D12_RECT]) -> () {
+  pub fn rs_set_scissor_rects(&self, rects: &[D3D12_RECT]) -> () {
   
-    let hr=unsafe { (*self.0).RSSetScissorRects( same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
+    let hr=unsafe { (*self.0).RSSetScissorRects( same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_ptr() as *const _) };
     ()
   }
   
@@ -1261,9 +1265,9 @@ impl D3D12GraphicsCommandList {
   
   //  Method ResourceBarrier
   
-  pub fn resource_barrier(&self, barriers: &mut [D3D12_RESOURCE_BARRIER]) -> () {
+  pub fn resource_barrier(&self, barriers: &[D3D12_RESOURCE_BARRIER]) -> () {
   
-    let hr=unsafe { (*self.0).ResourceBarrier( same_length(&[Some(barriers.len())]).expect("Arrays must have equal sizes") as UINT, barriers.as_mut_ptr() as *mut _) };
+    let hr=unsafe { (*self.0).ResourceBarrier( same_length(&[Some(barriers.len())]).expect("Arrays must have equal sizes") as UINT, barriers.as_ptr() as *const _) };
     ()
   }
   
@@ -1405,17 +1409,17 @@ impl D3D12GraphicsCommandList {
   
   //  Method IASetVertexBuffers
   
-  pub fn ia_set_vertex_buffers(&self, start_slot: UINT, views: Option<&mut [D3D12_VERTEX_BUFFER_VIEW]>) -> () {
+  pub fn ia_set_vertex_buffers(&self, start_slot: UINT, views: Option<&[D3D12_VERTEX_BUFFER_VIEW]>) -> () {
   
-    let hr=unsafe { (*self.0).IASetVertexBuffers(start_slot,  same_length(&[views.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_mut_ptr(&views) as *mut _) };
+    let hr=unsafe { (*self.0).IASetVertexBuffers(start_slot,  same_length(&[views.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_ptr(&views) as *const _) };
     ()
   }
   
   //  Method SOSetTargets
   
-  pub fn so_set_targets(&self, start_slot: UINT, views: Option<&mut [D3D12_STREAM_OUTPUT_BUFFER_VIEW]>) -> () {
+  pub fn so_set_targets(&self, start_slot: UINT, views: Option<&[D3D12_STREAM_OUTPUT_BUFFER_VIEW]>) -> () {
   
-    let hr=unsafe { (*self.0).SOSetTargets(start_slot,  same_length(&[views.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_mut_ptr(&views) as *mut _) };
+    let hr=unsafe { (*self.0).SOSetTargets(start_slot,  same_length(&[views.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_ptr(&views) as *const _) };
     ()
   }
   
@@ -1428,41 +1432,41 @@ impl D3D12GraphicsCommandList {
   }
   
   
-  pub fn om_set_render_targets_arr(&self, render_target_descriptors: &mut [D3D12_CPU_DESCRIPTOR_HANDLE], depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
+  pub fn om_set_render_targets_arr(&self, render_target_descriptors: &[D3D12_CPU_DESCRIPTOR_HANDLE], depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
   
-    let hr=unsafe { (*self.0).OMSetRenderTargets( same_length(&[Some(render_target_descriptors.len())]).expect("Arrays must have equal sizes") as UINT, render_target_descriptors.as_mut_ptr() as *mut _, FALSE, depth_stencil_descriptor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    let hr=unsafe { (*self.0).OMSetRenderTargets( same_length(&[Some(render_target_descriptors.len())]).expect("Arrays must have equal sizes") as UINT, render_target_descriptors.as_ptr() as *const _, FALSE, depth_stencil_descriptor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     ()
   }
   
   //  Method ClearDepthStencilView
   
-  pub fn clear_depth_stencil_view(&self, depth_stencil_view: D3D12_CPU_DESCRIPTOR_HANDLE, clear_flags: D3D12_CLEAR_FLAGS, depth: FLOAT, stencil: UINT8, rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_depth_stencil_view(&self, depth_stencil_view: D3D12_CPU_DESCRIPTOR_HANDLE, clear_flags: D3D12_CLEAR_FLAGS, depth: FLOAT, stencil: UINT8, rects: &[D3D12_RECT]) -> () {
   
-    let hr=unsafe { (*self.0).ClearDepthStencilView(depth_stencil_view, clear_flags, depth, stencil,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
+    let hr=unsafe { (*self.0).ClearDepthStencilView(depth_stencil_view, clear_flags, depth, stencil,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_ptr() as *const _) };
     ()
   }
   
   //  Method ClearRenderTargetView
   
-  pub fn clear_render_target_view(&self, render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE, color_r_g_b_a: &[FLOAT;4], rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_render_target_view(&self, render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE, color_r_g_b_a: &[FLOAT;4], rects: &[D3D12_RECT]) -> () {
   
-    let hr=unsafe { (*self.0).ClearRenderTargetView(render_target_view, color_r_g_b_a,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
+    let hr=unsafe { (*self.0).ClearRenderTargetView(render_target_view, color_r_g_b_a,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_ptr() as *const _) };
     ()
   }
   
   //  Method ClearUnorderedAccessViewUint
   
-  pub fn clear_unordered_access_view_uint<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[UINT;4], rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_unordered_access_view_uint<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[UINT;4], rects: &[D3D12_RECT]) -> () {
   
-    let hr=unsafe { (*self.0).ClearUnorderedAccessViewUint(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
+    let hr=unsafe { (*self.0).ClearUnorderedAccessViewUint(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_ptr() as *const _) };
     ()
   }
   
   //  Method ClearUnorderedAccessViewFloat
   
-  pub fn clear_unordered_access_view_float<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[FLOAT;4], rects: &mut [D3D12_RECT]) -> () {
+  pub fn clear_unordered_access_view_float<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[FLOAT;4], rects: &[D3D12_RECT]) -> () {
   
-    let hr=unsafe { (*self.0).ClearUnorderedAccessViewFloat(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_mut_ptr() as *mut _) };
+    let hr=unsafe { (*self.0).ClearUnorderedAccessViewFloat(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, rects.as_ptr() as *const _) };
     ()
   }
   
@@ -2294,7 +2298,7 @@ impl D3D12RootSignature {
 }
 
 pub struct DXGIAdapter1(*mut IDXGIAdapter1);
-
+unsafe impl Send for DXGIAdapter1 {}
 impl HasIID for DXGIAdapter1 {
   fn iid() -> REFGUID { &IID_IDXGIAdapter1 }
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIAdapter1(pp_vtbl as *mut _ as *mut IDXGIAdapter1) }
@@ -6411,9 +6415,9 @@ impl DXGISwapChain3 {
   
   //  Method ResizeBuffers1
   
-  pub fn resize_buffers1<T: HasIID>(&self, width: UINT, height: UINT, format: DXGI_FORMAT, swap_chain_flags: UINT, creation_node_mask: &mut [UINT], present_queue: &[&T]) -> HResult<()> {
+  pub fn resize_buffers1<T: HasIID>(&self, width: UINT, height: UINT, format: DXGI_FORMAT, swap_chain_flags: UINT, creation_node_mask: &[UINT], present_queue: &[&T]) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = present_queue.iter().map(|o|o.iptr()).collect();
-    let hr=unsafe { (*self.0).ResizeBuffers1( same_length(&[Some(creation_node_mask.len()),Some(present_queue.len())]).expect("Arrays must have equal sizes") as UINT, width, height, format, swap_chain_flags, creation_node_mask.as_mut_ptr() as *mut _, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
+    let hr=unsafe { (*self.0).ResizeBuffers1( same_length(&[Some(creation_node_mask.len()),Some(present_queue.len())]).expect("Arrays must have equal sizes") as UINT, width, height, format, swap_chain_flags, creation_node_mask.as_ptr() as *const _, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     hr2ret(hr,())
   }
   

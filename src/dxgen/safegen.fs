@@ -685,6 +685,17 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         match refs with
         |[] ->
           match pty with
+          |Ptr(Const(uty)) ->
+            let ruty=convertTypeToRustNoArray uty pannot
+            match pannot with
+            |InArrayOfSize _ ->
+              addSafeParm safeParmName (RBorrow(RSlice(ruty)))
+              addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ptr() as *const _")
+            |InOptionalArrayOfSize _ ->
+              addSafeParm safeParmName (ROption(RBorrow(RSlice(ruty))))
+              addNativeParm pname (Some(safeParmName)) ("opt_arr_as_ptr(&"+safeParmName+") as *const _") // TODO: Use FFI option optimization
+            |_ ->
+              addError (sprintf "%s parameter: out parameter can't be const" pname)
           |Ptr(uty) ->
             let ruty=convertTypeToRustNoArray uty pannot
             match pannot with
@@ -1029,6 +1040,10 @@ fn opt_arr_as_mut_ptr<T>(opt: &Option<&mut [T]>) -> *mut T {
   opt.as_ref().map(|v|(*v).as_ptr() as *mut _).unwrap_or(ptr::null_mut())
 }
 
+fn opt_arr_as_ptr<T>(opt: &Option<&[T]>) -> *const T {
+  opt.as_ref().map(|v|(*v).as_ptr()).unwrap_or(ptr::null())
+}
+
 fn opt_as_mut_ptr<T>(opt: &Option<&mut T>) -> *mut T {
   opt.as_ref().map(|v|*v as *const _ as *mut _).unwrap_or(ptr::null_mut())
 }
@@ -1086,13 +1101,17 @@ fn opt_slice_to_ptr<T>(os: Option<&[T]>) -> *const T {
 "
     addCombiningStructs sb interfaceAnnotations
     for (iname, iannot, methods) in interfaceAnnotations do
-      if iannot=IAManual then
-        ()
-      else
-        //printfn "Interface %s" iname
+      match iannot with
+      |IAManual -> ()
+      |IAAutogen opts ->
+        let implSend = 
+          if Set.contains IOSend opts then
+            "unsafe impl Send for "+iname+" {}"
+          else
+            ""
         apl <| sprintf "\
 pub struct %s(*mut I%s);
-
+%s
 impl HasIID for %s {
   fn iid() -> REFGUID { &IID_I%s }
   fn new(pp_vtbl : *mut IUnknown) -> Self { %s(pp_vtbl as *mut _ as *mut I%s) }
@@ -1114,7 +1133,7 @@ impl Clone for %s {
 impl %s {
 %s
 }
-"          iname iname iname iname iname iname iname iname iname (generateMethods methods |> indentBy "  ")
+"          iname iname implSend iname iname iname iname iname iname iname (generateMethods methods |> indentBy "  ")
 
     sb.ToString()
   |None -> 

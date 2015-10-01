@@ -45,21 +45,34 @@ extern {}
 
 const FRAME_COUNT : u32 = 2;
 
+
+
 fn main() {
   env_logger::init().unwrap();
 
   let factory: DXGIFactory4 = create_dxgi_factory1().expect("Cannot create DXGIFactory1. No can do.");
   let mut i=0;
+  let mut adapters = vec![];
   while let Ok(adapter)=factory.enum_adapters1(i) {
     let descr=adapter.get_desc1().unwrap();
     println!("Adapter {}: {}", i, wchar_array_to_string_lossy(&descr.Description));
     println!("   Dedicated video memory: {}MiB", descr.DedicatedVideoMemory/1024/1024);
+    adapters.push(adapter);
     i+=1;
   }
+  let res: Vec<_> = adapters.into_iter().map(|a|::std::thread::spawn(move ||main_prime(a))).collect();
+  for jh in res {
+    let _ = jh.join();
+  }
+}
 
-  let wnd=create_window("D3D12 Hello, rusty world!", 512, 256);
+fn main_prime(adapter: DXGIAdapter1) {
+  let descr=adapter.get_desc1().unwrap();
+  let title=format!("D3D12 Hello, rusty world! ({})", wchar_array_to_string_lossy(&descr.Description));
+
+  let wnd=create_window(&title, 512, 256);
   let data=
-    match create_appdata(&wnd, None) { //Some(&factory.enum_adapters1(2).unwrap().query_interface().unwrap())) {
+    match create_appdata(&wnd, Some(&adapter)) { //Some(&factory.enum_adapters1(2).unwrap().query_interface().unwrap())) {
       Ok(appdata) => {
         Rc::new(RefCell::new(appdata))
       },
@@ -144,13 +157,18 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
   let mut wm: Matrix4<f32> = Matrix4::from(Matrix3::from(Basis3::from_axis_angle(&Vector3::new(y/d, x/d, 0.0),rad(d/200.))));
   wm.w.w = 1.;
 
-  let world_matrix = matrix4_to_4x4(&wm); //[[c, s, 0.,0.],[-s, c, 0.,0.],[0.,c ,1.,0.],[0.,0.,0.,1.],];
-
   let mut wm_normal=wm;
-  wm.invert_self();
-  wm.transpose_self();
+  wm_normal.invert_self();
+  wm_normal.transpose_self();
   
   let world_normal_matrix = matrix4_to_4x4(&wm_normal);
+
+//  wm.x.w=rand::random::<f32>()-0.5;
+//  wm.y.w=rand::random::<f32>()-0.5;
+//  wm.z.w=(rand::random::<f32>()-0.5)*4.;
+  
+  let world_matrix = matrix4_to_4x4(&wm); //[[c, s, 0.,0.],[-s, c, 0.,0.],[0.,c ,1.,0.],[0.,0.,0.,1.],];
+
   
 //  let vm = Matrix4::look_at(&Point3::new(0., 0., 3.), &Point3::new(0., 0., 0.), &Vector3::new(0., 1., 0.));
 
@@ -171,7 +189,8 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
     upload_into_buffer(&data.constant_buffer, &[world_matrix, view_matrix, proj_matrix, world_normal_matrix]);
   };
 
-  populate_command_list(data);
+  populate_command_list(&data.command_list, &data.command_allocator, &data.srv_heap, data);
+
   data.command_queue.execute_command_lists(&[&data.command_list]);
   match data.swap_chain.present(0, 0) {
     Err(hr) => {
@@ -263,38 +282,38 @@ fn wait_for_prev_frame(data: &mut AppData) {
   data.frame_index = data.swap_chain.get_current_back_buffer_index();
 }
 
-fn populate_command_list(data: &mut AppData) {
+fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_allocator: &D3D12CommandAllocator, srv_heap: &D3D12DescriptorHeap, data: &AppData) {
   let d_info=false;
   if d_info {debug!("Command allocator reset")};
-  data.command_allocator.reset().unwrap();
+  command_allocator.reset().unwrap();
   if d_info {debug!("Command list reset")};
-  data.command_list.reset(&data.command_allocator, Some(&data.pipeline_state)).unwrap();
+  command_list.reset(&data.command_allocator, Some(&data.pipeline_state)).unwrap();
 
   if d_info {debug!("Set graphics root signature")};
-  data.command_list.set_graphics_root_signature(&data.root_signature);
+  command_list.set_graphics_root_signature(&data.root_signature);
 
   if d_info {debug!("Set descriptor heaps")};
-  data.command_list.set_descriptor_heaps(&[&data.srv_heap, &data.sam_heap]);
+  command_list.set_descriptor_heaps(&[srv_heap, &data.sam_heap]);
   
-  let mut gpu_dh=data.srv_heap.get_gpu_descriptor_handle_for_heap_start();
+  let mut gpu_dh=srv_heap.get_gpu_descriptor_handle_for_heap_start();
   if d_info {debug!("Set graphics root descriptor table 0")};
-  data.command_list.set_graphics_root_descriptor_table(0, gpu_dh);
+  command_list.set_graphics_root_descriptor_table(0, gpu_dh);
 
   if d_info {debug!("Set graphics root descriptor table 1")};
 //  gpu_dh.ptr += data.device.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
-  data.command_list.set_graphics_root_descriptor_table(1, gpu_dh);
+  command_list.set_graphics_root_descriptor_table(1, gpu_dh);
 
   if d_info {debug!("Set graphics root descriptor table 2")};
-  data.command_list.set_graphics_root_descriptor_table(2, data.sam_heap.get_gpu_descriptor_handle_for_heap_start());
+  command_list.set_graphics_root_descriptor_table(2, data.sam_heap.get_gpu_descriptor_handle_for_heap_start());
   if d_info {debug!("Set viepowrts")};
-  data.command_list.rs_set_viewports(&mut [data.viewport]);
+  command_list.rs_set_viewports(&[data.viewport]);
   if d_info {debug!("Set scissor rects")};
-  data.command_list.rs_set_scissor_rects(&mut [data.scissor_rect]);
+  command_list.rs_set_scissor_rects(&[data.scissor_rect]);
 
-//  data.command_list.set_graphics_root_shader_resource_view(0, data.tex_resource.get_gpu_virtual_address());
+//  command_list.set_graphics_root_shader_resource_view(0, data.tex_resource.get_gpu_virtual_address());
 
   if d_info {debug!("Resource barrier")};
-  data.command_list.resource_barrier(
+  command_list.resource_barrier(
       &mut [*ResourceBarrier::transition(&data.render_targets[data.frame_index as usize],
       D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET).flags(D3D12_RESOURCE_BARRIER_FLAG_NONE)]);
 
@@ -302,23 +321,23 @@ fn populate_command_list(data: &mut AppData) {
   rtvh.ptr += (data.frame_index as SIZE_T)*data.rtv_descriptor_size;
   let dsvh = data.dsd_heap.get_cpu_descriptor_handle_for_heap_start();
   if d_info {debug!("OM set render targets")};
-  data.command_list.om_set_render_targets(1, &rtvh, Some(&dsvh));
+  command_list.om_set_render_targets(1, &rtvh, Some(&dsvh));
 
-  let mut clear_color = [0.01, 0.01, 0.05, 1.0];
+  let mut clear_color = [0.01, 0.01, 0.15, 1.0];
   if d_info {debug!("clear render target view")};
-  data.command_list.clear_render_target_view(rtvh, &mut clear_color, &mut []);
-  data.command_list.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &mut []);
-  data.command_list.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-  data.command_list.ia_set_vertex_buffers(0, Some(&mut [data.vertex_buffer_view]));
+  command_list.clear_render_target_view(rtvh, &clear_color, &[]);
+  command_list.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
+  command_list.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+  command_list.ia_set_vertex_buffers(0, Some(&[data.vertex_buffer_view]));
 
   let num_vtx=data.vertex_buffer_view.SizeInBytes/data.vertex_buffer_view.StrideInBytes;
-  data.command_list.draw_instanced(num_vtx, 1, 0, 0);
+  command_list.draw_instanced(num_vtx, 1, 0, 0);
   
-  data.command_list.resource_barrier(
+  command_list.resource_barrier(
       &mut [*ResourceBarrier::transition(&data.render_targets[data.frame_index as usize],
       D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
 
-  match data.command_list.close() {
+  match command_list.close() {
     Ok(_) => {},
     Err(hr) => {
       dump_info_queue(&data.iq);
@@ -435,7 +454,7 @@ fn upload_into_texture(clist: &D3D12GraphicsCommandList, tex: &D3D12Resource, w:
   Ok(res_buf)
 }
 
-fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData,D3D12InfoQueue> {
+fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppData,D3D12InfoQueue> {
   let w=512.;
   let h=256.;
   let hwnd=wnd.get_hwnd();
@@ -465,16 +484,17 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   let dev = 
     match d3d12_create_device(adapter, D3D_FEATURE_LEVEL_11_0) {
       Ok(dev) => dev,
-      Err(_) => {
-        warn!("Fallback to warp adapter");
-        debug!("Warp");
-        let warp: DXGIAdapter = factory.enum_warp_adapter().unwrap();
-        d3d12_create_device(Some(&warp), D3D_FEATURE_LEVEL_11_0).expect("Cannot create warp device")
+      Err(hr) => {
+        panic!("create device failes with 0x{:x}", hr)
+//        warn!("Fallback to warp adapter");
+//        debug!("Warp");
+//        let warp: DXGIAdapter = factory.enum_warp_adapter().unwrap();
+//        d3d12_create_device(Some(&warp), D3D_FEATURE_LEVEL_11_0).expect("Cannot create warp device")
       },
     };
   debug!("LUID");
   let luid=dev.get_adapter_luid();
-  println!("Adapter LUID {:?}", luid);
+  debug!("Adapter LUID {:?}", luid);
 
   debug!("Info queue");
   let info_queue: D3D12InfoQueue = dev.query_interface().unwrap();
@@ -482,7 +502,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter>) -> Result<AppData
   let mut opts: D3D12_FEATURE_DATA_D3D12_OPTIONS = unsafe{ mem::uninitialized::<_>() };
   debug!("Check feature support: options");
   dev.check_feature_support_options(&mut opts).unwrap();
-  println!("{:#?}",opts);
+  info!("{:#?}",opts);
 
   let fl_array=[D3D_FEATURE_LEVEL_9_1, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_3, 
                 D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_11_0, 

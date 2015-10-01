@@ -27,7 +27,7 @@ let populateVtbls annots=
 
 let d3d12annotations_prime=
     [
-      ("ID3D10BlobVtbl",IAAutogen,"IUnknownVtbl",[
+      ("ID3D10BlobVtbl",IAAutogen(Set.ofList []),"IUnknownVtbl",[
         ("GetBufferPointer",[
           ("This",AThis);
         ],MANone);
@@ -35,17 +35,17 @@ let d3d12annotations_prime=
           ("This",AThis);
         ],MANone);
       ]);
-      ("ID3D12CommandAllocatorVtbl",IAAutogen, "ID3D12PageableVtbl", [
+      ("ID3D12CommandAllocatorVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl", [
         ("Reset",[
           ("This",AThis);
         ],MANone);
       ]);
-      ("ID3D12CommandListVtbl",IAAutogen, "ID3D12DeviceChildVtbl", [
+      ("ID3D12CommandListVtbl",IAAutogen(Set.ofList []), "ID3D12DeviceChildVtbl", [
         ("GetType",[
           ("This",AThis);
         ],MANone);
       ]);
-      ("ID3D12CommandQueueVtbl",IAAutogen, "ID3D12PageableVtbl", [
+      ("ID3D12CommandQueueVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl", [
         ("UpdateTileMappings",[
           ("This",AThis);
           ("pResource",InComPtr);
@@ -112,7 +112,7 @@ let d3d12annotations_prime=
           ("__ret_val",OutReturn);
         ],MANone);
       ]);
-      ("ID3D12CommandSignatureVtbl",IAAutogen, "ID3D12PageableVtbl", []);
+      ("ID3D12CommandSignatureVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl", []);
       ("ID3D12DebugCommandListVtbl",IAManual, "IUnknownVtbl", [
         ("AssertResourceState",[
           ("This",AThis);
@@ -149,12 +149,12 @@ let d3d12annotations_prime=
           ("Flags",ANone);
         ],MANone);
       ]);
-      ("ID3D12DebugVtbl", IAAutogen, "IUnknownVtbl", [
+      ("ID3D12DebugVtbl", IAAutogen(Set.ofList []), "IUnknownVtbl", [
         ("EnableDebugLayer",[
           ("This",AThis);
         ],MANone);
       ]);
-      ("ID3D12DescriptorHeapVtbl",IAAutogen, "ID3D12PageableVtbl", [
+      ("ID3D12DescriptorHeapVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl", [
         ("GetDesc",[
           ("This",AThis);
           ("__ret_val",OutReturn);
@@ -168,14 +168,14 @@ let d3d12annotations_prime=
           ("__ret_val",OutReturn);
         ],MANone);
       ]);
-      ("ID3D12DeviceChildVtbl",IAAutogen, "ID3D12ObjectVtbl",  [
+      ("ID3D12DeviceChildVtbl",IAAutogen(Set.ofList []), "ID3D12ObjectVtbl",  [
         ("GetDevice",[
           ("This",AThis);
           ("riid",ANone);
           ("ppvDevice",OutReturnInterface "riid");
         ],MANone);
       ]);
-      ("ID3D12DeviceVtbl",IAAutogen, "ID3D12ObjectVtbl", [
+      ("ID3D12DeviceVtbl",IAAutogen(Set.ofList []), "ID3D12ObjectVtbl", [
         ("GetNodeCount",[
           ("This",AThis);
         ],MANone);
@@ -424,7 +424,7 @@ let d3d12annotations_prime=
           ("__ret_val",OutReturn);
         ],MANone);
       ]);
-      ("ID3D12FenceVtbl",IAAutogen, "ID3D12PageableVtbl", [
+      ("ID3D12FenceVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl", [
         ("GetCompletedValue",[
           ("This",AThis);
         ],MANone);
@@ -438,7 +438,7 @@ let d3d12annotations_prime=
           ("Value",ANone);
         ],MANone);
       ]);
-      ("ID3D12GraphicsCommandListVtbl", IAAutogen,  "ID3D12CommandListVtbl", [
+      ("ID3D12GraphicsCommandListVtbl", IAAutogen(Set.ofList []),  "ID3D12CommandListVtbl", [
         ("Close",[
           ("This",AThis);
         ],MANone);
@@ -741,13 +741,13 @@ let d3d12annotations_prime=
           ("CountBufferOffset",ANone);
         ],MANone);
       ]);
-      ("ID3D12HeapVtbl",IAAutogen, "ID3D12PageableVtbl",  [
+      ("ID3D12HeapVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl",  [
         ("GetDesc",[
           ("This",AThis);
           ("__ret_val",OutReturn);
         ],MANone);
       ]);
-      ("ID3D12InfoQueueVtbl",IAAutogen, "IUnknownVtbl", [ //TODO: Annotate debug interfaces
+      ("ID3D12InfoQueueVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [ //TODO: Annotate debug interfaces
         ("SetMessageCountLimit",[
           ("This",AThis);
           ("MessageCountLimit",ANone);
@@ -882,7 +882,7 @@ let d3d12annotations_prime=
           ("This",AThis);
         ],MANone);
       ]);
-      ("ID3D12ObjectVtbl", IAAutogen, "IUnknownVtbl", [
+      ("ID3D12ObjectVtbl", IAAutogen(Set.ofList []), "IUnknownVtbl", [
         ("GetPrivateData",[
             ("This",AThis);
             ("guid",ANone);
@@ -906,15 +906,15 @@ let d3d12annotations_prime=
           ],MANone);
         ]
       );
-      ("ID3D12PageableVtbl",IAAutogen,  "ID3D12DeviceChildVtbl",  []);
-      ("ID3D12PipelineStateVtbl",IAAutogen, "ID3D12PageableVtbl",  [
+      ("ID3D12PageableVtbl",IAAutogen(Set.ofList []),  "ID3D12DeviceChildVtbl",  []);
+      ("ID3D12PipelineStateVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl",  [
         ("GetCachedBlob",[
           ("This",AThis);
           ("ppBlob",OutReturnComPtr); // TODO: do something with typedefs like 'typedef ID3D10Blob ID3DBlob;' E.g. type D3DBlob=D3D10Blob;
         ],MADontImplement); // TODO: do todo above, then replace with MANone
       ]);
-      ("ID3D12QueryHeapVtbl",IAAutogen, "ID3D12PageableVtbl",  []);
-      ("ID3D12ResourceVtbl",IAAutogen, "ID3D12PageableVtbl",  [
+      ("ID3D12QueryHeapVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl",  []);
+      ("ID3D12ResourceVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl",  [
         ("Map",[
           ("This",AThis);
           ("Subresource",ANone);
@@ -955,12 +955,12 @@ let d3d12annotations_prime=
           ("pHeapFlags",OutOptional);
         ],MANone);
       ]);
-      ("ID3D12RootSignatureDeserializerVtbl",IAAutogen, "IUnknownVtbl", [
+      ("ID3D12RootSignatureDeserializerVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
         ("GetRootSignatureDesc",[
           ("This",AThis);
         ],MANone);
       ]);
-      ("ID3D12RootSignatureVtbl",IAAutogen, "ID3D12DeviceChildVtbl",  []);
+      ("ID3D12RootSignatureVtbl",IAAutogen(Set.ofList []), "ID3D12DeviceChildVtbl",  []);
       ("ID3DIncludeVtbl",IAManual, "", [
         ("Open",[
           ("This",AThis);
@@ -975,19 +975,19 @@ let d3d12annotations_prime=
           ("pData",ANone);
         ],MANone);
       ]);
-      ("IDXGIAdapter1Vtbl",IAAutogen, "IDXGIAdapterVtbl", [
+      ("IDXGIAdapter1Vtbl",IAAutogen(Set.ofList [IOSend]), "IDXGIAdapterVtbl", [
         ("GetDesc1",[
           ("This",AThis);
           ("pDesc",OutReturn);
         ],MANone);
       ]);
-      ("IDXGIAdapter2Vtbl",IAAutogen, "IDXGIAdapter1Vtbl", [
+      ("IDXGIAdapter2Vtbl",IAAutogen(Set.ofList []), "IDXGIAdapter1Vtbl", [
         ("GetDesc2",[
           ("This",AThis);
           ("pDesc",OutReturn);
         ],MANone);
       ]);
-      ("IDXGIAdapter3Vtbl",IAAutogen, "IDXGIAdapter2Vtbl", [
+      ("IDXGIAdapter3Vtbl",IAAutogen(Set.ofList []), "IDXGIAdapter2Vtbl", [
         ("RegisterHardwareContentProtectionTeardownStatusEvent",[
           ("This",AThis);
           ("hEvent",ANone);
@@ -1019,7 +1019,7 @@ let d3d12annotations_prime=
           ("dwCookie",ANone);
         ],MANone);
       ]);
-      ("IDXGIAdapterVtbl",IAAutogen, "IDXGIObjectVtbl", [
+      ("IDXGIAdapterVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", [
         ("EnumOutputs",[
           ("This",AThis);
           ("Output",ANone);
@@ -1035,7 +1035,7 @@ let d3d12annotations_prime=
           ("pUMDVersion",OutReturn);
         ],MANone);
       ]);
-      ("IDXGIDecodeSwapChainVtbl",IAAutogen, "IUnknownVtbl", [
+      ("IDXGIDecodeSwapChainVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
         ("PresentBuffer",[
           ("This",AThis);
           ("BufferToPresent",ANone);
@@ -1076,7 +1076,7 @@ let d3d12annotations_prime=
           ("This",AThis);
         ],MANone);
       ]);
-      ("IDXGIDevice1Vtbl",IAAutogen, "IDXGIDeviceVtbl", [
+      ("IDXGIDevice1Vtbl",IAAutogen(Set.ofList []), "IDXGIDeviceVtbl", [
         ("SetMaximumFrameLatency",[
           ("This",AThis);
           ("MaxLatency",ANone);
@@ -1086,7 +1086,7 @@ let d3d12annotations_prime=
           ("pMaxLatency",OutReturn);
         ],MANone);
       ]);
-      ("IDXGIDevice2Vtbl",IAAutogen, "IDXGIDevice1Vtbl", [
+      ("IDXGIDevice2Vtbl",IAAutogen(Set.ofList []), "IDXGIDevice1Vtbl", [
         ("OfferResources",[
           ("This",AThis);
           ("NumResources",ANone);
@@ -1104,19 +1104,19 @@ let d3d12annotations_prime=
           ("hEvent",ANone);
         ],MANone);
       ]);
-      ("IDXGIDevice3Vtbl",IAAutogen, "IDXGIDevice2Vtbl", [
+      ("IDXGIDevice3Vtbl",IAAutogen(Set.ofList []), "IDXGIDevice2Vtbl", [
         ("Trim",[
           ("This",AThis);
         ],MANone);
       ]);
-      ("IDXGIDeviceSubObjectVtbl",IAAutogen, "IDXGIObjectVtbl", [
+      ("IDXGIDeviceSubObjectVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", [
         ("GetDevice",[
           ("This",AThis);
           ("riid",ANone);
           ("ppDevice",ANone); // I cannot understand what MSDN says about this. TODO: Find out
         ],MADontImplement);
       ]);
-      ("IDXGIDeviceVtbl",IAAutogen, "IDXGIObjectVtbl", 
+      ("IDXGIDeviceVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", 
        [
         ("GetAdapter",[
           ("This",AThis);
@@ -1145,7 +1145,7 @@ let d3d12annotations_prime=
           ("pPriority",OutReturn);
         ],MANone);]
       );
-      ("IDXGIDisplayControlVtbl",IAAutogen, "IUnknownVtbl", [
+      ("IDXGIDisplayControlVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
         ("IsStereoEnabled",[
           ("This",AThis);
         ],MANone);
@@ -1154,7 +1154,7 @@ let d3d12annotations_prime=
           ("enabled",ANone);
         ],MANone);
       ]);
-      ("IDXGIFactory1Vtbl",IAAutogen, "IDXGIFactoryVtbl", [
+      ("IDXGIFactory1Vtbl",IAAutogen(Set.ofList []), "IDXGIFactoryVtbl", [
         ("EnumAdapters1",[
           ("This",AThis);
           ("Adapter",ANone);
@@ -1164,7 +1164,7 @@ let d3d12annotations_prime=
           ("This",AThis);
         ],MANone);
       ]);
-      ("IDXGIFactory2Vtbl",IAAutogen, "IDXGIFactory1Vtbl", [
+      ("IDXGIFactory2Vtbl",IAAutogen(Set.ofList []), "IDXGIFactory1Vtbl", [
         ("IsWindowedStereoEnabled",[
           ("This",AThis);
         ],MANone);
@@ -1228,12 +1228,12 @@ let d3d12annotations_prime=
           ("ppSwapChain",OutReturnComPtr);
         ],MANone);
       ]);
-      ("IDXGIFactory3Vtbl",IAAutogen, "IDXGIFactory2Vtbl", [
+      ("IDXGIFactory3Vtbl",IAAutogen(Set.ofList []), "IDXGIFactory2Vtbl", [
         ("GetCreationFlags",[
           ("This",AThis);
         ],MANone);
       ]);
-      ("IDXGIFactory4Vtbl",IAAutogen, "IDXGIFactory3Vtbl", [
+      ("IDXGIFactory4Vtbl",IAAutogen(Set.ofList []), "IDXGIFactory3Vtbl", [
         ("EnumAdapterByLuid",[
           ("This",AThis);
           ("AdapterLuid",ANone);
@@ -1246,7 +1246,7 @@ let d3d12annotations_prime=
           ("ppvAdapter",OutReturnInterface "riid");
         ],MANone);
       ]);
-      ("IDXGIFactoryMediaVtbl",IAAutogen, "IUnknownVtbl", [
+      ("IDXGIFactoryMediaVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
         ("CreateSwapChainForCompositionSurfaceHandle",[
           ("This",AThis);
           ("pDevice",InComPtr);
@@ -1265,7 +1265,7 @@ let d3d12annotations_prime=
           ("ppSwapChain",OutReturnComPtr);
         ],MANone);
       ]);
-      ("IDXGIFactoryVtbl",IAAutogen, "IDXGIObjectVtbl", 
+      ("IDXGIFactoryVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", 
        [
         ("EnumAdapters",[
           ("This",AThis);
@@ -1293,7 +1293,7 @@ let d3d12annotations_prime=
           ("ppAdapter",OutReturnComPtr);
         ],MANone);]
       );
-      ("IDXGIKeyedMutexVtbl",IAAutogen, "IDXGIDeviceSubObjectVtbl", [
+      ("IDXGIKeyedMutexVtbl",IAAutogen(Set.ofList []), "IDXGIDeviceSubObjectVtbl", [
         ("AcquireSync",[
           ("This",AThis);
           ("Key",ANone);
@@ -1304,7 +1304,7 @@ let d3d12annotations_prime=
           ("Key",ANone);
         ],MANone);
       ]);
-      ("IDXGIObjectVtbl",IAAutogen, "IUnknownVtbl", [
+      ("IDXGIObjectVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
         ("SetPrivateData",[
           ("This",AThis);
           ("Name",ANone);
@@ -1329,7 +1329,7 @@ let d3d12annotations_prime=
         ],MANone);
        ]
       );
-      ("IDXGIOutput1Vtbl",IAAutogen, "IDXGIOutputVtbl", [
+      ("IDXGIOutput1Vtbl",IAAutogen(Set.ofList []), "IDXGIOutputVtbl", [
         ("GetDisplayModeList1",[
           ("This",AThis);
           ("EnumFormat",ANone);
@@ -1353,12 +1353,12 @@ let d3d12annotations_prime=
           ("ppOutputDuplication",OutReturnComPtr);
         ],MANone);
       ]);
-      ("IDXGIOutput2Vtbl",IAAutogen, "IDXGIOutput1Vtbl", [
+      ("IDXGIOutput2Vtbl",IAAutogen(Set.ofList []), "IDXGIOutput1Vtbl", [
         ("SupportsOverlays",[
           ("This",AThis);
         ],MANone);
       ]);
-      ("IDXGIOutput3Vtbl",IAAutogen, "IDXGIOutput2Vtbl", [
+      ("IDXGIOutput3Vtbl",IAAutogen(Set.ofList []), "IDXGIOutput2Vtbl", [
         ("CheckOverlaySupport",[
           ("This",AThis);
           ("EnumFormat",ANone);
@@ -1366,7 +1366,7 @@ let d3d12annotations_prime=
           ("pFlags",OutReturn);
         ],MANone);
       ]);
-      ("IDXGIOutput4Vtbl",IAAutogen, "IDXGIOutput3Vtbl", [
+      ("IDXGIOutput4Vtbl",IAAutogen(Set.ofList []), "IDXGIOutput3Vtbl", [
         ("CheckOverlayColorSpaceSupport",[
           ("This",AThis);
           ("Format",ANone);
@@ -1375,7 +1375,7 @@ let d3d12annotations_prime=
           ("pFlags",OutReturn);
         ],MANone);
       ]);
-      ("IDXGIOutputDuplicationVtbl",IAAutogen, "IDXGIObjectVtbl", [
+      ("IDXGIOutputDuplicationVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", [
         ("GetDesc",[
           ("This",AThis);
           ("pDesc",OutReturn);
@@ -1416,7 +1416,7 @@ let d3d12annotations_prime=
           ("This",AThis);
         ],MANone);
       ]);
-      ("IDXGIOutputVtbl",IAAutogen, "IDXGIObjectVtbl", [
+      ("IDXGIOutputVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", [
         ("GetDesc",[
           ("This",AThis);
           ("pDesc",OutReturn);
@@ -1470,7 +1470,7 @@ let d3d12annotations_prime=
           ("pStats",OutReturn);
         ],MANone);
       ]);
-      ("IDXGIResource1Vtbl",IAAutogen, "IDXGIResourceVtbl", [
+      ("IDXGIResource1Vtbl",IAAutogen(Set.ofList []), "IDXGIResourceVtbl", [
         ("CreateSubresourceSurface",[
           ("This",AThis);
           ("index",ANone);
@@ -1484,7 +1484,7 @@ let d3d12annotations_prime=
           ("pHandle",OutReturn);
         ],MANone);
       ]);
-      ("IDXGIResourceVtbl",IAAutogen, "IDXGIDeviceSubObjectVtbl", [
+      ("IDXGIResourceVtbl",IAAutogen(Set.ofList []), "IDXGIDeviceSubObjectVtbl", [
         ("GetSharedHandle",[
           ("This",AThis);
           ("pSharedHandle",OutReturn);
@@ -1502,7 +1502,7 @@ let d3d12annotations_prime=
           ("pEvictionPriority",OutReturn);
         ],MANone);
       ]);
-      ("IDXGISurface1Vtbl",IAAutogen, "IDXGISurfaceVtbl", [
+      ("IDXGISurface1Vtbl",IAAutogen(Set.ofList []), "IDXGISurfaceVtbl", [
         ("GetDC",[
           ("This",AThis);
           ("Discard",ANone);
@@ -1513,7 +1513,7 @@ let d3d12annotations_prime=
           ("pDirtyRect",InOptional);
         ],MANone);
       ]);
-      ("IDXGISurface2Vtbl",IAAutogen, "IDXGISurface1Vtbl", [
+      ("IDXGISurface2Vtbl",IAAutogen(Set.ofList []), "IDXGISurface1Vtbl", [
         ("GetResource",[
           ("This",AThis);
           ("riid",ANone);
@@ -1521,7 +1521,7 @@ let d3d12annotations_prime=
           ("pSubresourceIndex",ANone);
         ],MANone);
       ]);
-      ("IDXGISurfaceVtbl",IAAutogen, "IDXGIDeviceSubObjectVtbl", [
+      ("IDXGISurfaceVtbl",IAAutogen(Set.ofList []), "IDXGIDeviceSubObjectVtbl", [
         ("GetDesc",[
           ("This",AThis);
           ("pDesc",OutReturn);
@@ -1535,7 +1535,7 @@ let d3d12annotations_prime=
           ("This",AThis);
         ],MANone);
       ]);
-      ("IDXGISwapChain1Vtbl",IAAutogen, "IDXGISwapChainVtbl", [
+      ("IDXGISwapChain1Vtbl",IAAutogen(Set.ofList []), "IDXGISwapChainVtbl", [
         ("GetDesc1",[
           ("This",AThis);
           ("pDesc",OutReturn);
@@ -1583,7 +1583,7 @@ let d3d12annotations_prime=
           ("pRotation",OutReturn);
         ],MANone);
       ]);
-      ("IDXGISwapChain2Vtbl",IAAutogen, "IDXGISwapChain1Vtbl", [
+      ("IDXGISwapChain2Vtbl",IAAutogen(Set.ofList []), "IDXGISwapChain1Vtbl", [
         ("SetSourceSize",[
           ("This",AThis);
           ("Width",ANone);
@@ -1614,7 +1614,7 @@ let d3d12annotations_prime=
           ("pMatrix",OutReturn);
         ],MANone);
       ]);
-      ("IDXGISwapChain3Vtbl",IAAutogen, "IDXGISwapChain2Vtbl", [
+      ("IDXGISwapChain3Vtbl",IAAutogen(Set.ofList []), "IDXGISwapChain2Vtbl", [
         ("GetCurrentBackBufferIndex",[
           ("This",AThis);
         ],MANone);
@@ -1638,7 +1638,7 @@ let d3d12annotations_prime=
           ("ppPresentQueue",InComPtrArrayOfSize "BufferCount");
         ],MANone);
       ]);
-      ("IDXGISwapChainMediaVtbl",IAAutogen, "IUnknownVtbl", [
+      ("IDXGISwapChainMediaVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
         ("GetFrameStatisticsMedia",[
           ("This",AThis);
           ("pStats",OutReturn);
@@ -1654,7 +1654,7 @@ let d3d12annotations_prime=
           ("pClosestLargerPresentDuration",ANone);
         ],MANone);
       ]);
-      ("IDXGISwapChainVtbl",IAAutogen, "IDXGIDeviceSubObjectVtbl", [
+      ("IDXGISwapChainVtbl",IAAutogen(Set.ofList []), "IDXGIDeviceSubObjectVtbl", [
         ("Present",[
           ("This",AThis);
           ("SyncInterval",ANone);
