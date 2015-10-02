@@ -364,12 +364,12 @@ let d3d12annotations_prime=
         ("MakeResident",[
           ("This",AThis);
           ("NumObjects",ANone);
-          ("ppObjects",InArrayOfSize "NumObjects");
+          ("ppObjects",InComPtrArrayOfSize "NumObjects");
         ],MANone);
         ("Evict",[
           ("This",AThis);
           ("NumObjects",ANone);
-          ("ppObjects",InArrayOfSize "NumObjects");
+          ("ppObjects",InComPtrArrayOfSize "NumObjects");
         ],MANone);
         ("CreateFence",[
           ("This",AThis);

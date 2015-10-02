@@ -34,6 +34,10 @@ fn slice_as_ptr<T>(s: &[T]) -> *const T {
   if s.len()==0 {ptr::null()} else {s.as_ptr()}
 }
 
+fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
+  if s.len()==0 {ptr::null_mut()} else {s.as_mut_ptr()}
+}
+
 fn str_to_vec_u16(s : Cow<str>) -> Vec<u16> {
   let osstr = OsString::from(s.into_owned());
   osstr.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
@@ -909,17 +913,17 @@ impl D3D12Device {
   
   //  Method MakeResident
   
-  pub fn make_resident(&self, objects: &mut [&mut ID3D12Pageable]) -> HResult<()> {
-  
-    let hr=unsafe { (*self.0).MakeResident( same_length(&[Some(objects.len())]).expect("Arrays must have equal sizes") as UINT, objects.as_mut_ptr() as *mut _) };
+  pub fn make_resident<T: HasIID>(&self, objects: &[&T]) -> HResult<()> {
+    let mut lv1: Vec<*mut IUnknown> = objects.iter().map(|o|o.iptr()).collect();
+    let hr=unsafe { (*self.0).MakeResident( same_length(&[Some(objects.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     hr2ret(hr,())
   }
   
   //  Method Evict
   
-  pub fn evict(&self, objects: &mut [&mut ID3D12Pageable]) -> HResult<()> {
-  
-    let hr=unsafe { (*self.0).Evict( same_length(&[Some(objects.len())]).expect("Arrays must have equal sizes") as UINT, objects.as_mut_ptr() as *mut _) };
+  pub fn evict<T: HasIID>(&self, objects: &[&T]) -> HResult<()> {
+    let mut lv1: Vec<*mut IUnknown> = objects.iter().map(|o|o.iptr()).collect();
+    let hr=unsafe { (*self.0).Evict( same_length(&[Some(objects.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     hr2ret(hr,())
   }
   
@@ -2830,7 +2834,7 @@ impl DXGIDevice1 {
   
   pub fn query_resource_residency<T: HasIID>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
-    let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, residency_status.as_mut_ptr() as *mut _,  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
+    let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, slice_as_mut_ptr(residency_status),  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
     hr2ret(hr,())
   }
   
@@ -2926,7 +2930,7 @@ impl DXGIDevice2 {
   
   pub fn query_resource_residency<T: HasIID>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
-    let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, residency_status.as_mut_ptr() as *mut _,  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
+    let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, slice_as_mut_ptr(residency_status),  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
     hr2ret(hr,())
   }
   
@@ -3046,7 +3050,7 @@ impl DXGIDevice3 {
   
   pub fn query_resource_residency<T: HasIID>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
-    let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, residency_status.as_mut_ptr() as *mut _,  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
+    let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, slice_as_mut_ptr(residency_status),  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
     hr2ret(hr,())
   }
   
@@ -3222,7 +3226,7 @@ impl DXGIDevice {
   
   pub fn query_resource_residency<T: HasIID>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<()> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
-    let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, residency_status.as_mut_ptr() as *mut _,  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
+    let hr=unsafe { (*self.0).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, slice_as_mut_ptr(residency_status),  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
     hr2ret(hr,())
   }
   
