@@ -31,7 +31,7 @@ pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>, min_feat_level: D3D_F
   }
 }
 
-pub fn create_dxgi_factory1<T: HasIID>() -> HResult<T> {
+pub fn create_dxgi_factory2<T: HasIID>() -> HResult<T> {
   let mut p_fac : *mut IUnknown = ptr::null_mut();
   let hr=unsafe {CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, T::iid(), &mut p_fac as *mut *mut _ as *mut *mut _) }; 
   if hr==0 {

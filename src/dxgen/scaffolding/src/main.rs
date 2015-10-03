@@ -45,12 +45,53 @@ extern {}
 
 const FRAME_COUNT : u32 = 2;
 
+type M4 = [[f32;4];4];
 
+#[derive(Clone,Copy,Debug)]
+struct Vertex {
+  pos: [f32;3],
+  color: [f32;3],
+  texc0: [f32;2],
+  norm: [f32;3],
+}
+
+impl GenVertex for Vertex {
+  fn new_vertex(p: &Vector3<f32>) -> Vertex {
+    Vertex {
+      pos: [p.x, p.y, p.z],
+      color: [1.,0.5,0.5,],
+      texc0: [0., 0.],
+      norm: [1., 0., 0.],
+    }
+  }
+  
+  fn set_uv(self, u: f32, v: f32) -> Vertex {
+    Vertex {texc0: [u,v], ..self}
+  }
+
+  fn set_normal(self, n: &Vector3<f32>) -> Vertex {
+    Vertex {norm: [n.x, n.y, n.z], ..self}
+  }
+}
+
+#[repr(C)]
+struct Constants {
+  model: M4,
+  view: M4,
+  proj: M4,
+  n_model: M4,
+  light_pos: [f32;3],
+}
 
 fn main() {
   env_logger::init().unwrap();
 
-  let factory: DXGIFactory4 = create_dxgi_factory1().expect("Cannot create DXGIFactory1. No can do.");
+  let vm = Matrix4::look_at(&Point3::new(0., 0., -3.), &Point3::new(0., 0., 0.), &Vector3::new(0., 1., 0.));
+  println!("Look at: {:?}", vm);
+  let pm = cgmath::perspective(deg(30.), 1.5, 0.1, 10.);
+  println!("Persp: {:?}", pm);
+
+  let factory: DXGIFactory4 = create_dxgi_factory2().expect("Cannot create DXGIFactory1. No can do.");
   let mut i=0;
   let mut adapters = vec![];
   while let Ok(adapter)=factory.enum_adapters1(i) {
@@ -177,16 +218,19 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
 
 //  println!("view: {:?}", &view_matrix);
   
-//  let pm = cgmath::perspective(deg(30.), aspect, 20., 0.1);
+//  let pm = cgmath::perspective(deg(30.), aspect, 0.1, 20.);
   let zfar=20.;
   let znear=0.1;
   let q = zfar/(zfar-znear);
   let proj_matrix: [[f32;4];4] = [[aspect, 0., 0., 0.,], [0., 1., 0., 0., ], [0., 0., q, -q*znear], [0., 0., 1., 0.], ];
 
 //  println!("proj: {:?}", &proj_matrix);
+  let (lx,ly) = f64::sin_cos(data.tick);
+  let (lx,ly) = (lx as f32, ly as f32);
 
+  let consts = Constants{ model: world_matrix, view: view_matrix, proj: proj_matrix, n_model: world_normal_matrix, light_pos: [lx,ly,0.0]};
   unsafe {
-    upload_into_buffer(&data.constant_buffer, &[world_matrix, view_matrix, proj_matrix, world_normal_matrix]);
+    upload_into_buffer(&data.constant_buffer, &[consts]);
   };
 
   populate_command_list(&data.command_list, &data.command_allocator, &data.srv_heap, data);
@@ -235,33 +279,6 @@ struct AppData {
 impl fmt::Debug for AppData {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     writeln!(f,"struct AppData")
-  }
-}
-
-#[derive(Clone,Copy,Debug)]
-struct Vertex {
-  pos: [f32;3],
-  color: [f32;3],
-  texc0: [f32;2],
-  norm: [f32;3],
-}
-
-impl GenVertex for Vertex {
-  fn new_vertex(p: &Vector3<f32>) -> Vertex {
-    Vertex {
-      pos: [p.x, p.y, p.z],
-      color: [1.,0.5,0.5,],
-      texc0: [0., 0.],
-      norm: [1., 0., 0.],
-    }
-  }
-  
-  fn set_uv(self, u: f32, v: f32) -> Vertex {
-    Vertex {texc0: [u,v], ..self}
-  }
-
-  fn set_normal(self, n: &Vector3<f32>) -> Vertex {
-    Vertex {norm: [n.x, n.y, n.z], ..self}
   }
 }
 
@@ -481,7 +498,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   debug.enable_debug_layer();
 
   debug!("Factory");
-  let factory: DXGIFactory4 = create_dxgi_factory1().unwrap();
+  let factory: DXGIFactory4 = create_dxgi_factory2().unwrap();
   debug!("Device");
   let dev = 
     match d3d12_create_device(adapter, D3D_FEATURE_LEVEL_11_0) {
@@ -878,12 +895,12 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   let world_matrix: [[f32;4];4] = [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
   let view_matrix: [[f32;4];4] = [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
   let proj_matrix: [[f32;4];4] = [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
-  let cbuf_data = [world_matrix, view_matrix, proj_matrix, world_matrix];
+  let cbuf_data = Constants{ model: world_matrix, view: view_matrix, proj: proj_matrix, n_model: world_matrix, light_pos: [-1.,0.,0.]};
   let cbsize = mem::size_of_val(&cbuf_data);
 
   let cbuf = dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(cbsize as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None).unwrap();
   unsafe {
-    upload_into_buffer(&cbuf, &cbuf_data);
+    upload_into_buffer(&cbuf, &[cbuf_data]);
   };
 
   let cbview = 
@@ -1044,8 +1061,8 @@ fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12Devic
 }
 
 fn matrix4_to_4x4(m: &Matrix4<f32>) -> [[f32;4];4] {
-  [ [m.x.x, m.x.y, m.x.z, m.x.w],
-    [m.y.x, m.y.y, m.y.z, m.y.w],
-    [m.z.x, m.z.y, m.z.z, m.z.w],
-    [m.w.x, m.w.y, m.w.z, m.w.w] ]
+  [ [m.x.x, m.y.x, m.z.x, m.w.x],
+    [m.x.y, m.y.y, m.z.y, m.w.y],
+    [m.x.z, m.y.z, m.z.z, m.w.z],
+    [m.x.w, m.y.w, m.z.w, m.w.w] ]
 }
