@@ -873,7 +873,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         |TypedefRef "HRESULT" ->
           match !returnVals |> Set.toList with
           |[] ->
-            ("hr2ret(hr,())",RType "HResult<()>")
+            ("hr2ret(hr,hr)",RType "HResult<HRESULT>")
           |[(ex,t)] ->
             ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
           |mrv ->
@@ -1087,7 +1087,7 @@ fn same_length(lens:&[Option<usize>]) -> Option<usize> {
 }
 
 fn hr2ret<T>(hr : HRESULT, res:T) -> HResult<T> {
-  if hr==0 { // TODO: mimic what SUCCESS macro does.
+  if SUCCEEDED(hr) {
     Ok(res)
   } else {
     Err(hr)

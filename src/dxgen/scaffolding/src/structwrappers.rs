@@ -3,6 +3,7 @@ use d3d12_safe::*;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::mem;
+use std::ptr;
 
 pub fn shader_4component_mapping(a: u32, b: u32, c: u32, d: u32) -> UINT {
   (0x1000 | (a & 7) | ((b & 7)*8) | ((c & 7)*8*8) | ((d & 7)*8*8*8)) as UINT
@@ -345,4 +346,91 @@ pub fn depth_stencil_clear_value_depth_f32() -> D3D12_CLEAR_VALUE {
     };
   };
   ret
+}
+
+pub fn depth_stencilop_desc_default() -> D3D12_DEPTH_STENCILOP_DESC {
+  D3D12_DEPTH_STENCILOP_DESC {
+    StencilFunc: D3D12_COMPARISON_FUNC_ALWAYS,
+    StencilDepthFailOp: D3D12_STENCIL_OP_KEEP,
+    StencilPassOp: D3D12_STENCIL_OP_KEEP,
+    StencilFailOp: D3D12_STENCIL_OP_KEEP,
+  }
+}
+
+pub fn render_target_blend_desc_default() -> D3D12_RENDER_TARGET_BLEND_DESC {
+  D3D12_RENDER_TARGET_BLEND_DESC {
+    BlendEnable: 0,
+    LogicOpEnable: 0,
+    SrcBlend: D3D12_BLEND_ONE,
+    DestBlend: D3D12_BLEND_ZERO,
+    BlendOp: D3D12_BLEND_OP_ADD,
+    SrcBlendAlpha: D3D12_BLEND_ONE,
+    DestBlendAlpha: D3D12_BLEND_ZERO,
+    BlendOpAlpha: D3D12_BLEND_OP_ADD,
+    LogicOp: D3D12_LOGIC_OP_NOOP,
+    RenderTargetWriteMask: D3D12_COLOR_WRITE_ENABLE_ALL.0 as u8,
+  }
+}
+
+pub fn graphics_pipeline_state_desc_default() -> D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+  let blend_desc_def = render_target_blend_desc_default();
+  let stencilop_desc_def = depth_stencilop_desc_default();
+
+  D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+    pRootSignature: ptr::null_mut(),
+    VS: D3D12_SHADER_BYTECODE{pShaderBytecode: ptr::null(), BytecodeLength: 0, },
+    PS: D3D12_SHADER_BYTECODE{pShaderBytecode: ptr::null(), BytecodeLength: 0, },
+    DS: D3D12_SHADER_BYTECODE{pShaderBytecode: ptr::null() ,BytecodeLength: 0, },
+    HS: D3D12_SHADER_BYTECODE{pShaderBytecode: ptr::null() ,BytecodeLength: 0, },
+    GS: D3D12_SHADER_BYTECODE{pShaderBytecode: ptr::null() ,BytecodeLength: 0, },
+    StreamOutput: D3D12_STREAM_OUTPUT_DESC {pSODeclaration: ptr::null(), NumEntries: 0, pBufferStrides: ptr::null(), NumStrides: 0, RasterizedStream: 0,},
+    BlendState: D3D12_BLEND_DESC {AlphaToCoverageEnable: 0, IndependentBlendEnable: 0, 
+      RenderTarget: [
+        blend_desc_def,
+        blend_desc_def,
+        blend_desc_def,
+        blend_desc_def,
+        blend_desc_def,
+        blend_desc_def,
+        blend_desc_def,
+        blend_desc_def,
+       ],},
+    SampleMask: 0xffffffff,
+    RasterizerState : D3D12_RASTERIZER_DESC{
+      FillMode: D3D12_FILL_MODE_SOLID,
+      CullMode: D3D12_CULL_MODE_BACK,
+      FrontCounterClockwise: 0,
+      DepthBias: D3D12_DEFAULT_DEPTH_BIAS as i32,
+      SlopeScaledDepthBias: D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+      DepthBiasClamp: D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+      DepthClipEnable: 1,
+      MultisampleEnable: 0,
+      AntialiasedLineEnable: 0,
+      ForcedSampleCount: 0,
+      ConservativeRaster: D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
+    },
+    DepthStencilState : D3D12_DEPTH_STENCIL_DESC{
+      DepthEnable: 1,
+      DepthWriteMask: D3D12_DEPTH_WRITE_MASK_ALL,
+      DepthFunc: D3D12_COMPARISON_FUNC_LESS,
+      StencilEnable: 0,
+      StencilReadMask: D3D12_DEFAULT_STENCIL_READ_MASK as u8,
+      StencilWriteMask: D3D12_DEFAULT_STENCIL_WRITE_MASK as u8,
+      FrontFace: stencilop_desc_def,
+      BackFace: stencilop_desc_def,
+    },
+    InputLayout : D3D12_INPUT_LAYOUT_DESC{
+      pInputElementDescs: ptr::null(),
+      NumElements: 0,
+    },
+    IBStripCutValue: D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
+    PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+    NumRenderTargets: 1,
+    RTVFormats: [DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, ],
+    DSVFormat: DXGI_FORMAT_D32_FLOAT, 
+    SampleDesc: DXGI_SAMPLE_DESC{Count:1, Quality: 0,},
+    NodeMask: 0,
+    CachedPSO: D3D12_CACHED_PIPELINE_STATE{pCachedBlob: ptr::null(), CachedBlobSizeInBytes: 0,},
+    Flags: D3D12_PIPELINE_STATE_FLAG_NONE,         
+  }
 }

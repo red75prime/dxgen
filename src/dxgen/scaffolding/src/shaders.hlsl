@@ -49,16 +49,16 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   float4 texel=testTex.Sample(testSamp, pv.texc0.xy);
 
   float4 ret=pv.vDiffuse;
-  float3 eye_off = float3(0.,0.,-3.) - pv.w_pos;
+  float3 eye_off = -float3(view._41, view._42, view._43) - pv.w_pos;
   float3 eye_n = normalize(eye_off);
   float3 light_off = light_pos - pv.w_pos;
   float3 light_n = normalize(light_off);
   float3 light_r = reflect(-light_n, pv.norm);
   float sb=clamp(dot(light_r,pv.norm),0,0.001)/0.001;
   float l=clamp(dot(light_n,pv.norm),0,1);
-  float s=clamp(dot(light_r,eye_n),0,1);
-  float s2=1.0001-s*s;
-  float s3=1-clamp(s2,0,0.004)/0.004;
+  float s=clamp(length(cross(light_r,eye_n)),0,1);
+  float eldist=length(light_off)+length(eye_off);
+  float s3=1-clamp(s*eldist,0,0.1)/0.1;
   ret = texel*(0.1+l*0.6)+float4(s3,s3,s3,1)*sb;
 //  ret.r += eye_n.z;
   return ret;

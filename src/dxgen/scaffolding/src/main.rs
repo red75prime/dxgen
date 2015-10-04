@@ -23,7 +23,9 @@ mod structwrappers;
 mod utils;
 mod gfx_d3d12;
 mod shape_gen;
+mod dxsems;
 
+use dxsems::VertexFormat;
 use winapi::*;
 use d3d12_safe::*;
 use create_device::*;
@@ -47,13 +49,12 @@ const FRAME_COUNT : u32 = 2;
 
 type M4 = [[f32;4];4];
 
-#[derive(Clone,Copy,Debug)]
-struct Vertex {
-  pos: [f32;3],
-  color: [f32;3],
-  texc0: [f32;2],
-  norm: [f32;3],
-}
+dx_vertex!( Vertex {
+  (POSITION, 0, DXGI_FORMAT_R32G32B32_FLOAT) pos: [f32;3],
+  (COLOR   , 0, DXGI_FORMAT_R32G32B32_FLOAT) color: [f32;3],
+  (TEXCOORD, 0, DXGI_FORMAT_R32G32_FLOAT   ) texc0: [f32;2],
+  (NORMAL  , 0, DXGI_FORMAT_R32G32B32_FLOAT) norm: [f32;3],
+});
 
 impl GenVertex for Vertex {
   fn new_vertex(p: &Vector3<f32>) -> Vertex {
@@ -504,7 +505,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     match d3d12_create_device(adapter, D3D_FEATURE_LEVEL_11_0) {
       Ok(dev) => dev,
       Err(hr) => {
-        panic!("create device failes with 0x{:x}", hr)
+        panic!("create device failed with 0x{:x}", hr)
 //        warn!("Fallback to warp adapter");
 //        debug!("Warp");
 //        let warp: DXGIAdapter = factory.enum_warp_adapter().unwrap();
@@ -703,148 +704,37 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
           info_queue.clone()}));
 
   debug!("Root signature");
-  let root_sign=
-    unsafe{
-      let blob_slice:&[u8]=::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize);
-      let root_sign=dev.create_root_signature(0, blob_slice).unwrap();
-      root_sign
-    };
+  let root_sign=dev.create_root_signature(0, blob_as_slice(&blob)).unwrap();
+
   let compile_flags=0;
   debug!("Vertex shader");
   let vshader=d3d_compile_from_file("shaders.hlsl","VSMain","vs_5_0", compile_flags).unwrap();
   debug!("Pixel shader");
   let pshader=d3d_compile_from_file("shaders.hlsl","PSMain","ps_5_0", compile_flags).unwrap();
 
-  let w_pos=str_to_cstring("POSITION");
-  let w_color=str_to_cstring("COLOR");
-  let w_texc0=str_to_cstring("TEXCOORD");
-  let w_norm=str_to_cstring("NORMAL");
-  let input_elts_desc=[
-    D3D12_INPUT_ELEMENT_DESC{
-      SemanticName: w_pos.as_ptr(), 
-      SemanticIndex: 0,
-      Format: DXGI_FORMAT_R32G32B32_FLOAT, 
-      InputSlot: 0, 
-      AlignedByteOffset: offset_of!(Vertex, pos) as UINT, 
-      InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 
-      InstanceDataStepRate: 0,
-    },
-    D3D12_INPUT_ELEMENT_DESC{
-      SemanticName: w_color.as_ptr(), 
-      SemanticIndex: 0, 
-      Format: DXGI_FORMAT_R32G32B32_FLOAT, 
-      InputSlot: 0, 
-      AlignedByteOffset: offset_of!(Vertex, color) as UINT, 
-      InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 
-      InstanceDataStepRate: 0,
-    },
-    D3D12_INPUT_ELEMENT_DESC{
-      SemanticName: w_texc0.as_ptr(), 
-      SemanticIndex: 0, 
-      Format: DXGI_FORMAT_R32G32_FLOAT, 
-      InputSlot: 0,
-      AlignedByteOffset: offset_of!(Vertex, texc0) as UINT, 
-      InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 
-      InstanceDataStepRate: 0,
-    },
-    D3D12_INPUT_ELEMENT_DESC{
-      SemanticName: w_norm.as_ptr(), 
-      SemanticIndex: 0, 
-      Format: DXGI_FORMAT_R32G32B32_FLOAT, 
-      InputSlot: 0,
-      AlignedByteOffset: offset_of!(Vertex, norm) as UINT, 
-      InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 
-      InstanceDataStepRate: 0,
-    },
-  ];
-  let def_stencil_op_desc=D3D12_DEPTH_STENCILOP_DESC{
-      StencilFunc: D3D12_COMPARISON_FUNC_ALWAYS,
-      StencilDepthFailOp: D3D12_STENCIL_OP_KEEP,
-      StencilPassOp: D3D12_STENCIL_OP_KEEP,
-      StencilFailOp: D3D12_STENCIL_OP_KEEP,
-    };
-  let blend_desc_def=
-    D3D12_RENDER_TARGET_BLEND_DESC{
-      BlendEnable: 0,
-      LogicOpEnable: 0,
-      SrcBlend: D3D12_BLEND_ONE,
-      DestBlend: D3D12_BLEND_ZERO,
-      BlendOp: D3D12_BLEND_OP_ADD,
-      SrcBlendAlpha: D3D12_BLEND_ONE,
-      DestBlendAlpha: D3D12_BLEND_ZERO,
-      BlendOpAlpha: D3D12_BLEND_OP_ADD,
-      LogicOp: D3D12_LOGIC_OP_NOOP,
-      RenderTargetWriteMask: 15,
-    };
+  let input_elts_desc = Vertex::generate(0);
 
-  let pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
-    pRootSignature: root_sign.iptr() as *mut _,
-    VS: D3D12_SHADER_BYTECODE{pShaderBytecode: vshader.as_ptr() as *const _ ,BytecodeLength: vshader.len() as SIZE_T, },
-    PS: D3D12_SHADER_BYTECODE{pShaderBytecode: pshader.as_ptr() as *const _ ,BytecodeLength: pshader.len() as SIZE_T, },
-    DS: D3D12_SHADER_BYTECODE{pShaderBytecode: ptr::null_mut() ,BytecodeLength: 0, },
-    HS: D3D12_SHADER_BYTECODE{pShaderBytecode: ptr::null_mut() ,BytecodeLength: 0, },
-    GS: D3D12_SHADER_BYTECODE{pShaderBytecode: ptr::null_mut() ,BytecodeLength: 0, },
-    StreamOutput: D3D12_STREAM_OUTPUT_DESC {pSODeclaration: ptr::null(), NumEntries: 0, pBufferStrides: ptr::null(), NumStrides: 0, RasterizedStream: 0,},
-    BlendState: D3D12_BLEND_DESC {AlphaToCoverageEnable: 0, IndependentBlendEnable: 0, 
-        RenderTarget: [
-          D3D12_RENDER_TARGET_BLEND_DESC{
-            BlendEnable: 0,
-            LogicOpEnable: 0,
-            SrcBlend: D3D12_BLEND_ONE,
-            DestBlend: D3D12_BLEND_ZERO,
-            BlendOp: D3D12_BLEND_OP_ADD,
-            SrcBlendAlpha: D3D12_BLEND_ONE,
-            DestBlendAlpha: D3D12_BLEND_ZERO,
-            BlendOpAlpha: D3D12_BLEND_OP_ADD,
-            LogicOp: D3D12_LOGIC_OP_NOOP,
-            RenderTargetWriteMask: D3D12_COLOR_WRITE_ENABLE_ALL.0 as u8,
-          },
-          blend_desc_def,
-          blend_desc_def,
-          blend_desc_def,
-          blend_desc_def,
-          blend_desc_def,
-          blend_desc_def,
-          blend_desc_def,
-         ],},
-    SampleMask: 0xffffffff,
-    RasterizerState : D3D12_RASTERIZER_DESC{
-      FillMode: D3D12_FILL_MODE_SOLID,
-      CullMode: D3D12_CULL_MODE_NONE,
-      FrontCounterClockwise: 0,
-      DepthBias: D3D12_DEFAULT_DEPTH_BIAS as i32,
-      SlopeScaledDepthBias: D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
-      DepthBiasClamp: D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
-      DepthClipEnable: 1,
-      MultisampleEnable: 0,
-      AntialiasedLineEnable: 0,
-      ForcedSampleCount: 0,
-      ConservativeRaster: D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
-    },
-    DepthStencilState : D3D12_DEPTH_STENCIL_DESC{
-      DepthEnable: 1,
-      DepthWriteMask: D3D12_DEPTH_WRITE_MASK_ALL,
-      DepthFunc: D3D12_COMPARISON_FUNC_LESS,
-      StencilEnable: 0,
-      StencilReadMask: D3D12_DEFAULT_STENCIL_READ_MASK as u8,
-      StencilWriteMask: D3D12_DEFAULT_STENCIL_READ_MASK as u8,
-      FrontFace: def_stencil_op_desc,
-      BackFace: def_stencil_op_desc,
-      },
-    InputLayout : D3D12_INPUT_LAYOUT_DESC{
-      pInputElementDescs: input_elts_desc.as_ptr(),
-      NumElements: input_elts_desc.len() as u32,
-      },
-    IBStripCutValue : D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
-    PrimitiveTopologyType : D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-    NumRenderTargets : 1,
-    RTVFormats : [DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, ],
-    DSVFormat : DXGI_FORMAT_D32_FLOAT, 
-    SampleDesc : DXGI_SAMPLE_DESC{Count:1, Quality: 0,},
-    NodeMask : 0,
-    CachedPSO : D3D12_CACHED_PIPELINE_STATE{pCachedBlob: ptr::null(), CachedBlobSizeInBytes: 0,},
-    Flags : D3D12_PIPELINE_STATE_FLAG_NONE,         
+  let mut pso_desc = graphics_pipeline_state_desc_default();
+
+  pso_desc.pRootSignature = root_sign.iptr() as *mut _;
+  pso_desc.VS = D3D12_SHADER_BYTECODE{
+    pShaderBytecode: vshader.as_ptr() as *const _ ,
+    BytecodeLength: vshader.len() as SIZE_T,
   };
+  pso_desc.PS = D3D12_SHADER_BYTECODE {
+    pShaderBytecode: pshader.as_ptr() as *const _ ,
+    BytecodeLength: pshader.len() as SIZE_T, 
+  };
+  pso_desc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+  pso_desc.InputLayout = D3D12_INPUT_LAYOUT_DESC {
+    pInputElementDescs: input_elts_desc.as_ptr(),
+    NumElements: input_elts_desc.len() as u32,
+  };
+  pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+  pso_desc.NumRenderTargets = 1;
+  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+  pso_desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+
   debug!("Graphics pipeline state");
   let gps=match dev.create_graphics_pipeline_state(&pso_desc) {
       Ok(gps) => gps,

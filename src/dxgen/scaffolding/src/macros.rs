@@ -20,3 +20,33 @@ macro_rules! offset_of {
     (&tmp.$field as *const _ as usize) - (&tmp as *const _ as usize)
   }}
 }
+
+// Based on gfx-rs gfx-vertex! https://github.com/gfx-rs/gfx/blob/master/src/core/src/macros/mod.rs
+macro_rules! dx_vertex {
+    ($name:ident {
+        $(($semantics:ident, $sem_idx:expr, $format:ident) $field:ident: $ty:ty,)*
+    }) => {
+        #[derive(Clone, Copy, Debug)]
+        pub struct $name {
+            $(pub $field: $ty,)*
+        }
+        impl VertexFormat for $name {
+            fn generate(input_slot: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC> {
+                use dxsems::*;
+                let mut e_descs = Vec::new();
+                $(
+                  e_descs.push(D3D12_INPUT_ELEMENT_DESC {
+                    SemanticName: $semantics.as_ptr() as LPCSTR,
+                    SemanticIndex: $sem_idx,
+                    Format: $format, 
+                    InputSlot: input_slot,
+                    AlignedByteOffset: offset_of!($name, $field) as UINT, 
+                    InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 
+                    InstanceDataStepRate: 0,
+                  });
+                )*
+                e_descs
+            }
+        }
+    }
+}

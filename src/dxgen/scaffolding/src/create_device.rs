@@ -62,6 +62,14 @@ pub fn blob_to_string(blob: &D3D10Blob) -> String {
   }
 }
 
+pub fn blob_as_slice<'a>(blob: &'a D3D10Blob) -> &'a [u8] {
+  if blob.get_buffer_size() == 0 {
+    &[]
+  } else {
+    unsafe{ ::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize) }
+  }
+}
+
 pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC, ver: D3D_ROOT_SIGNATURE_VERSION) -> HResult<D3D10Blob> {
   let mut p_blob: *mut IUnknown = ptr::null_mut();
   let mut p_err: *mut IUnknown = ptr::null_mut();
@@ -95,10 +103,7 @@ pub fn d3d_compile_from_file(file_name: &str, entry: &str, target: &str, flags: 
       assert!(blob1 != ptr::null_mut());
       let blob=D3D10Blob::new(blob1 as *mut _);
       let mut ret=vec![];
-      unsafe {
-        let blob_slice:&[u8]=::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8, blob.get_buffer_size() as usize);
-        ret.extend(blob_slice);
-      }
+      ret.extend(blob_as_slice(&blob));
       Ok(ret)
     } else {
       Err("".into())
