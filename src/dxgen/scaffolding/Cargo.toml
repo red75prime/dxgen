@@ -9,7 +9,7 @@ lazy_static = "0.1"
 log = "0.3"
 env_logger = "0.3"
 d3d12_safe = { version = "*", path = "lib/d3d12" }
-# gfx = { version = "*", path = "lib/core" }
+# gfx = { git = "https://github.com/gfx-rs/gfx/tree/master/src/core" }
 rand = "0.3"
 cgmath = "0.3"
 clock_ticks = "*"

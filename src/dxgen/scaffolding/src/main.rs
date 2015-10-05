@@ -714,27 +714,30 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
 
   let input_elts_desc = Vertex::generate(0);
 
-  let mut pso_desc = graphics_pipeline_state_desc_default();
-
-  pso_desc.pRootSignature = root_sign.iptr() as *mut _;
-  pso_desc.VS = D3D12_SHADER_BYTECODE{
-    pShaderBytecode: vshader.as_ptr() as *const _ ,
-    BytecodeLength: vshader.len() as SIZE_T,
+  let pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+    pRootSignature: root_sign.iptr() as *mut _,
+    VS: D3D12_SHADER_BYTECODE {
+      pShaderBytecode: vshader.as_ptr() as *const _,
+      BytecodeLength: vshader.len() as SIZE_T,
+    },
+    PS: D3D12_SHADER_BYTECODE {
+      pShaderBytecode: pshader.as_ptr() as *const _ ,
+      BytecodeLength: pshader.len() as SIZE_T, 
+    },
+    RasterizerState: D3D12_RASTERIZER_DESC {
+      CullMode: D3D12_CULL_MODE_NONE,
+      .. rasterizer_desc_default()
+    },
+    InputLayout: D3D12_INPUT_LAYOUT_DESC {
+      pInputElementDescs: input_elts_desc.as_ptr(),
+      NumElements: input_elts_desc.len() as u32,
+    },
+    PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+    NumRenderTargets: 1,
+    //RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    DSVFormat: DXGI_FORMAT_D32_FLOAT,
+    .. graphics_pipeline_state_desc_default()
   };
-  pso_desc.PS = D3D12_SHADER_BYTECODE {
-    pShaderBytecode: pshader.as_ptr() as *const _ ,
-    BytecodeLength: pshader.len() as SIZE_T, 
-  };
-  pso_desc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-  pso_desc.InputLayout = D3D12_INPUT_LAYOUT_DESC {
-    pInputElementDescs: input_elts_desc.as_ptr(),
-    NumElements: input_elts_desc.len() as u32,
-  };
-  pso_desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-  pso_desc.NumRenderTargets = 1;
-  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-  pso_desc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-
   debug!("Graphics pipeline state");
   let gps=match dev.create_graphics_pipeline_state(&pso_desc) {
       Ok(gps) => gps,

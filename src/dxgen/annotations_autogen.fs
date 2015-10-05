@@ -1334,8 +1334,8 @@ let d3d12annotations_prime=
           ("This",AThis);
           ("EnumFormat",ANone);
           ("Flags",ANone);
-          ("pNumModes",OutReturn);
-          ("pDesc",OutOptionalArrayOfSize "pNumModes");
+          ("pNumModes", InOutReturn);
+          ("pDesc", OutOptionalArrayOfSize "pNumModes");
         ],MANone);
         ("FindClosestMatchingMode1",[
           ("This",AThis);
@@ -1673,8 +1673,8 @@ let d3d12annotations_prime=
         ],MANone);
         ("GetFullscreenState",[
           ("This",AThis);
-          ("pFullscreen",AConst "ptr::null_mut()"); // This parameter can be ignored. Good case for AConst "ptr::null_mut()". OTOH why it is here? TODO: Investigate
-          ("ppTarget",ANone); // TODO: Implement OutOptionalComPtr, or OutOptionalReturnComPtr. 
+          ("pFullscreen", InOutOptional); 
+          ("ppTarget",OutReturnComPtr); // TODO: Implement OutOptionalComPtr, or OutOptionalReturnComPtr. 
         ],MANone);
         ("GetDesc",[
           ("This",AThis);

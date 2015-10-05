@@ -750,7 +750,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
         |[] ->
           match pty with
           |Ptr(StructRef ciname) ->
-            // Let's strip 'I' and 'Vtbl' parts
+            // Let's strip 'I' part
             let iname=ciname.Substring(1,ciname.Length-1)
             let rty=ROption(RBorrow(RType iname))
             addSafeParm safeParmName rty
@@ -770,7 +770,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addReturnExpression lv rty
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
-          addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
+          addError (sprintf "%s parameter: OutReturn shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |OutReturnBarePointer ->
         match refs with 
@@ -783,7 +783,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addReturnExpression lv rty
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
-          addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
+          addError (sprintf "%s parameter: OutReturnBarePointer shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |OutReturnComPtr ->
         match refs with 
@@ -798,7 +798,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addReturnExpression (rtName+"::new("+lv+" as *mut _)") rty
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
-          addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
+          addError (sprintf "%s parameter: OutReturnComPtr shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |OutReturnCombine(sname, field) ->
         match refs with 
@@ -811,7 +811,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addNativeParm pname None ("&mut ("+lv+"."+field+") as *mut _ as *mut _")
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
-          addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
+          addError (sprintf "%s parameter: OutReturnCombine shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |OutReturnInterface(rname) ->
         match refs with 
@@ -827,7 +827,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addReturnExpression (gt+"::new("+lv+")") rty
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
-          addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
+          addError (sprintf "%s parameter: OutReturnInterface shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |OutReturnKnownInterface(rname,iname) ->
         match refs with 
@@ -842,7 +842,7 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             addReturnExpression (iname+"::new("+lv+")") rty
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
-          addError (sprintf "%s parameter: OutOptionalOfSize shouldn't have references. But references are %A" pname refs)
+          addError (sprintf "%s parameter: OutReturnKnownInterface shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |InIUnknown ->
         addError (sprintf "%s parameter: InIUnknown is not implemented" pname)

@@ -17,7 +17,9 @@ macro_rules! write_delimited {
 macro_rules! offset_of {
   ($type_:ident, $field:ident) => {{
     let tmp: $type_ = unsafe{ ::std::mem::uninitialized::<_>()};
-    (&tmp.$field as *const _ as usize) - (&tmp as *const _ as usize)
+    let offset = (&tmp.$field as *const _ as usize) - (&tmp as *const _ as usize);
+    ::std::mem::forget(tmp);
+    offset
   }}
 }
 

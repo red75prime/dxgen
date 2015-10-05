@@ -372,6 +372,22 @@ pub fn render_target_blend_desc_default() -> D3D12_RENDER_TARGET_BLEND_DESC {
   }
 }
 
+pub fn rasterizer_desc_default() -> D3D12_RASTERIZER_DESC {
+  D3D12_RASTERIZER_DESC {
+    FillMode: D3D12_FILL_MODE_SOLID,
+    CullMode: D3D12_CULL_MODE_BACK,
+    FrontCounterClockwise: 0,
+    DepthBias: D3D12_DEFAULT_DEPTH_BIAS as i32,
+    SlopeScaledDepthBias: D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+    DepthBiasClamp: D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+    DepthClipEnable: 1,
+    MultisampleEnable: 0,
+    AntialiasedLineEnable: 0,
+    ForcedSampleCount: 0,
+    ConservativeRaster: D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
+  }
+}
+
 pub fn graphics_pipeline_state_desc_default() -> D3D12_GRAPHICS_PIPELINE_STATE_DESC {
   let blend_desc_def = render_target_blend_desc_default();
   let stencilop_desc_def = depth_stencilop_desc_default();
@@ -396,19 +412,7 @@ pub fn graphics_pipeline_state_desc_default() -> D3D12_GRAPHICS_PIPELINE_STATE_D
         blend_desc_def,
        ],},
     SampleMask: 0xffffffff,
-    RasterizerState : D3D12_RASTERIZER_DESC{
-      FillMode: D3D12_FILL_MODE_SOLID,
-      CullMode: D3D12_CULL_MODE_BACK,
-      FrontCounterClockwise: 0,
-      DepthBias: D3D12_DEFAULT_DEPTH_BIAS as i32,
-      SlopeScaledDepthBias: D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
-      DepthBiasClamp: D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
-      DepthClipEnable: 1,
-      MultisampleEnable: 0,
-      AntialiasedLineEnable: 0,
-      ForcedSampleCount: 0,
-      ConservativeRaster: D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
-    },
+    RasterizerState : rasterizer_desc_default(),
     DepthStencilState : D3D12_DEPTH_STENCIL_DESC{
       DepthEnable: 1,
       DepthWriteMask: D3D12_DEPTH_WRITE_MASK_ALL,

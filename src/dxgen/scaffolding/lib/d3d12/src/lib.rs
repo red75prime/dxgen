@@ -69,7 +69,7 @@ fn same_length(lens:&[Option<usize>]) -> Option<usize> {
 }
 
 fn hr2ret<T>(hr : HRESULT, res:T) -> HResult<T> {
-  if SUCCEEDED(hr) { // TODO: mimic what SUCCESS macro does.
+  if SUCCEEDED(hr) {
     Ok(res)
   } else {
     Err(hr)
@@ -4383,7 +4383,13 @@ impl DXGIOutput1 {
   }
   
   //  Method GetDisplayModeList1
-  //  Error: pNumModes parameter: OutOptionalOfSize shouldn't have references. But references are [("pDesc", OutOptionalArrayOfSize "pNumModes", Ptr (StructRef "DXGI_MODE_DESC1"))]
+  
+  pub fn get_display_mode_list1(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC1]>) -> HResult<UINT> {
+    let mut lv1: UINT = desc.as_ref().map(|v|v.len()).unwrap_or(0) as UINT;
+    let hr=unsafe { (*self.0).GetDisplayModeList1(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
+    hr2ret(hr,lv1)
+  }
+  
   //  Method FindClosestMatchingMode1
   
   pub fn find_closest_matching_mode1(&self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<HRESULT> {
@@ -4553,7 +4559,13 @@ impl DXGIOutput2 {
   }
   
   //  Method GetDisplayModeList1
-  //  Error: pNumModes parameter: OutOptionalOfSize shouldn't have references. But references are [("pDesc", OutOptionalArrayOfSize "pNumModes", Ptr (StructRef "DXGI_MODE_DESC1"))]
+  
+  pub fn get_display_mode_list1(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC1]>) -> HResult<UINT> {
+    let mut lv1: UINT = desc.as_ref().map(|v|v.len()).unwrap_or(0) as UINT;
+    let hr=unsafe { (*self.0).GetDisplayModeList1(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
+    hr2ret(hr,lv1)
+  }
+  
   //  Method FindClosestMatchingMode1
   
   pub fn find_closest_matching_mode1(&self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<HRESULT> {
@@ -4731,7 +4743,13 @@ impl DXGIOutput3 {
   }
   
   //  Method GetDisplayModeList1
-  //  Error: pNumModes parameter: OutOptionalOfSize shouldn't have references. But references are [("pDesc", OutOptionalArrayOfSize "pNumModes", Ptr (StructRef "DXGI_MODE_DESC1"))]
+  
+  pub fn get_display_mode_list1(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC1]>) -> HResult<UINT> {
+    let mut lv1: UINT = desc.as_ref().map(|v|v.len()).unwrap_or(0) as UINT;
+    let hr=unsafe { (*self.0).GetDisplayModeList1(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
+    hr2ret(hr,lv1)
+  }
+  
   //  Method FindClosestMatchingMode1
   
   pub fn find_closest_matching_mode1(&self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<HRESULT> {
@@ -4917,7 +4935,13 @@ impl DXGIOutput4 {
   }
   
   //  Method GetDisplayModeList1
-  //  Error: pNumModes parameter: OutOptionalOfSize shouldn't have references. But references are [("pDesc", OutOptionalArrayOfSize "pNumModes", Ptr (StructRef "DXGI_MODE_DESC1"))]
+  
+  pub fn get_display_mode_list1(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC1]>) -> HResult<UINT> {
+    let mut lv1: UINT = desc.as_ref().map(|v|v.len()).unwrap_or(0) as UINT;
+    let hr=unsafe { (*self.0).GetDisplayModeList1(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
+    hr2ret(hr,lv1)
+  }
+  
   //  Method FindClosestMatchingMode1
   
   pub fn find_closest_matching_mode1(&self, mode_to_match: &DXGI_MODE_DESC1, closest_match: &mut DXGI_MODE_DESC1, concerned_device: Option<&Unknown>) -> HResult<HRESULT> {
@@ -5728,7 +5752,13 @@ impl DXGISwapChain1 {
   }
   
   //  Method GetFullscreenState
-  //  Error: ppTarget parameter: ANone annotation cannot be used with double indirection
+  
+  pub fn get_fullscreen_state(&self, fullscreen: Option<&mut BOOL>) -> HResult<DXGIOutput> {
+    let mut lv1: *mut IDXGIOutput = ptr::null_mut();
+    let hr=unsafe { (*self.0).GetFullscreenState(opt_as_mut_ptr(&fullscreen), &mut lv1 as *mut *mut _) };
+    hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
+  }
+  
   //  Method GetDesc
   
   pub fn get_desc(&self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
@@ -5938,7 +5968,13 @@ impl DXGISwapChain2 {
   }
   
   //  Method GetFullscreenState
-  //  Error: ppTarget parameter: ANone annotation cannot be used with double indirection
+  
+  pub fn get_fullscreen_state(&self, fullscreen: Option<&mut BOOL>) -> HResult<DXGIOutput> {
+    let mut lv1: *mut IDXGIOutput = ptr::null_mut();
+    let hr=unsafe { (*self.0).GetFullscreenState(opt_as_mut_ptr(&fullscreen), &mut lv1 as *mut *mut _) };
+    hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
+  }
+  
   //  Method GetDesc
   
   pub fn get_desc(&self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
@@ -6204,7 +6240,13 @@ impl DXGISwapChain3 {
   }
   
   //  Method GetFullscreenState
-  //  Error: ppTarget parameter: ANone annotation cannot be used with double indirection
+  
+  pub fn get_fullscreen_state(&self, fullscreen: Option<&mut BOOL>) -> HResult<DXGIOutput> {
+    let mut lv1: *mut IDXGIOutput = ptr::null_mut();
+    let hr=unsafe { (*self.0).GetFullscreenState(opt_as_mut_ptr(&fullscreen), &mut lv1 as *mut *mut _) };
+    hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
+  }
+  
   //  Method GetDesc
   
   pub fn get_desc(&self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
@@ -6550,7 +6592,13 @@ impl DXGISwapChain {
   }
   
   //  Method GetFullscreenState
-  //  Error: ppTarget parameter: ANone annotation cannot be used with double indirection
+  
+  pub fn get_fullscreen_state(&self, fullscreen: Option<&mut BOOL>) -> HResult<DXGIOutput> {
+    let mut lv1: *mut IDXGIOutput = ptr::null_mut();
+    let hr=unsafe { (*self.0).GetFullscreenState(opt_as_mut_ptr(&fullscreen), &mut lv1 as *mut *mut _) };
+    hr2ret(hr,DXGIOutput::new(lv1 as *mut _))
+  }
+  
   //  Method GetDesc
   
   pub fn get_desc(&self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
