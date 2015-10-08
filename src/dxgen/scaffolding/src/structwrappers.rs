@@ -432,9 +432,13 @@ pub fn graphics_pipeline_state_desc_default() -> D3D12_GRAPHICS_PIPELINE_STATE_D
     NumRenderTargets: 1,
     RTVFormats: [DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, DXGI_FORMAT_UNKNOWN, ],
     DSVFormat: DXGI_FORMAT_D32_FLOAT, 
-    SampleDesc: DXGI_SAMPLE_DESC{Count:1, Quality: 0,},
+    SampleDesc: sample_desc_default(),
     NodeMask: 0,
-    CachedPSO: D3D12_CACHED_PIPELINE_STATE{pCachedBlob: ptr::null(), CachedBlobSizeInBytes: 0,},
+    CachedPSO: D3D12_CACHED_PIPELINE_STATE {pCachedBlob: ptr::null(), CachedBlobSizeInBytes: 0,},
     Flags: D3D12_PIPELINE_STATE_FLAG_NONE,         
   }
+}
+
+pub fn sample_desc_default() -> DXGI_SAMPLE_DESC {
+  DXGI_SAMPLE_DESC {Count: 1, Quality: 0,}
 }

@@ -35,12 +35,14 @@ use std::fmt;
 use std::mem;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use window::*;
 use structwrappers::*;
 use utils::*;
 use clock_ticks::*;
 use cgmath::*;
 use shape_gen::*;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[link(name="d3dcompiler")]
 extern {}
@@ -87,6 +89,12 @@ struct Constants {
 fn main() {
   env_logger::init().unwrap();
 
+  let atomic_boom = AtomicUsize::new(usize::max_value());
+  let da_boom_p = atomic_boom.fetch_add(1, Ordering::Relaxed);
+  let da_boom_2 = atomic_boom.fetch_add(1, Ordering::Relaxed);
+  println!("0x{:x} then 0x{:x}", da_boom_p, da_boom_2);
+  // It seems atomics don't panic on overflow
+
   let vm = Matrix4::look_at(&Point3::new(0., 0., -3.), &Point3::new(0., 0., 0.), &Vector3::new(0., 1., 0.));
   println!("Look at: {:?}", vm);
   let pm = cgmath::perspective(deg(30.), 1.5, 0.1, 10.);
@@ -102,24 +110,50 @@ fn main() {
     adapters.push(adapter);
     i+=1;
   }
-  let res: Vec<_> = adapters.into_iter().map(|a|::std::thread::spawn(move ||main_prime(a))).collect();
-  for jh in res {
+
+  let mutex=Arc::new(Mutex::new(()));
+  let join_handles: Vec<_> = 
+    adapters.into_iter()
+      .map(|a|{
+        let mutex = mutex.clone();
+        ::std::thread::spawn(move||{
+          main_prime(a, mutex)
+        })
+      }).collect();
+  for jh in join_handles {
     let _ = jh.join();
   }
 }
 
-fn main_prime(adapter: DXGIAdapter1) {
-  let descr=adapter.get_desc1().unwrap();
-  let title=format!("D3D12 Hello, rusty world! ({})", wchar_array_to_string_lossy(&descr.Description));
+fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
 
+  let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
+  let title=format!("D3D12 Hello, rusty world! ({})", descr);
   let wnd=create_window(&title, 512, 256);
+
+  {
+    if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_12_1) {
+      let format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+      let mut fsup = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
+        Format: format,
+        Support1: D3D12_FORMAT_SUPPORT1_NONE,
+        Support2: D3D12_FORMAT_SUPPORT2_NONE,
+      };
+      if let Ok(_) = dev.check_feature_support_format_support(&mut fsup) {
+        let lock=mutex.lock();
+        println!("{}", descr);
+        println!("Format support for {:?} is {:x}, {:x}", format, fsup.Support1.0, fsup.Support2.0);
+      }
+    }
+  }
+
   let data=
     match create_appdata(&wnd, Some(&adapter)) { //Some(&factory.enum_adapters1(2).unwrap().query_interface().unwrap())) {
       Ok(appdata) => {
         Rc::new(RefCell::new(appdata))
       },
-      Err(mut iq) => {
-        dump_info_queue(&mut iq);
+      Err(iq) => {
+        dump_info_queue(iq.map(|iq|iq).as_ref());
         return ();
       },
     };
@@ -148,6 +182,9 @@ fn main_prime(adapter: DXGIAdapter1) {
       //std::thread::sleep_ms(1);
       frame_count += 1;
       let now = precise_time_s();
+      //let frametime = now-start;
+      //start = now;
+      //print!("FPS: {:4.3}   \r" , 1.0/frametime);
       if now<start || now>=(start+1.0) {
         start = now;
         print!("FPS: {}   \r" , frame_count);
@@ -157,21 +194,25 @@ fn main_prime(adapter: DXGIAdapter1) {
     }
   }
   // Application should exit fullscreen state before terminating. 
-  data.borrow().swap_chain.set_fullscreen_state(0, None).unwrap();
+  data.borrow().swap_chain.swap_chain.set_fullscreen_state(0, None).unwrap();
   // copy info queue
-  let iq=data.borrow().iq.clone();
+  let iq=data.borrow().core.info_queue.clone();
   // release resources
   wnd.set_resize_fn(Box::new(|_,_,_|{}));
-  wait_for_prev_frame(&mut *data.borrow_mut());
+  {
+    let data=data.borrow();
+    wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
+  }
   drop(data);
   // maybe debug layer has something to say
-  dump_info_queue(&iq);  
+  dump_info_queue(iq.map(|iq|iq).as_ref());
 }
 
 fn on_render(data: &mut AppData, x: i32, y: i32) {
   use std::f64; 
 
-  wait_for_prev_frame(data);
+  wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
+  data.frame_index = data.swap_chain.swap_chain.get_current_back_buffer_index();
   //let tick=data.tick;
   data.tick += 0.01;
   let aspect=data.viewport.Height/data.viewport.Width;
@@ -181,16 +222,7 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
 
   let (s,c)=f64::sin_cos(-tick); // f32 is too small for time counting
   let (s,c)=(s as f32, c as f32);
-//  let vtc=vec![
-//    Vertex {pos: [(0.5*s+0.0*c), (0.5*(-c)+0.0*s), 0.0],  color: [1.0,0.0,0.0], texc0: [1.0, 1.0], norm: [0.0, 0.0, -1.0]},
-//    Vertex {pos: [(-0.5*s-0.5*c), (-0.5*(-c)-0.5*s), 0.0],color: [0.0,0.0,1.0], texc0: [0.0, 1.0], norm: [0.0, 0.0, -1.0]},
-//    Vertex {pos: [(-0.5*s+0.5*c), (-0.5*(-c)+0.5*s), 0.0],color: [0.0,1.0,0.0], texc0: [1.0, 0.0], norm: [0.0, 0.0, -1.0]},
-//    Vertex {pos: [(-1.0*s+0.0*c), (-1.0*(-c)+0.0*s), 0.0],color: [0.0,0.5,0.5], texc0: [0.0, 0.0], norm: [0.0, 0.0, -1.0]},
-//  ];
-//
-//  unsafe {
-//    upload_into_buffer(&data.vertex_buffer, &vtc[..]);
-//  }
+  
   let z=(f64::sin(data.tick*10.)*2.) as f32;
 
   let mut d=f32::sqrt(x*x+y*y);
@@ -219,7 +251,7 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
 
 //  println!("view: {:?}", &view_matrix);
   
-//  let pm = cgmath::perspective(deg(30.), aspect, 0.1, 20.);
+  let pm = cgmath::perspective(deg(30.), aspect, 0.1, 20.);
   let zfar=20.;
   let znear=0.1;
   let q = zfar/(zfar-znear);
@@ -236,34 +268,30 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
 
   populate_command_list(&data.command_list, &data.command_allocator, &data.srv_heap, data);
 
-  data.command_queue.execute_command_lists(&[&data.command_list]);
-  match data.swap_chain.present(0, 0) {
+  data.core.graphics_queue.execute_command_lists(&[&data.command_list]);
+  match data.swap_chain.swap_chain.present(0, 0) {
     Err(hr) => {
-      dump_info_queue(&data.iq);
+      dump_info_queue(data.core.info_queue.as_ref());
       panic!("Present failed with 0x{:x}", hr);
     },
     _ => (),
   }
-  dump_info_queue(&data.iq);
+  dump_info_queue(data.core.info_queue.as_ref());
 }
 
 // TODO: split this into something more manageable.
 struct AppData {
+  core: DXCore,
+  swap_chain: DXSwapChain,
   viewport: D3D12_VIEWPORT,
   scissor_rect: D3D12_RECT,
-  swap_chain: DXGISwapChain3,
-  device: D3D12Device,
-  render_targets: Vec<D3D12Resource>,
   command_allocator: D3D12CommandAllocator,
-  command_queue: D3D12CommandQueue,
   root_signature: D3D12RootSignature,
-  rtv_heap: D3D12DescriptorHeap,
   srv_heap: D3D12DescriptorHeap,
   sam_heap: D3D12DescriptorHeap,
   dsd_heap: D3D12DescriptorHeap,
   pipeline_state: D3D12PipelineState,
   command_list: D3D12GraphicsCommandList,
-  rtv_descriptor_size: SIZE_T,
   vertex_buffer: D3D12Resource,
   vertex_buffer_view: D3D12_VERTEX_BUFFER_VIEW,
   constant_buffer: D3D12Resource,
@@ -272,9 +300,7 @@ struct AppData {
   frame_index: UINT,
   fence_event: HANDLE,
   fence: D3D12Fence,
-  fence_value: UINT64,
   tick: f64,
-  iq: D3D12InfoQueue,
 }
 
 impl fmt::Debug for AppData {
@@ -283,21 +309,21 @@ impl fmt::Debug for AppData {
   }
 }
 
-fn wait_for_prev_frame(data: &mut AppData) {
-  let fence_value=data.fence_value;
-  data.command_queue.signal(&mut data.fence, fence_value).unwrap();
-  data.fence_value += 1;
-  if data.fence.get_completed_value() < fence_value {
-    match data.fence.set_event_on_completion(fence_value, data.fence_event) {
+fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &HANDLE) {
+  // TODO: Look for overflow behaviour of atomics
+  let fence_value = core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
+
+  core.graphics_queue.signal(fence, fence_value).unwrap();
+  if fence.get_completed_value() < fence_value {
+    match fence.set_event_on_completion(fence_value, *fence_event) {
       Ok(_) => (),
       Err(hr) => {
-        dump_info_queue(&mut data.iq);
+        dump_info_queue(core.info_queue.as_ref());
         panic!("set_event_on_completion error: 0x{:x}",hr);
       },
     }
-    unsafe { WaitForSingleObject(data.fence_event, INFINITE) };
+    unsafe { WaitForSingleObject(*fence_event, INFINITE) };
   }
-  data.frame_index = data.swap_chain.get_current_back_buffer_index();
 }
 
 fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_allocator: &D3D12CommandAllocator, srv_heap: &D3D12DescriptorHeap, data: &AppData) {
@@ -320,11 +346,11 @@ fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_alloca
 
   if d_info {debug!("Resource barrier")};
   command_list.resource_barrier(
-      &mut [*ResourceBarrier::transition(&data.render_targets[data.frame_index as usize],
+      &mut [*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
       D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET).flags(D3D12_RESOURCE_BARRIER_FLAG_NONE)]);
 
-  let mut rtvh=data.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
-  rtvh.ptr += (data.frame_index as SIZE_T)*data.rtv_descriptor_size;
+  let mut rtvh=data.swap_chain.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
+  rtvh.ptr += (data.frame_index as SIZE_T)*data.swap_chain.rtv_dsize;
   let dsvh = data.dsd_heap.get_cpu_descriptor_handle_for_heap_start();
   if d_info {debug!("OM set render targets")};
   command_list.om_set_render_targets(1, &rtvh, Some(&dsvh));
@@ -354,35 +380,35 @@ fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_alloca
   command_list.draw_instanced(num_vtx, 1, 0, 0);
   
   command_list.resource_barrier(
-      &mut [*ResourceBarrier::transition(&data.render_targets[data.frame_index as usize],
+      &mut [*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
       D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
 
   match command_list.close() {
     Ok(_) => {},
     Err(hr) => {
-      dump_info_queue(&data.iq);
+      dump_info_queue(data.core.info_queue.as_ref());
       panic!("command_list.close() failed with 0x{:x}", hr);
     },
   }
 }
 
-fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
-   wait_for_prev_frame(data);
-   drop_render_targets(data);
-   let desc=data.swap_chain.get_desc().unwrap();
-   let res=data.swap_chain.resize_buffers(0, w, h, desc.BufferDesc.Format, desc.Flags);
-   println!("Resize to {},{}. Result:{:?}",w,h,res);
+fn on_resize(data: &mut AppData, w: u32, h: u32, _: u32) {
+   wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
+   drop_render_targets(&mut data.swap_chain);
+   let desc = data.swap_chain.swap_chain.get_desc().unwrap();
+   let res = data.swap_chain.swap_chain.resize_buffers(0, w, h, desc.BufferDesc.Format, desc.Flags);
+   info!("Resize to {},{}. Result:{:?}",w,h,res);
    match res {
      Err(hr) => {
-       dump_info_queue(&data.iq);
+       dump_info_queue(data.core.info_queue.as_ref());
        error!("resize_buffers returned 0x{:x}", hr);
      },
      _ => (),
    };
-   reaquire_render_targets(data).unwrap();
+   reaquire_render_targets(&data.core, &mut data.swap_chain).unwrap();
    // create new depth stencil
    let ds_format = DXGI_FORMAT_D32_FLOAT;
-   data.depth_stencil = Some(create_depth_stencil(w as u64, h as u32, ds_format, &data.device, &data.dsd_heap, 0).unwrap());
+   data.depth_stencil = Some(create_depth_stencil(w as u64, h as u32, ds_format, &data.core.dev, &data.dsd_heap, 0).unwrap());
   
    data.viewport=D3D12_VIEWPORT {
      TopLeftX: 0.,
@@ -401,19 +427,18 @@ fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
   //on_render(data, 1, 1);
 }
 
-fn drop_render_targets(data: &mut AppData) {
-  data.render_targets.truncate(0);
+fn drop_render_targets(sc: &mut DXSwapChain) {
+  sc.render_targets.truncate(0);
 }
 
-fn reaquire_render_targets(data: &mut AppData) -> HResult<()> {
-  wait_for_prev_frame(data);
-  let mut cdh=data.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
-  data.render_targets.truncate(0);
-  for i in 0..FRAME_COUNT {
-    let buf=try!(data.swap_chain.get_buffer::<D3D12Resource>(i as u32));
-    data.device.create_render_target_view(Some(&buf), None, cdh);
-    cdh.ptr += data.rtv_descriptor_size;
-    data.render_targets.push(buf);
+fn reaquire_render_targets(core: &DXCore, sc: &mut DXSwapChain) -> HResult<()> {
+  let mut cdh = sc.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
+  sc.render_targets.truncate(0);
+  for i in 0 .. sc.frame_count {
+    let buf=try!(sc.swap_chain.get_buffer::<D3D12Resource>(i as u32));
+    core.dev.create_render_target_view(Some(&buf), None, cdh);
+    cdh.ptr += sc.rtv_dsize;
+    sc.render_targets.push(buf);
   }
   Ok(())
 }
@@ -471,10 +496,122 @@ fn upload_into_texture(clist: &D3D12GraphicsCommandList, tex: &D3D12Resource, w:
   clist.copy_texture_region(&dest, 0, 0, 0, &src, None); 
 
   // TODO: make wrapper for D3D12GraphicsCommand list to keep referenced resources alive
+  // or just execute_command_lists here. Yes. Create command list here, to avoid command list reuse issues at the cost of init performance.
   Ok(res_buf)
 }
 
-fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppData,D3D12InfoQueue> {
+struct DXCore {
+  dev: D3D12Device,
+  graphics_queue: D3D12CommandQueue,
+  compute_queue: D3D12CommandQueue,
+  copy_queue: D3D12CommandQueue,
+  dxgi_factory: DXGIFactory4,
+  info_queue: Option<D3D12InfoQueue>,
+  fence_value: Arc<AtomicUsize>,
+}
+
+fn create_core(adapter: Option<&DXGIAdapter1>, feature_level: D3D_FEATURE_LEVEL, enable_debug: bool) -> Result<DXCore, String> {
+  if enable_debug {
+    try!(get_debug_interface()
+      .map_err(|hr|format!("get_debug_interface failed with 0x{:x}", hr))
+    ).enable_debug_layer();
+  };
+  let dev = try!(d3d12_create_device(adapter, feature_level)
+        .map_err(|hr|format!("d3d12_create_device failed with 0x{:x}", hr)));
+
+  let info_queue = 
+    if enable_debug {
+      let info_queue: D3D12InfoQueue = 
+        try!(dev.query_interface()
+            .map_err(|hr|format!("dev.query_interface::<D3D12InfoQueue> failed with 0x{:x}", hr)));
+      Some(info_queue)
+    } else {
+      None
+    };
+
+  let factory: DXGIFactory4 = try!(create_dxgi_factory2()
+        .map_err(|hr| format!("create_dxgi_factory2 failed with 0x{:x}", hr)));
+
+  let gqd=D3D12_COMMAND_QUEUE_DESC{
+    Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
+    Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
+    Priority: 0,
+    NodeMask: 0,
+  };
+
+  let gr_q = try!(dev.create_command_queue(&gqd)
+        .map_err(|hr|format!("create_command_queue for graphics queue failed with 0x{:x}", hr)));
+  
+  let cqd=D3D12_COMMAND_QUEUE_DESC{
+    Type: D3D12_COMMAND_LIST_TYPE_COMPUTE, .. gqd
+  };
+  let cm_q = try!(dev.create_command_queue(&cqd)
+        .map_err(|hr|format!("create_command_queue for compute queue failed with 0x{:x}", hr)));
+
+  let pqd = D3D12_COMMAND_QUEUE_DESC {
+    Type: D3D12_COMMAND_LIST_TYPE_COPY, .. gqd
+  };
+
+  let cp_q = try!(dev.create_command_queue(&pqd)
+        .map_err(|hr|format!("create_command_queue for copy queue failed with 0x{:x}", hr)));
+
+  Ok(DXCore {
+    dev: dev,
+    graphics_queue: gr_q,
+    compute_queue: cm_q,
+    copy_queue: cp_q,
+    dxgi_factory: factory,
+    info_queue: info_queue,
+    fence_value: Arc::new(AtomicUsize::new(1)), // not zero, as D3D12Fence::get_completed_value() returns zero before fence is reached.
+  })
+}
+
+struct DXSwapChain {
+  swap_chain: DXGISwapChain3,
+  render_targets: Vec<D3D12Resource>,
+  rtv_heap: D3D12DescriptorHeap,
+  rtv_dsize: SIZE_T, // render target view descriptor size  
+  frame_count: u32,
+}
+
+fn create_swap_chain(core: &DXCore, desc: &DXGI_SWAP_CHAIN_DESC1, hwnd: HWND, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> Result<DXSwapChain, String> {
+  let swap_chain: DXGISwapChain3 = 
+    match core.dxgi_factory.create_swap_chain_for_hwnd(&core.graphics_queue, hwnd, desc, fullscreen_desc, restrict_to_output) {
+      Err(hr) => return Err(format!("create_swap_chain failed with 0x{:x}",hr)),
+      Ok(i) => try!(i.query_interface()
+                    .map_err(|hr|format!("query_interface::<DXGISwapChain3> failed with 0x{:x}",hr))),
+    };
+  let frame_count = desc.BufferCount;
+
+  let rtvhd=D3D12_DESCRIPTOR_HEAP_DESC {
+    NumDescriptors: frame_count,
+    Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
+    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
+    NodeMask: 0,
+  };
+  let rtvheap = try!(core.dev.create_descriptor_heap(&rtvhd)
+                    .map_err(|hr|format!("create_descriptor_heap failed with 0x{:x}",hr)));
+  let rtvdsize=core.dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_RTV) as SIZE_T;
+  let mut cdh=rtvheap.get_cpu_descriptor_handle_for_heap_start();
+  let mut render_targets=vec![];
+
+  for i in 0..frame_count {
+    let buf = try!(swap_chain.get_buffer::<D3D12Resource>(i as u32)
+                   .map_err(|hr|format!("swap_chain.get failed with 0x{:x}",hr)));
+    core.dev.create_render_target_view(Some(&buf), None, cdh);
+    cdh.ptr += rtvdsize;
+    render_targets.push(buf);
+  }
+  Ok(DXSwapChain {
+    swap_chain: swap_chain,
+    render_targets: render_targets,
+    rtv_heap: rtvheap,
+    rtv_dsize: rtvdsize,
+    frame_count: frame_count,
+  })
+}
+
+fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppData, Option<D3D12InfoQueue>> {
   let w=512.;
   let h=256.;
   let hwnd=wnd.get_hwnd();
@@ -494,107 +631,24 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     top: 0,
   };
 
-  debug!("Debug");
-  let debug=get_debug_interface().unwrap();
-  debug.enable_debug_layer();
+  let core = create_core(adapter, D3D_FEATURE_LEVEL_11_0, true).map_err(|err|panic!("Cannot create DXCore: {}", err)).unwrap();
 
-  debug!("Factory");
-  let factory: DXGIFactory4 = create_dxgi_factory2().unwrap();
-  debug!("Device");
-  let dev = 
-    match d3d12_create_device(adapter, D3D_FEATURE_LEVEL_11_0) {
-      Ok(dev) => dev,
-      Err(hr) => {
-        panic!("create device failed with 0x{:x}", hr)
-//        warn!("Fallback to warp adapter");
-//        debug!("Warp");
-//        let warp: DXGIAdapter = factory.enum_warp_adapter().unwrap();
-//        d3d12_create_device(Some(&warp), D3D_FEATURE_LEVEL_11_0).expect("Cannot create warp device")
-      },
-    };
-  debug!("LUID");
-  let luid=dev.get_adapter_luid();
-  debug!("Adapter LUID {:?}", luid);
-
-  debug!("Info queue");
-  let info_queue: D3D12InfoQueue = dev.query_interface().unwrap();
-
-  let mut opts: D3D12_FEATURE_DATA_D3D12_OPTIONS = unsafe{ mem::uninitialized::<_>() };
-  debug!("Check feature support: options");
-  dev.check_feature_support_options(&mut opts).unwrap();
-  info!("{:#?}",opts);
-
-  let fl_array=[D3D_FEATURE_LEVEL_9_1, D3D_FEATURE_LEVEL_9_2, D3D_FEATURE_LEVEL_9_3, 
-                D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_11_0, 
-                D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_12_0,
-                D3D_FEATURE_LEVEL_12_1, ];
-  let mut feat_levels=D3D12_FEATURE_DATA_FEATURE_LEVELS {
-      NumFeatureLevels: fl_array.len() as UINT,
-      pFeatureLevelsRequested: fl_array.as_ptr(),
-      MaxSupportedFeatureLevel: D3D_FEATURE_LEVEL_9_1,
-    };
-  debug!("Check feature support: levels");
-  dev.check_feature_support_feature_levels(&mut feat_levels).unwrap();
-  info!("Max supported feature level: {:?}", feat_levels.MaxSupportedFeatureLevel);
-
-  let qd=D3D12_COMMAND_QUEUE_DESC{
-    Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
-    Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
-    Priority: 0,
-    NodeMask: 0,
-  };
-  debug!("Command queue");
-  let cqueue=dev.create_command_queue(&qd).unwrap();
-
-  let mut scd=DXGI_SWAP_CHAIN_DESC{
-    BufferCount: FRAME_COUNT,
-    BufferDesc: DXGI_MODE_DESC{
-        Width: w as UINT,
-        Height: h as UINT,
-        RefreshRate: DXGI_RATIONAL {Numerator:0, Denominator: 0},
-        Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-        ScanlineOrdering: DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED,
-        Scaling: DXGI_MODE_SCALING_UNSPECIFIED,
-      },
-    SampleDesc: DXGI_SAMPLE_DESC {Count:1, Quality: 0,},
+  let sc_desc = DXGI_SWAP_CHAIN_DESC1 {
+    Width: w as u32,
+    Height: h as u32,
+    Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+    Stereo: 0,
+    SampleDesc: sample_desc_default(),
     BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
-    SwapEffect: DXGI_SWAP_EFFECT_FLIP_DISCARD,
-    OutputWindow: hwnd,
-    Windowed: 1,
-    Flags: 0,
+    BufferCount: FRAME_COUNT,
+    Scaling: DXGI_SCALING_NONE,
+    SwapEffect: DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
+    AlphaMode: DXGI_ALPHA_MODE_UNSPECIFIED,
+    Flags: DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH.0,
   };
-  debug!("Swap chain");
-  let swap_chain: DXGISwapChain3 = 
-    match factory.create_swap_chain(&cqueue, &mut scd) {
-      Err(hr) => {
-        println!("create_swap_chain failed with 0x{:x}",hr);
-        return Err(info_queue.clone());
-      },
-      Ok(i) => 
-        i.query_interface().unwrap(),
-    };
-//  info!("Maximum frame latency: {}", swap_chain.get_maximum_frame_latency().unwrap());
-//  debug!("Swap chain: get_maximum_frame_latency");
-  //println!("{:?}", &scd);
-  let frame_index=swap_chain.get_current_back_buffer_index();
-  println!("Frame index: {}", &frame_index);
-  let rtvhd=D3D12_DESCRIPTOR_HEAP_DESC{
-    NumDescriptors: FRAME_COUNT,
-    Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-    NodeMask: 0,
-  };
-  debug!("RTV descriptor heap");
-  let rtvheap=dev.create_descriptor_heap(&rtvhd).unwrap(); 
-  let rtvdsize=dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_RTV) as SIZE_T;
-  let mut cdh=rtvheap.get_cpu_descriptor_handle_for_heap_start();
-  let mut render_targets=vec![];
-  for i in 0..FRAME_COUNT {
-    let buf=swap_chain.get_buffer::<D3D12Resource>(i as u32).unwrap();
-    dev.create_render_target_view(Some(&buf), None, cdh);
-    cdh.ptr += rtvdsize;
-    render_targets.push(buf);
-  }
+
+  let swap_chain = try!(create_swap_chain(&core, &sc_desc, hwnd, None, None)
+                      .map_err(|msg|{error!("{}",msg);core.info_queue.clone()}));
 
   let srv_hd=D3D12_DESCRIPTOR_HEAP_DESC{
     NumDescriptors: 2, // first for texture, second for constants
@@ -603,16 +657,16 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     NodeMask: 0,
   };
   debug!("SRV descriptor heap");
-  let srv_heap=dev.create_descriptor_heap(&srv_hd).unwrap();
+  let srv_heap = core.dev.create_descriptor_heap(&srv_hd).unwrap();
 
-  let sam_hd=D3D12_DESCRIPTOR_HEAP_DESC{
+  let sam_hd = D3D12_DESCRIPTOR_HEAP_DESC{
     NumDescriptors: 1,
     Type: D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
     Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
     NodeMask: 0,
   };
   debug!("Sampler descriptor heap");
-  let sam_heap=dev.create_descriptor_heap(&sam_hd).unwrap();
+  let sam_heap = core.dev.create_descriptor_heap(&sam_hd).unwrap();
 
   let dsd_hd=D3D12_DESCRIPTOR_HEAP_DESC{
     NumDescriptors: 1,
@@ -620,7 +674,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
     NodeMask: 0,
   };
-  let dsd_heap=dev.create_descriptor_heap(&dsd_hd).unwrap();
+  let dsd_heap = core.dev.create_descriptor_heap(&dsd_hd).unwrap();
 
   let sampler_desc = D3D12_SAMPLER_DESC {
     Filter: D3D12_FILTER_MIN_MAG_MIP_LINEAR,
@@ -635,10 +689,10 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     BorderColor: [1.0,1.0,1.0,1.0],
   };
   debug!("Sampler");
-  dev.create_sampler(&sampler_desc, sam_heap.get_cpu_descriptor_handle_for_heap_start());
+  core.dev.create_sampler(&sampler_desc, sam_heap.get_cpu_descriptor_handle_for_heap_start());
 
   debug!("Command allocator");
-  let callocator=dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT).unwrap();
+  let callocator = core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT).unwrap();
 
   let static_samplers = vec![
     D3D12_STATIC_SAMPLER_DESC {
@@ -701,10 +755,10 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   let blob=try!(d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1)
         .map_err(|hr|{
           error!("HRESULT=0x{:x}",hr);
-          info_queue.clone()}));
+          core.info_queue.clone()}));
 
   debug!("Root signature");
-  let root_sign=dev.create_root_signature(0, blob_as_slice(&blob)).unwrap();
+  let root_sign = core.dev.create_root_signature(0, blob_as_slice(&blob)).unwrap();
 
   let compile_flags=0;
   debug!("Vertex shader");
@@ -714,7 +768,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
 
   let input_elts_desc = Vertex::generate(0);
 
-  let pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+  let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
     pRootSignature: root_sign.iptr() as *mut _,
     VS: D3D12_SHADER_BYTECODE {
       pShaderBytecode: vshader.as_ptr() as *const _,
@@ -739,37 +793,27 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     .. graphics_pipeline_state_desc_default()
   };
   debug!("Graphics pipeline state");
-  let gps=match dev.create_graphics_pipeline_state(&pso_desc) {
+  let gps=match core.dev.create_graphics_pipeline_state(&pso_desc) {
       Ok(gps) => gps,
-      Err(_) => {return Err(info_queue);},
+      Err(_) => {return Err(core.info_queue.clone());},
     };
+  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
   debug!("Command list");
-  let command_list : D3D12GraphicsCommandList = dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
+  let command_list: D3D12GraphicsCommandList = core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
   
   // ------------------- Vertex buffer resource init begin ----------------------------
-
-//  let vtc=vec![
-//    Vertex {pos: [0.0, 0.5, 2.0],   color: [1.0,0.0,0.0], texc0: [0.0, 0.16667], norm: [0.0, 0.0, -1.0]},
-//    Vertex {pos: [0.5, -0.5, 2.0],  color: [0.0,1.0,0.0], texc0: [0.66667, 0.0], norm: [0.0, 0.0, -1.0]},
-//    Vertex {pos: [-0.5, -0.5, 2.0], color: [0.0,0.0,1.0], texc0: [0.66667, 0.33333], norm: [0.0, 0.0, -1.0]},
-//    Vertex {pos: [0.0, -1.0, 2.0],  color: [0.0,0.7,0.7], texc0: [1.0, 0.16667], norm: [0.0, 0.0, -1.0]},
-//  ];
 
   let (_,vtc) = cube::<Vertex>(0.5);
 
   let vbuf_size = mem::size_of_val(&vtc[..]);
 
   let heap_prop = heap_properties_upload();
-//  let heap_prop=dev.get_custom_heap_properties(0, D3D12_HEAP_TYPE_UPLOAD);
 
-//  debug!("dev.iptr: 0x{:x}, lpVtbl: 0x{:x}", dev.iptr() as usize, unsafe{ (*dev.iptr()).lpVtbl as usize});
-//  debug!("Heap properties: {:#?}", &heap_prop);
-  
   let res_desc = resource_desc_buffer(vbuf_size as u64);
   info!("Resource desc: {:#?}", &res_desc);
 
   debug!("Vertex buffer");
-  let vbuf=try!(dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|info_queue.clone()));
+  let vbuf = try!(core.dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|core.info_queue.clone()));
 
   unsafe{
     upload_into_buffer(&vbuf, &vtc[..]);
@@ -791,7 +835,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   let cbuf_data = Constants{ model: world_matrix, view: view_matrix, proj: proj_matrix, n_model: world_matrix, light_pos: [-1.,0.,0.]};
   let cbsize = mem::size_of_val(&cbuf_data);
 
-  let cbuf = dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(cbsize as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None).unwrap();
+  let cbuf = core.dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(cbsize as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None).unwrap();
   unsafe {
     upload_into_buffer(&cbuf, &[cbuf_data]);
   };
@@ -802,11 +846,11 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
       SizeInBytes: ((cbsize+255) & !255) as u32,
   };
 
-  let srv_dsize=dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
-  let mut const_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
+  let srv_dsize = core.dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
+  let mut const_dh = srv_heap.get_cpu_descriptor_handle_for_heap_start();
   const_dh.ptr += srv_dsize; // constant buffer descriptor is second in descriptor heap
   debug!("Create shader resource view: texture");
-  dev.create_constant_buffer_view(Some(&cbview), const_dh);
+  core.dev.create_constant_buffer_view(Some(&cbview), const_dh);
 
   // ------------------- Constant buffer resource init end  -----------------------------
 
@@ -815,11 +859,11 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   let tex_w=256usize;
   let tex_h=256usize;
 
-  let tex_desc = resource_desc_tex2d_nomip(tex_w as u64, tex_h as u32, DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_FLAG_NONE);
+  let tex_desc = resource_desc_tex2d_nomip(tex_w as u64, tex_h as u32, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, D3D12_RESOURCE_FLAG_NONE);
   info!("Texture desc: {:#?}", &res_desc);
 
   debug!("Texture resource");
-  let tex_resource=try!(dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST, None).map_err(|_|info_queue.clone()));
+  let tex_resource = try!(core.dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST, None).map_err(|_|core.info_queue.clone()));
   
   let mut texdata: Vec<u32> = vec![0xff00ffff; tex_w*tex_h as usize];
   for v in &mut texdata[..] {
@@ -827,15 +871,15 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   }
   // temporary buffer should live until the start of command list execution
   //#[allow(unused_variables)]
-  let _temp_buf=try!(upload_into_texture(&command_list, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|info_queue.clone()));
+  let _temp_buf=try!(upload_into_texture(&command_list, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|core.info_queue.clone()));
 
   command_list.resource_barrier(&mut [*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
-  let mut srv_desc = shader_resource_view_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM);
+  let mut srv_desc = shader_resource_view_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 
-  let mut srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
+  let srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
   debug!("Create shader resource view: texture");
-  dev.create_shader_resource_view(Some(&tex_resource), Some(&srv_desc), srv_dh);
+  core.dev.create_shader_resource_view(Some(&tex_resource), Some(&srv_desc), srv_dh);
 
   // Data transfer from upload buffer into texture will be performed at execute_command_lists below.
   // ------------------- Texture resource init end  -----------------------------
@@ -843,94 +887,88 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   // ------------------- Depth stencil buffer init begin ------------------------
   
   let ds_format = DXGI_FORMAT_D32_FLOAT;
-  let ds_res = try!(create_depth_stencil(w as u64, h as u32, ds_format, &dev, &dsd_heap, 0).map_err(|_|info_queue.clone()));
+  let ds_res = try!(create_depth_stencil(w as u64, h as u32, ds_format, &core.dev, &dsd_heap, 0).map_err(|_|core.info_queue.clone()));
 
   // ------------------- Depth stencil buffer init end --------------------------
 
   debug!("fence");
-  let fence=dev.create_fence(0, D3D12_FENCE_FLAG_NONE).unwrap();
+  let fence=core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE).unwrap();
 
-  let fence_val=1u64;
   let fence_event = unsafe{ CreateEventW(ptr::null_mut(), 0, 0, ptr::null_mut()) };
   debug!("fence_event");
   if fence_event == ptr::null_mut() {
     panic!("Cannot create event");
   }
   
-  let mut ret=
+  let ret=
     AppData {
+      core: core,
+      swap_chain: swap_chain,
       viewport: viewport,
       scissor_rect: sci_rect,
-      swap_chain: swap_chain,
-      device: dev,
-      render_targets: render_targets,
       command_allocator: callocator,
-      command_queue: cqueue,
       root_signature: root_sign,
-      rtv_heap: rtvheap,
       srv_heap: srv_heap,
       sam_heap: sam_heap,
       dsd_heap: dsd_heap,
       pipeline_state: gps,
       command_list: command_list,
-      rtv_descriptor_size: rtvdsize,
       vertex_buffer: vbuf,
       vertex_buffer_view: vbview,
       constant_buffer: cbuf,
       tex_resource: tex_resource,
       depth_stencil: Some(ds_res),
-      frame_index: frame_index,
+      frame_index: 0,
       fence_event: fence_event,
       fence: fence,
-      fence_value: fence_val,
       tick: 0.0,
-      iq: info_queue,
     };
   
   debug!("Command list Close");
   ret.command_list.close().unwrap();
 
   debug!("Command queue execute");
-  ret.command_queue.execute_command_lists(&[&ret.command_list]);
+  ret.core.graphics_queue.execute_command_lists(&[&ret.command_list]);
   
   debug!("wait_for_prev_frame");
-  wait_for_prev_frame(&mut ret);
+  wait_for_graphics_queue(&ret.core, &ret.fence, &ret.fence_event);
   Ok(ret)
 }
 
-fn dump_info_queue(iq: &D3D12InfoQueue) {
-  let iq=iq;
-  let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
-  //println!("Number of debug messages is {}", mnum);
-  for i in 0..mnum {
-    let mut sz = 0;
-    let _ = iq.get_message(i, None,&mut sz);
-    //info!("get_message returned {:?}", hr); // It is the case when hr!=0 and it's ok
-    // create buffer to receive message
-    let mut arr: Vec<u8> = Vec::with_capacity(sz as usize); 
-    let mut sz1=sz; 
-    unsafe {
-      // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
-      // it should be Option<&[u8]>, but I don't have annotation for that yet.
-      let _ = iq.get_message(i, Some(mem::transmute(arr.as_ptr())), &mut sz1); 
-      assert_eq!(sz, sz1); // just to be sure. hr is Err(1) on success.
-      // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
-      let msg: D3D12_MESSAGE = mem::transmute_copy(&(*arr.as_ptr()));
-      // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
-      let cdescr = ::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
-      let descr = String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
-      match msg.Severity {
-        D3D12_MESSAGE_SEVERITY_CORRUPTION |
-        D3D12_MESSAGE_SEVERITY_ERROR =>
-          {error!("{:}", descr)},
-        D3D12_MESSAGE_SEVERITY_WARNING =>
-          {warn!("{:}", descr)},
-        _ =>
-          {debug!("{:}", descr)},
+fn dump_info_queue(iq: Option<&D3D12InfoQueue>) {
+  if let Some(iq)=iq {
+    let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
+    //println!("Number of debug messages is {}", mnum);
+    for i in 0..mnum {
+      let mut sz = 0;
+      let _ = iq.get_message(i, None,&mut sz);
+      //info!("get_message returned {:?}", hr); // It is the case when hr!=0 and it's ok
+      // create buffer to receive message
+      let arr: Vec<u8> = Vec::with_capacity(sz as usize); 
+      let mut sz1=sz; 
+      unsafe {
+        // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
+        // it should be Option<&[u8]>, but I don't have annotation for that yet.
+        let _ = iq.get_message(i, Some(mem::transmute(arr.as_ptr())), &mut sz1); 
+        assert_eq!(sz, sz1); // just to be sure. hr is Err(1) on success.
+        // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
+        let msg: D3D12_MESSAGE = mem::transmute_copy(&(*arr.as_ptr()));
+        // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
+        let cdescr = ::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
+        let descr = String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
+        match msg.Severity {
+          D3D12_MESSAGE_SEVERITY_CORRUPTION |
+          D3D12_MESSAGE_SEVERITY_ERROR =>
+            {error!("{:}", descr)},
+          D3D12_MESSAGE_SEVERITY_WARNING =>
+            {warn!("{:}", descr)},
+          _ =>
+            {debug!("{:}", descr)},
+        }
       }
-    }
-  };
-  iq.clear_stored_messages();
+    };
+    iq.clear_stored_messages();
+  }
 }
 
 fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12Device, 
