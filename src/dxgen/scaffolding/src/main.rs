@@ -160,7 +160,7 @@ fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
   }
 
   let data=
-    match create_appdata(&wnd, Some(&adapter)) { //Some(&factory.enum_adapters1(2).unwrap().query_interface().unwrap())) {
+    match create_appdata(&wnd, Some(&adapter)) { 
       Ok(appdata) => {
         Rc::new(RefCell::new(appdata))
       },
@@ -178,7 +178,9 @@ fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
   let mut x=0;
   let mut y=0;
   let mut frame_count = 0;
+  let mut avg_fps = 0;
   let mut start = precise_time_s();
+  let mut mstart = start;
   for mmsg in wnd.poll_events() {
     if let Some(msg) = mmsg {
       //println!("{} ", msg.message);
@@ -194,13 +196,13 @@ fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
       //std::thread::sleep_ms(1);
       frame_count += 1;
       let now = precise_time_s();
-      //let frametime = now-start;
-      //start = now;
-      //print!("FPS: {:4.3}   \r" , 1.0/frametime);
+      let frametime = now - mstart;
+      mstart = now;
+      print!("FPS: {:4.3}\tAvg. FPS: {}        \r" , 1.0/frametime, avg_fps);
       if now<start || now>=(start+1.0) {
         start = now;
-        print!("FPS: {}   \r" , frame_count);
-        ::std::io::Write::flush(&mut ::std::io::stdout());
+        let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
+        avg_fps = frame_count;
         frame_count = 0;
       }
     }
@@ -267,7 +269,7 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
   let zfar=20.;
   let znear=0.1;
   let q = zfar/(zfar-znear);
-  let proj_matrix: [[f32;4];4] = [[aspect, 0., 0., 0.,], [0., 1., 0., 0., ], [0., 0., q, -q*znear], [0., 0., 1., 0.], ];
+  let proj_matrix: [[f32;4];4] = [[aspect*2., 0., 0., 0.,], [0., 2., 0., 0., ], [0., 0., q, -q*znear], [0., 0., 1., 0.], ];
 
 //  println!("proj: {:?}", &proj_matrix);
   let (lx,ly) = f64::sin_cos(data.tick);
@@ -367,7 +369,7 @@ fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_alloca
   if d_info {debug!("OM set render targets")};
   command_list.om_set_render_targets(1, &rtvh, Some(&dsvh));
 
-  let mut clear_color = [0.01, 0.01, 0.15, 1.0];
+  let clear_color = [0.01, 0.01, 0.15, 1.0];
   if d_info {debug!("clear render target view")};
   command_list.clear_render_target_view(rtvh, &clear_color, &[]);
   command_list.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
@@ -489,7 +491,7 @@ fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usize, d
 
   debug!("create_committed_resource");
   let res_buf=try!(dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(total_size_bytes), D3D12_RESOURCE_STATE_GENERIC_READ, None));
-  res_buf.set_name("Temporary texture buffer".into());  
+  res_buf.set_name("Temporary texture buffer".into()).unwrap();
 
   let mut temp_buf = Vec::with_capacity(total_len);
   unsafe {
@@ -526,10 +528,10 @@ fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usize, d
     panic!("Cannot create event");
   }
 
-  let fv=10;
+  let fv=core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
   debug!("signal");
   try!(core.copy_queue.signal(&fence, fv));
-  //try!(core.copy_queue.wait(&fence, fv));
+  //try!(core.copy_queue.wait(&fence, fv)); // D3D12CommandQueue::wait doesn't work, or I do something wrong.
   if fence.get_completed_value() < fv {
     debug!("set_event_on_completion");
     try!(fence.set_event_on_completion(fv, fence_event));
@@ -564,7 +566,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   let sc_desc = DXGI_SWAP_CHAIN_DESC1 {
     Width: w as u32,
     Height: h as u32,
-    Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+    Format: DXGI_FORMAT_R8G8B8A8_UNORM, // note that create_swap_chain fails when Format is DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
     Stereo: 0,
     SampleDesc: sample_desc_default(),
     BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
@@ -575,7 +577,8 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     Flags: DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH.0,
   };
 
-  let swap_chain = try!(create_swap_chain(&core, &sc_desc, hwnd, None, None)
+  // so I pass DXGI_FORMAT_R8G8B8A8_UNORM_SRGB separately for use in render target view
+  let swap_chain = try!(create_swap_chain(&core, &sc_desc, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, hwnd, None, None)
                       .map_err(|msg|{error!("{}",msg);core.info_queue.clone()}));
 
   let srv_hd=D3D12_DESCRIPTOR_HEAP_DESC{
@@ -605,10 +608,10 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   let dsd_heap = core.dev.create_descriptor_heap(&dsd_hd).unwrap();
 
   let sampler_desc = D3D12_SAMPLER_DESC {
-    Filter: D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-    AddressU: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-    AddressV: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-    AddressW: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    Filter: D3D12_FILTER_ANISOTROPIC,
+    AddressU: D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+    AddressV: D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+    AddressW: D3D12_TEXTURE_ADDRESS_MODE_BORDER,
     MinLOD: 0.0,
     MaxLOD: D3D12_FLOAT32_MAX,
     MipLODBias: 0.0,
@@ -664,7 +667,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     },
   ];
 
-  let mut rs_parms = vec![
+  let rs_parms = vec![
     *RootParameter::descriptor_table(&desc_ranges[0..1], D3D12_SHADER_VISIBILITY_PIXEL),
     *RootParameter::descriptor_table(&desc_ranges[1..2], D3D12_SHADER_VISIBILITY_ALL),
     *RootParameter::descriptor_table(&desc_ranges[2..3], D3D12_SHADER_VISIBILITY_PIXEL),
@@ -720,12 +723,9 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     DSVFormat: DXGI_FORMAT_D32_FLOAT,
     .. graphics_pipeline_state_desc_default()
   };
-  debug!("Graphics pipeline state");
-  let gps=match core.dev.create_graphics_pipeline_state(&pso_desc) {
-      Ok(gps) => gps,
-      Err(_) => {return Err(core.info_queue.clone());},
-    };
   pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+  debug!("Graphics pipeline state");
+  let gps=try!(core.dev.create_graphics_pipeline_state(&pso_desc).map_err(|_|core.info_queue.clone()));
   debug!("Command list");
   let command_list: D3D12GraphicsCommandList = core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
   
@@ -802,7 +802,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   try!(upload_into_texture(&core, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|core.info_queue.clone()));
   command_list.resource_barrier(&mut [*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
-  let mut srv_desc = shader_resource_view_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+  let srv_desc = shader_resource_view_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 
   let srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
   debug!("Create shader resource view: texture");

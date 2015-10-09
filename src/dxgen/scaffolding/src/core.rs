@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use winapi::*;
 use d3d12_safe::*;
+use structwrappers::*;
 
 pub struct DXCore {
   pub dev: D3D12Device,
@@ -78,7 +79,7 @@ pub struct DXSwapChain {
   pub frame_count: u32,
 }
 
-pub fn create_swap_chain(core: &DXCore, desc: &DXGI_SWAP_CHAIN_DESC1, hwnd: HWND, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> Result<DXSwapChain, String> {
+pub fn create_swap_chain(core: &DXCore, desc: &DXGI_SWAP_CHAIN_DESC1, format: DXGI_FORMAT, hwnd: HWND, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> Result<DXSwapChain, String> {
   let swap_chain: DXGISwapChain3 = 
     match core.dxgi_factory.create_swap_chain_for_hwnd(&core.graphics_queue, hwnd, desc, fullscreen_desc, restrict_to_output) {
       Err(hr) => return Err(format!("create_swap_chain failed with 0x{:x}",hr)),
@@ -102,7 +103,7 @@ pub fn create_swap_chain(core: &DXCore, desc: &DXGI_SWAP_CHAIN_DESC1, hwnd: HWND
   for i in 0..frame_count {
     let buf = try!(swap_chain.get_buffer::<D3D12Resource>(i as u32)
                    .map_err(|hr|format!("swap_chain.get failed with 0x{:x}",hr)));
-    core.dev.create_render_target_view(Some(&buf), None, cdh);
+    core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(format)), cdh);
     cdh.ptr += rtvdsize;
     render_targets.push(buf);
   }

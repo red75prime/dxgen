@@ -334,6 +334,21 @@ pub fn depth_stencil_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_DEPTH
   ret
 }
 
+pub fn render_target_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_RENDER_TARGET_VIEW_DESC {
+  let mut ret = D3D12_RENDER_TARGET_VIEW_DESC {
+    Format: format,
+    ViewDimension: D3D12_RTV_DIMENSION_TEXTURE2D,
+    u: unsafe{ mem::uninitialized() },
+  };
+  unsafe {
+    *ret.Texture2D_mut() = D3D12_TEX2D_RTV {
+      MipSlice: 0,
+      PlaneSlice: 0,
+    };
+  };
+  ret
+}
+
 pub fn depth_stencil_clear_value_depth_f32() -> D3D12_CLEAR_VALUE {
   let mut ret = D3D12_CLEAR_VALUE {
     Format: DXGI_FORMAT_D32_FLOAT,
