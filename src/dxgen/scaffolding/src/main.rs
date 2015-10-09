@@ -50,7 +50,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 #[link(name="d3dcompiler")]
 extern {}
 
-const FRAME_COUNT : u32 = 2;
+const FRAME_COUNT : u32 = 3;
 
 type M4 = [[f32;4];4];
 
@@ -410,7 +410,7 @@ fn on_resize(data: &mut AppData, w: u32, h: u32, _: u32) {
    wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
    drop_render_targets(&mut data.swap_chain);
    let desc = data.swap_chain.swap_chain.get_desc().unwrap();
-   let res = data.swap_chain.swap_chain.resize_buffers(0, w, h, desc.BufferDesc.Format, desc.Flags);
+   let res = data.swap_chain.swap_chain.resize_buffers(0, w, h, DXGI_FORMAT_UNKNOWN, 0);
    //info!("Resize to {},{}. Result:{:?}",w,h,res);
    match res {
      Err(hr) => {
@@ -450,7 +450,7 @@ fn reaquire_render_targets(core: &DXCore, sc: &mut DXSwapChain) -> HResult<()> {
   sc.render_targets.truncate(0);
   for i in 0 .. sc.frame_count {
     let buf=try!(sc.swap_chain.get_buffer::<D3D12Resource>(i as u32));
-    core.dev.create_render_target_view(Some(&buf), None, cdh);
+    core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)), cdh);
     cdh.ptr += sc.rtv_dsize;
     sc.render_targets.push(buf);
   }
@@ -561,7 +561,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     top: 0,
   };
 
-  let core = create_core(adapter, D3D_FEATURE_LEVEL_11_0, true).map_err(|err|panic!("Cannot create DXCore: {}", err)).unwrap();
+  let core = try!(create_core(adapter, D3D_FEATURE_LEVEL_11_0, true).map_err(|err|panic!("Cannot create DXCore: {}", err)));
 
   let sc_desc = DXGI_SWAP_CHAIN_DESC1 {
     Width: w as u32,
@@ -800,6 +800,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   // temporary buffer should live until the start of command list execution
   //#[allow(unused_variables)]
   try!(upload_into_texture(&core, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|core.info_queue.clone()));
+  // upload_into_texture transition tex_resource into common state (it uses copy queue, so it can't set pixel_shader_resource state)
   command_list.resource_barrier(&mut [*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
   let srv_desc = shader_resource_view_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
@@ -808,7 +809,6 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   debug!("Create shader resource view: texture");
   core.dev.create_shader_resource_view(Some(&tex_resource), Some(&srv_desc), srv_dh);
 
-  // Data transfer from upload buffer into texture will be performed at execute_command_lists below.
   // ------------------- Texture resource init end  -----------------------------
 
   // ------------------- Depth stencil buffer init begin ------------------------
