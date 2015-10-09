@@ -7,4 +7,4 @@ Reads the D3D12 and DXGI header files using libclang and generates the correspon
 
 The program requires that path to 'libclang.dll' to be in PATH environment variable.
 
-![](http://i.imgur.com/zLHKwJx.png?1)
+![](http://i.imgur.com/0dofwl6.png)
