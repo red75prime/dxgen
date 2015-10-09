@@ -24,6 +24,7 @@ mod utils;
 mod gfx_d3d12;
 mod shape_gen;
 mod dxsems;
+mod core;
 
 use dxsems::VertexFormat;
 use winapi::*;
@@ -33,6 +34,7 @@ use kernel32::{CreateEventW, WaitForSingleObject};
 use std::ptr;
 use std::fmt;
 use std::mem;
+use std::env;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
@@ -42,6 +44,7 @@ use utils::*;
 use clock_ticks::*;
 use cgmath::*;
 use shape_gen::*;
+use core::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[link(name="d3dcompiler")]
@@ -95,6 +98,13 @@ fn main() {
   println!("0x{:x} then 0x{:x}", da_boom_p, da_boom_2);
   // It seems atomics don't panic on overflow
 
+  let mut adapters_to_test = vec![];
+  for arg in env::args() {
+    if let Ok(n) = arg.parse::<u32>() {
+      adapters_to_test.push(n);
+    }
+  }
+
   let vm = Matrix4::look_at(&Point3::new(0., 0., -3.), &Point3::new(0., 0., 0.), &Vector3::new(0., 1., 0.));
   println!("Look at: {:?}", vm);
   let pm = cgmath::perspective(deg(30.), 1.5, 0.1, 10.);
@@ -107,7 +117,9 @@ fn main() {
     let descr=adapter.get_desc1().unwrap();
     println!("Adapter {}: {}", i, wchar_array_to_string_lossy(&descr.Description));
     println!("   Dedicated video memory: {}MiB", descr.DedicatedVideoMemory/1024/1024);
-    adapters.push(adapter);
+    if adapters_to_test.len()==0 || adapters_to_test[..].contains(&i) {
+      adapters.push(adapter);
+    }
     i+=1;
   }
 
@@ -397,7 +409,7 @@ fn on_resize(data: &mut AppData, w: u32, h: u32, _: u32) {
    drop_render_targets(&mut data.swap_chain);
    let desc = data.swap_chain.swap_chain.get_desc().unwrap();
    let res = data.swap_chain.swap_chain.resize_buffers(0, w, h, desc.BufferDesc.Format, desc.Flags);
-   info!("Resize to {},{}. Result:{:?}",w,h,res);
+   //info!("Resize to {},{}. Result:{:?}",w,h,res);
    match res {
      Err(hr) => {
        dump_info_queue(data.core.info_queue.as_ref());
@@ -454,12 +466,12 @@ unsafe fn upload_into_buffer<T>(buf: &D3D12Resource, data: &[T]) {
   buf.unmap(0, None);
 }
 
-fn upload_into_texture(clist: &D3D12GraphicsCommandList, tex: &D3D12Resource, w: usize, h: usize, data: &[u32]) -> HResult<D3D12Resource> {
+fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usize, data: &[u32]) -> HResult<()> {
   debug!("upload_into_texture");
   debug!("get_desc tex.iptr(): 0x{:x}, vtbl: 0x{:x}, vtbl[0]: 0x{:x}", tex.iptr() as usize, unsafe{((*tex.iptr()).lpVtbl) as usize}, unsafe{(*(*tex.iptr()).lpVtbl).QueryInterface as usize});
   let desc = tex.get_desc();
   debug!("get_device");
-  let dev: D3D12Device = try!(tex.get_device());
+  let dev = &core.dev;
   let mut num_rows = [0];
   let mut row_size_bytes = [0];
   let mut total_size_bytes = 0;
@@ -493,122 +505,38 @@ fn upload_into_texture(clist: &D3D12GraphicsCommandList, tex: &D3D12Resource, w:
 
   let dest = texture_copy_location_index(&tex, 0);
   let src = texture_copy_location_footprint(&res_buf, &psfp[0]);
+
+  debug!("create_command_allocator");
+  let callocator = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COPY));
+  debug!("create_command_list");
+  let clist: D3D12GraphicsCommandList = try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COPY, &callocator, None));
   clist.copy_texture_region(&dest, 0, 0, 0, &src, None); 
+  clist.resource_barrier(&mut [*ResourceBarrier::transition(&tex, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON)]);
 
-  // TODO: make wrapper for D3D12GraphicsCommand list to keep referenced resources alive
-  // or just execute_command_lists here. Yes. Create command list here, to avoid command list reuse issues at the cost of init performance.
-  Ok(res_buf)
-}
+  debug!("Command list Close");
+  try!(clist.close());
 
-struct DXCore {
-  dev: D3D12Device,
-  graphics_queue: D3D12CommandQueue,
-  compute_queue: D3D12CommandQueue,
-  copy_queue: D3D12CommandQueue,
-  dxgi_factory: DXGIFactory4,
-  info_queue: Option<D3D12InfoQueue>,
-  fence_value: Arc<AtomicUsize>,
-}
-
-fn create_core(adapter: Option<&DXGIAdapter1>, feature_level: D3D_FEATURE_LEVEL, enable_debug: bool) -> Result<DXCore, String> {
-  if enable_debug {
-    try!(get_debug_interface()
-      .map_err(|hr|format!("get_debug_interface failed with 0x{:x}", hr))
-    ).enable_debug_layer();
-  };
-  let dev = try!(d3d12_create_device(adapter, feature_level)
-        .map_err(|hr|format!("d3d12_create_device failed with 0x{:x}", hr)));
-
-  let info_queue = 
-    if enable_debug {
-      let info_queue: D3D12InfoQueue = 
-        try!(dev.query_interface()
-            .map_err(|hr|format!("dev.query_interface::<D3D12InfoQueue> failed with 0x{:x}", hr)));
-      Some(info_queue)
-    } else {
-      None
-    };
-
-  let factory: DXGIFactory4 = try!(create_dxgi_factory2()
-        .map_err(|hr| format!("create_dxgi_factory2 failed with 0x{:x}", hr)));
-
-  let gqd=D3D12_COMMAND_QUEUE_DESC{
-    Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
-    Flags: D3D12_COMMAND_QUEUE_FLAG_NONE,
-    Priority: 0,
-    NodeMask: 0,
-  };
-
-  let gr_q = try!(dev.create_command_queue(&gqd)
-        .map_err(|hr|format!("create_command_queue for graphics queue failed with 0x{:x}", hr)));
-  
-  let cqd=D3D12_COMMAND_QUEUE_DESC{
-    Type: D3D12_COMMAND_LIST_TYPE_COMPUTE, .. gqd
-  };
-  let cm_q = try!(dev.create_command_queue(&cqd)
-        .map_err(|hr|format!("create_command_queue for compute queue failed with 0x{:x}", hr)));
-
-  let pqd = D3D12_COMMAND_QUEUE_DESC {
-    Type: D3D12_COMMAND_LIST_TYPE_COPY, .. gqd
-  };
-
-  let cp_q = try!(dev.create_command_queue(&pqd)
-        .map_err(|hr|format!("create_command_queue for copy queue failed with 0x{:x}", hr)));
-
-  Ok(DXCore {
-    dev: dev,
-    graphics_queue: gr_q,
-    compute_queue: cm_q,
-    copy_queue: cp_q,
-    dxgi_factory: factory,
-    info_queue: info_queue,
-    fence_value: Arc::new(AtomicUsize::new(1)), // not zero, as D3D12Fence::get_completed_value() returns zero before fence is reached.
-  })
-}
-
-struct DXSwapChain {
-  swap_chain: DXGISwapChain3,
-  render_targets: Vec<D3D12Resource>,
-  rtv_heap: D3D12DescriptorHeap,
-  rtv_dsize: SIZE_T, // render target view descriptor size  
-  frame_count: u32,
-}
-
-fn create_swap_chain(core: &DXCore, desc: &DXGI_SWAP_CHAIN_DESC1, hwnd: HWND, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> Result<DXSwapChain, String> {
-  let swap_chain: DXGISwapChain3 = 
-    match core.dxgi_factory.create_swap_chain_for_hwnd(&core.graphics_queue, hwnd, desc, fullscreen_desc, restrict_to_output) {
-      Err(hr) => return Err(format!("create_swap_chain failed with 0x{:x}",hr)),
-      Ok(i) => try!(i.query_interface()
-                    .map_err(|hr|format!("query_interface::<DXGISwapChain3> failed with 0x{:x}",hr))),
-    };
-  let frame_count = desc.BufferCount;
-
-  let rtvhd=D3D12_DESCRIPTOR_HEAP_DESC {
-    NumDescriptors: frame_count,
-    Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-    NodeMask: 0,
-  };
-  let rtvheap = try!(core.dev.create_descriptor_heap(&rtvhd)
-                    .map_err(|hr|format!("create_descriptor_heap failed with 0x{:x}",hr)));
-  let rtvdsize=core.dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_RTV) as SIZE_T;
-  let mut cdh=rtvheap.get_cpu_descriptor_handle_for_heap_start();
-  let mut render_targets=vec![];
-
-  for i in 0..frame_count {
-    let buf = try!(swap_chain.get_buffer::<D3D12Resource>(i as u32)
-                   .map_err(|hr|format!("swap_chain.get failed with 0x{:x}",hr)));
-    core.dev.create_render_target_view(Some(&buf), None, cdh);
-    cdh.ptr += rtvdsize;
-    render_targets.push(buf);
+  debug!("Command queue execute");
+  core.copy_queue.execute_command_lists(&[&clist]);
+  debug!("fence");
+  let fence=try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
+  debug!("fence_event");
+  let fence_event = unsafe{ CreateEventW(ptr::null_mut(), 0, 0, ptr::null_mut()) };
+  if fence_event == ptr::null_mut() {
+    panic!("Cannot create event");
   }
-  Ok(DXSwapChain {
-    swap_chain: swap_chain,
-    render_targets: render_targets,
-    rtv_heap: rtvheap,
-    rtv_dsize: rtvdsize,
-    frame_count: frame_count,
-  })
+
+  let fv=10;
+  debug!("signal");
+  try!(core.copy_queue.signal(&fence, fv));
+  //try!(core.copy_queue.wait(&fence, fv));
+  if fence.get_completed_value() < fv {
+    debug!("set_event_on_completion");
+    try!(fence.set_event_on_completion(fv, fence_event));
+    debug!("wait");
+    unsafe { WaitForSingleObject(fence_event, INFINITE) };
+  }
+  Ok(())
 }
 
 fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppData, Option<D3D12InfoQueue>> {
@@ -810,7 +738,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   let heap_prop = heap_properties_upload();
 
   let res_desc = resource_desc_buffer(vbuf_size as u64);
-  info!("Resource desc: {:#?}", &res_desc);
+  //info!("Resource desc: {:#?}", &res_desc);
 
   debug!("Vertex buffer");
   let vbuf = try!(core.dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|core.info_queue.clone()));
@@ -860,7 +788,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   let tex_h=256usize;
 
   let tex_desc = resource_desc_tex2d_nomip(tex_w as u64, tex_h as u32, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, D3D12_RESOURCE_FLAG_NONE);
-  info!("Texture desc: {:#?}", &res_desc);
+  //info!("Texture desc: {:#?}", &res_desc);
 
   debug!("Texture resource");
   let tex_resource = try!(core.dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST, None).map_err(|_|core.info_queue.clone()));
@@ -871,9 +799,8 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   }
   // temporary buffer should live until the start of command list execution
   //#[allow(unused_variables)]
-  let _temp_buf=try!(upload_into_texture(&command_list, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|core.info_queue.clone()));
-
-  command_list.resource_barrier(&mut [*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
+  try!(upload_into_texture(&core, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|core.info_queue.clone()));
+  command_list.resource_barrier(&mut [*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
   let mut srv_desc = shader_resource_view_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 
