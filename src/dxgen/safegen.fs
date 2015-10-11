@@ -1113,10 +1113,12 @@ fn opt_slice_to_ptr<T>(os: Option<&[T]>) -> *const T {
       |IAManual -> ()
       |IAAutogen opts ->
         let implSend = 
-          if Set.contains IOSend opts then
-            "unsafe impl Send for "+iname+" {}"
-          else
-            ""
+          opts |> Set.fold (
+              fun s opt ->
+                match opt with
+                |IOSend -> "unsafe impl Send for "+iname+" {}\r\n" + s
+                |IOSync -> "unsafe impl Sync for "+iname+" {}\r\n" + s
+            ) "" 
         apl <| sprintf "\
 pub struct %s(*mut I%s);
 %s

@@ -76,6 +76,7 @@ pub struct DXSwapChain {
   pub render_targets: Vec<D3D12Resource>,
   pub rtv_heap: D3D12DescriptorHeap,
   pub rtv_dsize: SIZE_T, // render target view descriptor size  
+  pub rtv_format: DXGI_FORMAT,
   pub frame_count: u32,
 }
 
@@ -112,6 +113,7 @@ pub fn create_swap_chain(core: &DXCore, desc: &DXGI_SWAP_CHAIN_DESC1, format: DX
     render_targets: render_targets,
     rtv_heap: rtvheap,
     rtv_dsize: rtvdsize,
+    rtv_format: format,
     frame_count: frame_count,
   })
 }

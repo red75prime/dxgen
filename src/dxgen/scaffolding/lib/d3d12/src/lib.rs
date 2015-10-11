@@ -142,6 +142,8 @@ impl D3D10Blob {
 }
 
 pub struct D3D12CommandAllocator(*mut ID3D12CommandAllocator);
+unsafe impl Sync for D3D12CommandAllocator {}
+unsafe impl Send for D3D12CommandAllocator {}
 
 impl HasIID for D3D12CommandAllocator {
   fn iid() -> REFGUID { &IID_ID3D12CommandAllocator }
@@ -478,6 +480,7 @@ impl D3D12Debug {
 }
 
 pub struct D3D12DescriptorHeap(*mut ID3D12DescriptorHeap);
+unsafe impl Send for D3D12DescriptorHeap {}
 
 impl HasIID for D3D12DescriptorHeap {
   fn iid() -> REFGUID { &IID_ID3D12DescriptorHeap }
@@ -1075,6 +1078,8 @@ impl D3D12Fence {
 }
 
 pub struct D3D12GraphicsCommandList(*mut ID3D12GraphicsCommandList);
+unsafe impl Sync for D3D12GraphicsCommandList {}
+unsafe impl Send for D3D12GraphicsCommandList {}
 
 impl HasIID for D3D12GraphicsCommandList {
   fn iid() -> REFGUID { &IID_ID3D12GraphicsCommandList }
@@ -2002,6 +2007,7 @@ impl D3D12Pageable {
 }
 
 pub struct D3D12PipelineState(*mut ID3D12PipelineState);
+unsafe impl Send for D3D12PipelineState {}
 
 impl HasIID for D3D12PipelineState {
   fn iid() -> REFGUID { &IID_ID3D12PipelineState }
@@ -2114,6 +2120,8 @@ impl D3D12QueryHeap {
 }
 
 pub struct D3D12Resource(*mut ID3D12Resource);
+unsafe impl Sync for D3D12Resource {}
+unsafe impl Send for D3D12Resource {}
 
 impl HasIID for D3D12Resource {
   fn iid() -> REFGUID { &IID_ID3D12Resource }
@@ -2250,6 +2258,7 @@ impl D3D12RootSignatureDeserializer {
 }
 
 pub struct D3D12RootSignature(*mut ID3D12RootSignature);
+unsafe impl Send for D3D12RootSignature {}
 
 impl HasIID for D3D12RootSignature {
   fn iid() -> REFGUID { &IID_ID3D12RootSignature }
@@ -2307,6 +2316,7 @@ impl D3D12RootSignature {
 
 pub struct DXGIAdapter1(*mut IDXGIAdapter1);
 unsafe impl Send for DXGIAdapter1 {}
+
 impl HasIID for DXGIAdapter1 {
   fn iid() -> REFGUID { &IID_IDXGIAdapter1 }
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIAdapter1(pp_vtbl as *mut _ as *mut IDXGIAdapter1) }

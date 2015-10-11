@@ -2,6 +2,7 @@
 
 type InterfaceOptions =
   |IOSend
+  |IOSync
 
 type InterfaceAnnotation=
   |IAManual

@@ -35,7 +35,7 @@ let d3d12annotations_prime=
           ("This",AThis);
         ],MANone);
       ]);
-      ("ID3D12CommandAllocatorVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl", [
+      ("ID3D12CommandAllocatorVtbl",IAAutogen(Set.ofList [IOSend; IOSync]), "ID3D12PageableVtbl", [
         ("Reset",[
           ("This",AThis);
         ],MANone);
@@ -154,7 +154,7 @@ let d3d12annotations_prime=
           ("This",AThis);
         ],MANone);
       ]);
-      ("ID3D12DescriptorHeapVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl", [
+      ("ID3D12DescriptorHeapVtbl",IAAutogen(Set.ofList [IOSend]), "ID3D12PageableVtbl", [
         ("GetDesc",[
           ("This",AThis);
           ("__ret_val",OutReturn);
@@ -438,7 +438,7 @@ let d3d12annotations_prime=
           ("Value",ANone);
         ],MANone);
       ]);
-      ("ID3D12GraphicsCommandListVtbl", IAAutogen(Set.ofList []),  "ID3D12CommandListVtbl", [
+      ("ID3D12GraphicsCommandListVtbl", IAAutogen(Set.ofList [IOSend; IOSync]),  "ID3D12CommandListVtbl", [
         ("Close",[
           ("This",AThis);
         ],MANone);
@@ -907,14 +907,14 @@ let d3d12annotations_prime=
         ]
       );
       ("ID3D12PageableVtbl",IAAutogen(Set.ofList []),  "ID3D12DeviceChildVtbl",  []);
-      ("ID3D12PipelineStateVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl",  [
+      ("ID3D12PipelineStateVtbl",IAAutogen(Set.ofList [IOSend]), "ID3D12PageableVtbl",  [
         ("GetCachedBlob",[
           ("This",AThis);
           ("ppBlob",OutReturnComPtr); // TODO: do something with typedefs like 'typedef ID3D10Blob ID3DBlob;' E.g. type D3DBlob=D3D10Blob;
         ],MADontImplement); // TODO: do todo above, then replace with MANone
       ]);
       ("ID3D12QueryHeapVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl",  []);
-      ("ID3D12ResourceVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl",  [
+      ("ID3D12ResourceVtbl",IAAutogen(Set.ofList [IOSend;IOSync]), "ID3D12PageableVtbl",  [
         ("Map",[
           ("This",AThis);
           ("Subresource",ANone);
@@ -960,7 +960,7 @@ let d3d12annotations_prime=
           ("This",AThis);
         ],MANone);
       ]);
-      ("ID3D12RootSignatureVtbl",IAAutogen(Set.ofList []), "ID3D12DeviceChildVtbl",  []);
+      ("ID3D12RootSignatureVtbl",IAAutogen(Set.ofList [IOSend]), "ID3D12DeviceChildVtbl",  []);
       ("ID3DIncludeVtbl",IAManual, "", [
         ("Open",[
           ("This",AThis);

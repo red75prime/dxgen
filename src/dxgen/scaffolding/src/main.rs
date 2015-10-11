@@ -46,12 +46,14 @@ use cgmath::*;
 use shape_gen::*;
 use core::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use rand::Rng;
 
 #[link(name="d3dcompiler")]
 extern {}
 
 const FRAME_COUNT : u32 = 3;
 
+type M3 = [[f32;3];3];
 type M4 = [[f32;4];4];
 
 dx_vertex!( Vertex {
@@ -80,7 +82,7 @@ impl GenVertex for Vertex {
   }
 }
 
-#[repr(C)]
+#[repr(C)] #[derive(Clone)]
 struct Constants {
   model: M4,
   view: M4,
@@ -258,18 +260,15 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
   let world_matrix = matrix4_to_4x4(&wm); //[[c, s, 0.,0.],[-s, c, 0.,0.],[0.,c ,1.,0.],[0.,0.,0.,1.],];
 
   
-//  let vm = Matrix4::look_at(&Point3::new(0., 0., 3.), &Point3::new(0., 0., 0.), &Vector3::new(0., 1., 0.));
-
-//  let view_matrix:  [[f32;4];4] = vm.into();
-  let view_matrix:  [[f32;4];4] = [[1., 0., 0.,0.],[0., 1., 0.,0.],[0.,0.,1.,3.],[0.,0.,0.,1.],];
+  let mut vm = Matrix4::look_at(&Point3::new(0., 0., -3.), &Point3::new(0., 0., 0.), &Vector3::new(0., 1., 0.));
+  lhs_to_rhs(&mut vm);
+  let view_matrix = matrix4_to_4x4(&vm);
 
 //  println!("view: {:?}", &view_matrix);
   
-  let pm = cgmath::perspective(deg(30.), aspect, 0.1, 20.);
-  let zfar=20.;
-  let znear=0.1;
-  let q = zfar/(zfar-znear);
-  let proj_matrix: [[f32;4];4] = [[aspect*2., 0., 0., 0.,], [0., 2., 0., 0., ], [0., 0., q, -q*znear], [0., 0., 1., 0.], ];
+  let mut pm = cgmath::perspective(deg(90.), 1.0/aspect, 0.1, 20.);
+  //lhs_to_rhs(&mut pm);
+  let proj_matrix = matrix4_to_4x4(&pm);
 
 //  println!("proj: {:?}", &proj_matrix);
   let (lx,ly) = f64::sin_cos(data.tick);
@@ -277,12 +276,33 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
 
   let consts = Constants{ model: world_matrix, view: view_matrix, proj: proj_matrix, n_model: world_normal_matrix, light_pos: [lx,ly,0.0]};
   unsafe {
-    upload_into_buffer(&data.constant_buffer, &[consts]);
+    upload_into_buffer(&data.constant_buffer, &[consts.clone()]);
   };
 
-  populate_command_list(&data.command_list, &data.command_allocator, &data.srv_heap, data);
+  match populate_command_list(&data.command_list, &data.command_allocator, &data.srv_heap, data, &consts) {
+    Err(_) => {
+      dump_info_queue(data.core.info_queue.as_ref());
+      panic!();
+    },
+    _ => {},
+  }
 
   data.core.graphics_queue.execute_command_lists(&[&data.command_list]);
+
+  wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
+
+  let cls: Vec<&D3D12GraphicsCommandList> = data.parallel_submission.gc_lists.iter().map(|&(ref clist, _)|clist).collect();
+  data.core.graphics_queue.execute_command_lists(&cls[..]);
+
+  wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
+
+  data.command_list.reset(&data.command_allocator, Some(&data.pipeline_state)).unwrap();
+  data.command_list.resource_barrier(
+      &mut [*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
+      D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
+  data.command_list.close().unwrap();
+  data.core.graphics_queue.execute_command_lists(&[&data.command_list]);
+
   match data.swap_chain.swap_chain.present(0, 0) {
     Err(hr) => {
       dump_info_queue(data.core.info_queue.as_ref());
@@ -304,6 +324,7 @@ struct AppData {
   srv_heap: D3D12DescriptorHeap,
   sam_heap: D3D12DescriptorHeap,
   dsd_heap: D3D12DescriptorHeap,
+  cbvd_heap: D3D12DescriptorHeap,
   pipeline_state: D3D12PipelineState,
   command_list: D3D12GraphicsCommandList,
   vertex_buffer: D3D12Resource,
@@ -315,7 +336,12 @@ struct AppData {
   fence_event: HANDLE,
   fence: D3D12Fence,
   tick: f64,
+  parallel_submission: ParallelSubmissionData,
 }
+
+unsafe impl Send for AppData {}
+
+unsafe impl Sync for AppData {}
 
 impl fmt::Debug for AppData {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -340,7 +366,7 @@ fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &HAND
   }
 }
 
-fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_allocator: &D3D12CommandAllocator, srv_heap: &D3D12DescriptorHeap, data: &AppData) {
+fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_allocator: &D3D12CommandAllocator, srv_heap: &D3D12DescriptorHeap, data: &AppData, consts: &Constants) -> HResult<()> {
   let d_info=false;
   if d_info {debug!("Command allocator reset")};
   command_allocator.reset().unwrap();
@@ -351,7 +377,7 @@ fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_alloca
   command_list.set_graphics_root_signature(&data.root_signature);
 
   if d_info {debug!("Set descriptor heaps")};
-  command_list.set_descriptor_heaps(&[srv_heap, &data.sam_heap]);
+  command_list.set_descriptor_heaps(&[srv_heap]);
 
   if d_info {debug!("Set viepowrts")};
   command_list.rs_set_viewports(&[data.viewport]);
@@ -380,10 +406,12 @@ fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_alloca
 
   if d_info {debug!("Set graphics root descriptor table 1")};
 //  gpu_dh.ptr += data.device.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
-  command_list.set_graphics_root_descriptor_table(1, gpu_dh);
+//  command_list.set_graphics_root_descriptor_table(1, gpu_dh);
 
-  if d_info {debug!("Set graphics root descriptor table 2")};
-  command_list.set_graphics_root_descriptor_table(2, data.sam_heap.get_gpu_descriptor_handle_for_heap_start());
+  command_list.set_graphics_root_constant_buffer_view(1, data.constant_buffer.get_gpu_virtual_address());
+
+//  if d_info {debug!("Set graphics root descriptor table 2")};
+//  command_list.set_graphics_root_descriptor_table(2, data.sam_heap.get_gpu_descriptor_handle_for_heap_start());
 
 //  command_list.set_graphics_root_shader_resource_view(0, data.tex_resource.get_gpu_virtual_address());
 
@@ -393,17 +421,133 @@ fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_alloca
   let num_vtx=data.vertex_buffer_view.SizeInBytes/data.vertex_buffer_view.StrideInBytes;
   command_list.draw_instanced(num_vtx, 1, 0, 0);
   
-  command_list.resource_barrier(
-      &mut [*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
-      D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
+  try!(submit_in_parallel(data, consts));
+//  command_list.resource_barrier(
+//      &mut [*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
+//      D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
 
   match command_list.close() {
-    Ok(_) => {},
+    Ok(_) => Ok(()),
     Err(hr) => {
       dump_info_queue(data.core.info_queue.as_ref());
       panic!("command_list.close() failed with 0x{:x}", hr);
     },
   }
+}
+
+struct PtrConstants(*mut Constants);
+
+unsafe impl Send for PtrConstants {}
+unsafe impl Sync for PtrConstants {}
+
+struct ParallelSubmissionData {
+  // Buffers are kept mapped into CPU address space. Drop unmaps them
+  c_buffers: Vec<(D3D12Resource, PtrConstants)>,
+  gc_lists: Vec<(D3D12GraphicsCommandList, D3D12CommandAllocator)>,
+}
+
+
+impl Drop for ParallelSubmissionData {
+  fn drop(&mut self) {
+    for &(ref res, _) in &self.c_buffers {
+      res.unmap(0, None);
+    }
+  }
+}
+
+fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32) -> HResult<ParallelSubmissionData> {
+  let cbsize = unsafe {
+    let cbuf_data: Constants = ::std::mem::uninitialized();
+    let cbsize = mem::size_of_val(&cbuf_data);
+    mem::forget(cbuf_data);
+    cbsize
+  };
+
+  let mut c_buffers = vec![];
+  for i in 0 .. object_count {
+    let cbuf = try!(core.dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(cbsize as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None));
+    let mut ptr: *mut u8 = ptr::null_mut();
+    unsafe {
+      try!(cbuf.map(0, None, Some(&mut ptr)));
+      debug!("cbuf.iptr(): 0x{:x}, ptr: 0x{:x}", cbuf.iptr() as usize, ptr as usize);
+      c_buffers.push((cbuf, PtrConstants(ptr as *mut Constants))); // unsafe cast from pointer to reference. Actually, it should be safe, if I am not mistaken.
+    }
+  }
+
+  let mut clists = vec![];
+  for i in 0 .. thread_count {
+    debug!("create_command_allocator");
+    let callocator = try!(core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
+    debug!("create_command_list");
+    let clist: D3D12GraphicsCommandList = try!(core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, None));
+    clist.close().unwrap();
+    clists.push((clist, callocator));
+  }
+
+  Ok(ParallelSubmissionData {
+    c_buffers: c_buffers,
+    gc_lists: clists,
+  })
+}
+
+fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
+
+  let sub_size = data.parallel_submission.c_buffers.len() / data.parallel_submission.gc_lists.len();
+  let chunks = (&data.parallel_submission.c_buffers[..]).chunks(sub_size);
+  let dsvh = data.dsd_heap.get_cpu_descriptor_handle_for_heap_start();
+  let mut rtvh=data.swap_chain.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
+  rtvh.ptr += (data.frame_index as SIZE_T)*data.swap_chain.rtv_dsize;
+
+  let mut join_handles: Vec<::std::thread::JoinHandle<HResult<()>>> = vec![];
+  for ((submission, &(ref clist, ref callocator)), th_n) in chunks.zip(data.parallel_submission.gc_lists.iter()).zip(1..) {
+    let submission: &'static [(D3D12Resource, PtrConstants)] = unsafe{ mem::transmute(submission) };
+    let clist = clist.clone();
+    let callocator = callocator.clone();
+    let consts: Constants = consts.clone();
+    let pipeline_state = data.pipeline_state.clone();
+    let root_signature = data.root_signature.clone();
+    let srv_heap = data.srv_heap.clone();
+    let vertex_buffer_view = data.vertex_buffer_view;
+    let viewport = data.viewport;
+    let scissor_rect = data.scissor_rect;
+    join_handles.push(
+      ::std::thread::spawn(move|| {
+        let seed: &[_] = &[th_n, 2, 3, 4];
+        let mut rng: rand::StdRng = rand::SeedableRng::from_seed(seed);
+
+        try!(clist.reset(&callocator, Some(&pipeline_state)));
+        clist.set_graphics_root_signature(&root_signature);
+        clist.set_descriptor_heaps(&[&srv_heap]);
+        clist.rs_set_viewports(&[viewport]);
+        clist.rs_set_scissor_rects(&[scissor_rect]);
+        clist.om_set_render_targets(1, &rtvh, Some(&dsvh));
+        clist.set_graphics_root_descriptor_table(0, srv_heap.get_gpu_descriptor_handle_for_heap_start());
+        clist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        clist.ia_set_vertex_buffers(0, Some(&[vertex_buffer_view]));
+        let num_vtx = vertex_buffer_view.SizeInBytes/vertex_buffer_view.StrideInBytes;
+
+        for &(ref constant_buffer, ref constants) in submission {
+          let mut c: Constants = consts.clone();
+          c.model[0][3]=(rng.gen::<f32>()-0.5)*20.;
+          c.model[1][3]=(rng.gen::<f32>()-0.5)*20.;
+          c.model[2][3]=(rng.gen::<f32>()-1.0)*20.;
+          unsafe {
+            // Write to memory-mapped constant buffer
+            *(constants.0) = c;
+          };
+          let cb_address = constant_buffer.get_gpu_virtual_address();
+          //debug!("cb_address: 0x{:x}", cb_address);
+          clist.set_graphics_root_constant_buffer_view(1, cb_address);
+          clist.draw_instanced(num_vtx, 1, 0, 0);
+        }
+        try!(clist.close());
+        Ok(())
+      }));
+  }
+  for jh in join_handles {
+    let _ = jh.join();
+  }
+  Ok(())
 }
 
 fn on_resize(data: &mut AppData, w: u32, h: u32, _: u32) {
@@ -450,7 +594,7 @@ fn reaquire_render_targets(core: &DXCore, sc: &mut DXSwapChain) -> HResult<()> {
   sc.render_targets.truncate(0);
   for i in 0 .. sc.frame_count {
     let buf=try!(sc.swap_chain.get_buffer::<D3D12Resource>(i as u32));
-    core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)), cdh);
+    core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(sc.rtv_format)), cdh);
     cdh.ptr += sc.rtv_dsize;
     sc.render_targets.push(buf);
   }
@@ -625,107 +769,8 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   debug!("Command allocator");
   let callocator = core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT).unwrap();
 
-  let static_samplers = vec![
-    D3D12_STATIC_SAMPLER_DESC {
-      Filter: D3D12_FILTER_ANISOTROPIC,
-      AddressU: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-      AddressV: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-      AddressW: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-      MipLODBias: 0.0,
-      MaxAnisotropy: 16,
-      ComparisonFunc: D3D12_COMPARISON_FUNC_LESS_EQUAL,
-      BorderColor: D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
-      MinLOD: 0.0,
-      MaxLOD: D3D12_FLOAT32_MAX,
-      ShaderRegister: 0,
-      RegisterSpace: 0,
-      ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
-    },
-  ];
-
-  let desc_ranges = vec![
-    D3D12_DESCRIPTOR_RANGE {
-      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-      NumDescriptors: 1,
-      BaseShaderRegister: 0,
-      RegisterSpace: 0,
-      OffsetInDescriptorsFromTableStart: 0,
-    },
-    D3D12_DESCRIPTOR_RANGE {
-      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
-      NumDescriptors: 1,
-      BaseShaderRegister: 0,
-      RegisterSpace: 0,
-      OffsetInDescriptorsFromTableStart: 1,
-    },
-    D3D12_DESCRIPTOR_RANGE {
-      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
-      NumDescriptors: 1,
-      BaseShaderRegister: 0,
-      RegisterSpace: 0,
-      OffsetInDescriptorsFromTableStart: 0,
-    },
-  ];
-
-  let rs_parms = vec![
-    *RootParameter::descriptor_table(&desc_ranges[0..1], D3D12_SHADER_VISIBILITY_PIXEL),
-    *RootParameter::descriptor_table(&desc_ranges[1..2], D3D12_SHADER_VISIBILITY_ALL),
-    *RootParameter::descriptor_table(&desc_ranges[2..3], D3D12_SHADER_VISIBILITY_PIXEL),
-  ];
-  debug!("Size of D3D12_ROOT_PARAMETER:{}", ::std::mem::size_of_val(&rs_parms[0]));
-
-  let rsd=D3D12_ROOT_SIGNATURE_DESC{
-    NumParameters: rs_parms.len() as UINT,
-    pParameters: rs_parms[..].as_ptr(),
-    NumStaticSamplers: 0,
-    pStaticSamplers: ptr::null(),
-    Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
-  };
-
-  debug!("Serialize root signature");
-  let blob=try!(d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1)
-        .map_err(|hr|{
-          error!("HRESULT=0x{:x}",hr);
-          core.info_queue.clone()}));
-
-  debug!("Root signature");
-  let root_sign = core.dev.create_root_signature(0, blob_as_slice(&blob)).unwrap();
-
-  let compile_flags=0;
-  debug!("Vertex shader");
-  let vshader=d3d_compile_from_file("shaders.hlsl","VSMain","vs_5_0", compile_flags).unwrap();
-  debug!("Pixel shader");
-  let pshader=d3d_compile_from_file("shaders.hlsl","PSMain","ps_5_0", compile_flags).unwrap();
-
-  let input_elts_desc = Vertex::generate(0);
-
-  let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
-    pRootSignature: root_sign.iptr() as *mut _,
-    VS: D3D12_SHADER_BYTECODE {
-      pShaderBytecode: vshader.as_ptr() as *const _,
-      BytecodeLength: vshader.len() as SIZE_T,
-    },
-    PS: D3D12_SHADER_BYTECODE {
-      pShaderBytecode: pshader.as_ptr() as *const _ ,
-      BytecodeLength: pshader.len() as SIZE_T, 
-    },
-    RasterizerState: D3D12_RASTERIZER_DESC {
-      CullMode: D3D12_CULL_MODE_NONE,
-      .. rasterizer_desc_default()
-    },
-    InputLayout: D3D12_INPUT_LAYOUT_DESC {
-      pInputElementDescs: input_elts_desc.as_ptr(),
-      NumElements: input_elts_desc.len() as u32,
-    },
-    PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-    NumRenderTargets: 1,
-    //RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-    DSVFormat: DXGI_FORMAT_D32_FLOAT,
-    .. graphics_pipeline_state_desc_default()
-  };
-  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
   debug!("Graphics pipeline state");
-  let gps=try!(core.dev.create_graphics_pipeline_state(&pso_desc).map_err(|_|core.info_queue.clone()));
+  let (gps, root_sign)=try!(create_static_sampler_gps::<Vertex>(&core).map_err(|_|core.info_queue.clone()));
   debug!("Command list");
   let command_list: D3D12GraphicsCommandList = core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
   
@@ -774,10 +819,19 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
       SizeInBytes: ((cbsize+255) & !255) as u32,
   };
 
-  let srv_dsize = core.dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
-  let mut const_dh = srv_heap.get_cpu_descriptor_handle_for_heap_start();
-  const_dh.ptr += srv_dsize; // constant buffer descriptor is second in descriptor heap
-  debug!("Create shader resource view: texture");
+  let cbv_hd=D3D12_DESCRIPTOR_HEAP_DESC{
+    NumDescriptors: 1, 
+    Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+    NodeMask: 0,
+  };
+  debug!("CBV descriptor heap");
+  let cbvd_heap = core.dev.create_descriptor_heap(&cbv_hd).unwrap();
+
+  let cbv_dsize = core.dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
+  let const_dh = cbvd_heap.get_cpu_descriptor_handle_for_heap_start();
+  //const_dh.ptr += srv_dsize; 
+  debug!("Create shader resource view: constants buffer");
   core.dev.create_constant_buffer_view(Some(&cbview), const_dh);
 
   // ------------------- Constant buffer resource init end  -----------------------------
@@ -787,7 +841,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   let tex_w=256usize;
   let tex_h=256usize;
 
-  let tex_desc = resource_desc_tex2d_nomip(tex_w as u64, tex_h as u32, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, D3D12_RESOURCE_FLAG_NONE);
+  let tex_desc = resource_desc_tex2d_nomip(tex_w as u64, tex_h as u32, DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_FLAG_NONE);
   //info!("Texture desc: {:#?}", &res_desc);
 
   debug!("Texture resource");
@@ -803,7 +857,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   // upload_into_texture transition tex_resource into common state (it uses copy queue, so it can't set pixel_shader_resource state)
   command_list.resource_barrier(&mut [*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
-  let srv_desc = shader_resource_view_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+  let srv_desc = shader_resource_view_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM);
 
   let srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
   debug!("Create shader resource view: texture");
@@ -827,6 +881,8 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     panic!("Cannot create event");
   }
   
+  let par_sub = try!(init_parallel_submission(&core, 8, 16000).map_err(|_|core.info_queue.clone()));
+
   let ret=
     AppData {
       core: core,
@@ -838,6 +894,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
       srv_heap: srv_heap,
       sam_heap: sam_heap,
       dsd_heap: dsd_heap,
+      cbvd_heap: cbvd_heap,
       pipeline_state: gps,
       command_list: command_list,
       vertex_buffer: vbuf,
@@ -849,6 +906,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
       fence_event: fence_event,
       fence: fence,
       tick: 0.0,
+      parallel_submission: par_sub,
     };
   
   debug!("Command list Close");
@@ -862,40 +920,190 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
   Ok(ret)
 }
 
-fn dump_info_queue(iq: Option<&D3D12InfoQueue>) {
-  if let Some(iq)=iq {
-    let mnum=iq.get_num_stored_messages_allowed_by_retrieval_filter();
-    //println!("Number of debug messages is {}", mnum);
-    for i in 0..mnum {
-      let mut sz = 0;
-      let _ = iq.get_message(i, None,&mut sz);
-      //info!("get_message returned {:?}", hr); // It is the case when hr!=0 and it's ok
-      // create buffer to receive message
-      let arr: Vec<u8> = Vec::with_capacity(sz as usize); 
-      let mut sz1=sz; 
-      unsafe {
-        // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
-        // it should be Option<&[u8]>, but I don't have annotation for that yet.
-        let _ = iq.get_message(i, Some(mem::transmute(arr.as_ptr())), &mut sz1); 
-        assert_eq!(sz, sz1); // just to be sure. hr is Err(1) on success.
-        // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
-        let msg: D3D12_MESSAGE = mem::transmute_copy(&(*arr.as_ptr()));
-        // msg contains pointer into memory occupied by arr. arr should be borrowed now, but it is unsafe code.
-        let cdescr = ::std::ffi::CStr::from_ptr(msg.pDescription as *const i8);
-        let descr = String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
-        match msg.Severity {
-          D3D12_MESSAGE_SEVERITY_CORRUPTION |
-          D3D12_MESSAGE_SEVERITY_ERROR =>
-            {error!("{:}", descr)},
-          D3D12_MESSAGE_SEVERITY_WARNING =>
-            {warn!("{:}", descr)},
-          _ =>
-            {debug!("{:}", descr)},
-        }
-      }
-    };
-    iq.clear_stored_messages();
-  }
+fn create_main_graphics_pipeline_state(core: &DXCore) -> HResult<(D3D12PipelineState,D3D12RootSignature)> {
+  let desc_ranges = vec![
+    D3D12_DESCRIPTOR_RANGE {
+      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+      NumDescriptors: 1,
+      BaseShaderRegister: 0,
+      RegisterSpace: 0,
+      OffsetInDescriptorsFromTableStart: 0,
+    },
+    D3D12_DESCRIPTOR_RANGE {
+      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+      NumDescriptors: 1,
+      BaseShaderRegister: 0,
+      RegisterSpace: 0,
+      OffsetInDescriptorsFromTableStart: 1,
+    },
+    D3D12_DESCRIPTOR_RANGE {
+      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+      NumDescriptors: 1,
+      BaseShaderRegister: 0,
+      RegisterSpace: 0,
+      OffsetInDescriptorsFromTableStart: 0,
+    },
+  ];
+
+  let rs_parms = vec![
+    *RootParameter::descriptor_table(&desc_ranges[0..1], D3D12_SHADER_VISIBILITY_PIXEL),
+    *RootParameter::descriptor_table(&desc_ranges[1..2], D3D12_SHADER_VISIBILITY_ALL),
+    *RootParameter::descriptor_table(&desc_ranges[2..3], D3D12_SHADER_VISIBILITY_PIXEL),
+  ];
+  debug!("Size of D3D12_ROOT_PARAMETER:{}", ::std::mem::size_of_val(&rs_parms[0]));
+
+  let rsd=D3D12_ROOT_SIGNATURE_DESC{
+    NumParameters: rs_parms.len() as UINT,
+    pParameters: rs_parms[..].as_ptr(),
+    NumStaticSamplers: 0,
+    pStaticSamplers: ptr::null(),
+    Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
+  };
+
+  debug!("Serialize root signature");
+  let blob=try!(d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1));
+
+  debug!("Root signature");
+  let root_sign = try!(core.dev.create_root_signature(0, blob_as_slice(&blob)));
+
+  let compile_flags=0;
+  debug!("Vertex shader");
+  let vshader=d3d_compile_from_file("shaders.hlsl","VSMain","vs_5_0", compile_flags).unwrap();
+  debug!("Pixel shader");
+  let pshader=d3d_compile_from_file("shaders.hlsl","PSMain","ps_5_0", compile_flags).unwrap();
+
+  let input_elts_desc = Vertex::generate(0);
+
+  let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+    pRootSignature: root_sign.iptr() as *mut _,
+    VS: D3D12_SHADER_BYTECODE {
+      pShaderBytecode: vshader.as_ptr() as *const _,
+      BytecodeLength: vshader.len() as SIZE_T,
+    },
+    PS: D3D12_SHADER_BYTECODE {
+      pShaderBytecode: pshader.as_ptr() as *const _ ,
+      BytecodeLength: pshader.len() as SIZE_T, 
+    },
+    RasterizerState: D3D12_RASTERIZER_DESC {
+      CullMode: D3D12_CULL_MODE_NONE,
+      .. rasterizer_desc_default()
+    },
+    InputLayout: D3D12_INPUT_LAYOUT_DESC {
+      pInputElementDescs: input_elts_desc.as_ptr(),
+      NumElements: input_elts_desc.len() as u32,
+    },
+    PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+    NumRenderTargets: 1,
+    //RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    DSVFormat: DXGI_FORMAT_D32_FLOAT,
+    .. graphics_pipeline_state_desc_default()
+  };
+  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
+  let ps = try!(core.dev.create_graphics_pipeline_state(&pso_desc));
+  Ok((ps, root_sign))
+}
+
+fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12PipelineState,D3D12RootSignature)> {
+  let static_samplers = vec![
+    D3D12_STATIC_SAMPLER_DESC {
+      Filter: D3D12_FILTER_ANISOTROPIC,
+      AddressU: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+      AddressV: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+      AddressW: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+      MipLODBias: 0.0,
+      MaxAnisotropy: 16,
+      ComparisonFunc: D3D12_COMPARISON_FUNC_LESS_EQUAL,
+      BorderColor: D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+      MinLOD: 0.0,
+      MaxLOD: D3D12_FLOAT32_MAX,
+      ShaderRegister: 0,
+      RegisterSpace: 0,
+      ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
+    },
+  ];
+
+  let desc_ranges = vec![
+    D3D12_DESCRIPTOR_RANGE {
+      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+      NumDescriptors: 1,
+      BaseShaderRegister: 0,
+      RegisterSpace: 0,
+      OffsetInDescriptorsFromTableStart: 0,
+    },
+    D3D12_DESCRIPTOR_RANGE {
+      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+      NumDescriptors: 1,
+      BaseShaderRegister: 0,
+      RegisterSpace: 0,
+      OffsetInDescriptorsFromTableStart: 1,
+    },
+    D3D12_DESCRIPTOR_RANGE {
+      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+      NumDescriptors: 1,
+      BaseShaderRegister: 0,
+      RegisterSpace: 0,
+      OffsetInDescriptorsFromTableStart: 0,
+    },
+  ];
+
+  let rs_parms = vec![
+    *RootParameter::descriptor_table(&desc_ranges[0..1], D3D12_SHADER_VISIBILITY_PIXEL),
+    *RootParameter::cbv(0, 0, D3D12_SHADER_VISIBILITY_ALL),
+//    *RootParameter::descriptor_table(&desc_ranges[2..3], D3D12_SHADER_VISIBILITY_PIXEL),
+  ];
+  debug!("Size of D3D12_ROOT_PARAMETER:{}", ::std::mem::size_of_val(&rs_parms[0]));
+
+  let rsd=D3D12_ROOT_SIGNATURE_DESC{
+    NumParameters: rs_parms.len() as UINT,
+    pParameters: rs_parms[..].as_ptr(),
+    NumStaticSamplers: static_samplers.len() as u32,
+    pStaticSamplers: static_samplers.as_ptr(),
+    Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
+  };
+
+  debug!("Serialize root signature");
+  let blob=try!(d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1));
+
+  debug!("Root signature");
+  let root_sign = try!(core.dev.create_root_signature(0, blob_as_slice(&blob)));
+
+  let compile_flags=0;
+  debug!("Vertex shader");
+  let vshader=d3d_compile_from_file("shaders.hlsl","VSMain","vs_5_0", compile_flags).unwrap();
+  debug!("Pixel shader");
+  let pshader=d3d_compile_from_file("shaders.hlsl","PSMain","ps_5_0", compile_flags).unwrap();
+
+  let input_elts_desc = T::generate(0);
+
+  let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+    pRootSignature: root_sign.iptr() as *mut _,
+    VS: D3D12_SHADER_BYTECODE {
+      pShaderBytecode: vshader.as_ptr() as *const _,
+      BytecodeLength: vshader.len() as SIZE_T,
+    },
+    PS: D3D12_SHADER_BYTECODE {
+      pShaderBytecode: pshader.as_ptr() as *const _ ,
+      BytecodeLength: pshader.len() as SIZE_T, 
+    },
+    RasterizerState: D3D12_RASTERIZER_DESC {
+      CullMode: D3D12_CULL_MODE_NONE,
+      .. rasterizer_desc_default()
+    },
+    InputLayout: D3D12_INPUT_LAYOUT_DESC {
+      pInputElementDescs: input_elts_desc.as_ptr(),
+      NumElements: input_elts_desc.len() as u32,
+    },
+    PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+    NumRenderTargets: 1,
+    //RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    DSVFormat: DXGI_FORMAT_D32_FLOAT,
+    .. graphics_pipeline_state_desc_default()
+  };
+  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
+  let ps = try!(core.dev.create_graphics_pipeline_state(&pso_desc));
+  Ok((ps, root_sign))
 }
 
 fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12Device, 
@@ -916,11 +1124,4 @@ fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12Devic
   dev.create_depth_stencil_view(Some(&ds_res), Some(&dsv_desc), handle);
 
   Ok(ds_res)
-}
-
-fn matrix4_to_4x4(m: &Matrix4<f32>) -> [[f32;4];4] {
-  [ [m.x.x, m.y.x, m.z.x, m.w.x],
-    [m.x.y, m.y.y, m.z.y, m.w.y],
-    [m.x.z, m.y.z, m.z.z, m.w.z],
-    [m.x.w, m.y.w, m.z.w, m.w.w] ]
 }
