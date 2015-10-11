@@ -112,7 +112,7 @@ fn main() {
   let pm = cgmath::perspective(deg(30.), 1.5, 0.1, 10.);
   println!("Persp: {:?}", pm);
 
-  let factory: DXGIFactory4 = create_dxgi_factory2().expect("Cannot create DXGIFactory1. No can do.");
+  let factory: DXGIFactory4 = create_dxgi_factory2().expect("Cannot create DXGIFactory4. No can do.");
   let mut i=0;
   let mut adapters = vec![];
   while let Ok(adapter)=factory.enum_adapters1(i) {
