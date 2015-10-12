@@ -1,6 +1,6 @@
 [package]
 name = "d3d12_integration_test"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["red75prime <red75prim@gmail.com>"]
 
 [dependencies]
@@ -13,6 +13,7 @@ d3d12_safe = { version = "*", path = "lib/d3d12" }
 rand = "0.3"
 cgmath = "0.3"
 clock_ticks = "*"
+crossbeam = "0.1"
 
 [dependencies.winapi]
 git = "https://github.com/red75prime/winapi-rs/"

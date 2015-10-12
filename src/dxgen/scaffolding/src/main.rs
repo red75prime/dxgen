@@ -15,6 +15,7 @@ extern crate kernel32;
 extern crate rand;
 extern crate clock_ticks;
 extern crate cgmath;
+extern crate crossbeam;
 
 #[macro_use] mod macros;
 mod create_device;
@@ -126,17 +127,14 @@ fn main() {
   }
 
   let mutex=Arc::new(Mutex::new(()));
-  let join_handles: Vec<_> = 
-    adapters.into_iter()
-      .map(|a|{
-        let mutex = mutex.clone();
-        ::std::thread::spawn(move||{
-          main_prime(a, mutex)
-        })
-      }).collect();
-  for jh in join_handles {
-    let _ = jh.join();
-  }
+  crossbeam::scope(|scope| {
+    for a in adapters {
+      let mutex = mutex.clone();
+      scope.spawn(move||{
+        main_prime(a, mutex)
+      });
+    };
+  });
 }
 
 fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
@@ -498,33 +496,22 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
   let mut rtvh=data.swap_chain.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
   rtvh.ptr += (data.frame_index as SIZE_T)*data.swap_chain.rtv_dsize;
 
-  let mut join_handles: Vec<::std::thread::JoinHandle<HResult<()>>> = vec![];
   for ((submission, &(ref clist, ref callocator)), th_n) in chunks.zip(data.parallel_submission.gc_lists.iter()).zip(1..) {
-    let submission: &'static [(D3D12Resource, PtrConstants)] = unsafe{ mem::transmute(submission) };
-    let clist = clist.clone();
-    let callocator = callocator.clone();
-    let consts: Constants = consts.clone();
-    let pipeline_state = data.pipeline_state.clone();
-    let root_signature = data.root_signature.clone();
-    let srv_heap = data.srv_heap.clone();
-    let vertex_buffer_view = data.vertex_buffer_view;
-    let viewport = data.viewport;
-    let scissor_rect = data.scissor_rect;
-    join_handles.push(
-      ::std::thread::spawn(move|| {
-        let seed: &[_] = &[th_n, 2, 3, 4];
+    crossbeam::scope(|scope|{
+      scope.spawn::<_,HResult<()>>(|| {
+        let seed: &[_] = &[th_n, 3, 3, 4];
         let mut rng: rand::StdRng = rand::SeedableRng::from_seed(seed);
 
-        try!(clist.reset(&callocator, Some(&pipeline_state)));
-        clist.set_graphics_root_signature(&root_signature);
-        clist.set_descriptor_heaps(&[&srv_heap]);
-        clist.rs_set_viewports(&[viewport]);
-        clist.rs_set_scissor_rects(&[scissor_rect]);
+        try!(clist.reset(callocator, Some(&data.pipeline_state)));
+        clist.set_graphics_root_signature(&data.root_signature);
+        clist.set_descriptor_heaps(&[&data.srv_heap]);
+        clist.rs_set_viewports(&[data.viewport]);
+        clist.rs_set_scissor_rects(&[data.scissor_rect]);
         clist.om_set_render_targets(1, &rtvh, Some(&dsvh));
-        clist.set_graphics_root_descriptor_table(0, srv_heap.get_gpu_descriptor_handle_for_heap_start());
+        clist.set_graphics_root_descriptor_table(0, data.srv_heap.get_gpu_descriptor_handle_for_heap_start());
         clist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        clist.ia_set_vertex_buffers(0, Some(&[vertex_buffer_view]));
-        let num_vtx = vertex_buffer_view.SizeInBytes/vertex_buffer_view.StrideInBytes;
+        clist.ia_set_vertex_buffers(0, Some(&[data.vertex_buffer_view]));
+        let num_vtx = data.vertex_buffer_view.SizeInBytes/data.vertex_buffer_view.StrideInBytes;
 
         for &(ref constant_buffer, ref constants) in submission {
           let mut c: Constants = consts.clone();
@@ -542,10 +529,8 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
         }
         try!(clist.close());
         Ok(())
-      }));
-  }
-  for jh in join_handles {
-    let _ = jh.join();
+      });
+    });
   }
   Ok(())
 }
@@ -881,7 +866,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     panic!("Cannot create event");
   }
   
-  let par_sub = try!(init_parallel_submission(&core, 8, 16000).map_err(|_|core.info_queue.clone()));
+  let par_sub = try!(init_parallel_submission(&core, 4, 1000).map_err(|_|core.info_queue.clone()));
 
   let ret=
     AppData {
