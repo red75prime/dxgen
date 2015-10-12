@@ -52,7 +52,7 @@ use rand::Rng;
 #[link(name="d3dcompiler")]
 extern {}
 
-const FRAME_COUNT : u32 = 3;
+const FRAME_COUNT : u32 = 4;
 
 type M3 = [[f32;3];3];
 type M4 = [[f32;4];4];
@@ -192,18 +192,22 @@ fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
         _ => {},
       } 
     } else {
-      on_render(&mut *data.borrow_mut(), x, y);
-      //std::thread::sleep_ms(1);
-      frame_count += 1;
-      let now = precise_time_s();
-      let frametime = now - mstart;
-      mstart = now;
-      print!("FPS: {:4.3}\tAvg. FPS: {}        \r" , 1.0/frametime, avg_fps);
-      if now<start || now>=(start+1.0) {
-        start = now;
-        let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
-        avg_fps = frame_count;
-        frame_count = 0;
+      let do_not_render = { data.borrow().viewport.Height == 0.0 };
+      if do_not_render {
+        std::thread::sleep_ms(10);
+      } else {
+        on_render(&mut *data.borrow_mut(), x, y);
+        frame_count += 1;
+        let now = precise_time_s();
+        let frametime = now - mstart;
+        mstart = now;
+        print!("FPS: {:4.3}\tAvg. FPS: {}        \r" , 1.0/frametime, avg_fps);
+        if now<start || now>=(start+1.0) {
+          start = now;
+          let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
+          avg_fps = frame_count;
+          frame_count = 0;
+        }
       }
     }
   }
@@ -228,7 +232,6 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
   wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
   data.frame_index = data.swap_chain.swap_chain.get_current_back_buffer_index();
   //let tick=data.tick;
-  data.tick += 0.01;
   let aspect=data.viewport.Height/data.viewport.Width;
   let (x,y) = (x as f32, y as f32);
   let (x,y) = (x-data.viewport.Width/2., y-data.viewport.Height/2.);
@@ -277,14 +280,22 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
     upload_into_buffer(&data.constant_buffer, &[consts.clone()]);
   };
 
-  match populate_command_list(&data.command_list, &data.command_allocator, &data.srv_heap, data, &consts) {
-    Err(_) => {
-      dump_info_queue(data.core.info_queue.as_ref());
-      panic!();
-    },
-    _ => {},
-  }
-
+  crossbeam::scope(|scope| {
+    let jh1=
+      scope.spawn(|| { 
+        match populate_command_list(&data.command_list, &data.command_allocator, &data.srv_heap, data) {
+          Err(_) => {
+            dump_info_queue(data.core.info_queue.as_ref());
+            panic!();
+          },
+          _ => {},
+        }
+      });
+    scope.spawn(|| {
+      submit_in_parallel(data, &consts).unwrap();
+    });
+  });
+  
   data.core.graphics_queue.execute_command_lists(&[&data.command_list]);
 
   wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
@@ -308,6 +319,7 @@ fn on_render(data: &mut AppData, x: i32, y: i32) {
     },
     _ => (),
   }
+  data.tick += 0.01;
   dump_info_queue(data.core.info_queue.as_ref());
 }
 
@@ -364,7 +376,7 @@ fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &HAND
   }
 }
 
-fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_allocator: &D3D12CommandAllocator, srv_heap: &D3D12DescriptorHeap, data: &AppData, consts: &Constants) -> HResult<()> {
+fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_allocator: &D3D12CommandAllocator, srv_heap: &D3D12DescriptorHeap, data: &AppData) -> HResult<()> {
   let d_info=false;
   if d_info {debug!("Command allocator reset")};
   command_allocator.reset().unwrap();
@@ -419,7 +431,6 @@ fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_alloca
   let num_vtx=data.vertex_buffer_view.SizeInBytes/data.vertex_buffer_view.StrideInBytes;
   command_list.draw_instanced(num_vtx, 1, 0, 0);
   
-  try!(submit_in_parallel(data, consts));
 //  command_list.resource_barrier(
 //      &mut [*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
 //      D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
@@ -496,51 +507,61 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
   let mut rtvh=data.swap_chain.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
   rtvh.ptr += (data.frame_index as SIZE_T)*data.swap_chain.rtv_dsize;
 
-  for ((submission, &(ref clist, ref callocator)), th_n) in chunks.zip(data.parallel_submission.gc_lists.iter()).zip(1..) {
-    crossbeam::scope(|scope|{
-      scope.spawn::<_,HResult<()>>(|| {
-        let seed: &[_] = &[th_n, 3, 3, 4];
-        let mut rng: rand::StdRng = rand::SeedableRng::from_seed(seed);
+  crossbeam::scope(|scope|{
+    let mut jhs = vec![];
+    for ((submission, &(ref clist, ref callocator)), th_n) in chunks.zip(data.parallel_submission.gc_lists.iter()).zip(1..) {
+      let jh =
+        scope.spawn::<_,HResult<()>>(move|| {
+          let seed: &[_] = &[th_n, 3, 3, 4];
+          let mut rng: rand::StdRng = rand::SeedableRng::from_seed(seed);
 
-        try!(clist.reset(callocator, Some(&data.pipeline_state)));
-        clist.set_graphics_root_signature(&data.root_signature);
-        clist.set_descriptor_heaps(&[&data.srv_heap]);
-        clist.rs_set_viewports(&[data.viewport]);
-        clist.rs_set_scissor_rects(&[data.scissor_rect]);
-        clist.om_set_render_targets(1, &rtvh, Some(&dsvh));
-        clist.set_graphics_root_descriptor_table(0, data.srv_heap.get_gpu_descriptor_handle_for_heap_start());
-        clist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        clist.ia_set_vertex_buffers(0, Some(&[data.vertex_buffer_view]));
-        let num_vtx = data.vertex_buffer_view.SizeInBytes/data.vertex_buffer_view.StrideInBytes;
+          try!(callocator.reset());
+          try!(clist.reset(callocator, Some(&data.pipeline_state)));
+          clist.set_graphics_root_signature(&data.root_signature);
+          clist.set_descriptor_heaps(&[&data.srv_heap]);
+          clist.rs_set_viewports(&[data.viewport]);
+          clist.rs_set_scissor_rects(&[data.scissor_rect]);
+          clist.om_set_render_targets(1, &rtvh, Some(&dsvh));
+          clist.set_graphics_root_descriptor_table(0, data.srv_heap.get_gpu_descriptor_handle_for_heap_start());
+          clist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+          clist.ia_set_vertex_buffers(0, Some(&[data.vertex_buffer_view]));
+          let num_vtx = data.vertex_buffer_view.SizeInBytes/data.vertex_buffer_view.StrideInBytes;
 
-        for &(ref constant_buffer, ref constants) in submission {
-          let mut c: Constants = consts.clone();
-          c.model[0][3]=(rng.gen::<f32>()-0.5)*20.;
-          c.model[1][3]=(rng.gen::<f32>()-0.5)*20.;
-          c.model[2][3]=(rng.gen::<f32>()-1.0)*20.;
-          unsafe {
-            // Write to memory-mapped constant buffer
-            *(constants.0) = c;
-          };
-          let cb_address = constant_buffer.get_gpu_virtual_address();
-          //debug!("cb_address: 0x{:x}", cb_address);
-          clist.set_graphics_root_constant_buffer_view(1, cb_address);
-          clist.draw_instanced(num_vtx, 1, 0, 0);
-        }
-        try!(clist.close());
-        Ok(())
-      });
-    });
-  }
+          for &(ref constant_buffer, ref constants) in submission {
+            if true {
+              let mut c: Constants = consts.clone();
+              c.model[0][3]=(rng.gen::<f32>()-0.5)*20.;
+              c.model[1][3]=(rng.gen::<f32>()-0.5)*20.;
+              c.model[2][3]=(rng.gen::<f32>()-1.0)*20.;
+
+              unsafe {
+                // Write to memory-mapped constant buffer
+                *(constants.0) = c;
+              };
+            };
+            let cb_address = constant_buffer.get_gpu_virtual_address();
+            //debug!("cb_address: 0x{:x}", cb_address);
+            clist.set_graphics_root_constant_buffer_view(1, cb_address);
+            clist.draw_instanced(num_vtx, 1, 0, 0);
+          }
+          try!(clist.close());
+          Ok(())
+        });
+      jhs.push(jh);
+    }
+  });
   Ok(())
 }
 
-fn on_resize(data: &mut AppData, w: u32, h: u32, _: u32) {
+fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
+   info!("Resize to {},{},{}.",w,h,c);
+   if w==0 || h==0 {
+      return;
+   };
    wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
    drop_render_targets(&mut data.swap_chain);
    let desc = data.swap_chain.swap_chain.get_desc().unwrap();
    let res = data.swap_chain.swap_chain.resize_buffers(0, w, h, DXGI_FORMAT_UNKNOWN, 0);
-   //info!("Resize to {},{}. Result:{:?}",w,h,res);
    match res {
      Err(hr) => {
        dump_info_queue(data.core.info_queue.as_ref());
@@ -690,7 +711,8 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     top: 0,
   };
 
-  let core = try!(create_core(adapter, D3D_FEATURE_LEVEL_11_0, true).map_err(|err|panic!("Cannot create DXCore: {}", err)));
+//#[cfg(debug)]
+  let core = try!(create_core(adapter, D3D_FEATURE_LEVEL_11_0, false).map_err(|err|panic!("Cannot create DXCore: {}", err)));
 
   let sc_desc = DXGI_SWAP_CHAIN_DESC1 {
     Width: w as u32,
@@ -866,7 +888,7 @@ fn create_appdata(wnd: &Window, adapter: Option<&DXGIAdapter1>) -> Result<AppDat
     panic!("Cannot create event");
   }
   
-  let par_sub = try!(init_parallel_submission(&core, 4, 1000).map_err(|_|core.info_queue.clone()));
+  let par_sub = try!(init_parallel_submission(&core, 8, 8000).map_err(|_|core.info_queue.clone()));
 
   let ret=
     AppData {
