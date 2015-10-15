@@ -156,7 +156,7 @@ pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usiz
   let fv=core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
   debug!("signal");
   try!(core.copy_queue.signal(&fence, fv));
-  //try!(core.copy_queue.wait(&fence, fv)); // D3D12CommandQueue::wait doesn't work, or I do something wrong.
+  //try!(core.copy_queue.wait(&fence, fv)); // !!! D3D12CommandQueue::wait causes GPU to wait for signal
   if fence.get_completed_value() < fv {
     debug!("set_event_on_completion");
     try!(fence.set_event_on_completion(fv, fence_event));

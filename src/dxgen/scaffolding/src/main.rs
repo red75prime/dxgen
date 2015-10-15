@@ -22,7 +22,7 @@ mod create_device;
 mod window;
 mod structwrappers;
 mod utils;
-mod gfx_d3d12;
+//mod gfx_d3d12;
 mod shape_gen;
 mod dxsems;
 mod core;
