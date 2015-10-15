@@ -117,3 +117,20 @@ pub fn create_swap_chain(core: &DXCore, desc: &DXGI_SWAP_CHAIN_DESC1, format: DX
     frame_count: frame_count,
   })
 }
+
+pub fn drop_render_targets(sc: &mut DXSwapChain) {
+  sc.render_targets.truncate(0);
+}
+
+pub fn reaquire_render_targets(core: &DXCore, sc: &mut DXSwapChain) -> HResult<()> {
+  let mut cdh = sc.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
+  sc.render_targets.truncate(0);
+  for i in 0 .. sc.frame_count {
+    let buf=try!(sc.swap_chain.get_buffer::<D3D12Resource>(i as u32));
+    core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(sc.rtv_format)), cdh);
+    cdh.ptr += sc.rtv_dsize;
+    sc.render_targets.push(buf);
+  }
+  Ok(())
+}
+

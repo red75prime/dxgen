@@ -28,6 +28,7 @@ macro_rules! dx_vertex {
     ($name:ident {
         $(($semantics:ident, $sem_idx:expr, $format:ident) $field:ident: $ty:ty,)*
     }) => {
+        use dxsems::VertexFormat;
         #[derive(Clone, Copy, Debug)]
         pub struct $name {
             $(pub $field: $ty,)*
@@ -38,11 +39,11 @@ macro_rules! dx_vertex {
                 let mut e_descs = Vec::new();
                 $(
                   e_descs.push(D3D12_INPUT_ELEMENT_DESC {
-                    SemanticName: $semantics.as_ptr() as LPCSTR,
+                    SemanticName: $semantics.as_ptr() as ::winapi::LPCSTR,
                     SemanticIndex: $sem_idx,
                     Format: $format, 
                     InputSlot: input_slot,
-                    AlignedByteOffset: offset_of!($name, $field) as UINT, 
+                    AlignedByteOffset: offset_of!($name, $field) as ::winapi::UINT, 
                     InputSlotClass: D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 
                     InstanceDataStepRate: 0,
                   });

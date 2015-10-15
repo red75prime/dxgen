@@ -8,19 +8,12 @@ use self::kernel32::{GetModuleHandleW};
 use std::ptr;
 use libc;
 
-use std::ffi::{OsString};
-use std::os::windows::ffi::OsStrExt;
+use utils::*;
 use std::mem;
 use std::cell::RefCell;
 
 use self::user32::{GetMessageW,TranslateMessage,DispatchMessageW,PeekMessageW};
 //use self::kernel32::{Sleep};
-
-fn str_to_vec_u16(s : &str) -> Vec<u16> {
-  let osstr = OsString::from(s);
-  osstr.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
-}
-
 
 pub struct Window {
   hwnd: HWND,
