@@ -14,6 +14,8 @@ use rand;
 use cgmath;
 use crossbeam;
 use create_device::*;
+use std::cmp::{min,max};
+
 
 use shape_gen::*;
 
@@ -81,7 +83,7 @@ pub struct AppData {
   fence_event: HANDLE,
   fence: D3D12Fence,
   tick: f64,
-  parallel_submission: ParallelSubmissionData,
+  parallel_submission: ParallelSubmissionData<Constants>,
   minimized: bool,
 }
 
@@ -120,25 +122,6 @@ impl AppData {
 impl fmt::Debug for AppData {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     writeln!(f,"struct AppData")
-  }
-}
-
-struct PtrConstants(*mut Constants);
-
-unsafe impl Send for PtrConstants {}
-unsafe impl Sync for PtrConstants {}
-
-struct ParallelSubmissionData {
-  // Buffers are kept mapped into CPU address space. Drop unmaps them
-  c_buffers: Vec<(D3D12Resource, PtrConstants)>,
-  gc_lists: Vec<(D3D12GraphicsCommandList, D3D12CommandAllocator)>,
-}
-
-impl Drop for ParallelSubmissionData {
-  fn drop(&mut self) {
-    for &(ref res, _) in &self.c_buffers {
-      res.unmap(0, None);
-    }
   }
 }
 
@@ -344,7 +327,7 @@ pub fn on_init(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32) -
     panic!("Cannot create event");
   }
   
-  let par_sub = try!(init_parallel_submission(&core, 8, 4000).map_err(|_|core.info_queue.clone()));
+  let par_sub = try!(init_parallel_submission(&core, 8, 2_000).map_err(|_|core.info_queue.clone()));
 
   let ret=
     AppData {
@@ -384,6 +367,7 @@ pub fn on_init(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32) -
   Ok(ret)
 }
 
+//----------------- on_render ------------------------------------------------------------------------------------------------
 pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   use std::f64; 
 
@@ -412,24 +396,16 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   
   let world_normal_matrix = matrix4_to_4x4(&wm_normal);
 
-//  wm.x.w=rand::random::<f32>()-0.5;
-//  wm.y.w=rand::random::<f32>()-0.5;
-//  wm.z.w=(rand::random::<f32>()-0.5)*4.;
-  
   let world_matrix = matrix4_to_4x4(&wm); //[[c, s, 0.,0.],[-s, c, 0.,0.],[0.,c ,1.,0.],[0.,0.,0.,1.],];
 
-  
   let mut vm = Matrix4::look_at(&Point3::new(0., 0., -3.), &Point3::new(0., 0., 0.), &Vector3::new(0., 1., 0.));
   lhs_to_rhs(&mut vm);
   let view_matrix = matrix4_to_4x4(&vm);
 
-//  println!("view: {:?}", &view_matrix);
-  
   let mut pm = cgmath::perspective(deg(90.), 1.0/aspect, 0.1, 20.);
   //lhs_to_rhs(&mut pm);
   let proj_matrix = matrix4_to_4x4(&pm);
 
-//  println!("proj: {:?}", &proj_matrix);
   let (lx,ly) = f64::sin_cos(data.tick);
   let (lx,ly) = (lx as f32, ly as f32);
 
@@ -536,60 +512,6 @@ fn populate_command_list(command_list: &D3D12GraphicsCommandList, command_alloca
   }
 }
 
-fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
-
-  let sub_size = data.parallel_submission.c_buffers.len() / data.parallel_submission.gc_lists.len();
-  let chunks = (&data.parallel_submission.c_buffers[..]).chunks(sub_size);
-  let dsvh = data.dsd_heap.get_cpu_descriptor_handle_for_heap_start();
-  let mut rtvh=data.swap_chain.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
-  rtvh.ptr += (data.frame_index as SIZE_T)*data.swap_chain.rtv_dsize;
-
-  crossbeam::scope(|scope|{
-    let mut jhs = vec![];
-    for ((submission, &(ref clist, ref callocator)), th_n) in chunks.zip(data.parallel_submission.gc_lists.iter()).zip(1..) {
-      let jh =
-        scope.spawn::<_,HResult<()>>(move|| {
-          let seed: &[_] = &[th_n, 3, 3, 4];
-          let mut rng: rand::StdRng = rand::SeedableRng::from_seed(seed);
-
-          try!(callocator.reset());
-          try!(clist.reset(callocator, Some(&data.pipeline_state)));
-          clist.set_graphics_root_signature(&data.root_signature);
-          clist.set_descriptor_heaps(&[&data.srv_heap]);
-          clist.rs_set_viewports(&[data.viewport]);
-          clist.rs_set_scissor_rects(&[data.scissor_rect]);
-          clist.om_set_render_targets(1, &rtvh, Some(&dsvh));
-          clist.set_graphics_root_descriptor_table(0, data.srv_heap.get_gpu_descriptor_handle_for_heap_start());
-          clist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-          clist.ia_set_vertex_buffers(0, Some(&[data.vertex_buffer_view]));
-          let num_vtx = data.vertex_buffer_view.SizeInBytes/data.vertex_buffer_view.StrideInBytes;
-
-          for &(ref constant_buffer, ref constants) in submission {
-            if true {
-              let mut c: Constants = consts.clone();
-              c.model[0][3]=(rng.gen::<f32>()-0.5)*20.;
-              c.model[1][3]=(rng.gen::<f32>()-0.5)*20.;
-              c.model[2][3]=(rng.gen::<f32>()-1.0)*20.;
-
-              unsafe {
-                // Write to memory-mapped constant buffer
-                *(constants.0) = c;
-              };
-            };
-            let cb_address = constant_buffer.get_gpu_virtual_address();
-            //debug!("cb_address: 0x{:x}", cb_address);
-            clist.set_graphics_root_constant_buffer_view(1, cb_address);
-            clist.draw_instanced(num_vtx, 1, 0, 0);
-          }
-          try!(clist.close());
-          Ok(())
-        });
-      jhs.push(jh);
-    }
-  });
-  Ok(())
-}
-
 fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12PipelineState,D3D12RootSignature)> {
   let static_samplers = vec![
     D3D12_STATIC_SAMPLER_DESC {
@@ -692,41 +614,6 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
   Ok((ps, root_sign))
 }
 
-fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32) -> HResult<ParallelSubmissionData> {
-  let cbsize = unsafe {
-    let cbuf_data: Constants = ::std::mem::uninitialized();
-    let cbsize = mem::size_of_val(&cbuf_data);
-    mem::forget(cbuf_data);
-    cbsize
-  };
-
-  let mut c_buffers = vec![];
-  for i in 0 .. object_count {
-    let cbuf = try!(core.dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(cbsize as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None));
-    let mut ptr: *mut u8 = ptr::null_mut();
-    unsafe {
-      try!(cbuf.map(0, None, Some(&mut ptr)));
-      debug!("cbuf.iptr(): 0x{:x}, ptr: 0x{:x}", cbuf.iptr() as usize, ptr as usize);
-      c_buffers.push((cbuf, PtrConstants(ptr as *mut Constants))); // unsafe cast from pointer to reference. Actually, it should be safe, if I am not mistaken.
-    }
-  }
-
-  let mut clists = vec![];
-  for i in 0 .. thread_count {
-    debug!("create_command_allocator");
-    let callocator = try!(core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
-    debug!("create_command_list");
-    let clist: D3D12GraphicsCommandList = try!(core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, None));
-    clist.close().unwrap();
-    clists.push((clist, callocator));
-  }
-
-  Ok(ParallelSubmissionData {
-    c_buffers: c_buffers,
-    gc_lists: clists,
-  })
-}
-
 pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
    info!("Resize to {},{},{}.",w,h,c);
    if w==0 || h==0 {
@@ -765,5 +652,155 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
      top: 0,
    };
   //on_render(data, 1, 1);
+}
+
+struct PtrConstants<T>(*mut T);
+
+unsafe impl<T> Send for PtrConstants<T> {}
+unsafe impl<T> Sync for PtrConstants<T> {}
+
+struct ParallelSubmissionData<T> {
+  c_buffer: D3D12Resource,
+  // Buffer is kept mapped into CPU address space. Drop unmaps it
+  // cpu_buf_ptr.0 points to buf_alignment aligned array of buf_count Ts
+  cpu_buf_ptr: PtrConstants<T>,
+  gpu_buf_ptr: u64,
+  buf_alignment: usize,
+  buf_count: usize,
+  gc_lists: Vec<(D3D12GraphicsCommandList, D3D12CommandAllocator)>,
+}
+
+impl<T> Drop for ParallelSubmissionData<T> {
+  fn drop(&mut self) {
+    self.c_buffer.unmap(0, None);
+  }
+}
+
+impl<T> ParallelSubmissionData<T> {
+  // returns (pointer to i-th constant buffer, gpu virtual address of i-th constant buffer)
+  fn get_buf_ptr_mut(&self, i: usize) -> (*mut T, u64) {
+    assert!(i<self.buf_count);
+    (((self.cpu_buf_ptr.0 as usize) + i*self.buf_alignment) as *mut T, 
+        self.gpu_buf_ptr + ((i*self.buf_alignment) as u64))
+  }
+
+  // returns vec of (chunk_start, chunk_size)
+  fn get_chunks(&self, threads: usize) -> Vec<(usize, usize)> {
+    let chunk_size = max(1, self.buf_count/threads);
+    let mut c_start = 0;
+    let mut remaining = self.buf_count;
+    let mut chunks = vec![];
+    for i in 0..threads {
+      if remaining == 0 {
+        chunks.push((0,0));
+      } else {
+        let cur_chunk_size = min(remaining, chunk_size);
+        chunks.push((c_start, cur_chunk_size));
+        c_start += cur_chunk_size;
+        remaining -= cur_chunk_size;
+      }
+    }
+    assert!(chunks.len() == threads);
+    chunks
+  }
+
+  fn thread_count(&self) -> usize {
+    self.gc_lists.len()
+  }
+}
+
+fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32) -> HResult<ParallelSubmissionData<Constants>> {
+  let cbsize = unsafe {
+    let cbuf_data: Constants = ::std::mem::uninitialized();
+    let cbsize = mem::size_of_val(&cbuf_data);
+    mem::forget(cbuf_data);
+    cbsize
+  };
+
+  let alignment = (cbsize+255) & !255; // TODO: Remove duplication. This is used in D3D12_CONSTANT_BUFFER_VIEW_DESC also.
+
+  let buffer_size = (object_count as usize)*alignment;
+  // create resource to hold all constant buffers
+  let cbuf = try!(core.dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(buffer_size as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None));
+  let mut ptr: *mut u8 = ptr::null_mut();
+  unsafe {
+    try!(cbuf.map(0, None, Some(&mut ptr)));
+    debug!("cbuf.iptr(): 0x{:x}, ptr: 0x{:x}", cbuf.iptr() as usize, ptr as usize);
+  }
+  let cpu_buf_ptr = PtrConstants(ptr as *mut Constants);
+
+  let mut clists = vec![];
+  for i in 0 .. thread_count {
+    debug!("create_command_allocator");
+    let callocator = try!(core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
+    debug!("create_command_list");
+    let clist: D3D12GraphicsCommandList = try!(core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, None));
+    clist.close().unwrap();
+    clists.push((clist, callocator));
+  }
+
+  let gpu_buf_ptr = cbuf.get_gpu_virtual_address();
+
+  Ok(ParallelSubmissionData {
+    c_buffer: cbuf,
+    cpu_buf_ptr: cpu_buf_ptr,
+    gpu_buf_ptr: gpu_buf_ptr,
+    buf_alignment: alignment,
+    buf_count: object_count as usize,
+    gc_lists: clists,
+  })
+}
+
+fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
+  let thread_count = data.parallel_submission.thread_count();
+  let dsvh = data.dsd_heap.get_cpu_descriptor_handle_for_heap_start();
+  let mut rtvh=data.swap_chain.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
+  rtvh.ptr += (data.frame_index as SIZE_T)*data.swap_chain.rtv_dsize;
+  let chunks = data.parallel_submission.get_chunks(thread_count);
+
+  crossbeam::scope(|scope|{
+    let mut jhs = vec![];
+    for ((&(start, count), &(ref clist, ref callocator)), th_n) in chunks.iter().zip(data.parallel_submission.gc_lists.iter()).zip(1..) {
+      let jh =
+        scope.spawn::<_,HResult<()>>(move|| {
+          if count == 0 {
+              return Ok(());
+          };
+          let seed: &[_] = &[th_n, 3, 3, 4];
+          let mut rng: rand::StdRng = rand::SeedableRng::from_seed(seed);
+
+          try!(callocator.reset());
+          try!(clist.reset(callocator, Some(&data.pipeline_state)));
+          clist.set_graphics_root_signature(&data.root_signature);
+          clist.set_descriptor_heaps(&[&data.srv_heap]);
+          clist.rs_set_viewports(&[data.viewport]);
+          clist.rs_set_scissor_rects(&[data.scissor_rect]);
+          clist.om_set_render_targets(1, &rtvh, Some(&dsvh));
+          clist.set_graphics_root_descriptor_table(0, data.srv_heap.get_gpu_descriptor_handle_for_heap_start());
+          clist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+          clist.ia_set_vertex_buffers(0, Some(&[data.vertex_buffer_view]));
+          let num_vtx = data.vertex_buffer_view.SizeInBytes/data.vertex_buffer_view.StrideInBytes;
+
+          for i in start .. start+count {
+            let mut c: Constants = consts.clone();
+            c.model[0][3]=(rng.gen::<f32>()-0.5)*20.;
+            c.model[1][3]=(rng.gen::<f32>()-0.5)*20.;
+            c.model[2][3]=(rng.gen::<f32>()-1.0)*20.;
+            let (constants, cb_address) = data.parallel_submission.get_buf_ptr_mut(i);
+            unsafe {
+                // Write to memory-mapped constant buffer
+                *(constants) = c;
+            };
+            //debug!("cb_address: 0x{:x}", cb_address);
+            clist.set_graphics_root_constant_buffer_view(1, cb_address);
+            clist.draw_instanced(num_vtx, 1, 0, 0);
+          }
+          try!(clist.close());
+          Ok(())
+        });
+      jhs.push(jh);
+    }
+  });
+  Ok(())
 }
 
