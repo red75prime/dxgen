@@ -20,7 +20,6 @@ let annotations (cursor:Cursor) =
   List.rev !annots
 
 open annotations
-open annotations_autogen
 
 let tryParse (s:System.String)=
   let invcul=System.Globalization.CultureInfo.InvariantCulture
@@ -110,7 +109,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
        yield "--target="+target
        yield "-std=c11"
        yield "-fms-extensions"
-       yield "-fms-compatiblity"
+       yield "-fms-compatibility"
        yield "-fmsc-version=1800"
        yield! includePaths |> Seq.map (fun p -> "-I"+p)
     } |> Array.ofSeq

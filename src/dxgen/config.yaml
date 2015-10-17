@@ -1,16 +1,6 @@
 ﻿---
 modules:
-#    - name: dx_dxgi
-#      output-path: ../../dx_dxgi/src/
-#      include-path: 
-#        - ./Include/10.0.10240.0/shared/
-#      precompiled-header: ./PCH/DXGI_PCH.h
-#      headers:
-#          - dxgitype.h
-#          - dxgiformat.h
-#          - dxgi.h
-
-    - name: dx_d3d12
+    - name: d3d12_dxgi
       output-path: ../../dx_dxgi/src/
       include-path: 
         - ./Include/10.0.10240.0/um/
@@ -19,14 +9,17 @@ modules:
       precompiled-header: ./PCH/DXGI_PCH.h
       headers:
           - d3d12.h
-#          - d3d11on12.h
+      no-winapi-gen: true
 
-#    - name: dx_d3dcompiler
+# modules:
+#    - name: dwrite
 #      output-path: ../../dx_dxgi/src/
 #      include-path: 
-#         - ./Include/10.0.10240.0/um/
-#      precompiled-header: ./PCH/DXGI_PCH.h
+#        - ./Include/10.0.10240.0/um/
+#        - ./Include/10.0.10240.0/shared/
+#        - ./Include/10.0.10240.0/ucrt/
+#      precompiled-header: ./PCH/Common_PCH.h
 #      headers:
-#          - d3dcommon.h
-#          - d3d12shader.h
-#          - d3dcompiler.h
+#          - dwrite.h
+#      no-winapi-gen: true
+

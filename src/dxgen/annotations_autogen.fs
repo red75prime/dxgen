@@ -1711,7 +1711,7 @@ let d3d12annotations_prime=
         ]);
   ] 
 
-let enum_annotations=
+let d3d12enums=
   [
     ("D3D12_BLEND",EAEnum);
     ("D3D12_BLEND_OP",EAEnum);

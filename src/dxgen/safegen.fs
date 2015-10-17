@@ -50,35 +50,6 @@ let emptyAnnotationsGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<stri
   sb.ToString()
 
 open annotations
-open annotations_autogen
-
-let whatDoWeHaveP()=
-  let clearAnnot a=
-    match a with
-    |InOutOfSize p -> InOutOfSize ""
-    |OutOfSize p -> OutOfSize ""
-    |OutOptionalOfSize p -> OutOptionalOfSize ""
-    |OutReturnCombine _ -> OutReturnCombine("","")
-    |InOfSize p -> InOfSize ""
-    |OutReturnInterface p -> OutReturnInterface ""
-    |OutReturnKnownInterface (p,_) -> OutReturnKnownInterface("","")
-    |InOptionalArrayOfSize p -> InOptionalArrayOfSize ""
-    |OutOptionalArrayOfSize p -> OutOptionalArrayOfSize ""
-    |InArrayOfSize p -> InArrayOfSize ""
-    |InByteArrayOfSize _ -> InByteArrayOfSize ("",0u)
-    |OutArrayOfSize p -> OutArrayOfSize ""
-    |InOutArrayOfSize p -> InOutArrayOfSize ""
-    |TypeSelector (p,_) -> TypeSelector("",[])
-    |_ -> a
-
-  let arefs=ref Set.empty
-
-  for (_,_,_,mannots) in d3d12annotations do
-    for (_,pannots,_) in mannots do
-      for (p,pannot) in pannots do
-        arefs := !arefs |> Set.add (clearAnnot pannot, pannots |> List.map snd |> List.filter (fun a -> List.contains p (getReferencedParameters a)) |> List.map clearAnnot) 
-  for v in !arefs do
-    printfn "%A" v
 
 // returns Some(vs) iff for all (x1,x2) in xs1,xs2 (f x1 x2 = Some(v))
 // map2L : ('x1 -> 'x2 -> Option<'y>) -> ['x1] -> ['x2] -> Option<['y]>
@@ -89,7 +60,6 @@ let map2L f xs1 xs2=
   else
     None
   
-
 // This function performs generic list comparison, by checking that lists have equal set of keys, 
 //  lists have equal number of matching keys in the same order, 
 //  corrensponding list elements has (subMatch key e1 e2) = Some _
@@ -1009,10 +979,11 @@ let addCombiningStructs (sb:System.Text.StringBuilder) interfaceAnnotations=
   ()
 
 let safeInterfaceGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,
-                        funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) : string=
+                        funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) 
+                        (annotations: Annotations) : string=
   let sb=new System.Text.StringBuilder()
   let vtbls=structs |> List.ofSeq |> List.collect (fun (KeyValue(name,(ty,_))) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl))) 
-  match sanityCheck vtbls d3d12annotations with
+  match sanityCheck vtbls (annotations.interfacesFull) with
   |Some(interfaceAnnotations) ->
     let apl = appendLine sb
     apl "\

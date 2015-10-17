@@ -83,14 +83,16 @@
     <Compile Include="sysgen.fs" />
     <Compile Include="safegen.fs" />
     <Compile Include="Program.fs" />
-    <None Include="PCH\Common_PCH.h" />
+    <None Include="PCH\Common_PCH.h">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="PCH\DXGI_PCH.h">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="App.config" />
     <None Include="packages.config" />
     <None Include="config.yaml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <PropertyGroup>

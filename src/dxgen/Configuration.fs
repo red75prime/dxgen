@@ -18,6 +18,9 @@ type Module = {
 
     [<YamlMember("precompiled-header")>]
     PrecompileHeader : string
+
+    [<YamlMember("no-winapi-gen")>]
+    NoWinapiGen : bool
 }
 
 [<CLIMutable>][<NoComparison>]
