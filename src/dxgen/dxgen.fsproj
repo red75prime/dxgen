@@ -70,12 +70,8 @@
   <ItemGroup>
     <Compile Include="parserm.fs" />
     <Compile Include="libclang.fs" />
-    <Compile Include="HeaderLoader.fs" />
-    <Compile Include="Model\TypeInfo.fs" />
-    <Compile Include="Model\TypeInfoBuilder.fs" />
     <Compile Include="CaseConverter.fs" />
     <Compile Include="SDKLocator.fs" />
-    <Compile Include="ModuleBuilder.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="utils.fs" />
     <Compile Include="cdesc.fs" />
