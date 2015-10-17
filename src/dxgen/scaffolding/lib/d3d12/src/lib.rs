@@ -998,6 +998,7 @@ impl D3D12Device {
 }
 
 pub struct D3D12Fence(*mut ID3D12Fence);
+unsafe impl Sync for D3D12Fence {}
 
 impl HasIID for D3D12Fence {
   fn iid() -> REFGUID { &IID_ID3D12Fence }

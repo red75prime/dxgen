@@ -424,7 +424,7 @@ let d3d12annotations_prime=
           ("__ret_val",OutReturn);
         ],MANone);
       ]);
-      ("ID3D12FenceVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl", [
+      ("ID3D12FenceVtbl",IAAutogen(Set.ofList [IOSync]), "ID3D12PageableVtbl", [
         ("GetCompletedValue",[
           ("This",AThis);
         ],MANone);

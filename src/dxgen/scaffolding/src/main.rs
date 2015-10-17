@@ -161,12 +161,18 @@ fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
         std::thread::sleep_ms(10);
       } else {
         cubes::on_render(&mut *data.borrow_mut(), x, y);
+        ::perf_frame();
         frame_count += 1;
         let now = precise_time_s();
         let frametime = now - mstart;
         mstart = now;
-        print!("FPS: {:4.3}\tAvg. FPS: {}        \r" , 1.0/frametime, avg_fps);
         if now<start || now>=(start+1.0) {
+          let (clear, fill, exec, present, wait) = unsafe {
+            (perf_data.clear*1000./perf_data.frames as f64, perf_data.fillbuf*1000./perf_data.frames as f64, 
+              perf_data.exec*1000./perf_data.frames as f64, perf_data.present*1000./perf_data.frames as f64, 
+              perf_data.wait*1000./perf_data.frames as f64, )
+          };
+          print!("FPS: {:3} clear:{:4.2} fill:{:4.2} exec:{:4.2} present:{:4.2} wait:{:4.2}   \r", avg_fps, clear, fill, exec, present, wait);
           start = now;
           let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
           avg_fps = frame_count;
@@ -188,5 +194,67 @@ fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
   drop(data);
   // maybe debug layer has something to say
   dump_info_queue(iq.map(|iq|iq).as_ref());
+}
+
+pub struct PerfData {
+  frames: u64,
+  clear: f64,
+  fillbuf: f64,
+  exec: f64,
+  present: f64,
+  wait: f64,
+}
+
+static mut perf_data: PerfData = PerfData {
+  frames: 0,
+  clear: 0.,
+  fillbuf: 0.,
+  exec: 0.,
+  present: 0.,
+  wait: 0.,
+};
+
+pub fn perf_frame() {
+  unsafe { perf_data.frames += 1; }
+}
+
+pub fn perf_clear_start() {
+  unsafe { perf_data.clear -= precise_time_s(); }
+}
+
+pub fn perf_clear_end() {
+  unsafe { perf_data.clear += precise_time_s(); }
+}
+
+pub fn perf_fillbuf_start() {
+  unsafe { perf_data.fillbuf -= precise_time_s(); }
+}
+
+pub fn perf_fillbuf_end() {
+  unsafe { perf_data.fillbuf += precise_time_s(); }
+}
+
+pub fn perf_exec_start() {
+  unsafe { perf_data.exec -= precise_time_s(); }
+}
+
+pub fn perf_exec_end() {
+  unsafe { perf_data.exec += precise_time_s(); }
+}
+
+pub fn perf_present_start() {
+  unsafe { perf_data.present -= precise_time_s(); }
+}
+
+pub fn perf_present_end() {
+  unsafe { perf_data.present += precise_time_s(); }
+}
+
+pub fn perf_wait_start() {
+  unsafe { perf_data.wait -= precise_time_s(); }
+}
+
+pub fn perf_wait_end() {
+  unsafe { perf_data.wait += precise_time_s(); }
 }
 

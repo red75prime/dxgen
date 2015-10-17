@@ -199,7 +199,10 @@ pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &
         panic!("set_event_on_completion error: 0x{:x}",hr);
       },
     }
-    unsafe { WaitForSingleObject(*fence_event, INFINITE) };
+    wait_for_single_object(*fence_event, INFINITE);
   }
 }
 
+pub fn wait_for_single_object(event: HANDLE, ms: u32) -> u32 {
+  unsafe { WaitForSingleObject(event, ms) }
+}
