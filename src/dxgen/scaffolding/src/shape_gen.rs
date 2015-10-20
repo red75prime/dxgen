@@ -1,14 +1,11 @@
 use winapi::{D3D_PRIMITIVE_TOPOLOGY, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST};
 use cgmath::*;
+use utils::v3;
 
 pub trait GenVertex {
   fn new_vertex(p: &Vector3<f32>) -> Self;
   fn set_uv(self, u: f32, v: f32) -> Self;
   fn set_normal(self, n: &Vector3<f32>) -> Self;
-}
-
-fn v3(x: f32, y: f32, z: f32) -> Vector3<f32> {
-  Vector3::new(x, y, z)
 }
 
 pub fn cube<V: GenVertex>(sz: f32) -> (D3D_PRIMITIVE_TOPOLOGY, Vec<V>) {

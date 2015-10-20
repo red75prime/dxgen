@@ -52,14 +52,11 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   float3 eye_off = -float3(view._41, view._42, view._43) - pv.w_pos;
   float3 eye_n = normalize(eye_off);
   float3 light_off = light_pos - pv.w_pos;
+  float light_invd = 1. / length(light_off);
   float3 light_n = normalize(light_off);
-  float3 light_r = reflect(-light_n, pv.norm);
+  float3 light_r = reflect(-light_n, normalize(pv.norm));
   float sb=clamp(dot(light_r,pv.norm),0,0.001)/0.001;
   float l=clamp(dot(light_n,pv.norm),0,1);
-  float s=clamp(length(cross(light_r,eye_n)),0,1);
-  float eldist=length(light_off)+length(eye_off);
-  float s3=1-clamp(s*eldist,0,0.1)/0.1;
-  ret = texel*(0.1+l*0.6)+float4(s3,s3,s3,1)*sb;
-//  ret.r += eye_n.z;
+  ret = texel*(0.1+l*0.6);
   return ret;
 }

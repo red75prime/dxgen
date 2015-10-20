@@ -28,6 +28,8 @@ mod dxsems;
 mod core;
 mod app;
 mod cubes;
+mod camera;
+
 
 use dxsems::VertexFormat;
 use winapi::*;
@@ -50,6 +52,7 @@ use shape_gen::*;
 use core::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use rand::Rng;
+use cubes::{Parameters, CubeParms};
 
 #[link(name="d3dcompiler")]
 extern {}
@@ -65,10 +68,21 @@ fn main() {
   println!("0x{:x} then 0x{:x}", da_boom_p, da_boom_2);
   // It seems atomics don't panic on overflow
 
+  let mut parms = CubeParms {thread_count: 2, object_count: 2_000,};
   let mut adapters_to_test = vec![];
   for arg in env::args() {
     if let Ok(n) = arg.parse::<u32>() {
       adapters_to_test.push(n);
+    }
+    if arg.starts_with("-o") {
+      if let Ok(n) = (&arg[2..]).parse::<u32>() {
+        parms.object_count = n;
+      }
+    }
+    if arg.starts_with("-t") {
+      if let Ok(n) = (&arg[2..]).parse::<u32>() {
+        parms.thread_count = n;
+      }
     }
   }
 
@@ -94,14 +108,15 @@ fn main() {
   crossbeam::scope(|scope| {
     for a in adapters {
       let mutex = mutex.clone();
+      let parms = &parms;
       scope.spawn(move||{
-        main_prime(a, mutex)
+        main_prime(a, mutex, parms)
       });
     };
   });
 }
 
-fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
+fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
 
   let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
   let title=format!("D3D12 Hello, rusty world! ({})", descr);
@@ -124,7 +139,7 @@ fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
   }
 
   let data=
-    match cubes::AppData::on_init(&wnd, Some(&adapter), FRAME_COUNT) { 
+    match cubes::AppData::on_init(&wnd, Some(&adapter), FRAME_COUNT, parms) { 
       Ok(appdata) => {
         Rc::new(RefCell::new(appdata))
       },
@@ -139,8 +154,11 @@ fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
     cubes::on_resize(&mut *rdata.borrow_mut(), w, h, c);
   }));
 
-  let mut x=0;
-  let mut y=0;
+  let mut x:i32=0;
+  let mut y:i32=0;
+  // TODO: Make this horror go away
+  let (mut wdown, mut sdown, mut adown, mut ddown, mut qdown, mut edown) = (false, false, false, false, false, false);
+  let mut mouse_down = false;
   let mut frame_count = 0;
   let mut avg_fps = 0;
   let mut start = precise_time_s();
@@ -150,16 +168,75 @@ fn main_prime(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>) {
       //println!("{} ", msg.message);
       match msg.message {
         WM_MOUSEMOVE => {
-          x=GET_X_LPARAM(msg.lParam);
-          y=GET_Y_LPARAM(msg.lParam);
+          let x1 = GET_X_LPARAM(msg.lParam) as i32;
+          let y1 = GET_Y_LPARAM(msg.lParam) as i32;
+          let (dx, dy) = (x1 - x, y - y1);
+          x = x1;
+          y = y1;
+          if mouse_down {
+            let mut data = data.borrow_mut();
+            let camera = data.camera();
+            camera.rotx(-dx as f32/6.);
+            camera.roty(-dy as f32/6.);
+          }
+        },
+        WM_KEYDOWN => {
+          match msg.wParam as u8 {
+            b'A' => adown = true,
+            b'S' => sdown = true,
+            b'D' => ddown = true,
+            b'W' => wdown = true,
+            b'Q' => qdown = true,
+            b'E' => edown = true,
+            _ => {},
+          }
+        },
+        WM_KEYUP => {
+          match msg.wParam as u8 {
+            b'A' => adown = false,
+            b'S' => sdown = false,
+            b'D' => ddown = false,
+            b'W' => wdown = false,
+            b'Q' => qdown = false,
+            b'E' => edown = false,
+            _ => {},
+          }
+        },
+        WM_LBUTTONDOWN => {
+          mouse_down = true;
+        },
+        WM_LBUTTONUP => {
+          mouse_down = false;
         },
         _ => {},
-      } 
+      };
     } else {
       let do_not_render = data.borrow().is_minimized();
       if do_not_render {
         std::thread::sleep_ms(10);
       } else {
+        {
+          let mut data = data.borrow_mut();
+          let camera = data.camera();
+          if wdown {
+            camera.go(0.1, 0., 0.);
+          };
+          if sdown {
+            camera.go(-0.1, 0., 0.);
+          };
+          if adown {
+            camera.go(0., 0.1, 0.); // Something wrong with signs. Negative value should translate camera to the left
+          };
+          if ddown {
+            camera.go(0., -0.1, 0.);
+          };
+          if qdown {
+            camera.rotz(-0.1);
+          };
+          if edown {
+            camera.rotz(0.1);
+          };
+        }
         cubes::on_render(&mut *data.borrow_mut(), x, y);
         ::perf_frame();
         frame_count += 1;

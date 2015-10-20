@@ -16,13 +16,12 @@ use crossbeam;
 use create_device::*;
 use std::cmp::{min,max};
 
-
+use camera::*;
 use shape_gen::*;
 use std::sync::atomic::Ordering;
 
 pub type M3 = [[f32;3];3];
 pub type M4 = [[f32;4];4];
-
 
 
 dx_vertex!( Vertex {
@@ -60,6 +59,25 @@ struct Constants {
   light_pos: [f32;3],
 }
 
+pub trait Parameters {
+  fn object_count(&self) -> &u32;
+  fn thread_count(&self) -> &u32;
+}
+
+pub struct CubeParms {
+  pub object_count: u32,
+  pub thread_count: u32,
+}
+
+impl Parameters for CubeParms {
+  fn object_count(&self) -> &u32 {
+    &self.object_count
+  }
+  fn thread_count(&self) -> &u32 {
+    &self.thread_count
+  }
+}
+
 // TODO: split this into something more manageable.
 pub struct AppData {
   core: DXCore,
@@ -84,13 +102,15 @@ pub struct AppData {
   parallel_submission: Vec<ParallelSubmissionData<Constants>>,
   cur_ps_num: usize,
   minimized: bool,
+  camera: Camera,
+  rot_spd: Vec<(Vector3<f32>, Vector3<f32>, f32)>,
 }
 
 unsafe impl Sync for AppData {}
 
 impl AppData {
-  pub fn on_init(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32) -> Result<AppData, Option<D3D12InfoQueue>> {
-    on_init(wnd, adapter, frame_count)
+  pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32, parameters: &T) -> Result<AppData, Option<D3D12InfoQueue>> {
+    on_init(wnd, adapter, frame_count, parameters)
   }
 
   pub fn on_resize(&mut self, w: u32, h: u32, c: u32) {
@@ -116,6 +136,10 @@ impl AppData {
   pub fn info_queue(&self) -> &Option<D3D12InfoQueue> {
     &self.core.info_queue
   }
+
+  pub fn camera(&mut self) -> &mut Camera {
+    &mut self.camera
+  }
 }
 
 impl fmt::Debug for AppData {
@@ -124,7 +148,7 @@ impl fmt::Debug for AppData {
   }
 }
 
-pub fn on_init(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32) -> Result<AppData, Option<D3D12InfoQueue>> {
+pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32, parameters: &T) -> Result<AppData, Option<D3D12InfoQueue>> {
   let (w, h)=(512., 256.);
   let hwnd=wnd.get_hwnd();
   debug!("HWND");
@@ -295,8 +319,17 @@ pub fn on_init(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32) -
   let tex_resource = try!(core.dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST, None).map_err(|_|core.info_queue.clone()));
   
   let mut texdata: Vec<u32> = vec![0xff00ffff; tex_w*tex_h as usize];
+  let mut i = 0;
   for v in &mut texdata[..] {
-    *v=rand::random();
+    let (x,y) = (i%tex_w, i/tex_w);
+    *v =
+      if x%10 == 0 || y%10 == 0 {
+        0xff204f4f
+      } else {
+        0xff909090
+      };
+//    *v=rand::random();
+    i+=1;
   }
   // temporary buffer should live until the start of command list execution
   //#[allow(unused_variables)]
@@ -330,10 +363,16 @@ pub fn on_init(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32) -
   
   let mut par_sub = vec![];
   for _ in 0..3 {
-    par_sub.push(try!(init_parallel_submission(&core, 8, 200_000).map_err(|_|core.info_queue.clone())));
+    par_sub.push(try!(init_parallel_submission(&core, *parameters.thread_count(), *parameters.object_count()).map_err(|_|core.info_queue.clone())));
+  }
+  let mut rot_spd = Vec::with_capacity(*parameters.object_count() as usize);
+  for _ in 0 .. *parameters.object_count() {
+    rot_spd.push((v3((rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-1.)*200.), 
+          v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()));
   }
 
-  let ret=
+
+  let mut ret=
     AppData {
       core: core,
       swap_chain: swap_chain,
@@ -357,7 +396,12 @@ pub fn on_init(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32) -
       parallel_submission: par_sub,
       cur_ps_num: 0,
       minimized: false,
+      camera: Camera::new(),
+      rot_spd: rot_spd,
     };
+
+  ret.camera.go(-3., 0., 0.);
+  ret.camera.aspect = (w as f32)/(h as f32);
   
   debug!("Command list Close");
   command_list.close().unwrap();
@@ -367,6 +411,7 @@ pub fn on_init(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32) -
   
   debug!("wait_for_prev_frame");
   wait_for_graphics_queue(&ret.core, &ret.fence, &ret.fence_event);
+
   Ok(ret)
 }
 
@@ -379,7 +424,7 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   {
     let ps = &data.parallel_submission[data.cur_ps_num];
     let fence = &ps.fence;
-    // wait for GPU to execute all command lists, which was previously submitted
+    // wait for GPU to execute all command lists, which was previously submitted by current parallel submission
     fence.set_event_on_completion(ps.fence_val, data.fence_event).unwrap();
     wait_for_single_object(data.fence_event, INFINITE);
   }
@@ -411,13 +456,12 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
 
   let world_matrix = matrix4_to_4x4(&wm); //[[c, s, 0.,0.],[-s, c, 0.,0.],[0.,c ,1.,0.],[0.,0.,0.,1.],];
 
-  let mut vm = Matrix4::look_at(&Point3::new(0., 0., -3.), &Point3::new(0., 0., 0.), &Vector3::new(0., 1., 0.));
-  lhs_to_rhs(&mut vm);
-  let view_matrix = matrix4_to_4x4(&vm);
+  let (vx,vy) = f64::sin_cos(data.tick*0.01);
+  let (vx,vy) = (vx as f32, vy as f32);
 
-  let mut pm = cgmath::perspective(deg(90.), 1.0/aspect, 0.1, 20.);
-  //lhs_to_rhs(&mut pm);
-  let proj_matrix = matrix4_to_4x4(&pm);
+  let view_matrix = matrix4_to_4x4(&data.camera.view_matrix());
+
+  let proj_matrix = matrix4_to_4x4(&data.camera.projection_matrix());
 
   let (lx,ly) = f64::sin_cos(data.tick);
   let (lx,ly) = (lx as f32, ly as f32);
@@ -616,7 +660,7 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
 }
 
 pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
-   info!("Resize to {},{},{}.",w,h,c);
+   debug!("Resize to {},{},{}.",w,h,c);
    if w==0 || h==0 {
       data.minimized = true;
       return;
@@ -638,6 +682,8 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
    let ds_format = DXGI_FORMAT_D32_FLOAT;
    data.depth_stencil = Some(create_depth_stencil(w as u64, h as u32, ds_format, &data.core.dev, &data.dsd_heap, 0).unwrap());
   
+   data.camera.aspect = (w as f32)/(h as f32);
+
    data.viewport=D3D12_VIEWPORT {
      TopLeftX: 0.,
      TopLeftY: 0.,
@@ -755,6 +801,7 @@ fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32)
   let transition_list: D3D12GraphicsCommandList = try!(core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &ps_allocator, None));
   transition_list.close().unwrap();
 
+
   Ok(ParallelSubmissionData {
     c_buffer: cbuf,
     cpu_buf_ptr: cpu_buf_ptr,
@@ -777,6 +824,7 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
   let mut rtvh=data.swap_chain.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
   rtvh.ptr += (data.frame_index as SIZE_T)*data.swap_chain.rtv_dsize;
   let chunks = ps.get_chunks(thread_count);
+  //debug!("{:?}", chunks);
 
   crossbeam::scope(|scope|{
     let mut jhs = vec![];
@@ -803,9 +851,18 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
 
           for i in start .. start+count {
             let mut c: Constants = consts.clone();
-            c.model[0][3]=(rng.gen::<f32>()-0.5)*20.;
-            c.model[1][3]=(rng.gen::<f32>()-0.5)*20.;
-            c.model[2][3]=(rng.gen::<f32>()-1.0)*20.;
+            let (pos, dir, spd) = data.rot_spd[i].clone();
+            let rot = Basis3::from_axis_angle(&dir, rad(spd*(data.tick as f32)));
+            let asfa = rot.as_ref();
+            for j in 0..3 {
+                for k in 0..3 {
+                  c.model[j][k] = asfa[k][j];
+                  c.n_model[j][k] = asfa[k][j];
+                }
+            }
+            c.model[0][3] = pos.x;
+            c.model[1][3] = pos.y;
+            c.model[2][3] = pos.z;
             let (constants, cb_address) = ps.get_buf_ptr_mut(i);
             unsafe {
                 // Write to memory-mapped constant buffer

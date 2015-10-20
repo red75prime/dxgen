@@ -34,6 +34,14 @@ pub fn lhs_to_rhs(m: &mut Matrix4<f32>) {
   m.z.w = - m.z.w;
 }
 
+pub fn v3(x: f32, y: f32, z: f32) -> Vector3<f32> {
+  Vector3::new(x, y, z)
+}
+
+pub fn p3(x: f32, y: f32, z: f32) -> Point3<f32> {
+  Point3::new(x, y, z)
+}
+
 use d3d12_safe::*;
 use winapi::*;
 use std::mem;
