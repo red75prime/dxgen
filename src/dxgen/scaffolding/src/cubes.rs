@@ -103,7 +103,7 @@ pub struct AppData {
   cur_ps_num: usize,
   minimized: bool,
   camera: Camera,
-  rot_spd: Vec<(Vector3<f32>, Vector3<f32>, f32)>,
+  rot_spd: Vec<(Vector3<f32>, Vector3<f32>, Vector3<f32>, f32)>,
 }
 
 unsafe impl Sync for AppData {}
@@ -312,7 +312,10 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   let tex_w=256usize;
   let tex_h=256usize;
 
-  let tex_desc = resource_desc_tex2d_nomip(tex_w as u64, tex_h as u32, DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_FLAG_NONE);
+  let tex_desc = D3D12_RESOURCE_DESC {
+    MipLevels: 4,
+    .. resource_desc_tex2d_nomip(tex_w as u64, tex_h as u32, DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_FLAG_NONE)
+  };
   //info!("Texture desc: {:#?}", &res_desc);
 
   debug!("Texture resource");
@@ -337,7 +340,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   // upload_into_texture transition tex_resource into common state (it uses copy queue, so it can't set pixel_shader_resource state)
   command_list.resource_barrier(&mut [*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
-  let srv_desc = shader_resource_view_tex2d_default(DXGI_FORMAT_R8G8B8A8_UNORM);
+  let srv_desc = shader_resource_view_tex2d_default_mip(DXGI_FORMAT_R8G8B8A8_UNORM, 4);
 
   let srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
   debug!("Create shader resource view: texture");
@@ -368,6 +371,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   let mut rot_spd = Vec::with_capacity(*parameters.object_count() as usize);
   for _ in 0 .. *parameters.object_count() {
     rot_spd.push((v3((rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-1.)*200.), 
+        v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).mul_s(0.01),
           v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()));
   }
 
@@ -420,6 +424,11 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   use std::f64; 
 
   if cfg!(debug) {debug!("on_render")};
+
+  for rot in &mut data.rot_spd {
+    rot.0 = rot.0.add_v(&rot.1);
+  }
+
   ::perf_wait_start();
   {
     let ps = &data.parallel_submission[data.cur_ps_num];
@@ -487,7 +496,7 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   ::perf_clear_start();
   data.core.graphics_queue.execute_command_lists(&[&data.parallel_submission[data.cur_ps_num].clear_list]);
 
-  //wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
+  wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
 
   ::perf_clear_end();
   ::perf_exec_start();
@@ -851,7 +860,7 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
 
           for i in start .. start+count {
             let mut c: Constants = consts.clone();
-            let (pos, dir, spd) = data.rot_spd[i].clone();
+            let (pos, _, dir, spd) = data.rot_spd[i].clone();
             let rot = Basis3::from_axis_angle(&dir, rad(spd*(data.tick as f32)));
             let asfa = rot.as_ref();
             for j in 0..3 {

@@ -149,10 +149,11 @@ fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms
       },
     };
   
-  let rdata=data.clone();
-  wnd.set_resize_fn(Box::new(move |w,h,c|{
-    cubes::on_resize(&mut *rdata.borrow_mut(), w, h, c);
-  }));
+  // WM_SIZE is reposted as WM_USER
+  //let rdata=data.clone();
+  //wnd.set_resize_fn(Box::new(move |w,h,c|{
+  //  cubes::on_resize(&mut *rdata.borrow_mut(), w, h, c);
+  //}));
 
   let mut x:i32=0;
   let mut y:i32=0;
@@ -167,6 +168,9 @@ fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms
     if let Some(msg) = mmsg {
       //println!("{} ", msg.message);
       match msg.message {
+        WM_USER => {
+          data.borrow_mut().on_resize(LOWORD(msg.lParam as u32) as u32, HIWORD(msg.lParam as u32) as u32, msg.wParam as u32); 
+        },
         WM_MOUSEMOVE => {
           let x1 = GET_X_LPARAM(msg.lParam) as i32;
           let y1 = GET_Y_LPARAM(msg.lParam) as i32;
@@ -263,7 +267,7 @@ fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms
   // copy info queue
   let iq=data.borrow().info_queue().clone();
   // release resources
-  wnd.set_resize_fn(Box::new(|_,_,_|{}));
+  //wnd.set_resize_fn(Box::new(|_,_,_|{}));
   {
     let data=data.borrow();
     data.wait_frame();

@@ -3,7 +3,7 @@ extern crate user32;
 extern crate kernel32;
 
 use winapi::*;
-use self::user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage, LoadCursorW };
+use self::user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage, LoadCursorW, PostMessageW };
 use self::kernel32::{GetModuleHandleW};
 use std::ptr;
 use libc;
@@ -95,11 +95,14 @@ unsafe extern "system" fn wnd_callback(hwnd: HWND, msg: UINT, wparam: WPARAM, lp
       return 0;
     },
     WM_SIZE => {
-      WINDOW.with(|rc| {
-        if let Some(ThreadLocalData {resize_fn: Some(ref mut resize), ..}) = *rc.borrow_mut() {
-          (*resize)(LOWORD(lparam as u32) as u32, HIWORD(lparam as u32) as u32, wparam as u32 );
-        }
-      });
+      // WM_SIZE can be received while calling DXGISwapChain::present
+      // so, it's better to postpone processing
+//      WINDOW.with(|rc| {
+//        if let Some(ThreadLocalData {resize_fn: Some(ref mut resize), ..}) = *rc.borrow_mut() {
+//          (*resize)(LOWORD(lparam as u32) as u32, HIWORD(lparam as u32) as u32, wparam as u32 );
+      //  }
+      //});
+      PostMessageW(hwnd, WM_USER, wparam, lparam);
       return 0;
     },
     _ => ()
