@@ -168,7 +168,9 @@ fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms
     if let Some(msg) = mmsg {
       //println!("{} ", msg.message);
       match msg.message {
-        WM_USER => {
+        WM_SIZE => {
+          // Normally this message goes to wndproc, in window.rs I repost it into message queue to prevent reentrancy problems
+          debug!("WM_SIZE {}, {}  ", msg.wParam, msg.lParam);
           data.borrow_mut().on_resize(LOWORD(msg.lParam as u32) as u32, HIWORD(msg.lParam as u32) as u32, msg.wParam as u32); 
         },
         WM_MOUSEMOVE => {
@@ -235,13 +237,13 @@ fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms
             camera.go(0., -0.1, 0.);
           };
           if qdown {
-            camera.rotz(-0.1);
+            camera.rotz(-0.5);
           };
           if edown {
-            camera.rotz(0.1);
+            camera.rotz(0.5);
           };
         }
-        cubes::on_render(&mut *data.borrow_mut(), x, y);
+        data.borrow_mut().on_render(x, y);
         ::perf_frame();
         frame_count += 1;
         let now = precise_time_s();

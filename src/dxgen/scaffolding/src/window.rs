@@ -27,6 +27,15 @@ impl<'a> Iterator for PollEventIterator<'a> {
   type Item = Option<MSG>;
   
   fn next(&mut self) -> Option<Self::Item> {
+    let mut maybe_injected_msg = None;
+    WINDOW.with(|rc| {
+      if let Some(ThreadLocalData {inject_msg: ref mut imsg, ..}) = *rc.borrow_mut() {
+          maybe_injected_msg = imsg.take();
+      }
+    });
+    if let Some(imsg) = maybe_injected_msg {
+      return Some(Some(imsg));
+    }
     let mut msg = unsafe{ mem::uninitialized::<MSG>() };
     let ret = unsafe{ PeekMessageW(&mut msg, ptr::null_mut(), 0, 0, PM_REMOVE) };
     if ret == 0 {
@@ -56,17 +65,6 @@ impl Window {
   pub fn poll_events<'a>(&'a self) -> PollEventIterator<'a> {
     PollEventIterator{wnd: &self}
   }
-  pub fn set_resize_fn(&self, resize_fn: ResizeFn) {
-    WINDOW.with(|rc| {
-      let mtd=&mut *rc.borrow_mut();
-      match mtd {
-        &mut Some(ref mut td) => {
-          td.resize_fn = Some(resize_fn);
-        },
-        &mut None => panic!(),
-      };
-    });
-  }
 }
 
 impl Clone for Window {
@@ -82,7 +80,7 @@ type ResizeFn = Box<FnMut(u32, u32, u32) -> ()>;
 
 struct ThreadLocalData {
   hwnd: HWND,
-  resize_fn: Option<ResizeFn>,
+  inject_msg: Option<MSG>, // MSG for injection into message queue
 }
 
 thread_local!(static WINDOW: RefCell<Option<ThreadLocalData>> = RefCell::new(None) );
@@ -97,12 +95,12 @@ unsafe extern "system" fn wnd_callback(hwnd: HWND, msg: UINT, wparam: WPARAM, lp
     WM_SIZE => {
       // WM_SIZE can be received while calling DXGISwapChain::present
       // so, it's better to postpone processing
-//      WINDOW.with(|rc| {
-//        if let Some(ThreadLocalData {resize_fn: Some(ref mut resize), ..}) = *rc.borrow_mut() {
-//          (*resize)(LOWORD(lparam as u32) as u32, HIWORD(lparam as u32) as u32, wparam as u32 );
-      //  }
-      //});
-      PostMessageW(hwnd, WM_USER, wparam, lparam);
+      WINDOW.with(|rc| {
+        if let Some(ThreadLocalData {inject_msg: ref mut imsg, ..}) = *rc.borrow_mut() {
+            *imsg = Some(MSG {hwnd: hwnd, message: msg, wParam: wparam, 
+                              lParam: lparam, time: 0, pt: POINT {x: 0, y: 0,},});
+        }
+      });
       return 0;
     },
     _ => ()
@@ -146,7 +144,7 @@ pub fn create_window(title: &str, width: i32, height: i32) -> Window {
   }
   WINDOW.with(|rc| {
     let td=&mut *rc.borrow_mut();
-    *td = Some(ThreadLocalData{hwnd: hwnd, resize_fn: None });
+    *td = Some(ThreadLocalData{hwnd: hwnd, inject_msg: None });
   });
   Window {
     hwnd: hwnd,

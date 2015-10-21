@@ -496,7 +496,8 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   ::perf_clear_start();
   data.core.graphics_queue.execute_command_lists(&[&data.parallel_submission[data.cur_ps_num].clear_list]);
 
-  wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
+  // TODO: make sure that this sync is not needed
+  //wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
 
   ::perf_clear_end();
   ::perf_exec_start();
