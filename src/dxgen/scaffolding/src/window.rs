@@ -28,6 +28,7 @@ impl<'a> Iterator for PollEventIterator<'a> {
   
   fn next(&mut self) -> Option<Self::Item> {
     let mut maybe_injected_msg = None;
+    // Extract WM_SIZE message from thread-local data associated with this window
     WINDOW.with(|rc| {
       if let Some(ThreadLocalData {inject_msg: ref mut imsg, ..}) = *rc.borrow_mut() {
           maybe_injected_msg = imsg.take();
@@ -88,7 +89,6 @@ thread_local!(static WINDOW: RefCell<Option<ThreadLocalData>> = RefCell::new(Non
 unsafe extern "system" fn wnd_callback(hwnd: HWND, msg: UINT, wparam: WPARAM, lparam: LPARAM ) -> LRESULT {
   match msg {
     WM_DESTROY => {
-      println!("WM_DESTROY");
       PostQuitMessage(0);
       return 0;
     },

@@ -43,12 +43,11 @@ use std::env;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 use window::*;
-use structwrappers::*;
 use utils::*;
 use clock_ticks::*;
 use cgmath::*;
-use shape_gen::*;
 use core::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use rand::Rng;
@@ -106,17 +105,17 @@ fn main() {
 
   let mutex=Arc::new(Mutex::new(()));
   crossbeam::scope(|scope| {
-    for a in adapters {
+    for (a,id) in adapters.into_iter().zip(0 ..) {
       let mutex = mutex.clone();
       let parms = &parms;
       scope.spawn(move||{
-        main_prime(a, mutex, parms)
+        main_prime(id, a, mutex, parms)
       });
     };
   });
 }
 
-fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
+fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
 
   let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
   let title=format!("D3D12 Hello, rusty world! ({})", descr);
@@ -149,12 +148,6 @@ fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms
       },
     };
   
-  // WM_SIZE is reposted as WM_USER
-  //let rdata=data.clone();
-  //wnd.set_resize_fn(Box::new(move |w,h,c|{
-  //  cubes::on_resize(&mut *rdata.borrow_mut(), w, h, c);
-  //}));
-
   let mut x:i32=0;
   let mut y:i32=0;
   // TODO: Make this horror go away
@@ -225,10 +218,10 @@ fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms
           let mut data = data.borrow_mut();
           let camera = data.camera();
           if wdown {
-            camera.go(0.1, 0., 0.);
+            camera.go(0.01, 0., 0.);
           };
           if sdown {
-            camera.go(-0.1, 0., 0.);
+            camera.go(-0.01, 0., 0.);
           };
           if adown {
             camera.go(0., 0.1, 0.); // Something wrong with signs. Negative value should translate camera to the left
@@ -250,12 +243,17 @@ fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms
         let frametime = now - mstart;
         mstart = now;
         if now<start || now>=(start+1.0) {
-          let (clear, fill, exec, present, wait) = unsafe {
-            (perf_data.clear*1000./perf_data.frames as f64, perf_data.fillbuf*1000./perf_data.frames as f64, 
-              perf_data.exec*1000./perf_data.frames as f64, perf_data.present*1000./perf_data.frames as f64, 
-              perf_data.wait*1000./perf_data.frames as f64, )
-          };
-          print!("FPS: {:3} clear:{:4.2} fill:{:4.2} exec:{:4.2} present:{:4.2} wait:{:4.2}   \r", avg_fps, clear, fill, exec, present, wait);
+          let (clear, fill, exec, present, wait) =
+            PERFDATA.with(|p_data| {
+              let p_data = p_data.borrow();
+              let frames = p_data.frames as f64;
+              (p_data.perf.get("clear").unwrap()*1000./frames, 
+                p_data.perf.get("fillbuf").unwrap()*1000./frames, 
+                p_data.perf.get("exec").unwrap()*1000./frames, 
+                p_data.perf.get("present").unwrap()*1000./frames, 
+                p_data.perf.get("wait").unwrap()*1000./frames, )
+            });
+          println!("Adapter {} FPS: {:3} clear:{:4.2} fill:{:4.2} exec:{:4.2} present:{:4.2} wait:{:4.2}   \r", id, avg_fps, clear, fill, exec, present, wait);
           start = now;
           let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
           avg_fps = frame_count;
@@ -281,63 +279,77 @@ fn main_prime<T: Parameters>(adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms
 
 pub struct PerfData {
   frames: u64,
-  clear: f64,
-  fillbuf: f64,
-  exec: f64,
-  present: f64,
-  wait: f64,
+  perf: HashMap<&'static str, f64>,
 }
 
-static mut perf_data: PerfData = PerfData {
-  frames: 0,
-  clear: 0.,
-  fillbuf: 0.,
-  exec: 0.,
-  present: 0.,
-  wait: 0.,
-};
+thread_local!(static PERFDATA: RefCell<PerfData> = 
+  RefCell::new( {
+    let mut pd = PerfData {
+      frames: 0,
+      perf: HashMap::new(),
+    };
+    pd.perf.insert("clear", 0.);
+    pd.perf.insert("fillbuf", 0.);
+    pd.perf.insert("exec", 0.);
+    pd.perf.insert("present", 0.);
+    pd.perf.insert("wait", 0.);
+    pd
+  } ));
 
 pub fn perf_frame() {
-  unsafe { perf_data.frames += 1; }
+  PERFDATA.with(|pd| {
+    pd.borrow_mut().frames += 1;
+  });
+}
+
+pub fn perf_start(name: &'static str) {
+  PERFDATA.with(|pd| {
+    *pd.borrow_mut().perf.get_mut(name).unwrap() -= precise_time_s();
+  });
+}
+
+pub fn perf_end(name: &'static str) {
+  PERFDATA.with(|pd| {
+    *pd.borrow_mut().perf.get_mut(name).unwrap() += precise_time_s();
+  });
 }
 
 pub fn perf_clear_start() {
-  unsafe { perf_data.clear -= precise_time_s(); }
+  perf_start("clear");
 }
 
 pub fn perf_clear_end() {
-  unsafe { perf_data.clear += precise_time_s(); }
+  perf_end("clear");
 }
 
 pub fn perf_fillbuf_start() {
-  unsafe { perf_data.fillbuf -= precise_time_s(); }
+  perf_start("fillbuf");
 }
 
 pub fn perf_fillbuf_end() {
-  unsafe { perf_data.fillbuf += precise_time_s(); }
+  perf_end("fillbuf");
 }
 
 pub fn perf_exec_start() {
-  unsafe { perf_data.exec -= precise_time_s(); }
+  perf_start("exec");
 }
 
 pub fn perf_exec_end() {
-  unsafe { perf_data.exec += precise_time_s(); }
+  perf_end("exec");
 }
 
 pub fn perf_present_start() {
-  unsafe { perf_data.present -= precise_time_s(); }
+  perf_start("present");
 }
 
 pub fn perf_present_end() {
-  unsafe { perf_data.present += precise_time_s(); }
+  perf_end("present");
 }
 
 pub fn perf_wait_start() {
-  unsafe { perf_data.wait -= precise_time_s(); }
+  perf_start("wait");
 }
 
 pub fn perf_wait_end() {
-  unsafe { perf_data.wait += precise_time_s(); }
+  perf_end("wait");
 }
-
