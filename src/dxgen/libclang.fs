@@ -326,7 +326,7 @@ extern void disposeString(String str)
 let toString (str: String) =
     let result = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(str.data)
     disposeString(str)
-    result
+    if result=null then "" else result
 
 [<DllImport("libclang", EntryPoint = "clang_createIndex", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern Index createIndex(int excludeDeclarationsFromPch, int displayDiagnostics)
@@ -453,6 +453,13 @@ extern uint32 isBitField(Cursor c)
 
 let isBitFieldFS c=
   isBitField c <> 0u
+
+[<DllImport("libclang", EntryPoint = "clang_CXXMethod_isPureVirtual", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern uint32 isPureVirtual(Cursor c)
+
+let isPureVirtualFS c=
+  isPureVirtual c <> 0u
+
 
 [<DllImport("libclang", EntryPoint = "clang_getFieldDeclBitWidth", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern int32 getFieldDeclBitWidth(Cursor c)

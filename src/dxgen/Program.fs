@@ -58,6 +58,9 @@ let main argv =
             |Some(annotations) ->
 
               let precompiledHeader = 
+                if codeModule.PrecompileHeader = null then
+                  None
+                else
                   let header = FileInfo(codeModule.PrecompileHeader)
                   if header.Exists then Some(header) else None
 

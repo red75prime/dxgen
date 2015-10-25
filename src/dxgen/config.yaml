@@ -6,7 +6,7 @@ modules:
         - ./Include/10.0.10240.0/um/
         - ./Include/10.0.10240.0/shared/
         - ./Include/10.0.10240.0/ucrt/
-      precompiled-header: ./PCH/DXGI_PCH.h
+#      precompiled-header: ./PCH/DXGI_PCH.h
       headers:
           - d3d12.h
       no-winapi-gen: true

@@ -101,16 +101,14 @@ let keys m=
   m |> Map.toSeq |> Seq.map fst |> Set.ofSeq
 
 let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) (target:string)=
-  // Let's use clean C interface. Those fancy C++ classes with inheritance and whistles aren't good for rust codegen.
   let options = 
     seq {
        yield "-x"
-       yield "c"
+       yield "c++"
        yield "--target="+target
-       yield "-std=c11"
        yield "-fms-extensions"
        yield "-fms-compatibility"
-       yield "-fmsc-version=1800"
+       yield "-Wno-ignored-attributes"
        yield! includePaths |> Seq.map (fun p -> "-I"+p)
     } |> Array.ofSeq
   let index = createIndex(0, 1)
@@ -178,8 +176,16 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     |None ->
       if (List.length !args <> nArgs) then
         raise <| System.Exception("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
-      let retyname=getTypeSpellingFS(getCanonicalType(getResultType(fType)))
-      let retysize=getSizeOfType(getResultType(fType))
+      let crety = getResultType(fType)
+      let retyname =
+        if crety.kind = TypeKind.Typedef then
+          let cretydecl = getTypeDeclaration crety
+          let urety = getTypedefDeclUnderlyingType(cretydecl)
+          let tspell = getTypeSpellingFS(urety)
+          tspell
+        else
+          getTypeSpellingFS(crety)
+          
       if (retyname.StartsWith("struct ") || (retyname.Contains(" struct ") && retyname.Contains("*")=false)) then
         // C returns those structs thru EAX:EDX, C++ thru reference
         // and Rust do something different
@@ -205,7 +211,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       else if ckind=CursorKind.StructDecl then
         let ctype=getCursorType cursor
         let sz=ctype |> getSizeOfType
-        fields := (CStructElem("", parseStruct cursor, None), [TargetUnknown, sz]) :: !fields
+        fields := (CStructElem("", parseStruct cursor "" |> fst, None), [TargetUnknown, sz]) :: !fields
       ChildVisitResult.Continue
     visitChildrenFS cursor parseFieldDecl () |> ignore
     let fields = 
@@ -226,34 +232,72 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             |_ -> raise <| new System.Exception("unreachable")
           )
     Union(List.ofSeq fields)
-  and parseStruct (cursor:Cursor)=
+  and parseStruct (cursor:Cursor) (structName: string) : (CTypeDesc*bool)=
     let tokens=tokenizeFS cursor
     //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
     let fields=ref []
+    let bas = ref ""
+    let itIsClass = ref false
     let parseFieldDecl cursor _ _=
       let ckind=getCursorKind cursor
+      printfn "    %A %s" ckind (getCursorDisplayNameFS cursor)
+      if ckind=CursorKind.CxxBaseSpecifier then
+        itIsClass := true // crude. TODO: something
+        let basename = getCursorDisplayNameFS cursor
+        if basename.StartsWith("struct ") then
+          bas := basename.Substring(7)
+        else 
+          raise <| new System.Exception("Base specifier is not struct")
       if ckind=CursorKind.FieldDecl then
-        let ctype=getCursorType cursor
-        let nm=getCursorDisplayNameFS cursor
-        let pointee=getPointeeType ctype
-        let nArgs=getNumArgTypes(pointee)
-        let ty=
-          if nArgs<> -1 then
-            // function pointer
-            Ptr(parseFunction cursor pointee)
-          else
-            if nm="pArgumentDescs" then
-              ctype |> typeDesc
+          let ctype=getCursorType cursor
+          let nm=getCursorDisplayNameFS cursor
+          let pointee=getPointeeType ctype
+          let nArgs=getNumArgTypes(pointee)
+          let ty=
+            if nArgs<> -1 then
+              // function pointer
+              Ptr(parseFunction cursor pointee)
             else
               ctype |> typeDesc
-        let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
-        fields := CStructElem(nm, ty, bw) :: !fields
+          let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
+          fields := CStructElem(nm, ty, bw) :: !fields
+      if ckind=CursorKind.CxxMethod then
+          assert(isPureVirtualFS cursor)
+          let ctype=getCursorType cursor
+          let nm=getCursorSpellingFS cursor
+          let ty = 
+            match parseFunction cursor ctype with
+            |Function(CFuncDesc(parms, rty, cc)) ->
+              Ptr(Function(CFuncDesc(("This", (Ptr(StructRef structName)), NoAnnotation)::parms, rty, cc)))
+            |_ -> raise <| new System.Exception("Unreachable")
+          fields := CStructElem(nm, ty, None) :: !fields
       else if ckind=CursorKind.UnionDecl then
         fields := CStructElem("", parseUnion cursor, None) :: !fields
       ChildVisitResult.Continue
     visitChildrenFS cursor parseFieldDecl () |> ignore
-    Struct(List.rev !fields)
-
+    (Struct(List.rev !fields, !bas), !itIsClass)
+  
+  let parseMacro (cursor:Cursor) locInfo =
+    // incomplete pattern matches warning is ok
+    let mname :: tokens = (tokenizeFS cursor)
+    // rudimentary parsing of macro defined constants
+    // expressions aren't supported
+    let cv=
+      match tokens with
+      |"(" :: value :: ")" :: _ :: [] // last token doesn't belong to macro. libclang bug?
+      |value :: _ :: [] ->
+        tryParse value
+      |"(" :: "-" :: value :: ")" :: _ :: [] 
+      |"-" :: value :: _ :: [] ->
+        tryParse ("-" + value)
+      |_ -> None
+    match cv with
+    |Some(v,orgs) ->
+      //printfn "%A %s" v (System.String.Join(" ", tokens))
+      defines := !defines |> Map.add mname (v, orgs, locInfo)
+    |None ->
+      ()
+    
   // main parser callback
   let rec childVisitor cursor _ _ =
     let mutable curFile = File(0)
@@ -264,66 +308,60 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     let curFileName = getFileNameFS curFile
     let locInfo=(curFileName, curLine, curColumn, curOffset)
 
+    if curFileName.EndsWith(headerLocation.Name) then
+        let cursorKind=getCursorKind cursor
+        printfn "%A %s" cursorKind (getCursorDisplayNameFS cursor)
+    
+        if cursorKind=CursorKind.MacroDefinition then
+          parseMacro cursor locInfo
 
-    let cursorKind=getCursorKind cursor
+        if cursorKind=CursorKind.EnumDecl then
+          enums := !enums |> Map.add (cursor |> getCursorDisplayNameFS) (Enum(enumCType cursor, parseEnumConsts cursor), locInfo)
 
-    if cursorKind=CursorKind.MacroDefinition then
-      // incomplete pattern matches warning is ok
-      let mname :: tokens = (tokenizeFS cursor)
-      // rudimentary parsing of macro defined constants
-      // expressions aren't supported
-      let ignorecase=System.StringComparison.InvariantCultureIgnoreCase
-      if mname.StartsWith("D3D", ignorecase) || mname.StartsWith("DXGI", ignorecase) then
-        let cv=
-          match tokens with
-          |"(" :: value :: ")" :: _ :: [] // last token doesn't belong to macro. libclang bug?
-          |value :: _ :: [] ->
-            tryParse value
-          |"(" :: "-" :: value :: ")" :: _ :: [] 
-          |"-" :: value :: _ :: [] ->
-            tryParse ("-" + value)
-          |_ -> None
-        match cv with
-        |Some(v,orgs) ->
-          //printfn "%A %s" v (System.String.Join(" ", tokens))
-          defines := !defines |> Map.add mname (v, orgs, locInfo)
-        |None ->
-          ()
+        if cursorKind=CursorKind.TypedefDecl then
+          let tokens=tokenizeFS cursor
+          //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
+          let uty=cursor |> getTypedefDeclUnderlyingType
+          let pty=uty |> getPointeeType
+          let nArgs=pty |> getNumArgTypes
+          let tdesc=
+            if nArgs<> -1 then
+              // it is a function pointer
+              Ptr(parseFunction cursor pty)
+            else
+              uty |> typeDesc
+          types := !types |> Map.add (cursor |> getCursorDisplayNameFS) (Typedef(tdesc), locInfo)
+          // typedefs can contain other definitions
+          visitChildrenFS cursor childVisitor () |> ignore
 
-    if cursorKind=CursorKind.EnumDecl then
-      enums := !enums |> Map.add (cursor |> getCursorDisplayNameFS) (Enum(enumCType cursor, parseEnumConsts cursor), locInfo)
+        if cursorKind=CursorKind.StructDecl then
+          let structName=cursor |> getCursorDisplayNameFS
+          // Incomplete pattern matches warning is ok
+          let (Struct(ses, bas) as strct, itIsClass) = parseStruct cursor structName
+          if itIsClass then
+            // Transform class into struct and vtable
+            let vtblName = structName+"Vtbl"
 
-    if cursorKind=CursorKind.TypedefDecl then
-      let tokens=tokenizeFS cursor
-      //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
-      let uty=cursor |> getTypedefDeclUnderlyingType
-      let pty=uty |> getPointeeType
-      let nArgs=pty |> getNumArgTypes
-      let tdesc=
-        if nArgs<> -1 then
-          // it is a function pointer
-          Ptr(parseFunction cursor pty)
-        else
-          uty |> typeDesc
-      types := !types |> Map.add (cursor |> getCursorDisplayNameFS) (Typedef(tdesc), locInfo)
-      // typedefs can contain other definitions
-      visitChildrenFS cursor childVisitor () |> ignore
+            structs := !structs |> Map.add vtblName (strct, locInfo)
+            structs := !structs |> Map.add (structName) (Struct([CStructElem("pVtbl", Ptr(StructRef vtblName), None)],bas), locInfo)
+          else
+            structs := !structs |> Map.add structName (strct, locInfo)
 
-    if cursorKind=CursorKind.StructDecl then
-      let structName=cursor |> getCursorDisplayNameFS
-      structs := !structs |> Map.add structName (parseStruct cursor, locInfo)
+        if cursorKind=CursorKind.FunctionDecl then
+          let funcName = cursor |> getCursorSpellingFS
+          if funcName.StartsWith("operator") then
+            ()
+          else
+            funcs := !funcs |> Map.add funcName (parseFunction cursor (getCursorType cursor), locInfo)
 
-    if cursorKind=CursorKind.FunctionDecl then
-      funcs := !funcs |> Map.add (cursor |> getCursorSpellingFS) (parseFunction cursor (getCursorType cursor), locInfo)
+        if cursorKind=CursorKind.VarDecl then
+          let nm=cursor |> getCursorSpellingFS
+          let tys=cursor |> getCursorType |> getTypeSpellingFS
+          if tys="const IID" then
+            iids := !iids |> Map.add nm locInfo
 
-    if cursorKind=CursorKind.VarDecl then
-      let nm=cursor |> getCursorSpellingFS
-      let tys=cursor |> getCursorType |> getTypeSpellingFS
-      if tys="const IID" then
-        iids := !iids |> Map.add nm locInfo
-
-    if cursorKind=CursorKind.UnexposedDecl then // dip into extern "C"
-      visitChildrenFS cursor childVisitor () |> ignore
+        if cursorKind=CursorKind.UnexposedDecl then // dip into extern "C"
+          visitChildrenFS cursor childVisitor () |> ignore
     
     ChildVisitResult.Continue
 

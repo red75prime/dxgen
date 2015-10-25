@@ -30,8 +30,8 @@ let emptyAnnotationsGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<stri
   apl("")
   apl("let d3d12annotations=[")
   let vtbls=structs |> List.ofSeq |> List.collect (fun (KeyValue(name,(ty,_))) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl)))
-  for (name, mths) in vtbls do
-    apl(sprintf "  (\"%s\",IAAutogen, \"IUnknown\", [" name)
+  for (name, (mths, bas)) in vtbls do
+    apl(sprintf "  (\"%s\",IAAutogen(Set.ofList []), \"%s\", [" name bas)
     for (mname,args,ty) in mths |> List.choose (function |CStructElem(mname, Ptr(Function(CFuncDesc(args,ty,_))), _)-> Some(mname,args,ty)  |_ -> None) do
       if Set.contains mname iUnknownFuncs then
         apl(sprintf "    (\"%s\",[],MAIUnknown);" mname)
@@ -129,38 +129,43 @@ let mergeParameter iname mname parms pname (_,pty,_) (_,pan)=
 // Returns Some(annotaded native) or None
 let sanityCheck vtbls annotations= 
   isListsMatch fst "Native interfaces" vtbls (fun (name,_,_,_) -> name) "Annotated interfaces" annotations 
-    (fun inamevtbl (_, structElems) (_, interfaceAnnotation, baseInterface, methodAnnotations) -> 
+    (fun inamevtbl (_, (structElems, bas)) (_, interfaceAnnotation, baseInterface, methodAnnotations) -> 
       // inamevtbl is in the form I***Vtbl, let's strip 'I' and 'Vtbl'
-      let iname=inamevtbl.Substring(1,inamevtbl.Length-5)
-      if interfaceAnnotation=IAManual then
-        // Don't bother matching interfaces marked for manual implementation
-        Some(iname, interfaceAnnotation, [])
-      else
-        // check if interface iname matches, by checking all methods
-        let mergedMethods=
-          isListsMatch (fun (CStructElem(mname,_,_)) -> mname) (sprintf "Native methods of %s" iname) structElems 
-                        (fun (mname,_,_) -> mname) (sprintf "Annotated methods of %s" iname) methodAnnotations
-            (fun mname se (_,aparms,methodAnnotation) ->
-              match se with
-              |(CStructElem(_,Ptr(Function(CFuncDesc(parms, rty, cc))),_)) ->
-                // check if method mname matches
-                if methodAnnotation=MAIUnknown then
-                  // don't check parameters of IUnknown methods
-                  Some(mname, methodAnnotation, [], rty)
-                else
-                  // by checking all parameters
-                  let mergedParms=
-                    isListsMatch (fun (pname,_,_) -> pname) (sprintf "Parameters of native method %s::%s" iname mname) parms
-                                  (fun (pname,_) -> pname) (sprintf "Parameters of annotated method %s::%s" iname mname) aparms 
-                                    (mergeParameter iname mname parms)
-                  match mergedParms with
-                  |Some(mp) -> Some(mname, methodAnnotation, mp, rty)
-                  |None -> None
-              |_ -> raise <| new System.Exception("Unreachable")
-              )
-        match mergedMethods with
-        |Some(mm) -> Some(iname, interfaceAnnotation, mm)
-        |None -> None
+      let iname = inamevtbl.Substring(1,inamevtbl.Length-5)
+      let bname = if baseInterface="" then "" else baseInterface.Substring(0, baseInterface.Length-4)
+      if bname <> bas then
+        printfn "Error. Base interface of annotated is %s, but that of native is %s" bname bas
+        None
+      else 
+        if interfaceAnnotation=IAManual then
+          // Don't bother matching interfaces marked for manual implementation
+          Some(iname, interfaceAnnotation, [])
+        else
+          // check if interface iname matches, by checking all methods
+          let mergedMethods=
+            isListsMatch (fun (CStructElem(mname,_,_)) -> mname) (sprintf "Native methods of %s" iname) structElems 
+                          (fun (mname,_,_) -> mname) (sprintf "Annotated methods of %s" iname) methodAnnotations
+              (fun mname se (_,aparms,methodAnnotation) ->
+                match se with
+                |(CStructElem(_,Ptr(Function(CFuncDesc(parms, rty, cc))),_)) ->
+                  // check if method mname matches
+                  if methodAnnotation=MAIUnknown then
+                    // don't check parameters of IUnknown methods
+                    Some(mname, methodAnnotation, [], rty)
+                  else
+                    // by checking all parameters
+                    let mergedParms=
+                      isListsMatch (fun (pname,_,_) -> pname) (sprintf "Parameters of native method %s::%s" iname mname) parms
+                                    (fun (pname,_) -> pname) (sprintf "Parameters of annotated method %s::%s" iname mname) aparms 
+                                      (mergeParameter iname mname parms)
+                    match mergedParms with
+                    |Some(mp) -> Some(mname, methodAnnotation, mp, rty)
+                    |None -> None
+                |_ -> raise <| new System.Exception("Unreachable")
+                )
+          match mergedMethods with
+          |Some(mm) -> Some(iname, interfaceAnnotation, mm)
+          |None -> None
     )
     
 // ------------------
@@ -285,22 +290,22 @@ let generateMethodFromRouting
         yield System.String.Join(", ", nparms |> List.toSeq |> Seq.tail |> Seq.map snd)
         yield ")"
       })
-
+  let signature =
+    System.String.Format(
+      @"{0}fn {1}{2}(&self{3}) -> {4}", (if unsafe then "unsafe " else ""), sname, generics, sparams, rettype)
   let ftext=
     System.String.Format(
       @"
-pub {0}fn {1}{2}(&self{3}) -> {4} {{
-{5}
-  let hr=unsafe {{ {6} }};
-  {7}
+pub {0} {{
+{1}
+  let hr=unsafe {{ {2} }};
+  {3}
 }}
-",    if unsafe then "unsafe " else ""
-        ,sname, generics
-        ,sparams, rettype,
+"       ,signature,
         lvAndInit,
         nativeInvocation,
         rval)
-  ftext
+  (ftext, signature)
 
 //-------------------------------------------------------------------------------------
 // This function is the core of the safe interface generator
@@ -941,7 +946,7 @@ let preGenerateMethod ((mname, mannot, parms, rty : CTypeDesc) as methoddesc)=
       for (routing,warnings) in rws do
         for w in warnings do
           bprintfn sb "//  Warning: %s" w
-        let mtext=generateMethodFromRouting routing
+        let (mtext,_) = generateMethodFromRouting routing
         bprintfn sb "%s" mtext
     sb.ToString()
   
@@ -983,7 +988,7 @@ let safeInterfaceGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,
                         (annotations: Annotations) : string=
   let sb=new System.Text.StringBuilder()
   let vtbls=structs |> List.ofSeq |> List.collect (fun (KeyValue(name,(ty,_))) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl))) 
-  match sanityCheck vtbls (annotations.interfacesFull) with
+  match sanityCheck vtbls (annotations.interfaces) with
   |Some(interfaceAnnotations) ->
     let apl = appendLine sb
     apl "\
