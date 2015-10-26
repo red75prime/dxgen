@@ -59,56 +59,58 @@ extern {}
 const FRAME_COUNT : u32 = 4;
 
 fn main() {
+  // Initialize logger
   env_logger::init().unwrap();
 
-  let atomic_boom = AtomicUsize::new(usize::max_value());
-  let da_boom_p = atomic_boom.fetch_add(1, Ordering::Relaxed);
-  let da_boom_2 = atomic_boom.fetch_add(1, Ordering::Relaxed);
-  println!("0x{:x} then 0x{:x}", da_boom_p, da_boom_2);
-  // It seems atomics don't panic on overflow
-
+  // Set default values of cubes module parameters
   let mut parms = CubeParms {thread_count: 2, object_count: 2_000,};
   let mut adapters_to_test = vec![];
   for arg in env::args() {
     if let Ok(n) = arg.parse::<u32>() {
+      // If command line parameter is a number, treat it as a number of graphics adapter.
       adapters_to_test.push(n);
     }
     if arg.starts_with("-o") {
+      // Command line parameter -o<N> sets number of objects to draw
+      // Note, that 2 in arg[2..] is a number of bytes, not characters. 
       if let Ok(n) = (&arg[2..]).parse::<u32>() {
         parms.object_count = n;
       }
     }
     if arg.starts_with("-t") {
+      // Command line parameter -t<N> sets number of threads and graphics command lists
+      // to use for sending workload to GPU
       if let Ok(n) = (&arg[2..]).parse::<u32>() {
         parms.thread_count = n;
       }
     }
   }
 
-  let vm = Matrix4::look_at(&Point3::new(0., 0., -3.), &Point3::new(0., 0., 0.), &Vector3::new(0., 1., 0.));
-  println!("Look at: {:?}", vm);
-  let pm = cgmath::perspective(deg(30.), 1.5, 0.1, 10.);
-  println!("Persp: {:?}", pm);
-
   let factory: DXGIFactory4 = create_dxgi_factory2().expect("Cannot create DXGIFactory4. No can do.");
   let mut i=0;
   let mut adapters = vec![];
+  // Iterate over available GPUs 
   while let Ok(adapter)=factory.enum_adapters1(i) {
     let descr=adapter.get_desc1().unwrap();
     println!("Adapter {}: {}", i, wchar_array_to_string_lossy(&descr.Description));
     println!("   Dedicated video memory: {}MiB", descr.DedicatedVideoMemory/1024/1024);
     if adapters_to_test.len()==0 || adapters_to_test[..].contains(&i) {
+      // If there's no numbers in command line add each and every available adapter,
+      // otherwise use adapter numbers from command line
       adapters.push(adapter);
     }
+    // It's easy to forget this.
     i+=1;
   }
 
+  // I used this mutex to sync console output.
   let mutex=Arc::new(Mutex::new(()));
   crossbeam::scope(|scope| {
     for (a,id) in adapters.into_iter().zip(0 ..) {
       let mutex = mutex.clone();
       let parms = &parms;
       scope.spawn(move||{
+        // Spawn a thread for each adapter
         main_prime(id, a, mutex, parms)
       });
     };
@@ -116,12 +118,13 @@ fn main() {
 }
 
 fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
-
+  // Setup window. Currently window module supports only one window per thread.
   let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
   let title=format!("D3D12 Hello, rusty world! ({})", descr);
   let wnd=create_window(&title, 512, 256);
 
   {
+    // This block of code is not required. I just checked some stuff
     if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_12_1) {
       let format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
       let mut fsup = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
@@ -130,6 +133,7 @@ fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()
         Support2: D3D12_FORMAT_SUPPORT2_NONE,
       };
       if let Ok(_) = dev.check_feature_support_format_support(&mut fsup) {
+        // We could have few threads running, so take a lock to prevent line interleaving
         let lock=mutex.lock();
         println!("{}", descr);
         println!("Format support for {:?} is {:x}, {:x}", format, fsup.Support1.0, fsup.Support2.0);
@@ -137,6 +141,7 @@ fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()
     }
   }
 
+  // Initialization of cubes module data required to render all stuff
   let data=
     match cubes::AppData::on_init(&wnd, Some(&adapter), FRAME_COUNT, parms) { 
       Ok(appdata) => {
@@ -148,19 +153,28 @@ fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()
       },
     };
   
+  // x and y store last mouse coords from WM_MOUSEMOVE
   let mut x:i32=0;
   let mut y:i32=0;
   // TODO: Make this horror go away
+  // Simple and crude way to track state of keyboard keys
   let (mut wdown, mut sdown, mut adown, mut ddown, mut qdown, mut edown) = (false, false, false, false, false, false);
+  // and state of left mouse button
   let mut mouse_down = false;
+  // Profiling stuff
   let mut frame_count = 0;
   let mut avg_fps = 0;
   let mut start = precise_time_s();
   let mut mstart = start;
+  // Window::poll_events() returns non-blocking iterator, that return Option<MSG>
   for mmsg in wnd.poll_events() {
+    // "if let Some(msg)" extracts msg from mmsg
+    // if mmsg is None, then 'else' branch is taken
     if let Some(msg) = mmsg {
-      //println!("{} ", msg.message);
+      // Instead of passing messages into cubes module, I process them here
+      // It is not well-thought-out design decision, it's just slightly simpler now, and cost of changing it is low.
       match msg.message {
+        // Usual message processing stuff
         WM_SIZE => {
           // Normally this message goes to wndproc, in window.rs I repost it into message queue to prevent reentrancy problems
           debug!("WM_SIZE {}, {}  ", msg.wParam, msg.lParam);
@@ -212,16 +226,21 @@ fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()
     } else {
       let do_not_render = data.borrow().is_minimized();
       if do_not_render {
+        // MSDN suggest to use MsgWaitForMultipleObjects here, but 10ms sleep shouldn't create problems
         std::thread::sleep_ms(10);
       } else {
         {
+          // data is Rc<RefCell<cubes::AppData>>
+          // Rc is not really needed. I didn't pass it around.
+          // Take a mutable reference to cubes::AppData
           let mut data = data.borrow_mut();
+          // Process WASD keys
           let camera = data.camera();
           if wdown {
-            camera.go(0.01, 0., 0.);
+            camera.go(0.1, 0., 0.);
           };
           if sdown {
-            camera.go(-0.01, 0., 0.);
+            camera.go(-0.1, 0., 0.);
           };
           if adown {
             camera.go(0., 0.1, 0.); // Something wrong with signs. Negative value should translate camera to the left
@@ -229,6 +248,7 @@ fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()
           if ddown {
             camera.go(0., -0.1, 0.);
           };
+          // Process Q and E keys. They control camera's roll
           if qdown {
             camera.rotz(-0.5);
           };
@@ -236,13 +256,21 @@ fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()
             camera.rotz(0.5);
           };
         }
+        // For this simple program I don't separate update and render steps.
+        // State change and rendering is done inside on_render.
+        // Error handling isn't implemented yet. on_render panics, if it needs to.
+        // TODO: remove x,y parameters
+        // TODO: process error
         data.borrow_mut().on_render(x, y);
+        // register rendered frame in performance collector
         ::perf_frame();
+        // fps counting stuff
         frame_count += 1;
         let now = precise_time_s();
         let frametime = now - mstart;
         mstart = now;
         if now<start || now>=(start+1.0) {
+          // Once per second show stats
           let (clear, fill, exec, present, wait) =
             PERFDATA.with(|p_data| {
               let p_data = p_data.borrow();
@@ -266,17 +294,16 @@ fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()
   data.borrow().set_fullscreen(false).unwrap();
   // copy info queue
   let iq=data.borrow().info_queue().clone();
+  // wait for all GPU processing to stop
+  data.borrow().wait_frame();
   // release resources
-  //wnd.set_resize_fn(Box::new(|_,_,_|{}));
-  {
-    let data=data.borrow();
-    data.wait_frame();
-  }
   drop(data);
   // maybe debug layer has something to say
   dump_info_queue(iq.map(|iq|iq).as_ref());
 }
 
+
+// Simple render statistics collector
 pub struct PerfData {
   frames: u64,
   perf: HashMap<&'static str, f64>,

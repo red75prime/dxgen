@@ -188,7 +188,6 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           
       if (retyname.StartsWith("struct ") || (retyname.Contains(" struct ") && retyname.Contains("*")=false)) then
         // C returns those structs thru EAX:EDX, C++ thru reference
-        // and Rust do something different
         args := ("__ret_val",Ptr(rety), Out) :: !args
         Function(CFuncDesc(List.rev !args, Ptr(rety),cc))
       else

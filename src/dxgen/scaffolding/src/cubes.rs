@@ -17,13 +17,17 @@ use create_device::*;
 use std::cmp::{min,max};
 
 use camera::*;
-use shape_gen::*;
 use std::sync::atomic::Ordering;
+use shape_gen;
+use shape_gen::GenVertex;
 
 pub type M3 = [[f32;3];3];
 pub type M4 = [[f32;4];4];
 
 
+// dx_vertex! macro implement dxsems::VertexFomat trait for given structure
+// VertexFomat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
+// There's no #[repr(C)], because dx_vertex takes care of measuring field's offsets
 dx_vertex!( Vertex {
   (POSITION, 0, DXGI_FORMAT_R32G32B32_FLOAT) pos: [f32;3],
   (COLOR   , 0, DXGI_FORMAT_R32G32B32_FLOAT) color: [f32;3],
@@ -31,6 +35,7 @@ dx_vertex!( Vertex {
   (NORMAL  , 0, DXGI_FORMAT_R32G32B32_FLOAT) norm: [f32;3],
 });
 
+// implementing shape_gen::GenVertex for Vertex allows its use in shape_gen's functions
 impl GenVertex for Vertex {
   fn new_vertex(p: &Vector3<f32>) -> Vertex {
     Vertex {
@@ -50,6 +55,8 @@ impl GenVertex for Vertex {
   }
 }
 
+// This struct contains data to be passed into shader,
+// thus its memory layout should be defined. repr(C) does that.
 #[repr(C)] #[derive(Clone)]
 struct Constants {
   model: M4,
@@ -59,6 +66,7 @@ struct Constants {
   light_pos: [f32;3],
 }
 
+// This trait isn't very useful yet. Maybe it'll never be.
 pub trait Parameters {
   fn object_count(&self) -> &u32;
   fn thread_count(&self) -> &u32;
@@ -78,6 +86,7 @@ impl Parameters for CubeParms {
   }
 }
 
+// This struct contains all data the rendering needs.
 // TODO: split this into something more manageable.
 pub struct AppData {
   core: DXCore,
@@ -86,12 +95,13 @@ pub struct AppData {
   scissor_rect: D3D12_RECT,
   root_signature: D3D12RootSignature,
   srv_heap: D3D12DescriptorHeap,
-  sam_heap: D3D12DescriptorHeap,
   dsd_heap: D3D12DescriptorHeap,
   cbvd_heap: D3D12DescriptorHeap,
   pipeline_state: D3D12PipelineState,
   vertex_buffer: D3D12Resource,
   vertex_buffer_view: D3D12_VERTEX_BUFFER_VIEW,
+  index_buffer: D3D12Resource,
+  index_buffer_view: D3D12_INDEX_BUFFER_VIEW,
   constant_buffer: D3D12Resource,
   tex_resource: D3D12Resource,
   depth_stencil: Option<D3D12Resource>,
@@ -106,17 +116,31 @@ pub struct AppData {
   rot_spd: Vec<(Vector3<f32>, Vector3<f32>, Vector3<f32>, f32)>,
 }
 
+// Parallel GPU workload submission requires some data from AppData
+// TODO: rewrite parrallel part to pass only required parts of AppData
 unsafe impl Sync for AppData {}
 
+
+// This impl allows me to write data.on_init() instead of on_init(&data). Well, at least 'dot' operator performs autodereference.
+// TODO: create trait for use in all rendering modules
 impl AppData {
+  // The purpose is self-explanatory. 
+  //   wnd - window,
+  //   adapter - GPU to use for rendering, or None for default.
+  //   frame_count - count of backbuffers in swapchain
+  //   parameters - object's count and thread's count
   pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32, parameters: &T) -> Result<AppData, Option<D3D12InfoQueue>> {
     on_init(wnd, adapter, frame_count, parameters)
   }
 
+  // Allows rendering module to change backbuffers'/depth-stencil buffer's size when window size is changed
+  // Also it sets AppData::minimized field
   pub fn on_resize(&mut self, w: u32, h: u32, c: u32) {
     on_resize(self, w, h, c)
   }
 
+  // renders and presents scene
+  // TODO: remove x,y
   pub fn on_render(&mut self, x: i32, y: i32) {
     on_render(self, x, y)
   }
@@ -133,15 +157,18 @@ impl AppData {
     wait_for_graphics_queue(&self.core, &self.fence, &self.fence_event);
   }
 
+  // returns queue of debug layer's messages
   pub fn info_queue(&self) -> &Option<D3D12InfoQueue> {
     &self.core.info_queue
   }
 
+  // allows message loop fiddle with camera
   pub fn camera(&mut self) -> &mut Camera {
     &mut self.camera
   }
 }
 
+// TODO: implement or remove
 impl fmt::Debug for AppData {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     writeln!(f,"struct AppData")
@@ -149,6 +176,7 @@ impl fmt::Debug for AppData {
 }
 
 pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32, parameters: &T) -> Result<AppData, Option<D3D12InfoQueue>> {
+  // TODO: get window width and height from wnd
   let (w, h)=(512., 256.);
   let hwnd=wnd.get_hwnd();
   debug!("HWND");
@@ -166,11 +194,10 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
     left: 0,
     top: 0,
   };
-
-//#[cfg(debug)]
+  
+  // core::create_core creates structure that contains D3D12Device, command queues and so on
+  // which are required for creation of all other objects
   let core = try!(create_core(adapter, D3D_FEATURE_LEVEL_12_0, cfg!(debug)).map_err(|err|panic!("Cannot create DXCore: {}", err)));
-
-  //core.dev.set_stable_power_state(0);
 
   let sc_desc = DXGI_SWAP_CHAIN_DESC1 {
     Width: w as u32,
@@ -186,6 +213,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
     Flags: 0, //DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH.0,
   };
 
+  // I tried to get fullscreen with tearing for unbounded FPS. Unsuccessfully.
   let fsd = DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     RefreshRate: DXGI_RATIONAL {Numerator: 60, Denominator: 1},
     ScanlineOrdering: DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE,
@@ -196,8 +224,11 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   let swap_chain = try!(create_swap_chain(&core, &sc_desc, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, hwnd, Some(&fsd), None)
                       .map_err(|msg|{error!("{}",msg);core.info_queue.clone()}));
 
+  // Descriptor heaps store information that GPU needs to access resources like textures, constant buffers, unordered access views
+  // Root signature binds descriptor heap entries to shader registers.
+  // This particular descriptor heap will hold information about a texture.
   let srv_hd=D3D12_DESCRIPTOR_HEAP_DESC{
-    NumDescriptors: 2, // first for texture, second for constants
+    NumDescriptors: 1,
     Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
     Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
     NodeMask: 0,
@@ -205,15 +236,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   debug!("SRV descriptor heap");
   let srv_heap = core.dev.create_descriptor_heap(&srv_hd).unwrap();
 
-  let sam_hd = D3D12_DESCRIPTOR_HEAP_DESC{
-    NumDescriptors: 1,
-    Type: D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
-    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-    NodeMask: 0,
-  };
-  debug!("Sampler descriptor heap");
-  let sam_heap = core.dev.create_descriptor_heap(&sam_hd).unwrap();
-
+  // This heap will contain an entry for depth-stencil resource
   let dsd_hd=D3D12_DESCRIPTOR_HEAP_DESC{
     NumDescriptors: 1,
     Type: D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
@@ -222,47 +245,55 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   };
   let dsd_heap = core.dev.create_descriptor_heap(&dsd_hd).unwrap();
 
-  let sampler_desc = D3D12_SAMPLER_DESC {
-    Filter: D3D12_FILTER_ANISOTROPIC,
-    AddressU: D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-    AddressV: D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-    AddressW: D3D12_TEXTURE_ADDRESS_MODE_BORDER,
-    MinLOD: 0.0,
-    MaxLOD: D3D12_FLOAT32_MAX,
-    MipLODBias: 0.0,
-    MaxAnisotropy: 16,
-    ComparisonFunc: D3D12_COMPARISON_FUNC_ALWAYS,
-    BorderColor: [1.0,1.0,1.0,1.0],
-  };
-  debug!("Sampler");
-  core.dev.create_sampler(&sampler_desc, sam_heap.get_cpu_descriptor_handle_for_heap_start());
-
+  // Command allocator manages storage for command lists.
+  // TODO: remove this one, I don't use it
   debug!("Command allocator");
   let callocator = core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT).unwrap();
 
+  // Graphics pipeline state (GPS) contains settings for all stages in graphics pipeline.
+  // Also, it containt root signature that binds descriptor heaps to shader registers
+  // Shaders are part of GPS too. D3D12Device::create_graphics_pipeline_state() performs compilation of provided shader bytecode.
+  // MSDN suggests to create GPS on separate thread, as this is CPU intensive operation.
   debug!("Graphics pipeline state");
   let (gps, root_sign)=try!(create_static_sampler_gps::<Vertex>(&core).map_err(|_|core.info_queue.clone()));
+
+  // Command lists hold the list of commands to be executed by GPU. D3D12CommanQueue::execute_command_lists() initiates actual execution.
   debug!("Command list");
   let command_list: D3D12GraphicsCommandList = core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
   
-  // ------------------- Vertex buffer resource init begin ----------------------------
+  // ------------------- Vertex and index buffer resource init begin ----------------------------
 
-  let (_,vtc) = cube::<Vertex>(0.5);
+  // get vertices and indices for cube
+  let (vtc,idx) = shape_gen::cube_indexed::<Vertex>(0.5);
 
+  // Size in bytes of array of vertices
   let vbuf_size = mem::size_of_val(&vtc[..]);
 
+  // Vertex buffer will be created in upload head,
+  // Using D3D12Resource::map we can get CPU write access to this heap.
   let heap_prop = heap_properties_upload();
 
+  // The only thing DX12 needs to create Buffer Resource is its length
   let res_desc = resource_desc_buffer(vbuf_size as u64);
   //info!("Resource desc: {:#?}", &res_desc);
 
+  // Create resource in upload heap with initial state GENERIC_READ, without optimized clear value.
+  // create_committed_resource() creates implicit heap large enough to contain resource.
+  // GENERIC_READ here is GPU side. It means that all shaders can read the resource and 
+  // resource can be source of copy operation.
   debug!("Vertex buffer");
   let vbuf = try!(core.dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|core.info_queue.clone()));
 
+  //Inside upload_into_buffer I didn't check if vbuf is large enough to hold all data from vtc, thus unsafe.
+  //TODO: check buffer size, return error if not large enough.
   unsafe{
+    //Transfer data from vtc into GPU memory allocated for vbuf
     upload_into_buffer(&vbuf, &vtc[..]);
   };
   
+  // Unlike shader resource views or constant buffer views, 
+  // vertex buffer views don't go into descriptor heaps.
+  // D3D12GraphicsCommandList::ia_set_vertex_buffers() binds them directly.
   let vbview = 
     D3D12_VERTEX_BUFFER_VIEW {
       BufferLocation: vbuf.get_gpu_virtual_address(),
@@ -270,7 +301,23 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       SizeInBytes: vbuf_size as u32,
   };
 
-  // ------------------- Vertex buffer resource init end ----------------------------
+  // Creation and filling of index buffer is similar to that of vertex buffer.
+  let ibuf_size = mem::size_of_val(&idx[..]);
+  let idesc = resource_desc_buffer(ibuf_size as u64);
+  debug!("Index buffer");
+  let ibuf = try!(core.dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &idesc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|core.info_queue.clone()));
+  unsafe {
+    upload_into_buffer(&ibuf, &idx[..]);
+  }
+
+  // D3D12GraphicsCommandList::ia_set_index_buffer() binds index buffer to graphics pipeline.
+  let i_view = D3D12_INDEX_BUFFER_VIEW {
+    BufferLocation: ibuf.get_gpu_virtual_address(),
+    SizeInBytes: ibuf_size as UINT,
+    Format: DXGI_FORMAT_R32_UINT,
+  };
+
+  // ------------------- Vertex and index buffer resource init end ----------------------------
 
   // ------------------- Constant buffer resource init begin ----------------------------
   let world_matrix: [[f32;4];4] = [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
@@ -279,17 +326,20 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   let cbuf_data = Constants{ model: world_matrix, view: view_matrix, proj: proj_matrix, n_model: world_matrix, light_pos: [-1.,0.,0.]};
   let cbsize = mem::size_of_val(&cbuf_data);
 
+  // Resource creation for constant buffer is the same as resource creation for vertex buffer
   let cbuf = core.dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(cbsize as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None).unwrap();
   unsafe {
     upload_into_buffer(&cbuf, &[cbuf_data]);
   };
 
+  // But constant buffer view goes into descriptor heap.
   let cbview = 
     D3D12_CONSTANT_BUFFER_VIEW_DESC {
       BufferLocation: cbuf.get_gpu_virtual_address(),
-      SizeInBytes: ((cbsize+255) & !255) as u32,
+      SizeInBytes: ((cbsize+255) & !255) as u32, // size of constants buffer in bytes should be divisible by 256.
   };
 
+  // Create descriptor heap to hold one constant buffer view
   let cbv_hd=D3D12_DESCRIPTOR_HEAP_DESC{
     NumDescriptors: 1, 
     Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
@@ -299,9 +349,12 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   debug!("CBV descriptor heap");
   let cbvd_heap = core.dev.create_descriptor_heap(&cbv_hd).unwrap();
 
+  // CPU side of descriptor heap is an array of unspecified structures of cbv_dsize size.
   let cbv_dsize = core.dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
+  // const_dh receives pointer to the start of descriptors array
   let const_dh = cbvd_heap.get_cpu_descriptor_handle_for_heap_start();
-  //const_dh.ptr += srv_dsize; 
+  // create_constant_buffer_view creates hardware specific representation of constant buffer view at const_dh address.
+  // In this case const_dh corresponds to first entry in cbvd_heap.
   debug!("Create shader resource view: constants buffer");
   core.dev.create_constant_buffer_view(Some(&cbview), const_dh);
 
@@ -312,34 +365,40 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   let tex_w=256usize;
   let tex_h=256usize;
 
+  // I create resource with 4 mip levels, but fill only one yet.
   let tex_desc = D3D12_RESOURCE_DESC {
     MipLevels: 4,
     .. resource_desc_tex2d_nomip(tex_w as u64, tex_h as u32, DXGI_FORMAT_R8G8B8A8_UNORM, D3D12_RESOURCE_FLAG_NONE)
   };
-  //info!("Texture desc: {:#?}", &res_desc);
 
+  // I create texture in default heap, CPU can't get access to this heap.
+  // I set initial state of the resource to COPY_DEST, 
+  // to prepare it for data transfer thru intermediate resource placed in upload heap
   debug!("Texture resource");
-  let tex_resource = try!(core.dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST, None).map_err(|_|core.info_queue.clone()));
+  let tex_resource = try!(core.dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, 
+                            &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST, None).map_err(|_|core.info_queue.clone()));
   
+  // Create pattern to set as texture data
   let mut texdata: Vec<u32> = vec![0xff00ffff; tex_w*tex_h as usize];
   let mut i = 0;
   for v in &mut texdata[..] {
     let (x,y) = (i%tex_w, i/tex_w);
     *v =
       if x%10 == 0 || y%10 == 0 {
-        0xff204f4f
+        0xff204f4f // yellowish
       } else {
-        0xff909090
+        0xff909090 // light grey
       };
-//    *v=rand::random();
     i+=1;
   }
-  // temporary buffer should live until the start of command list execution
-  //#[allow(unused_variables)]
+
+  // utils::upload_into_texture() transfers texdata into upload buffer resource,
+  // then executed copy command on core.copy_queue
   try!(upload_into_texture(&core, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|core.info_queue.clone()));
   // upload_into_texture transition tex_resource into common state (it uses copy queue, so it can't set pixel_shader_resource state)
   command_list.resource_barrier(&mut [*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
+  // create shader resource view in srv_heap descriptor heap
   let srv_desc = shader_resource_view_tex2d_default_mip(DXGI_FORMAT_R8G8B8A8_UNORM, 4);
 
   let srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
@@ -350,11 +409,14 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
 
   // ------------------- Depth stencil buffer init begin ------------------------
   
+  // utils::create_depth_stencil() functions handles creation of depth-stencil resource 
+  // and depth-stencil view, and it places depth-stencil view into dsd_heap descriptor heap
   let ds_format = DXGI_FORMAT_D32_FLOAT;
   let ds_res = try!(create_depth_stencil(w as u64, h as u32, ds_format, &core.dev, &dsd_heap, 0).map_err(|_|core.info_queue.clone()));
 
   // ------------------- Depth stencil buffer init end --------------------------
 
+  // 
   debug!("fence");
   let fence=core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE).unwrap();
 
@@ -371,8 +433,8 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   let mut rot_spd = Vec::with_capacity(*parameters.object_count() as usize);
   for _ in 0 .. *parameters.object_count() {
     rot_spd.push((v3((rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-1.)*200.), 
-        v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).mul_s(0.01),
-          v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()));
+        v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).mul_s(0.1),
+          v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()*0.1));
   }
 
 
@@ -384,12 +446,13 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       scissor_rect: sci_rect,
       root_signature: root_sign,
       srv_heap: srv_heap,
-      sam_heap: sam_heap,
       dsd_heap: dsd_heap,
       cbvd_heap: cbvd_heap,
       pipeline_state: gps,
       vertex_buffer: vbuf,
       vertex_buffer_view: vbview,
+      index_buffer: ibuf,
+      index_buffer_view: i_view,
       constant_buffer: cbuf,
       tex_resource: tex_resource,
       depth_stencil: Some(ds_res),
@@ -419,7 +482,9 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   Ok(ret)
 }
 
-//----------------- on_render ------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------
+//----------------- on_render -------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------------------
 pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   use std::f64; 
 
@@ -535,6 +600,8 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   dump_info_queue(data.core.info_queue.as_ref());
 }
 
+
+//--------------------------------
 fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_allocator: &D3D12CommandAllocator, data: &AppData) -> HResult<()> {
   if cfg!(debug) {debug!("Command allocator reset")};
   command_allocator.reset().unwrap();
@@ -567,6 +634,7 @@ fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_alloca
   }
 }
 
+//---------------------------
 fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12PipelineState,D3D12RootSignature)> {
   let static_samplers = vec![
     D3D12_STATIC_SAMPLER_DESC {
@@ -661,6 +729,7 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
     NumRenderTargets: 1,
     //RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
     DSVFormat: DXGI_FORMAT_D32_FLOAT,
+    Flags: if cfg!(Debug) {D3D12_PIPELINE_STATE_FLAG_TOOL_DEBUG} else {D3D12_PIPELINE_STATE_FLAG_NONE},
     .. graphics_pipeline_state_desc_default()
   };
   pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
@@ -857,12 +926,15 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
           clist.set_graphics_root_descriptor_table(0, data.srv_heap.get_gpu_descriptor_handle_for_heap_start());
           clist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
           clist.ia_set_vertex_buffers(0, Some(&[data.vertex_buffer_view]));
-          let num_vtx = data.vertex_buffer_view.SizeInBytes/data.vertex_buffer_view.StrideInBytes;
+          clist.ia_set_index_buffer(Some(&data.index_buffer_view));
+
+          assert!(data.index_buffer_view.Format==DXGI_FORMAT_R32_UINT);
+          let num_vtx = data.index_buffer_view.SizeInBytes/4; //Index size depends on Format
 
           for i in start .. start+count {
             let mut c: Constants = consts.clone();
             let (pos, _, dir, spd) = data.rot_spd[i].clone();
-            let rot = Basis3::from_axis_angle(&dir, rad(spd*(data.tick as f32)));
+            let rot = Basis3::from_axis_angle(&dir, rad(1.0 + spd*(data.tick as f32)));
             let asfa = rot.as_ref();
             for j in 0..3 {
                 for k in 0..3 {
@@ -880,7 +952,7 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
             };
             //debug!("cb_address: 0x{:x}", cb_address);
             clist.set_graphics_root_constant_buffer_view(1, cb_address);
-            clist.draw_instanced(num_vtx, 1, 0, 0);
+            clist.draw_indexed_instanced(num_vtx, 1, 0, 0, 0);
           }
           try!(clist.close());
           Ok(())
