@@ -107,7 +107,7 @@ fn main() {
   // I used this mutex to sync console output.
   let mutex=Arc::new(Mutex::new(()));
   crossbeam::scope(|scope| {
-    for (a,id) in adapters.into_iter().zip(0 ..) {
+    for (id,a) in adapters.into_iter().enumerate() {
       let mutex = mutex.clone();
       let parms = &parms;
       scope.spawn(move||{
@@ -118,7 +118,7 @@ fn main() {
   });
 }
 
-fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
+fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
   // Setup window. Currently window module supports only one window per thread.
   let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
   let title=format!("D3D12 Hello, rusty world! ({})", descr);
@@ -268,11 +268,9 @@ fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()
         // register rendered frame in performance collector
         ::perf_frame();
         // fps counting stuff
-        frame_count += 1;
         let now = precise_time_s();
-        let frametime = now - mstart;
-        mstart = now;
-        if now<start || now>=(start+1.0) {
+        let frames = PERFDATA.with(|p_data| p_data.borrow().frames);
+        if frames>0 && now<start || now>=(start+1.0) {
           // Once per second show stats
           let (clear, fill, exec, present, wait) =
             PERFDATA.with(|p_data| {
@@ -284,11 +282,10 @@ fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()
                 p_data.perf.get("present").unwrap()*1000./frames, 
                 p_data.perf.get("wait").unwrap()*1000./frames, )
             });
-          println!("Adapter {} FPS: {:3} clear:{:4.2} fill:{:4.2} exec:{:4.2} present:{:4.2} wait:{:4.2}   \r", id, avg_fps, clear, fill, exec, present, wait);
-          start = now;
+          println!("Adapter {} FPS: {:3} clear:{:4.2} fill:{:4.2} exec:{:4.2} present:{:4.2} wait:{:4.2}   \r", id, frames, clear, fill, exec, present, wait);
           let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
-          avg_fps = frame_count;
-          frame_count = 0;
+          perf_reset();
+          start = now;
         }
       }
     }
@@ -312,8 +309,8 @@ pub struct PerfData {
   perf: HashMap<&'static str, f64>,
 }
 
-thread_local!(static PERFDATA: RefCell<PerfData> = 
-  RefCell::new( {
+impl PerfData {
+  fn new() -> PerfData {
     let mut pd = PerfData {
       frames: 0,
       perf: HashMap::new(),
@@ -324,11 +321,22 @@ thread_local!(static PERFDATA: RefCell<PerfData> =
     pd.perf.insert("present", 0.);
     pd.perf.insert("wait", 0.);
     pd
-  } ));
+  }
+}
+
+thread_local!(static PERFDATA: RefCell<PerfData> = 
+  RefCell::new(PerfData::new()));
 
 pub fn perf_frame() {
   PERFDATA.with(|pd| {
     pd.borrow_mut().frames += 1;
+  });
+}
+
+pub fn perf_reset() {
+  PERFDATA.with(|pd| {
+    let mut pd=pd.borrow_mut();
+    *pd = PerfData::new();
   });
 }
 
