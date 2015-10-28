@@ -214,3 +214,13 @@ pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &
 pub fn wait_for_single_object(event: HANDLE, ms: u32) -> u32 {
   unsafe { WaitForSingleObject(event, ms) }
 }
+
+use user32::*;
+
+pub fn set_capture(hwnd: HWND) -> HWND {
+  unsafe { SetCapture(hwnd) }
+}
+
+pub fn release_capture() -> BOOL {
+  unsafe{ ReleaseCapture() }
+}

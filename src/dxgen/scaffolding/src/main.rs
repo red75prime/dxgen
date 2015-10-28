@@ -11,6 +11,7 @@ extern crate dx_safe;
 //extern crate dxguid_sys;
 extern crate dxgi_sys;
 extern crate kernel32;
+extern crate user32;
 //extern crate d3d12_sys;
 extern crate rand;
 extern crate clock_ticks;
@@ -217,9 +218,11 @@ fn main_prime<T: Parameters>(id: u32, adapter: DXGIAdapter1, mutex: Arc<Mutex<()
         },
         WM_LBUTTONDOWN => {
           mouse_down = true;
+          set_capture(wnd.get_hwnd());
         },
         WM_LBUTTONUP => {
           mouse_down = false;
+          release_capture();
         },
         _ => {},
       };
