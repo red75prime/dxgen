@@ -42,7 +42,7 @@ pub fn p3(x: f32, y: f32, z: f32) -> Point3<f32> {
   Point3::new(x, y, z)
 }
 
-use d3d12_safe::*;
+use dx_safe::*;
 use winapi::*;
 use std::mem;
 use core::*;

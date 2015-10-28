@@ -2,7 +2,7 @@ use create_device::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use winapi::*;
-use d3d12_safe::*;
+use dx_safe::*;
 use structwrappers::*;
 
 pub struct DXCore {

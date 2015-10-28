@@ -108,7 +108,7 @@ type CTypeDesc=
   |Ptr of CTypeDesc
   |Const of CTypeDesc
   |Array of CTypeDesc*int64
-  |Struct of CStructElem list
+  |Struct of (CStructElem list)*string // elems + base (for c++)
   |StructRef of string
   |Union of (CStructElem*((Target*int64) list)) list // snd is list of (target, elem size)
   |UnionRef of string
@@ -146,7 +146,7 @@ let rec subtypes ty =
   |Ptr sty -> ([sty], unwrap >> Ptr)
   |Const sty -> ([sty], unwrap >> Const)
   |Array(sty, num) -> ([sty], unwrap >> (fun ty -> Array(ty, num)))
-  |Struct ses -> let (sts, fn) = subtypesStruct ses in (sts, fun sts -> Struct(fn sts))
+  |Struct (ses,bas) -> let (sts, fn) = subtypesStruct ses in (sts, fun sts -> Struct(fn sts, bas))
   |StructRef _ -> ([], (fun _ -> ty))
   |Union ues -> let (sts, fn) = subtypesUnion ues in (sts, fun sts -> Union(fn sts))
   |UnionRef _ -> ([], (fun _ -> ty))
@@ -177,19 +177,19 @@ let isVoidPtr ty=
 
 // True iff ty is a typedef of struct that contains only function pointers
 let getVtbl (structs:Map<string, CTypeDesc*CodeLocation>) ty=
-  let isStructVtbl ses=
+  let isStructVtbl ses bas=
     if List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> true |_ -> false) ses then
-      Some(ses)
+      Some(ses,bas)
     else
       None
 
   match ty with
   |Typedef(StructRef(sname)) |StructRef(sname) -> 
     match Map.find sname structs with
-    |Struct(ses), _ -> isStructVtbl ses
+    |Struct(ses, bas), _ -> isStructVtbl ses bas
     |_ -> None
-  |Struct(ses) ->
-    isStructVtbl ses
+  |Struct(ses, bas) ->
+    isStructVtbl ses bas
   |_-> None
 
 let rec isStruct n2ty ty=
@@ -263,6 +263,8 @@ let rec typeDesc (ty: Type)=
     | tname when tname.StartsWith("struct ") -> StructRef(tname.Substring("struct ".Length))
     | tname when tname.StartsWith("enum ") -> EnumRef(tname.Substring("enum ".Length))
     | tname -> Unimplemented(tname)
+  |TypeKind.LValueReference ->
+    Ptr(getPointeeType ty |> typeDesc)
   |_ -> Unimplemented(getTypeSpellingFS ty)
   
 

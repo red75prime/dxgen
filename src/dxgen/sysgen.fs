@@ -48,7 +48,7 @@ let convertToRust (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTy
       |None ->
         // Struct
         match ty with
-        |Struct ses -> makeStruct name ses
+        |Struct (ses,bas) -> makeStruct name ses
         |_ -> raise <| new System.Exception("Unexpected type")
     structs |> List.ofSeq |>
       List.collect makeStructOrInterface
@@ -103,12 +103,12 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
         |> List.exists 
           (function 
             |CStructElem(_,Array(_,n),_) when n>32L -> true 
-            |CStructElem(_,Struct(ses),_) -> isStructUncopyableByItself ses
+            |CStructElem(_,Struct(ses,bas),_) -> isStructUncopyableByItself ses
             |CStructElem(_,Union(ues),_) -> ues |> List.map fst |> isStructUncopyableByItself
             |_ -> false)
     let rec isStructUncopyable s=
       match s with
-      |Struct(ses) ->
+      |Struct(ses, bas) ->
         (isStructUncopyableByItself ses) || 
           ses |> List.exists (
             function 
@@ -116,10 +116,10 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                 match Map.find sname structs with 
                 |(Struct(_) as s,_) -> isStructUncopyable s
                 |_ -> false
-              |CStructElem(_,(Struct(ses) as sub),_) -> 
+              |CStructElem(_,(Struct(ses,bas) as sub),_) -> 
                 isStructUncopyable sub
               |CStructElem(_,(Union(ues) as sub),_) -> 
-                ues |> List.map fst |> Struct |> isStructUncopyable
+                ues |> List.map fst |> fun ses -> Struct (ses, "") |> isStructUncopyable
               |_ -> false)
       |_ -> false
     structs |> Map.toSeq |> Seq.filter (snd >> fst >> isStructUncopyable) |> Seq.map fst |> Set.ofSeq
@@ -187,7 +187,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       apl ""
 
   let createStructs()=
-    for (name,sfields,(fname,_,_,_)) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields),loc)) -> Some(name,sfields,loc) |_ -> None) do
+    for (name,bas,sfields,(fname,_,_,_)) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields,bas),loc)) -> Some(name,bas,sfields,loc) |_ -> None) do
       let f=rsfilename fname
       let apl=apl f
       if Set.contains name libcTypeNames || Map.containsKey (name+"Vtbl") dxann then
@@ -210,7 +210,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
               let (stys, _) = subtypes ty
               List.iter nextfn stys
             firstLevel ty
-          checkPrecond (Struct(sfields))
+          checkPrecond (Struct(sfields,""))
           // let's create proxies for unnamed structs in unions
           let unions=ref []
           let sfields' =
@@ -225,7 +225,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                       ues |> List.map
                        (fun ((CStructElem(sname, stype, bw), sz) as ue) ->
                           match stype with
-                          |Struct(ses) ->
+                          |Struct(ses,bas) ->
                             // anonymous struct in union. create proxy.
                             let proxyname=name+"_"+sname;
                             outputStructDef apl proxyname ses uncopyable

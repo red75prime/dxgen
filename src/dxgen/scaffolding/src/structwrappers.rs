@@ -1,5 +1,5 @@
 use winapi::*;
-use d3d12_safe::*;
+use dx_safe::*;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::mem;
