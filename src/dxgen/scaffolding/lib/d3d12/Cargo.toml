@@ -1,10 +1,10 @@
 [package]
-name = "d3d12_safe"
-version = "0.3.0"
+name = "dx_safe"
+version = "0.3.1"
 authors = ["red75prime <red75prim@gmail.com>"]
 
 [lib]
-name = "d3d12_safe"
+name = "dx_safe"
 
 [dependencies]
 libc = "*"

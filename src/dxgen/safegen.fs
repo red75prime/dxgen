@@ -139,7 +139,7 @@ let sanityCheck vtbls annotations=
       else 
         if interfaceAnnotation=IAManual then
           // Don't bother matching interfaces marked for manual implementation
-          Some(iname, interfaceAnnotation, [])
+          Some(iname, bas, interfaceAnnotation, [])
         else
           // check if interface iname matches, by checking all methods
           let mergedMethods=
@@ -164,7 +164,7 @@ let sanityCheck vtbls annotations=
                 |_ -> raise <| new System.Exception("Unreachable")
                 )
           match mergedMethods with
-          |Some(mm) -> Some(iname, interfaceAnnotation, mm)
+          |Some(mm) -> Some(iname, bas, interfaceAnnotation, mm)
           |None -> None
     )
     
@@ -234,7 +234,8 @@ let rec convertTypeToRustNoArray ty pannot=
 
 
 let generateMethodFromRouting 
-        { nativeName = nname
+        { className = clname
+          nativeName = nname
           safeName = sname
           unsafe = unsafe
           genericTypes = gtypes
@@ -286,7 +287,7 @@ let generateMethodFromRouting
   let nativeInvocation=
     System.String.Concat(
       seq{
-        yield "(*self.0)."+nname+"("
+        yield "(*(self.0 as *mut "+clname+"))."+nname+"("
         yield System.String.Join(", ", nparms |> List.toSeq |> Seq.tail |> Seq.map snd)
         yield ")"
       })
@@ -310,7 +311,13 @@ pub {0} {{
 //-------------------------------------------------------------------------------------
 // This function is the core of the safe interface generator
 //-=-----------------------------------------------------------------------------------
-let generateRouting (mname, nname, mannot, parms, rty)=
+// clname - class name
+// mname - Rust method name
+// nname - native method name
+// mannot - method's annotation
+// parms - list of annotated parameters
+// rty - return type
+let generateRouting (clname, mname, nname, mannot, parms, rty)=
   if mannot=MADontImplement then
     ([],[])
   else
@@ -893,7 +900,8 @@ let generateRouting (mname, nname, mannot, parms, rty)=
             |> List.map snd 
             |> List.filter (fun (sname,_,_) -> Map.forall (fun _ v -> v <> sname) np2sp)]
 
-      ([{ nativeName = nname
+      ([{ className = clname
+          nativeName = nname
           safeName = toRustMethodName mname
           unsafe = mannot=MAUnsafe
           genericTypes = !genTypes
@@ -911,8 +919,8 @@ let bprintfn sb t=
     sb.AppendLine() |> ignore
     )
 
-// Removes TypeSelector annotation, generating specialized methods
-let preGenerateMethod ((mname, mannot, parms, rty : CTypeDesc) as methoddesc)=
+// Removes TypeSelector annotation, generates specialized methods
+let preGenerateMethod clname ((mname, mannot, parms, rty : CTypeDesc) as methoddesc)=
   if mannot=MAIUnknown || mannot=MADontImplement then
     ""
   else
@@ -932,12 +940,12 @@ let preGenerateMethod ((mname, mannot, parms, rty : CTypeDesc) as methoddesc)=
                     else
                       (pname, pannot, pty)
                   )
-              let gparms=(mname+suffix, mname, mannot,parms1,rty)
+              let gparms=(clname, mname+suffix, mname, mannot,parms1,rty)
               generateRouting gparms)
       |Some(_) ->
         raise <| new System.Exception("Unreachable")
       |None ->
-        [generateRouting (mname, mname, mannot, parms, rty)]
+        [generateRouting (clname, mname, mname, mannot, parms, rty)]
     let sb=new System.Text.StringBuilder()
     bprintfn sb "//  Method %s" mname
     for (rws,errors) in routings do
@@ -951,17 +959,17 @@ let preGenerateMethod ((mname, mannot, parms, rty : CTypeDesc) as methoddesc)=
     sb.ToString()
   
 
-let generateMethods methods=
+let generateMethods clname methods=
   let sb=new System.Text.StringBuilder()
   for methoddesc in methods do
-    sb.Append(preGenerateMethod methoddesc) |> ignore
+    sb.Append(preGenerateMethod clname methoddesc) |> ignore
   sb.ToString()
 
 let addCombiningStructs (sb:System.Text.StringBuilder) interfaceAnnotations=
   let apl=appendLine sb
   let structFields=
     interfaceAnnotations |> List.fold 
-      (fun s (_,_,mannots) ->
+      (fun s (_,_,_,mannots) ->
         mannots |> List.fold  
           (fun s (_,_,pannots,_) ->
             pannots |> List.fold 
@@ -978,116 +986,48 @@ let addCombiningStructs (sb:System.Text.StringBuilder) interfaceAnnotations=
     apl "#[derive(Default, Debug)]"
     apl <| "pub struct "+stype+" {"
     for (_,field, pty) in fields do
-      apl <| "  "+field+" : "+(tyToRust (derefCType pty))+","
+      apl <| "  pub "+field+" : "+(tyToRust (derefCType pty))+","
     apl "}"
     apl ""
   ()
 
-let safeInterfaceGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,
-                        funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) 
-                        (annotations: Annotations) : string=
+let autoheader = "\
+// This file is autogenerated
+
+use utils::*;
+
+"
+let joinMaps a b =
+  Map.ofSeq (Seq.concat [Map.toSeq a; Map.toSeq b])
+
+let safeInterfaceGen (header:string) allInterfaces (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,
+                                                      funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) 
+                        (annotations: Annotations) =
   let sb=new System.Text.StringBuilder()
   let vtbls=structs |> List.ofSeq |> List.collect (fun (KeyValue(name,(ty,_))) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl))) 
   match sanityCheck vtbls (annotations.interfaces) with
   |Some(interfaceAnnotations) ->
+    let iamap' = interfaceAnnotations |> Seq.map (fun (iname, bas, iannot, meths) -> ("I"+iname, (bas, meths, header))) |> Map.ofSeq
+    let iamap = joinMaps allInterfaces iamap'
     let apl = appendLine sb
-    apl "\
-// This file is autogenerated
-
-extern crate winapi;
-extern crate dxguid_sys;
-
-use winapi::*;
-use dxguid_sys::*;
-use std::ptr;
-use std::mem;
-use std::borrow::Cow;
-use std::ffi::{OsStr,OsString};
-use std::os::windows::ffi::OsStrExt;
-
-mod iid;
-pub use iid::*;
-
-fn os_str_to_vec_u16(s : &OsStr) -> Vec<u16> {
-  s.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
-}
-
-fn opt_arr_as_mut_ptr<T>(opt: &Option<&mut [T]>) -> *mut T {
-  opt.as_ref().map(|v|(*v).as_ptr() as *mut _).unwrap_or(ptr::null_mut())
-}
-
-fn opt_arr_as_ptr<T>(opt: &Option<&[T]>) -> *const T {
-  opt.as_ref().map(|v|(*v).as_ptr()).unwrap_or(ptr::null())
-}
-
-fn opt_as_mut_ptr<T>(opt: &Option<&mut T>) -> *mut T {
-  opt.as_ref().map(|v|*v as *const _ as *mut _).unwrap_or(ptr::null_mut())
-}
-
-fn slice_as_ptr<T>(s: &[T]) -> *const T {
-  if s.len()==0 {ptr::null()} else {s.as_ptr()}
-}
-
-fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
-  if s.len()==0 {ptr::null_mut()} else {s.as_mut_ptr()}
-}
-
-fn str_to_vec_u16(s : Cow<str>) -> Vec<u16> {
-  let osstr = OsString::from(s.into_owned());
-  osstr.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
-}
-
-// Utility function. 
-// Compares optional numbers
-// returns Some(len) if all inputs are Some(len) or None (or Some(0) if all inputs are None), 
-//         None otherwise
-fn same_length(lens:&[Option<usize>]) -> Option<usize> {
-    let res=lens.iter().fold(Ok(None), 
-        |sz, mlen| { 
-            match sz { 
-                Err(_) => sz, 
-                Ok(None) => Ok(mlen.map(|l1|l1)), 
-                Ok(Some(l)) => 
-                    match *mlen {
-                        None => sz, 
-                        Some(l1) => 
-                            if l1==l {
-                                sz
-                            } else {
-                                Err(())
-                            }
-                    }
-            }
-        });
-    res.map(|ms|{ms.unwrap_or(0)}).ok()
-}
-
-fn hr2ret<T>(hr : HRESULT, res:T) -> HResult<T> {
-  if SUCCEEDED(hr) {
-    Ok(res)
-  } else {
-    Err(hr)
-  }
-}
-
-unsafe fn zeroinit_com_wrapper<T: HasIID>() -> T {
-  T::new(ptr::null_mut())
-}
-
-fn opt_slice_to_mut_ptr<T>(os: Option<&mut [T]>) -> *mut T {
-  os.map(|s|s.as_mut_ptr()).unwrap_or(::std::ptr::null_mut())
-}
-
-fn opt_slice_to_ptr<T>(os: Option<&[T]>) -> *const T {
-  os.map(|s|s.as_ptr()).unwrap_or(::std::ptr::null())
-}
-
-"
+    apl autoheader
     addCombiningStructs sb interfaceAnnotations
-    for (iname, iannot, methods) in interfaceAnnotations do
+    for (iname, bas, iannot, methods) in interfaceAnnotations do
       match iannot with
       |IAManual -> ()
       |IAAutogen opts ->
+        let rec ancMeths bName = 
+          if bName = "IUnknown" || bName = "" then
+            []
+          else 
+            match Map.tryFind bName iamap with
+            |Some(bas, meths, header) ->
+              List.concat [ancMeths bas; meths]
+            |None -> 
+              let error = sprintf "Error: Generating interface for %s. Base class %s is not defined" iname bName
+              printfn "%s" error
+              raise <| new System.Exception(error)
+        let methods1 = ancMeths ("I"+iname)
         let implSend = 
           opts |> Set.fold (
               fun s opt ->
@@ -1119,9 +1059,9 @@ impl Clone for %s {
 impl %s {
 %s
 }
-"          iname iname implSend iname iname iname iname iname iname iname (generateMethods methods |> indentBy "  ")
+"          iname iname implSend iname iname iname iname iname iname iname (generateMethods ("I"+iname) methods1 |> indentBy "  ")
 
-    sb.ToString()
+    (sb.ToString(), iamap)
   |None -> 
     printfn "Sanity check failed. No Rust interfaces generated"
-    ""
+    ("", allInterfaces)

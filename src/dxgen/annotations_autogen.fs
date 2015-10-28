@@ -25,9 +25,7 @@ let populateVtbls annots=
       (fun (iname, annot, pname, vtbl) ->
         (iname, annot, pname, (fullVtbl pname) ++ vtbl))
 
-
-
-let d3dcommon_prime = 
+let d3dcommon = 
   [
     ("ID3D10BlobVtbl",IAAutogen(Set.ofList []),"IUnknownVtbl",[
       ("GetBufferPointer",[
@@ -37,7 +35,7 @@ let d3dcommon_prime =
         ("This",AThis);
       ],MANone);
     ]);  
-    ("ID3DIncludeVtbl",IAManual, "", [
+    ("ID3DInclude",IAManual, "", [
       ("Open",[
         ("This",AThis);
         ("IncludeType",ANone);
@@ -53,50 +51,12 @@ let d3dcommon_prime =
     ]);
   ]
 
-let dxgi_prime = 
-  [
+let dxgi = 
+  [    
     ("IDXGIAdapter1Vtbl",IAAutogen(Set.ofList [IOSend]), "IDXGIAdapterVtbl", [
       ("GetDesc1",[
         ("This",AThis);
         ("pDesc",OutReturn);
-      ],MANone);
-    ]);
-    ("IDXGIAdapter2Vtbl",IAAutogen(Set.ofList []), "IDXGIAdapter1Vtbl", [
-      ("GetDesc2",[
-        ("This",AThis);
-        ("pDesc",OutReturn);
-      ],MANone);
-    ]);
-    ("IDXGIAdapter3Vtbl",IAAutogen(Set.ofList []), "IDXGIAdapter2Vtbl", [
-      ("RegisterHardwareContentProtectionTeardownStatusEvent",[
-        ("This",AThis);
-        ("hEvent",ANone);
-        ("pdwCookie",OutReturn);
-      ],MANone);
-      ("UnregisterHardwareContentProtectionTeardownStatus",[
-        ("This",AThis);
-        ("dwCookie",ANone);
-      ],MANone);
-      ("QueryVideoMemoryInfo",[
-        ("This",AThis);
-        ("NodeIndex",ANone);
-        ("MemorySegmentGroup",ANone);
-        ("pVideoMemoryInfo",OutReturn);
-      ],MANone);
-      ("SetVideoMemoryReservation",[
-        ("This",AThis);
-        ("NodeIndex",ANone);
-        ("MemorySegmentGroup",ANone);
-        ("Reservation",ANone);
-      ],MANone);
-      ("RegisterVideoMemoryBudgetChangeNotificationEvent",[
-        ("This",AThis);
-        ("hEvent",ANone);
-        ("pdwCookie",OutReturn);
-      ],MANone);
-      ("UnregisterVideoMemoryBudgetChangeNotification",[
-        ("This",AThis);
-        ("dwCookie",ANone);
       ],MANone);
     ]);
     ("IDXGIAdapterVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", [
@@ -115,47 +75,6 @@ let dxgi_prime =
         ("pUMDVersion",OutReturn);
       ],MANone);
     ]);
-    ("IDXGIDecodeSwapChainVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
-      ("PresentBuffer",[
-        ("This",AThis);
-        ("BufferToPresent",ANone);
-        ("SyncInterval",ANone);
-        ("Flags",ANone);
-      ],MANone);
-      ("SetSourceRect",[
-        ("This",AThis);
-        ("pRect",ANone);
-      ],MANone);
-      ("SetTargetRect",[
-        ("This",AThis);
-        ("pRect",ANone);
-      ],MANone);
-      ("SetDestSize",[
-        ("This",AThis);
-        ("Width",ANone);
-        ("Height",ANone);
-      ],MANone);
-      ("GetSourceRect",[
-        ("This",AThis);
-        ("pRect",OutReturn);
-      ],MANone);
-      ("GetTargetRect",[
-        ("This",AThis);
-        ("pRect",OutReturn);
-      ],MANone);
-      ("GetDestSize",[
-        ("This",AThis);
-        ("pWidth",OutReturnCombine("DSize","width"));
-        ("pHeight",OutReturnCombine("DSize","height"));
-      ],MANone);
-      ("SetColorSpace",[
-        ("This",AThis);
-        ("ColorSpace",ANone);
-      ],MANone);
-      ("GetColorSpace",[
-        ("This",AThis);
-      ],MANone);
-    ]);
     ("IDXGIDevice1Vtbl",IAAutogen(Set.ofList []), "IDXGIDeviceVtbl", [
       ("SetMaximumFrameLatency",[
         ("This",AThis);
@@ -164,29 +83,6 @@ let dxgi_prime =
       ("GetMaximumFrameLatency",[
         ("This",AThis);
         ("pMaxLatency",OutReturn);
-      ],MANone);
-    ]);
-    ("IDXGIDevice2Vtbl",IAAutogen(Set.ofList []), "IDXGIDevice1Vtbl", [
-      ("OfferResources",[
-        ("This",AThis);
-        ("NumResources",ANone);
-        ("ppResources",InComPtrArrayOfSize "NumResources");
-        ("Priority",ANone);
-      ],MANone);
-      ("ReclaimResources",[
-        ("This",AThis);
-        ("NumResources",ANone);
-        ("ppResources",InComPtrArrayOfSize "NumResources");
-        ("pDiscarded", OutOptionalArrayOfSize "NumResources");
-      ],MANone);
-      ("EnqueueSetEvent",[
-        ("This",AThis);
-        ("hEvent",ANone);
-      ],MANone);
-    ]);
-    ("IDXGIDevice3Vtbl",IAAutogen(Set.ofList []), "IDXGIDevice2Vtbl", [
-      ("Trim",[
-        ("This",AThis);
       ],MANone);
     ]);
     ("IDXGIDeviceSubObjectVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", [
@@ -225,15 +121,6 @@ let dxgi_prime =
         ("pPriority",OutReturn);
       ],MANone);]
     );
-    ("IDXGIDisplayControlVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
-      ("IsStereoEnabled",[
-        ("This",AThis);
-      ],MANone);
-      ("SetStereoEnabled",[
-        ("This",AThis);
-        ("enabled",ANone);
-      ],MANone);
-    ]);
     ("IDXGIFactory1Vtbl",IAAutogen(Set.ofList []), "IDXGIFactoryVtbl", [
       ("EnumAdapters1",[
         ("This",AThis);
@@ -242,107 +129,6 @@ let dxgi_prime =
       ],MANone);
       ("IsCurrent",[
         ("This",AThis);
-      ],MANone);
-    ]);
-    ("IDXGIFactory2Vtbl",IAAutogen(Set.ofList []), "IDXGIFactory1Vtbl", [
-      ("IsWindowedStereoEnabled",[
-        ("This",AThis);
-      ],MANone);
-      ("CreateSwapChainForHwnd",[
-        ("This",AThis);
-        ("pDevice",InComPtr);
-        ("hWnd",ANone);
-        ("pDesc",ANone);
-        ("pFullscreenDesc",InOptional);
-        ("pRestrictToOutput",InOptionalComPtr);
-        ("ppSwapChain",OutReturnComPtr);
-      ],MANone);
-      ("CreateSwapChainForCoreWindow",[
-        ("This",AThis);
-        ("pDevice",InComPtr);
-        ("pWindow",InComPtr);
-        ("pDesc",ANone);
-        ("pRestrictToOutput",InOptionalComPtr);
-        ("ppSwapChain",OutReturnComPtr);
-      ],MANone);
-      ("GetSharedResourceAdapterLuid",[
-        ("This",AThis);
-        ("hResource",ANone);
-        ("pLuid",OutReturn);
-      ],MANone);
-      ("RegisterStereoStatusWindow",[
-        ("This",AThis);
-        ("WindowHandle",ANone);
-        ("wMsg",ANone);
-        ("pdwCookie",OutReturn);
-      ],MANone);
-      ("RegisterStereoStatusEvent",[
-        ("This",AThis);
-        ("hEvent",ANone);
-        ("pdwCookie",OutReturn);
-      ],MANone);
-      ("UnregisterStereoStatus",[
-        ("This",AThis);
-        ("dwCookie",ANone);
-      ],MANone);
-      ("RegisterOcclusionStatusWindow",[
-        ("This",AThis);
-        ("WindowHandle",ANone);
-        ("wMsg",ANone);
-        ("pdwCookie",OutReturn);
-      ],MANone);
-      ("RegisterOcclusionStatusEvent",[
-        ("This",AThis);
-        ("hEvent",ANone);
-        ("pdwCookie",OutReturn);
-      ],MANone);
-      ("UnregisterOcclusionStatus",[
-        ("This",AThis);
-        ("dwCookie",ANone);
-      ],MANone);
-      ("CreateSwapChainForComposition",[
-        ("This",AThis);
-        ("pDevice",InComPtr);
-        ("pDesc",ANone);
-        ("pRestrictToOutput",InOptionalComPtr);
-        ("ppSwapChain",OutReturnComPtr);
-      ],MANone);
-    ]);
-    ("IDXGIFactory3Vtbl",IAAutogen(Set.ofList []), "IDXGIFactory2Vtbl", [
-      ("GetCreationFlags",[
-        ("This",AThis);
-      ],MANone);
-    ]);
-    ("IDXGIFactory4Vtbl",IAAutogen(Set.ofList []), "IDXGIFactory3Vtbl", [
-      ("EnumAdapterByLuid",[
-        ("This",AThis);
-        ("AdapterLuid",ANone);
-        ("riid",ANone);
-        ("ppvAdapter",OutReturnInterface "riid");
-      ],MANone);
-      ("EnumWarpAdapter",[
-        ("This",AThis);
-        ("riid",ANone);
-        ("ppvAdapter",OutReturnInterface "riid");
-      ],MANone);
-    ]);
-    ("IDXGIFactoryMediaVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
-      ("CreateSwapChainForCompositionSurfaceHandle",[
-        ("This",AThis);
-        ("pDevice",InComPtr);
-        ("hSurface",ANone);
-        ("pDesc",ANone);
-        ("pRestrictToOutput",InOptionalComPtr);
-        ("ppSwapChain",OutReturnComPtr);
-      ],MANone);
-      ("CreateDecodeSwapChainForCompositionSurfaceHandle",[
-        ("This",AThis);
-        ("pDevice",InComPtr);
-        ("hSurface",ANone);
-        ("pDesc",ANone);
-        ("pYuvDecodeBuffers",InComPtr);
-        ("pRestrictToOutput",InOptionalComPtr);
-        ("ppSwapChain",OutReturnComPtr);
       ],MANone);
     ]);
     ("IDXGIFactoryVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", 
@@ -409,93 +195,6 @@ let dxgi_prime =
       ],MANone);
       ]
     );
-    ("IDXGIOutput1Vtbl",IAAutogen(Set.ofList []), "IDXGIOutputVtbl", [
-      ("GetDisplayModeList1",[
-        ("This",AThis);
-        ("EnumFormat",ANone);
-        ("Flags",ANone);
-        ("pNumModes", InOutReturn);
-        ("pDesc", OutOptionalArrayOfSize "pNumModes");
-      ],MANone);
-      ("FindClosestMatchingMode1",[
-        ("This",AThis);
-        ("pModeToMatch",ANone);
-        ("pClosestMatch",ANone);
-        ("pConcernedDevice",InOptionalComPtr);
-      ],MANone);
-      ("GetDisplaySurfaceData1",[
-        ("This",AThis);
-        ("pDestination",InComPtr);
-      ],MANone);
-      ("DuplicateOutput",[
-        ("This",AThis);
-        ("pDevice",InComPtr);
-        ("ppOutputDuplication",OutReturnComPtr);
-      ],MANone);
-    ]);
-    ("IDXGIOutput2Vtbl",IAAutogen(Set.ofList []), "IDXGIOutput1Vtbl", [
-      ("SupportsOverlays",[
-        ("This",AThis);
-      ],MANone);
-    ]);
-    ("IDXGIOutput3Vtbl",IAAutogen(Set.ofList []), "IDXGIOutput2Vtbl", [
-      ("CheckOverlaySupport",[
-        ("This",AThis);
-        ("EnumFormat",ANone);
-        ("pConcernedDevice",InComPtr);
-        ("pFlags",OutReturn);
-      ],MANone);
-    ]);
-    ("IDXGIOutput4Vtbl",IAAutogen(Set.ofList []), "IDXGIOutput3Vtbl", [
-      ("CheckOverlayColorSpaceSupport",[
-        ("This",AThis);
-        ("Format",ANone);
-        ("ColorSpace",ANone);
-        ("pConcernedDevice",InComPtr);
-        ("pFlags",OutReturn);
-      ],MANone);
-    ]);
-    ("IDXGIOutputDuplicationVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", [
-      ("GetDesc",[
-        ("This",AThis);
-        ("pDesc",OutReturn);
-      ],MANone);
-      ("AcquireNextFrame",[
-        ("This",AThis);
-        ("TimeoutInMilliseconds",ANone);
-        ("pFrameInfo",ANone);
-        ("ppDesktopResource",OutReturnComPtr);
-      ],MANone);
-      ("GetFrameDirtyRects",[
-        ("This",AThis);
-        ("DirtyRectsBufferSize",ANone);
-        ("pDirtyRectsBuffer",InByteArrayOfSize("DirtyRectsBufferSize",1u));
-        ("pDirtyRectsBufferSizeRequired",ANone);
-      ],MANone);
-      ("GetFrameMoveRects",[
-        ("This",AThis);
-        ("MoveRectsBufferSize",ANone);
-        ("pMoveRectBuffer",InByteArrayOfSize("MoveRectsBufferSize",1u));
-        ("pMoveRectsBufferSizeRequired",ANone);
-      ],MANone);
-      ("GetFramePointerShape",[
-        ("This",AThis);
-        ("PointerShapeBufferSize",ANone);
-        ("pPointerShapeBuffer",InByteArrayOfSize("PointerShapeBufferSize",1u));
-        ("pPointerShapeBufferSizeRequired",ANone);
-        ("pPointerShapeInfo",ANone);
-      ],MANone);
-      ("MapDesktopSurface",[
-        ("This",AThis);
-        ("pLockedRect",OutReturn);
-      ],MANone);
-      ("UnMapDesktopSurface",[
-        ("This",AThis);
-      ],MANone);
-      ("ReleaseFrame",[
-        ("This",AThis);
-      ],MANone);
-    ]);
     ("IDXGIOutputVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", [
       ("GetDesc",[
         ("This",AThis);
@@ -550,20 +249,6 @@ let dxgi_prime =
         ("pStats",OutReturn);
       ],MANone);
     ]);
-    ("IDXGIResource1Vtbl",IAAutogen(Set.ofList []), "IDXGIResourceVtbl", [
-      ("CreateSubresourceSurface",[
-        ("This",AThis);
-        ("index",ANone);
-        ("ppSurface",OutReturnComPtr);
-      ],MANone);
-      ("CreateSharedHandle",[
-        ("This",AThis);
-        ("pAttributes",InOptional);
-        ("dwAccess",ANone);
-        ("lpName",ANone);
-        ("pHandle",OutReturn);
-      ],MANone);
-    ]);
     ("IDXGIResourceVtbl",IAAutogen(Set.ofList []), "IDXGIDeviceSubObjectVtbl", [
       ("GetSharedHandle",[
         ("This",AThis);
@@ -593,14 +278,6 @@ let dxgi_prime =
         ("pDirtyRect",InOptional);
       ],MANone);
     ]);
-    ("IDXGISurface2Vtbl",IAAutogen(Set.ofList []), "IDXGISurface1Vtbl", [
-      ("GetResource",[
-        ("This",AThis);
-        ("riid",ANone);
-        ("ppParentResource",OutReturnInterface "riid");
-        ("pSubresourceIndex",ANone);
-      ],MANone);
-    ]);
     ("IDXGISurfaceVtbl",IAAutogen(Set.ofList []), "IDXGIDeviceSubObjectVtbl", [
       ("GetDesc",[
         ("This",AThis);
@@ -613,125 +290,6 @@ let dxgi_prime =
       ],MANone);
       ("Unmap",[
         ("This",AThis);
-      ],MANone);
-    ]);
-    ("IDXGISwapChain1Vtbl",IAAutogen(Set.ofList []), "IDXGISwapChainVtbl", [
-      ("GetDesc1",[
-        ("This",AThis);
-        ("pDesc",OutReturn);
-      ],MANone);
-      ("GetFullscreenDesc",[
-        ("This",AThis);
-        ("pDesc",OutReturn);
-      ],MANone);
-      ("GetHwnd",[
-        ("This",AThis);
-        ("pHwnd",OutReturn);
-      ],MANone);
-      ("GetCoreWindow",[
-        ("This",AThis);
-        ("refiid",ANone);
-        ("ppUnk",OutReturnInterface "refiid"); //TODO: check if refiid is interface id
-      ],MANone);
-      ("Present1",[
-        ("This",AThis);
-        ("SyncInterval",ANone);
-        ("PresentFlags",ANone);
-        ("pPresentParameters",ANone);
-      ],MANone);
-      ("IsTemporaryMonoSupported",[
-        ("This",AThis);
-      ],MANone);
-      ("GetRestrictToOutput",[
-        ("This",AThis);
-        ("ppRestrictToOutput",OutReturnComPtr);
-      ],MANone);
-      ("SetBackgroundColor",[
-        ("This",AThis);
-        ("pColor",ANone);
-      ],MANone);
-      ("GetBackgroundColor",[
-        ("This",AThis);
-        ("pColor",OutReturn);
-      ],MANone);
-      ("SetRotation",[
-        ("This",AThis);
-        ("Rotation",ANone);
-      ],MANone);
-      ("GetRotation",[
-        ("This",AThis);
-        ("pRotation",OutReturn);
-      ],MANone);
-    ]);
-    ("IDXGISwapChain2Vtbl",IAAutogen(Set.ofList []), "IDXGISwapChain1Vtbl", [
-      ("SetSourceSize",[
-        ("This",AThis);
-        ("Width",ANone);
-        ("Height",ANone);
-      ],MANone);
-      ("GetSourceSize",[
-        ("This",AThis);
-        ("pWidth",OutReturnCombine("DSize","width"));
-        ("pHeight",OutReturnCombine("DSize","height"));
-      ],MANone);
-      ("SetMaximumFrameLatency",[
-        ("This",AThis);
-        ("MaxLatency",ANone);
-      ],MANone);
-      ("GetMaximumFrameLatency",[
-        ("This",AThis);
-        ("pMaxLatency",OutReturn);
-      ],MANone);
-      ("GetFrameLatencyWaitableObject",[
-        ("This",AThis);
-      ],MANone);
-      ("SetMatrixTransform",[
-        ("This",AThis);
-        ("pMatrix",ANone);
-      ],MANone);
-      ("GetMatrixTransform",[
-        ("This",AThis);
-        ("pMatrix",OutReturn);
-      ],MANone);
-    ]);
-    ("IDXGISwapChain3Vtbl",IAAutogen(Set.ofList []), "IDXGISwapChain2Vtbl", [
-      ("GetCurrentBackBufferIndex",[
-        ("This",AThis);
-      ],MANone);
-      ("CheckColorSpaceSupport",[
-        ("This",AThis);
-        ("ColorSpace",ANone);
-        ("pColorSpaceSupport",OutReturn);
-      ],MANone);
-      ("SetColorSpace1",[
-        ("This",AThis);
-        ("ColorSpace",ANone);
-      ],MANone);
-      ("ResizeBuffers1",[
-        ("This",AThis);
-        ("BufferCount",ANone);
-        ("Width",ANone);
-        ("Height",ANone);
-        ("Format",ANone);
-        ("SwapChainFlags",ANone);
-        ("pCreationNodeMask",InArrayOfSize "BufferCount");
-        ("ppPresentQueue",InComPtrArrayOfSize "BufferCount");
-      ],MANone);
-    ]);
-    ("IDXGISwapChainMediaVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
-      ("GetFrameStatisticsMedia",[
-        ("This",AThis);
-        ("pStats",OutReturn);
-      ],MANone);
-      ("SetPresentDuration",[
-        ("This",AThis);
-        ("Duration",ANone);
-      ],MANone);
-      ("CheckPresentDurationSupport",[
-        ("This",AThis);
-        ("DesiredPresentDuration",ANone);
-        ("pClosestSmallerPresentDuration",ANone);
-        ("pClosestLargerPresentDuration",ANone);
       ],MANone);
     ]);
     ("IDXGISwapChainVtbl",IAAutogen(Set.ofList []), "IDXGIDeviceSubObjectVtbl", [
@@ -785,11 +343,459 @@ let dxgi_prime =
         ("pLastPresentCount",OutReturn);
       ],MANone);
     ]);
-    ("IUnknown",IAManual,"",[
-      ]);
-    ("SECURITY_ATTRIBUTES",IAManual,"",[
-      ]);
-    ]
+  ]
+
+let dxgi1_2 = 
+  [
+    ("IDXGIAdapter2Vtbl",IAAutogen(Set.ofList []), "IDXGIAdapter1Vtbl", [
+      ("GetDesc2",[
+        ("This",AThis);
+        ("pDesc",OutReturn);
+      ],MANone);
+    ]);
+    ("IDXGIDevice2Vtbl",IAAutogen(Set.ofList []), "IDXGIDevice1Vtbl", [
+      ("OfferResources",[
+        ("This",AThis);
+        ("NumResources",ANone);
+        ("ppResources",InComPtrArrayOfSize "NumResources");
+        ("Priority",ANone);
+      ],MANone);
+      ("ReclaimResources",[
+        ("This",AThis);
+        ("NumResources",ANone);
+        ("ppResources",InComPtrArrayOfSize "NumResources");
+        ("pDiscarded", OutOptionalArrayOfSize "NumResources");
+      ],MANone);
+      ("EnqueueSetEvent",[
+        ("This",AThis);
+        ("hEvent",ANone);
+      ],MANone);
+    ]);
+    ("IDXGIDisplayControlVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
+      ("IsStereoEnabled",[
+        ("This",AThis);
+      ],MANone);
+      ("SetStereoEnabled",[
+        ("This",AThis);
+        ("enabled",ANone);
+      ],MANone);
+    ]);
+    ("IDXGIFactory2Vtbl",IAAutogen(Set.ofList []), "IDXGIFactory1Vtbl", [
+      ("IsWindowedStereoEnabled",[
+        ("This",AThis);
+      ],MANone);
+      ("CreateSwapChainForHwnd",[
+        ("This",AThis);
+        ("pDevice",InComPtr);
+        ("hWnd",ANone);
+        ("pDesc",ANone);
+        ("pFullscreenDesc",InOptional);
+        ("pRestrictToOutput",InOptionalComPtr);
+        ("ppSwapChain",OutReturnComPtr);
+      ],MANone);
+      ("CreateSwapChainForCoreWindow",[
+        ("This",AThis);
+        ("pDevice",InComPtr);
+        ("pWindow",InComPtr);
+        ("pDesc",ANone);
+        ("pRestrictToOutput",InOptionalComPtr);
+        ("ppSwapChain",OutReturnComPtr);
+      ],MANone);
+      ("GetSharedResourceAdapterLuid",[
+        ("This",AThis);
+        ("hResource",ANone);
+        ("pLuid",OutReturn);
+      ],MANone);
+      ("RegisterStereoStatusWindow",[
+        ("This",AThis);
+        ("WindowHandle",ANone);
+        ("wMsg",ANone);
+        ("pdwCookie",OutReturn);
+      ],MANone);
+      ("RegisterStereoStatusEvent",[
+        ("This",AThis);
+        ("hEvent",ANone);
+        ("pdwCookie",OutReturn);
+      ],MANone);
+      ("UnregisterStereoStatus",[
+        ("This",AThis);
+        ("dwCookie",ANone);
+      ],MANone);
+      ("RegisterOcclusionStatusWindow",[
+        ("This",AThis);
+        ("WindowHandle",ANone);
+        ("wMsg",ANone);
+        ("pdwCookie",OutReturn);
+      ],MANone);
+      ("RegisterOcclusionStatusEvent",[
+        ("This",AThis);
+        ("hEvent",ANone);
+        ("pdwCookie",OutReturn);
+      ],MANone);
+      ("UnregisterOcclusionStatus",[
+        ("This",AThis);
+        ("dwCookie",ANone);
+      ],MANone);
+      ("CreateSwapChainForComposition",[
+        ("This",AThis);
+        ("pDevice",InComPtr);
+        ("pDesc",ANone);
+        ("pRestrictToOutput",InOptionalComPtr);
+        ("ppSwapChain",OutReturnComPtr);
+      ],MANone);
+    ]);
+    ("IDXGIOutput1Vtbl",IAAutogen(Set.ofList []), "IDXGIOutputVtbl", [
+      ("GetDisplayModeList1",[
+        ("This",AThis);
+        ("EnumFormat",ANone);
+        ("Flags",ANone);
+        ("pNumModes", InOutReturn);
+        ("pDesc", OutOptionalArrayOfSize "pNumModes");
+      ],MANone);
+      ("FindClosestMatchingMode1",[
+        ("This",AThis);
+        ("pModeToMatch",ANone);
+        ("pClosestMatch",ANone);
+        ("pConcernedDevice",InOptionalComPtr);
+      ],MANone);
+      ("GetDisplaySurfaceData1",[
+        ("This",AThis);
+        ("pDestination",InComPtr);
+      ],MANone);
+      ("DuplicateOutput",[
+        ("This",AThis);
+        ("pDevice",InComPtr);
+        ("ppOutputDuplication",OutReturnComPtr);
+      ],MANone);
+    ]);
+    ("IDXGIOutputDuplicationVtbl",IAAutogen(Set.ofList []), "IDXGIObjectVtbl", [
+      ("GetDesc",[
+        ("This",AThis);
+        ("pDesc",OutReturn);
+      ],MANone);
+      ("AcquireNextFrame",[
+        ("This",AThis);
+        ("TimeoutInMilliseconds",ANone);
+        ("pFrameInfo",ANone);
+        ("ppDesktopResource",OutReturnComPtr);
+      ],MANone);
+      ("GetFrameDirtyRects",[
+        ("This",AThis);
+        ("DirtyRectsBufferSize",ANone);
+        ("pDirtyRectsBuffer",InByteArrayOfSize("DirtyRectsBufferSize",1u));
+        ("pDirtyRectsBufferSizeRequired",ANone);
+      ],MANone);
+      ("GetFrameMoveRects",[
+        ("This",AThis);
+        ("MoveRectsBufferSize",ANone);
+        ("pMoveRectBuffer",InByteArrayOfSize("MoveRectsBufferSize",1u));
+        ("pMoveRectsBufferSizeRequired",ANone);
+      ],MANone);
+      ("GetFramePointerShape",[
+        ("This",AThis);
+        ("PointerShapeBufferSize",ANone);
+        ("pPointerShapeBuffer",InByteArrayOfSize("PointerShapeBufferSize",1u));
+        ("pPointerShapeBufferSizeRequired",ANone);
+        ("pPointerShapeInfo",ANone);
+      ],MANone);
+      ("MapDesktopSurface",[
+        ("This",AThis);
+        ("pLockedRect",OutReturn);
+      ],MANone);
+      ("UnMapDesktopSurface",[
+        ("This",AThis);
+      ],MANone);
+      ("ReleaseFrame",[
+        ("This",AThis);
+      ],MANone);
+    ]);
+    ("IDXGIResource1Vtbl",IAAutogen(Set.ofList []), "IDXGIResourceVtbl", [
+      ("CreateSubresourceSurface",[
+        ("This",AThis);
+        ("index",ANone);
+        ("ppSurface",OutReturnComPtr);
+      ],MANone);
+      ("CreateSharedHandle",[
+        ("This",AThis);
+        ("pAttributes",InOptional);
+        ("dwAccess",ANone);
+        ("lpName",ANone);
+        ("pHandle",OutReturn);
+      ],MANone);
+    ]);
+    ("IDXGISurface2Vtbl",IAAutogen(Set.ofList []), "IDXGISurface1Vtbl", [
+      ("GetResource",[
+        ("This",AThis);
+        ("riid",ANone);
+        ("ppParentResource",OutReturnInterface "riid");
+        ("pSubresourceIndex",ANone);
+      ],MANone);
+    ]);
+    ("IDXGISwapChain1Vtbl",IAAutogen(Set.ofList []), "IDXGISwapChainVtbl", [
+      ("GetDesc1",[
+        ("This",AThis);
+        ("pDesc",OutReturn);
+      ],MANone);
+      ("GetFullscreenDesc",[
+        ("This",AThis);
+        ("pDesc",OutReturn);
+      ],MANone);
+      ("GetHwnd",[
+        ("This",AThis);
+        ("pHwnd",OutReturn);
+      ],MANone);
+      ("GetCoreWindow",[
+        ("This",AThis);
+        ("refiid",ANone);
+        ("ppUnk",OutReturnInterface "refiid"); //TODO: check if refiid is interface id
+      ],MANone);
+      ("Present1",[
+        ("This",AThis);
+        ("SyncInterval",ANone);
+        ("PresentFlags",ANone);
+        ("pPresentParameters",ANone);
+      ],MANone);
+      ("IsTemporaryMonoSupported",[
+        ("This",AThis);
+      ],MANone);
+      ("GetRestrictToOutput",[
+        ("This",AThis);
+        ("ppRestrictToOutput",OutReturnComPtr);
+      ],MANone);
+      ("SetBackgroundColor",[
+        ("This",AThis);
+        ("pColor",ANone);
+      ],MANone);
+      ("GetBackgroundColor",[
+        ("This",AThis);
+        ("pColor",OutReturn);
+      ],MANone);
+      ("SetRotation",[
+        ("This",AThis);
+        ("Rotation",ANone);
+      ],MANone);
+      ("GetRotation",[
+        ("This",AThis);
+        ("pRotation",OutReturn);
+      ],MANone);
+    ]);
+  ]
+
+let dxgi1_3 = 
+  [
+    ("IDXGIDecodeSwapChainVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
+      ("PresentBuffer",[
+        ("This",AThis);
+        ("BufferToPresent",ANone);
+        ("SyncInterval",ANone);
+        ("Flags",ANone);
+      ],MANone);
+      ("SetSourceRect",[
+        ("This",AThis);
+        ("pRect",ANone);
+      ],MANone);
+      ("SetTargetRect",[
+        ("This",AThis);
+        ("pRect",ANone);
+      ],MANone);
+      ("SetDestSize",[
+        ("This",AThis);
+        ("Width",ANone);
+        ("Height",ANone);
+      ],MANone);
+      ("GetSourceRect",[
+        ("This",AThis);
+        ("pRect",OutReturn);
+      ],MANone);
+      ("GetTargetRect",[
+        ("This",AThis);
+        ("pRect",OutReturn);
+      ],MANone);
+      ("GetDestSize",[
+        ("This",AThis);
+        ("pWidth",OutReturnCombine("DSize","width"));
+        ("pHeight",OutReturnCombine("DSize","height"));
+      ],MANone);
+      ("SetColorSpace",[
+        ("This",AThis);
+        ("ColorSpace",ANone);
+      ],MANone);
+      ("GetColorSpace",[
+        ("This",AThis);
+      ],MANone);
+    ]);
+    ("IDXGIDevice3Vtbl",IAAutogen(Set.ofList []), "IDXGIDevice2Vtbl", [
+      ("Trim",[
+        ("This",AThis);
+      ],MANone);
+    ]);
+    ("IDXGIFactory3Vtbl",IAAutogen(Set.ofList []), "IDXGIFactory2Vtbl", [
+      ("GetCreationFlags",[
+        ("This",AThis);
+      ],MANone);
+    ]);
+    ("IDXGIFactoryMediaVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
+      ("CreateSwapChainForCompositionSurfaceHandle",[
+        ("This",AThis);
+        ("pDevice",InComPtr);
+        ("hSurface",ANone);
+        ("pDesc",ANone);
+        ("pRestrictToOutput",InOptionalComPtr);
+        ("ppSwapChain",OutReturnComPtr);
+      ],MANone);
+      ("CreateDecodeSwapChainForCompositionSurfaceHandle",[
+        ("This",AThis);
+        ("pDevice",InComPtr);
+        ("hSurface",ANone);
+        ("pDesc",ANone);
+        ("pYuvDecodeBuffers",InComPtr);
+        ("pRestrictToOutput",InOptionalComPtr);
+        ("ppSwapChain",OutReturnComPtr);
+      ],MANone);
+    ]);
+    ("IDXGIOutput2Vtbl",IAAutogen(Set.ofList []), "IDXGIOutput1Vtbl", [
+      ("SupportsOverlays",[
+        ("This",AThis);
+      ],MANone);
+    ]);
+    ("IDXGIOutput3Vtbl",IAAutogen(Set.ofList []), "IDXGIOutput2Vtbl", [
+      ("CheckOverlaySupport",[
+        ("This",AThis);
+        ("EnumFormat",ANone);
+        ("pConcernedDevice",InComPtr);
+        ("pFlags",OutReturn);
+      ],MANone);
+    ]);
+    ("IDXGISwapChain2Vtbl",IAAutogen(Set.ofList []), "IDXGISwapChain1Vtbl", [
+      ("SetSourceSize",[
+        ("This",AThis);
+        ("Width",ANone);
+        ("Height",ANone);
+      ],MANone);
+      ("GetSourceSize",[
+        ("This",AThis);
+        ("pWidth",OutReturnCombine("DSize","width"));
+        ("pHeight",OutReturnCombine("DSize","height"));
+      ],MANone);
+      ("SetMaximumFrameLatency",[
+        ("This",AThis);
+        ("MaxLatency",ANone);
+      ],MANone);
+      ("GetMaximumFrameLatency",[
+        ("This",AThis);
+        ("pMaxLatency",OutReturn);
+      ],MANone);
+      ("GetFrameLatencyWaitableObject",[
+        ("This",AThis);
+      ],MANone);
+      ("SetMatrixTransform",[
+        ("This",AThis);
+        ("pMatrix",ANone);
+      ],MANone);
+      ("GetMatrixTransform",[
+        ("This",AThis);
+        ("pMatrix",OutReturn);
+      ],MANone);
+    ]);
+    ("IDXGISwapChainMediaVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
+      ("GetFrameStatisticsMedia",[
+        ("This",AThis);
+        ("pStats",OutReturn);
+      ],MANone);
+      ("SetPresentDuration",[
+        ("This",AThis);
+        ("Duration",ANone);
+      ],MANone);
+      ("CheckPresentDurationSupport",[
+        ("This",AThis);
+        ("DesiredPresentDuration",ANone);
+        ("pClosestSmallerPresentDuration",ANone);
+        ("pClosestLargerPresentDuration",ANone);
+      ],MANone);
+    ]);
+  ]
+
+let dxgi1_4 = 
+  [
+    ("IDXGIAdapter3Vtbl",IAAutogen(Set.ofList []), "IDXGIAdapter2Vtbl", [
+      ("RegisterHardwareContentProtectionTeardownStatusEvent",[
+        ("This",AThis);
+        ("hEvent",ANone);
+        ("pdwCookie",OutReturn);
+      ],MANone);
+      ("UnregisterHardwareContentProtectionTeardownStatus",[
+        ("This",AThis);
+        ("dwCookie",ANone);
+      ],MANone);
+      ("QueryVideoMemoryInfo",[
+        ("This",AThis);
+        ("NodeIndex",ANone);
+        ("MemorySegmentGroup",ANone);
+        ("pVideoMemoryInfo",OutReturn);
+      ],MANone);
+      ("SetVideoMemoryReservation",[
+        ("This",AThis);
+        ("NodeIndex",ANone);
+        ("MemorySegmentGroup",ANone);
+        ("Reservation",ANone);
+      ],MANone);
+      ("RegisterVideoMemoryBudgetChangeNotificationEvent",[
+        ("This",AThis);
+        ("hEvent",ANone);
+        ("pdwCookie",OutReturn);
+      ],MANone);
+      ("UnregisterVideoMemoryBudgetChangeNotification",[
+        ("This",AThis);
+        ("dwCookie",ANone);
+      ],MANone);
+    ]);
+    ("IDXGIFactory4Vtbl",IAAutogen(Set.ofList []), "IDXGIFactory3Vtbl", [
+      ("EnumAdapterByLuid",[
+        ("This",AThis);
+        ("AdapterLuid",ANone);
+        ("riid",ANone);
+        ("ppvAdapter",OutReturnInterface "riid");
+      ],MANone);
+      ("EnumWarpAdapter",[
+        ("This",AThis);
+        ("riid",ANone);
+        ("ppvAdapter",OutReturnInterface "riid");
+      ],MANone);
+    ]);
+    ("IDXGIOutput4Vtbl",IAAutogen(Set.ofList []), "IDXGIOutput3Vtbl", [
+      ("CheckOverlayColorSpaceSupport",[
+        ("This",AThis);
+        ("Format",ANone);
+        ("ColorSpace",ANone);
+        ("pConcernedDevice",InComPtr);
+        ("pFlags",OutReturn);
+      ],MANone);
+    ]);
+    ("IDXGISwapChain3Vtbl",IAAutogen(Set.ofList []), "IDXGISwapChain2Vtbl", [
+      ("GetCurrentBackBufferIndex",[
+        ("This",AThis);
+      ],MANone);
+      ("CheckColorSpaceSupport",[
+        ("This",AThis);
+        ("ColorSpace",ANone);
+        ("pColorSpaceSupport",OutReturn);
+      ],MANone);
+      ("SetColorSpace1",[
+        ("This",AThis);
+        ("ColorSpace",ANone);
+      ],MANone);
+      ("ResizeBuffers1",[
+        ("This",AThis);
+        ("BufferCount",ANone);
+        ("Width",ANone);
+        ("Height",ANone);
+        ("Format",ANone);
+        ("SwapChainFlags",ANone);
+        ("pCreationNodeMask",InArrayOfSize "BufferCount");
+        ("ppPresentQueue",InComPtrArrayOfSize "BufferCount");
+      ],MANone);
+    ]);
+  ]
 
 let d3d12sdklayers =
   [
@@ -971,7 +977,7 @@ let d3d12sdklayers =
     ]);
   ]
 
-let d3d12annotations_prime=
+let d3d12annotations=
     [
       ("ID3D12CommandAllocatorVtbl",IAAutogen(Set.ofList [IOSend; IOSync]), "ID3D12PageableVtbl", [
         ("Reset",[
@@ -2594,4 +2600,3 @@ let d3d12structs=
       ]);  
     ] |> Seq.map (fun (a,b,c) -> (a,(b,c))) |> Map.ofSeq
 
-let d3d12annotations = populateVtbls d3d12annotations_prime

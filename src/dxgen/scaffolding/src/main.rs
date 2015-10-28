@@ -7,7 +7,7 @@
 extern crate env_logger;
 extern crate libc;
 extern crate winapi;
-extern crate d3d12_safe;
+extern crate dx_safe;
 //extern crate dxguid_sys;
 extern crate dxgi_sys;
 extern crate kernel32;
@@ -33,7 +33,7 @@ mod camera;
 
 use dxsems::VertexFormat;
 use winapi::*;
-use d3d12_safe::*;
+use dx_safe::*;
 use create_device::*;
 use kernel32::{CreateEventW, WaitForSingleObject};
 use std::ptr;

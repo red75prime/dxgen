@@ -181,7 +181,6 @@ type StructAnnotation=StructFlags*((string*FieldAnnotation) list)
  
 type Annotations = {
   interfaces: (string*InterfaceAnnotation*string*(string*(string*ParamAnnotation)list*MethodAnnotation)list)list
-  interfacesFull: (string*InterfaceAnnotation*string*(string*(string*ParamAnnotation)list*MethodAnnotation)list)list
   enums: Map<string, EnumAnnotation>
   structs: Map<string, (StructFlags*(string*FieldAnnotation)list)>
 }

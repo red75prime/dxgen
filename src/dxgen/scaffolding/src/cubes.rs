@@ -3,7 +3,7 @@ use std::mem;
 use std::ptr;
 use winapi::*;
 use kernel32::*;
-use d3d12_safe::*;
+use dx_safe::*;
 use core::*;
 use utils::*;
 use cgmath::*;
@@ -416,20 +416,33 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
 
   // ------------------- Depth stencil buffer init end --------------------------
 
-  // 
+  // Fences synchronize CPU and GPU.
+  // You can place a fence in the GPU's command queue by calling D3D12CommandQueue::signal().
+  // When GPU reaches the fence, it notifies CPU.
+  // If you want GPU to wait for signal, call D3D12CommandQueue::wait(),
+  // then tell GPU to continue by calling D3D12CommandQueue::signal().
   debug!("fence");
   let fence=core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE).unwrap();
 
+  // fence_event communicates GPU's notification to CPU. 
+  // Use fence.set_event_on_completion(fence_value, fence_event) to bind fence to fence_event
+  // Use utils::wait_for_single_object() to wait until GPU reaches marker set by D3D12CommandQueue::signal().
+  // fence_value identifies particular call to D3D12CommandQueue::signal()
   let fence_event = unsafe{ CreateEventW(ptr::null_mut(), 0, 0, ptr::null_mut()) };
   debug!("fence_event");
   if fence_event == ptr::null_mut() {
+    // If OS can't create event, then OS is in weird state, it's unlikely we can recover.
     panic!("Cannot create event");
   }
   
   let mut par_sub = vec![];
+  // Fill data required to submit GPU workload in parallel
+  // I create three copies of that data to be able to keep GPU busy.
+  // While GPU renders previous frame, I can submit new command lists.
   for _ in 0..3 {
     par_sub.push(try!(init_parallel_submission(&core, *parameters.thread_count(), *parameters.object_count()).map_err(|_|core.info_queue.clone())));
   }
+  // State of the cubes. Tuple (position, speed, rotation axis, rotation speed)
   let mut rot_spd = Vec::with_capacity(*parameters.object_count() as usize);
   for _ in 0 .. *parameters.object_count() {
     rot_spd.push((v3((rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-1.)*200.), 
@@ -437,7 +450,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
           v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()*0.1));
   }
 
-
+  // Pack all created objects into AppData
   let mut ret=
     AppData {
       core: core,
@@ -467,18 +480,19 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       rot_spd: rot_spd,
     };
 
+  // I can't use camera here. I moved it into ret.camera.
   ret.camera.go(-3., 0., 0.);
   ret.camera.aspect = (w as f32)/(h as f32);
   
+  // TODO: remove
   debug!("Command list Close");
   command_list.close().unwrap();
-
   debug!("Command queue execute");
-  ret.core.graphics_queue.execute_command_lists(&[&command_list]);
-  
+  ret.core.graphics_queue.execute_command_lists(&[&command_list]);  
   debug!("wait_for_prev_frame");
   wait_for_graphics_queue(&ret.core, &ret.fence, &ret.fence_event);
 
+  // Done
   Ok(ret)
 }
 
@@ -490,12 +504,16 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
 
   if cfg!(debug) {debug!("on_render")};
 
+  // advance position of cubes
+  // TODO: move to on_update, use delta_t
   for rot in &mut data.rot_spd {
     rot.0 = rot.0.add_v(&rot.1);
   }
 
+  // measure timings
   ::perf_wait_start();
   {
+    // data.cur_ps_num is number of currently active parallel submission
     let ps = &data.parallel_submission[data.cur_ps_num];
     let fence = &ps.fence;
     // wait for GPU to execute all command lists, which was previously submitted by current parallel submission
@@ -504,45 +522,30 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   }
   ::perf_wait_end();
   ::perf_fillbuf_start();
+  // update index of current back buffer
   data.frame_index = data.swap_chain.swap_chain.get_current_back_buffer_index();
-  //let tick=data.tick;
-  let aspect=data.viewport.Height/data.viewport.Width;
-  let (x,y) = (x as f32, y as f32);
-  let (x,y) = (x-data.viewport.Width/2., y-data.viewport.Height/2.);
-  let tick=f64::atan2(x as f64, y as f64);
 
-  let (s,c)=f64::sin_cos(-tick); // f32 is too small for time counting
-  let (s,c)=(s as f32, c as f32);
-  
-  let z=(f64::sin(data.tick*10.)*2.) as f32;
-
-  let mut d=f32::sqrt(x*x+y*y);
-  d = if d == 0. {1.} else {d};
-
-  let mut wm: Matrix4<f32> = Matrix4::from(Matrix3::from(Basis3::from_axis_angle(&Vector3::new(y/d, x/d, 0.0),rad(d/200.))));
-  wm.w.w = 1.;
-
+  // Setup world, normal, view and projection matrices
+  let mut wm: Matrix4<f32> = Matrix4::identity();
   let mut wm_normal=wm;
   wm_normal.invert_self();
   wm_normal.transpose_self();
-  
   let world_normal_matrix = matrix4_to_4x4(&wm_normal);
-
-  let world_matrix = matrix4_to_4x4(&wm); //[[c, s, 0.,0.],[-s, c, 0.,0.],[0.,c ,1.,0.],[0.,0.,0.,1.],];
-
-  let (vx,vy) = f64::sin_cos(data.tick*0.01);
-  let (vx,vy) = (vx as f32, vy as f32);
-
+  let world_matrix = matrix4_to_4x4(&wm); 
   let view_matrix = matrix4_to_4x4(&data.camera.view_matrix());
-
   let proj_matrix = matrix4_to_4x4(&data.camera.projection_matrix());
 
   let (lx,ly) = f64::sin_cos(data.tick);
   let (lx,ly) = (lx as f32, ly as f32);
 
+  // Parallel submission threads use view, proj and light_pos
   let consts = Constants{ model: world_matrix, view: view_matrix, proj: proj_matrix, n_model: world_normal_matrix, light_pos: [lx,ly,-3.0]};
 
   crossbeam::scope(|scope| {
+    // It's overkill to run those two threads in parallel.
+    // command_list_rt_clear() just creates command list to clear render target and depth-stencil buffer.
+    // Thread creation overhead probably eats all bonuses.
+    // TODO: Compare this and sequential version
     scope.spawn(|| { 
         let ps = &data.parallel_submission[data.cur_ps_num];
         match command_list_rt_clear(&ps.clear_list, &ps.ps_allocator, data) {
@@ -554,20 +557,27 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
         }
       });
     scope.spawn(|| {
+      // this function fills several graphics command lists, each list is filled in its own thread.
       submit_in_parallel(data, &consts).unwrap();
     });
   });
   ::perf_fillbuf_end();
   ::perf_clear_start();
+  // Clear render targets
   data.core.graphics_queue.execute_command_lists(&[&data.parallel_submission[data.cur_ps_num].clear_list]);
 
+  // I'm not sure if GPU parallelizes execution within execute_command_lists only, or across calls too.
   // TODO: make sure that this sync is not needed
   //wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
 
   ::perf_clear_end();
   ::perf_exec_start();
+  // Scope prevents 'ps', that borrows part of 'data', from blocking subsequent mutable borrows.
   {
     let ps = &data.parallel_submission[data.cur_ps_num];
+    // ParallelSubmission::gc_lists contains Vec of tuples (D3D12GraphicsCommandList, D3D12CommandAllocator)
+    // This line creates vector of references to (borrows of) command lists from gc_lists
+    // TODO: check if one command allocator is sufficient for parallel lists creation
     let cls: Vec<&D3D12GraphicsCommandList> = ps.gc_lists.iter().map(|&(ref clist, _)|clist).collect();
     data.core.graphics_queue.execute_command_lists(&cls[..]);
   }

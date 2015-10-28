@@ -109,6 +109,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
        yield "-fms-extensions"
        yield "-fms-compatibility"
        yield "-Wno-ignored-attributes"
+       yield "-Wno-microsoft"
        yield! includePaths |> Seq.map (fun p -> "-I"+p)
     } |> Array.ofSeq
   let index = createIndex(0, 1)
@@ -239,7 +240,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     let itIsClass = ref false
     let parseFieldDecl cursor _ _=
       let ckind=getCursorKind cursor
-      printfn "    %A %s" ckind (getCursorDisplayNameFS cursor)
+      //printfn "    %A %s" ckind (getCursorDisplayNameFS cursor)
       if ckind=CursorKind.CxxBaseSpecifier then
         itIsClass := true // crude. TODO: something
         let basename = getCursorDisplayNameFS cursor
@@ -309,7 +310,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 
     if curFileName.EndsWith(headerLocation.Name) then
         let cursorKind=getCursorKind cursor
-        printfn "%A %s" cursorKind (getCursorDisplayNameFS cursor)
+        //printfn "%A %s" cursorKind (getCursorDisplayNameFS cursor)
     
         if cursorKind=CursorKind.MacroDefinition then
           parseMacro cursor locInfo

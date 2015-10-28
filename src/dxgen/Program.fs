@@ -23,17 +23,46 @@ with
 
 open annotations
 open annotations_autogen
+//TODO: get annotations from files
 let annotations_by_module = 
   [
-    ("d3d12_dxgi",
-      {interfaces = d3d12annotations_prime;
-      interfacesFull = d3d12annotations;
+    ("d3d12",
+      {interfaces = d3d12annotations;
+      enums = d3d12enums;
+      structs = d3d12structs
+    });
+    ("d3d12sdklayers",
+      {interfaces = d3d12sdklayers;
+      enums = d3d12enums;
+      structs = d3d12structs
+    });
+    ("d3dcommon",
+      {interfaces = d3dcommon;
+      enums = d3d12enums;
+      structs = d3d12structs
+    });
+    ("dxgi",
+      {interfaces = dxgi;
+      enums = d3d12enums;
+      structs = d3d12structs
+    });
+    ("dxgi1_2",
+      {interfaces = dxgi1_2;
+      enums = d3d12enums;
+      structs = d3d12structs
+    });
+    ("dxgi1_3",
+      {interfaces = dxgi1_3;
+      enums = d3d12enums;
+      structs = d3d12structs
+    });
+    ("dxgi1_4",
+      {interfaces = dxgi1_4;
       enums = d3d12enums;
       structs = d3d12structs
     });
     ("dwrite",
       {interfaces = [];
-      interfacesFull = [];
       enums = Map.empty;
       structs = Map.empty
     });
@@ -49,45 +78,61 @@ let main argv =
         let config = fileStream |> Configuration.loadConfiguration
         let sdkLocation = SDKLocator.findSDKRootDirectory ()
 
+        let allInterfaces = ref Map.empty
+        let modules = ref []
+
         for codeModule in config.Modules do
             printfn "Processing module %s:" codeModule.Name
 
-            match Map.tryFind (codeModule.Name) annotations_by_module with
-            |None ->
-              printfn "  Error: no annotations for %s" codeModule.Name
-            |Some(annotations) ->
 
-              let precompiledHeader = 
-                if codeModule.PrecompileHeader = null then
-                  None
-                else
-                  let header = FileInfo(codeModule.PrecompileHeader)
-                  if header.Exists then Some(header) else None
+            let precompiledHeader = 
+              if codeModule.PrecompileHeader = null then
+                None
+              else
+                let header = FileInfo(codeModule.PrecompileHeader)
+                if header.Exists then Some(header) else None
 
-              for header in codeModule.Headers do
-                  let headerPath = 
-                    codeModule.IncludePaths 
-                      |> Seq.map (fun incPath -> FileInfo(Path.Combine(sdkLocation, incPath, header)))
-                      |> Seq.find (fun fi -> fi.Exists)
+            for header in codeModule.Headers do
+                let headerPath = 
+                  codeModule.IncludePaths 
+                    |> Seq.map (fun incPath -> FileInfo(Path.Combine(sdkLocation, incPath, header)))
+                    |> Seq.find (fun fi -> fi.Exists)
                 
-                  let includePaths=
-                    codeModule.IncludePaths |> Seq.map (fun incPath -> Path.Combine(sdkLocation, incPath))
+                let includePaths=
+                  codeModule.IncludePaths |> Seq.map (fun incPath -> Path.Combine(sdkLocation, incPath))
+                  
+                let headerName = 
+                  let lastpoint = header.LastIndexOf('.')
+                  if lastpoint = -1 then
+                    header
+                  else
+                    header.Substring(0, lastpoint)
 
-                  let types = parse.combinedParse headerPath precompiledHeader includePaths
+                let types = parse.combinedParse headerPath precompiledHeader includePaths
+                let atext = safegen.emptyAnnotationsGen types
+                System.IO.Directory.CreateDirectory(@".\" + headerName) |> ignore 
+                use swa=new System.IO.StreamWriter(@".\" + headerName + @"\annotations_autogen.fs")
+                swa.Write(atext)
+
+                match Map.tryFind (headerName) annotations_by_module with
+                |None ->
+                  printfn "  Error: no annotations for %s" headerName
+                |Some(annotations) ->
                   if not (codeModule.NoWinapiGen) then
                     let wapi = sysgen.winapiGen types annotations
                     System.IO.Directory.CreateDirectory(@".\winapi") |> ignore //TODO: use Path
                     for KeyValue(f,t) in wapi do
                       use sw=new System.IO.StreamWriter(@".\winapi\"+f)
                       sw.Write(t)
-                  let atext = safegen.emptyAnnotationsGen types
-                  System.IO.Directory.CreateDirectory(@".\"+codeModule.Name) |> ignore 
-                  use swa=new System.IO.StreamWriter(@".\" + codeModule.Name + @"\annotations_autogen.fs")
-                  swa.Write(atext)
-                  let rtext=safegen.safeInterfaceGen types annotations
-                  use swsi=new System.IO.StreamWriter(@".\d3d12.rs")
+                  let (rtext, interfaces)=safegen.safeInterfaceGen headerName (!allInterfaces) types annotations
+                  allInterfaces := interfaces
+                  let moduleName = headerName+"_safe"
+                  System.IO.Directory.CreateDirectory(@".\safe") |> ignore //TODO: use Path
+                  use swsi=new System.IO.StreamWriter(@".\safe\"+moduleName+".rs")
+                  for modl in !modules do
+                    swsi.WriteLine("use "+modl+"::*;")
                   swsi.Write(rtext)
-
+                  modules := moduleName :: !modules
                   printfn "Processing header %s" headerPath.FullName
 
             //safegen.whatDoWeHaveP()

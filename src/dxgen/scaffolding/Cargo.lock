@@ -5,7 +5,7 @@ dependencies = [
  "cgmath 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "clock_ticks 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "d3d12_safe 0.3.0",
+ "dx_safe 0.3.1",
  "dxgi-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "dxguid-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "env_logger 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -59,8 +59,8 @@ version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "d3d12_safe"
-version = "0.3.0"
+name = "dx_safe"
+version = "0.3.1"
 dependencies = [
  "dxguid-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=dx12)",
  "libc 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",

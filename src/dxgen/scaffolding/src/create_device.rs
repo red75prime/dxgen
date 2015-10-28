@@ -1,10 +1,6 @@
 use winapi::*;
-use d3d12_safe::*;
-//use d3d12_sys::*;
-//use dxguid_sys::*;
-//use dxgi_sys::*;
+use dx_safe::*;
 use std::ptr;
-//use libc;
 
 #[link(name="d3d12")]
 extern "system" {
