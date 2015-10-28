@@ -214,6 +214,10 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   };
 
   // I tried to get fullscreen with tearing for unbounded FPS. Unsuccessfully.
+  // Yours truly.
+  // P.S. I found out the cause. I need to enumerate display modes, not to create the struct,
+  // hoping that it will match display mode exactly.
+  // https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Flipping
   let fsd = DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     RefreshRate: DXGI_RATIONAL {Numerator: 60, Denominator: 1},
     ScanlineOrdering: DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE,
@@ -585,6 +589,7 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   {
     let ps = &data.parallel_submission[data.cur_ps_num];
     ps.transition_list.reset(&ps.ps_allocator, None).unwrap();
+    // Resource barrier in this command list tells GPU to make current back buffer ready for presentation
     ps.transition_list.resource_barrier(
         &mut [*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
         D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
@@ -594,15 +599,24 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
 
   let fence_val_next=data.core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
   data.parallel_submission[data.cur_ps_num].fence_val = fence_val_next;
+  // When GPU reaches this point in its command queue it will set completed value of given fence to fence_val_next
+  // I tell CPU to wait for it near the beginning of on_render() to be able to reuse command lists
   data.core.graphics_queue.signal(&data.parallel_submission[data.cur_ps_num].fence, fence_val_next);
+
+  // Advance to next parallel submission struct. I need a couple of parallel submission structs to
+  // avoid waiting for GPU to finish processing command lists.
   data.cur_ps_num = (data.cur_ps_num+1) % data.parallel_submission.len();
   ::perf_exec_end();
   ::perf_present_start();
+  // I hope that present waits for back buffer transition into STATE_PRESENT
+  // I didn't find anything about this in MSDN.
   match data.swap_chain.swap_chain.present(0, 0) {
     Err(hr) => {
       dump_info_queue(data.core.info_queue.as_ref());
+      //TODO: Maybe I can handle DEVICE_REMOVED error by recreating DXCore and DXSwapchain
       panic!("Present failed with 0x{:x}", hr);
     },
+    //TODO: Use STATUS_OCCLUDED to reduce frame rate
     _ => (),
   }
   ::perf_present_end();
@@ -612,22 +626,40 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
 
 
 //--------------------------------
+// This function fills graphics command list with instructions
+// for clearing render target and depth-stencil view.
 fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_allocator: &D3D12CommandAllocator, data: &AppData) -> HResult<()> {
   if cfg!(debug) {debug!("Command allocator reset")};
-  command_allocator.reset().unwrap();
+  // I unwrap() result because it shouldn't panic if I wrote the program correctly.
+  // Hmm. I think DEVICE_REMOVED _can_ occur here. Ok. I replace it with try!.
+  // D3D12CommandAllocator::reset() indicates that it is safe to reuse allocated memory.
+  // GPU mustn't be using any of command lists associated with this allocator.
+  // I ensure this near the beginning of on_render() by waiting for fence.
+  try!(command_allocator.reset());
   if cfg!(debug) {debug!("Command list reset")};
-  command_list.reset(command_allocator, Some(&data.pipeline_state)).unwrap();
-
+  // Command lists can be reused immediately after call to D3DCommandQueue::execute_command_lists(),
+  // but I don't use this property yes.
+  try!(command_list.reset(command_allocator, Some(&data.pipeline_state)));
 
   if cfg!(debug) {debug!("Resource barrier")};
+  // It tells GPU to prepare back buffer for use as render target.
   command_list.resource_barrier(
       &mut [*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
       D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET).flags(D3D12_RESOURCE_BARRIER_FLAG_NONE)]);
 
+  // Essentially, the following is a pointer arithmetics.
+  // TODO: wrap it somehow
+  // rtvh is a pointer to CPU side of render target view descriptor heap
   let mut rtvh=data.swap_chain.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
+  // advance pointer to a descriptor of current back buffer
   rtvh.ptr += (data.frame_index as SIZE_T)*data.swap_chain.rtv_dsize;
+  // depth-stencil view descriptor heap holds just one descriptor
+  // TODO: check if this impacts performance
   let dsvh = data.dsd_heap.get_cpu_descriptor_handle_for_heap_start();
   if cfg!(debug) {debug!("OM set render targets")};
+  // ID3D12GraphicsCommandList::OMSetRenderTargets has 4 parameters.
+  // I split this method into two: om_set_render_targets() 
+  // and om_set_render_targets_arr(), eliminating RTsSingleHandleToDescriptorRange parameter.
   command_list.om_set_render_targets(1, &rtvh, Some(&dsvh));
 
   let clear_color = [0.01, 0.01, 0.15, 1.0];
