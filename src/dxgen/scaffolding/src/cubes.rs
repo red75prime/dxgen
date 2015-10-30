@@ -21,10 +21,6 @@ use std::sync::atomic::Ordering;
 use shape_gen;
 use shape_gen::GenVertex;
 
-pub type M3 = [[f32;3];3];
-pub type M4 = [[f32;4];4];
-
-
 // dx_vertex! macro implement dxsems::VertexFomat trait for given structure
 // VertexFomat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
 // There's no #[repr(C)], because dx_vertex takes care of measuring field's offsets
@@ -54,6 +50,8 @@ impl GenVertex for Vertex {
     Vertex {norm: [n.x, n.y, n.z], ..self}
   }
 }
+
+type M4 = [[f32;4];4];
 
 // This struct contains data to be passed into shader,
 // thus its memory layout should be defined. repr(C) does that.
@@ -896,8 +894,10 @@ fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32)
   // create resource to hold all constant buffers
   let cbuf = try!(core.dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(buffer_size as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None));
   let mut ptr: *mut u8 = ptr::null_mut();
+  // Indicate that CPU doesn't read from buffer
+  let read_range = D3D12_RANGE {Begin: 0, End: 0,};
   unsafe {
-    try!(cbuf.map(0, None, Some(&mut ptr)));
+    try!(cbuf.map(0, Some(&read_range), Some(&mut ptr)));
     debug!("cbuf.iptr(): 0x{:x}, ptr: 0x{:x}", cbuf.iptr() as usize, ptr as usize);
   }
   let cpu_buf_ptr = PtrConstants(ptr as *mut Constants);
