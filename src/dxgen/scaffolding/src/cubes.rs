@@ -756,8 +756,13 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
     //     to bind data to this slot. You don't need descriptor heaps to do that.
     *RootParameter::cbv(0, 0, D3D12_SHADER_VISIBILITY_ALL),
   ];
+  // D3D12_ROOT_PARAMETER structure have different sizes for 32-bit and 64-bit code.
+  // I had a fun time adapting wrapper generator to this class of cases.
   debug!("Size of D3D12_ROOT_PARAMETER:{}", ::std::mem::size_of_val(&rs_parms[0]));
 
+  // It is the place where all input slots are bound to shader registers.
+  // except for vertex ('v' registers) and index buffers, which do not require binding
+  // TODO: make a wrapper
   let rsd=D3D12_ROOT_SIGNATURE_DESC{
     NumParameters: rs_parms.len() as UINT,
     pParameters: rs_parms[..].as_ptr(),
@@ -767,20 +772,32 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
   };
 
   debug!("Serialize root signature");
+  // Root signature can be embedded into HLSL. You can extract blob from shader text.
+  // https://msdn.microsoft.com/en-us/library/windows/desktop/dn913202(v=vs.85).aspx
   let blob=try!(d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1));
 
   debug!("Root signature");
+  // It creates D3D12RoosSignature
   let root_sign = try!(core.dev.create_root_signature(0, blob_as_slice(&blob)));
 
   let compile_flags=0;
   debug!("Vertex shader");
+  // shaders.hlsl should be in process current directory
+  // vshader and pshader are Vec<u8> containing shader byte-code
   let vshader=d3d_compile_from_file("shaders.hlsl","VSMain","vs_5_0", compile_flags).unwrap();
   debug!("Pixel shader");
   let pshader=d3d_compile_from_file("shaders.hlsl","PSMain","ps_5_0", compile_flags).unwrap();
 
+  // dx_vertex! macro implements VertexFormat trait, which allows to
+  // automatically generate description of vertex data
   let input_elts_desc = T::generate(0);
 
+  // Finally, I combine all the data into pipeline state object description
+  // TODO: make wrapper. Each pointer in this structure can potentially outlive pointee.
+  //       Pointer/length pairs shouldn't be exposed too.
   let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+    // DX12 runtime doesn't AddRef root_sign, so I need to keep root_sign myself.
+    // I return root_sign from this function and I keep it inside AppData.
     pRootSignature: root_sign.iptr() as *mut _,
     VS: D3D12_SHADER_BYTECODE {
       pShaderBytecode: vshader.as_ptr() as *const _,
@@ -791,7 +808,7 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
       BytecodeLength: pshader.len() as SIZE_T, 
     },
     RasterizerState: D3D12_RASTERIZER_DESC {
-      CullMode: D3D12_CULL_MODE_NONE,
+      CullMode: D3D12_CULL_MODE_FRONT,
       .. rasterizer_desc_default()
     },
     InputLayout: D3D12_INPUT_LAYOUT_DESC {
@@ -800,14 +817,20 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
     },
     PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
     NumRenderTargets: 1,
-    //RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
     DSVFormat: DXGI_FORMAT_D32_FLOAT,
     Flags: if cfg!(Debug) {D3D12_PIPELINE_STATE_FLAG_TOOL_DEBUG} else {D3D12_PIPELINE_STATE_FLAG_NONE},
+    // Take other fields from default gps
     .. graphics_pipeline_state_desc_default()
   };
+  // This assignment reduces amount of typing. But I could have included 
+  // all 8 members of RTVFormats in the struct initialization above.
   pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
+  // Note that creation of pipeline state object is time consuming operation.
+  // Compilation of shader byte-code occurs here.
   let ps = try!(core.dev.create_graphics_pipeline_state(&pso_desc));
+  // DirectX 12 offload resource management to the programmer.
+  // So I need to keep root_sign around, as DX12 runtime doesn't AddRef it.
   Ok((ps, root_sign))
 }
 
