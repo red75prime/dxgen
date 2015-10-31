@@ -21,8 +21,8 @@ use std::sync::atomic::Ordering;
 use shape_gen;
 use shape_gen::GenVertex;
 
-// dx_vertex! macro implement dxsems::VertexFomat trait for given structure
-// VertexFomat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
+// dx_vertex! macro implement dxsems::VertexFormat trait for given structure
+// VertexFormat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
 // There's no #[repr(C)], because dx_vertex takes care of measuring field's offsets
 dx_vertex!( Vertex {
   (POSITION, 0, DXGI_FORMAT_R32G32B32_FLOAT) pos: [f32;3],
@@ -87,7 +87,12 @@ impl Parameters for CubeParms {
 // This struct contains all data the rendering needs.
 // TODO: split this into something more manageable.
 pub struct AppData {
+  // core contains D3D12Device, D3D12CommandQueue and few other objects
+  // which are required for creating and drawing D3D12 objects such as vertex buffers,
+  // textures, command lists and so on. 
   core: DXCore,
+  // swap_chain contains DXGISwapChain3, back-buffer resources,
+  // render target view heap
   swap_chain: DXSwapChain,
   viewport: D3D12_VIEWPORT,
   scissor_rect: D3D12_RECT,
@@ -114,7 +119,9 @@ pub struct AppData {
   rot_spd: Vec<(Vector3<f32>, Vector3<f32>, Vector3<f32>, f32)>,
 }
 
-// Parallel GPU workload submission requires some data from AppData
+// Parallel GPU workload submission requires some data from AppData.
+// So I need to implement Sync for it to be able to pass references to
+// different threads.
 // TODO: rewrite parrallel part to pass only required parts of AppData
 unsafe impl Sync for AppData {}
 
@@ -482,7 +489,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       rot_spd: rot_spd,
     };
 
-  // I can't use camera here. I moved it into ret.camera.
+  // I can't use 'camera' variable here. I moved it into ret.camera.
   ret.camera.go(-3., 0., 0.);
   ret.camera.aspect = (w as f32)/(h as f32);
   
@@ -629,7 +636,7 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
 fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_allocator: &D3D12CommandAllocator, data: &AppData) -> HResult<()> {
   if cfg!(debug) {debug!("Command allocator reset")};
   // I unwrap() result because it shouldn't panic if I wrote the program correctly.
-  // Hmm. I think DEVICE_REMOVED _can_ occur here. Ok. I replace it with try!.
+  // Hmm. I think DEVICE_REMOVED _can_ occur here. Ok. I replaced it with try!.
   // D3D12CommandAllocator::reset() indicates that it is safe to reuse allocated memory.
   // GPU mustn't be using any of command lists associated with this allocator.
   // I ensure this near the beginning of on_render() by waiting for fence.
@@ -676,6 +683,8 @@ fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_alloca
 
 //---------------------------
 fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12PipelineState,D3D12RootSignature)> {
+  // Static sampler goes directly into root signature.
+  // It doesn't require descriptor in sampler descriptor heap.
   let static_samplers = vec![
     D3D12_STATIC_SAMPLER_DESC {
       Filter: D3D12_FILTER_ANISOTROPIC,
@@ -694,14 +703,28 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
     },
   ];
 
+  // Descriptor range is one of several ways of binding descriptor heaps content to
+  // shader registers. It describes type, starting position and count of descriptors in
+  // descriptors heap, as well as shader register(s) to bind to.
+  // Descriptor range goes into RootParameter::descriptor_table, which goes into root signature.
   let desc_ranges = vec![
+    // This one binds first entry from SRV/CBV/UAV descriptor heap to shader register t0
     D3D12_DESCRIPTOR_RANGE {
+      // Bind as shader resource view (shader register 't')
       RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+      // One descriptor in range
       NumDescriptors: 1,
+      // Bind as 't0'
       BaseShaderRegister: 0,
+      // Shader model 5.0 adds register spaces, e.g. this texture can be refered to as 'Texture2D<float4> tex: register(t0,  space0)'
       RegisterSpace: 0,
+      // First descriptor in a descriptors heap
+      // You can put D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND here to compute offsets automatically.
       OffsetInDescriptorsFromTableStart: 0,
     },
+    // In older version I used this entry to bind constant buffer
+    // In this version I use RootParameter::cbv below and 
+    // D3D12GraphicsCommandList::set_graphics_root_constant_buffer_view()
     D3D12_DESCRIPTOR_RANGE {
       RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
       NumDescriptors: 1,
@@ -709,6 +732,8 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
       RegisterSpace: 0,
       OffsetInDescriptorsFromTableStart: 1,
     },
+    // Another remnant of older version.
+    // In this verion sampler goes directly into root signature
     D3D12_DESCRIPTOR_RANGE {
       RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
       NumDescriptors: 1,
@@ -718,10 +743,18 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
     },
   ];
 
+  // Root parameters:
   let rs_parms = vec![
+    //   Slot 0: register(t0, space0)
+    //     Attach resource to this slot by calling
+    //       D3D12GraphicsCommandList::set_graphics_root_descriptor_table(slot_number, gpu_virtual_address_of_first_descriptor)
+    //     Note, that firstly you need to attach descriptor heaps to command list
+    //        D3D12GraphicsCommandList::set_descriptor_heaps(heaps: &[&D3D12DescriptorHeap])
     *RootParameter::descriptor_table(&desc_ranges[0..1], D3D12_SHADER_VISIBILITY_PIXEL),
+    //   Slot 1: register(c0, space0), contains constants (uniforms in GL terminology)
+    //     Call D3D12GraphicsCommandList::set_graphics_root_constant_buffer_view(slot_number, gpu_virtual_address_of_constants)
+    //     to bind data to this slot. You don't need descriptor heaps to do that.
     *RootParameter::cbv(0, 0, D3D12_SHADER_VISIBILITY_ALL),
-//    *RootParameter::descriptor_table(&desc_ranges[2..3], D3D12_SHADER_VISIBILITY_PIXEL),
   ];
   debug!("Size of D3D12_ROOT_PARAMETER:{}", ::std::mem::size_of_val(&rs_parms[0]));
 
