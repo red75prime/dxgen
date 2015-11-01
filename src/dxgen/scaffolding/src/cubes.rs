@@ -2,16 +2,13 @@ use std::fmt;
 use std::mem;
 use std::ptr;
 use winapi::*;
-use kernel32::*;
 use dx_safe::*;
 use core::*;
 use utils::*;
 use cgmath::*;
 use structwrappers::*;
 use window::*;
-use rand::Rng;
 use rand;
-use cgmath;
 use crossbeam;
 use create_device::*;
 use std::cmp::{min,max};
@@ -100,17 +97,22 @@ pub struct AppData {
   root_signature: D3D12RootSignature,
   srv_heap: D3D12DescriptorHeap,
   dsd_heap: D3D12DescriptorHeap,
-  cbvd_heap: D3D12DescriptorHeap,
   pipeline_state: D3D12PipelineState,
-  vertex_buffer: D3D12Resource,
+  // rustc thinks that _vertex_buffer is never user, but it holds corresponding resource alive,
+  // while vertex_buffer_view keeps GPU virtual address of the buffer.
+  // underscore prevents warning
+  // TODO: bundle vertex buffer and vertex buffer view into one structure?
+  // 
+  _vertex_buffer: D3D12Resource,
   vertex_buffer_view: D3D12_VERTEX_BUFFER_VIEW,
-  index_buffer: D3D12Resource,
+  // same as for _vertex_buffer
+  _index_buffer: D3D12Resource,
   index_buffer_view: D3D12_INDEX_BUFFER_VIEW,
-  constant_buffer: D3D12Resource,
-  tex_resource: D3D12Resource,
+  _constant_buffer: D3D12Resource,
+  _tex_resource: D3D12Resource,
   depth_stencil: Option<D3D12Resource>,
   frame_index: UINT,
-  fence_event: HANDLE,
+  fence_event: Event,
   fence: D3D12Fence,
   tick: f64,
   parallel_submission: Vec<ParallelSubmissionData<Constants>>,
@@ -181,9 +183,39 @@ impl fmt::Debug for AppData {
   }
 }
 
+fn get_display_mode_list1(output: &DXGIOutput4, format: DXGI_FORMAT, flags: UINT) -> HResult<Vec<DXGI_MODE_DESC1>> {
+  // In rare cases get_display_mode_list1 can return Err(DXGI_ERROR_MORE_DATA). Modes should be reenumerated in this case.
+  // loop takes care of this
+  loop {
+    match output.get_display_mode_list1(format, flags, None) {
+      Ok(mode_count) => {
+        let mut modes = Vec::with_capacity(mode_count as usize);
+        // DXGI_MODE_DESC1 is POD. Uninitialized content will be overwritten immidiately
+        // So it's safe to set_len here
+        unsafe{ modes.set_len(mode_count as usize); };
+        match output.get_display_mode_list1(format, flags, Some(&mut modes[..])) {
+          Ok(mode_count_actual) => {
+            assert!(mode_count == mode_count_actual);
+            // Uniinitialized data in modes is safely overwritten.
+            // return is required here to escape the loop
+            return Ok(modes);
+          },
+          // I don't match against Err(DXGI_ERROR_MORE_DATA), because a typo here will cause just a warning
+          // and I have loads of warning. I need to get rid of them.
+          Err(hr) if hr==DXGI_ERROR_MORE_DATA => {
+            // Do nothing and fallthru to the loop
+          },
+          Err(hr) => { return Err(hr); },
+        }; // match query modes
+      }, // Ok(mode_count)
+      Err(hr) => { return Err(hr); },
+    } // match query mode count
+  }
+}
+
 pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32, parameters: &T) -> Result<AppData, Option<D3D12InfoQueue>> {
   // TODO: get window width and height from wnd
-  let (w, h)=(512., 256.);
+  let (w, h)=(512., 512.);
   let hwnd=wnd.get_hwnd();
   debug!("HWND");
   let viewport=D3D12_VIEWPORT {
@@ -203,7 +235,29 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   
   // core::create_core creates structure that contains D3D12Device, command queues and so on
   // which are required for creation of all other objects
-  let core = try!(create_core(adapter, D3D_FEATURE_LEVEL_12_0, cfg!(debug)).map_err(|err|panic!("Cannot create DXCore: {}", err)));
+  let core = try!(create_core(adapter, D3D_FEATURE_LEVEL_11_0, cfg!(debug)).map_err(|err|panic!("Cannot create DXCore: {}", err)));
+
+  // Get adapter the device was created on
+  let adapter_luid = core.dev.get_adapter_luid();
+  if let Ok(adapter) = core.dxgi_factory.enum_adapter_by_luid::<DXGIAdapter3>(adapter_luid) {
+    let mut i=0;
+    // Enumerate adapter's outputs
+    while let Ok(output) = adapter.enum_outputs(i).and_then(|o|o.query_interface::<DXGIOutput4>()) {
+      if let Ok(output_desc) = output.get_desc() {
+        let output_device_name = wchar_array_to_string_lossy(&output_desc.DeviceName[..]);
+        info!("Output {}: {}", i, output_device_name);
+      } else {
+        error!("Output {}: Unbelievable! DXGIOutput4::get_desc() returned an error.", i);
+      };
+      // Enumerate display modes
+      if let Ok(modes) = get_display_mode_list1(&output, DXGI_FORMAT_R8G8B8A8_UNORM, 0) {
+        for mode in &modes {
+          info!("  {}x{} @ {}/{}Hz {:?} {:?} ", mode.Width, mode.Height, mode.RefreshRate.Numerator, mode.RefreshRate.Denominator, mode.ScanlineOrdering, mode.Scaling);
+        }
+      };
+      i += 1;
+    }
+  };
 
   let sc_desc = DXGI_SWAP_CHAIN_DESC1 {
     Width: w as u32,
@@ -225,7 +279,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   // hoping that it will match display mode exactly.
   // https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Flipping
   let fsd = DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
-    RefreshRate: DXGI_RATIONAL {Numerator: 60, Denominator: 1},
+    RefreshRate: DXGI_RATIONAL {Numerator: 59940, Denominator: 1000},
     ScanlineOrdering: DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE,
     Scaling: DXGI_MODE_SCALING_UNSPECIFIED,
     Windowed: 1,
@@ -294,12 +348,8 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   debug!("Vertex buffer");
   let vbuf = try!(core.dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|core.info_queue.clone()));
 
-  //Inside upload_into_buffer I didn't check if vbuf is large enough to hold all data from vtc, thus unsafe.
-  //TODO: check buffer size, return error if not large enough.
-  unsafe{
-    //Transfer data from vtc into GPU memory allocated for vbuf
-    upload_into_buffer(&vbuf, &vtc[..]);
-  };
+  //Transfer data from vtc into GPU memory allocated for vbuf
+  try!(upload_into_buffer(&vbuf, &vtc[..]).map_err(|_|core.info_queue.clone()));
   
   // Unlike shader resource views or constant buffer views, 
   // vertex buffer views don't go into descriptor heaps.
@@ -316,9 +366,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   let idesc = resource_desc_buffer(ibuf_size as u64);
   debug!("Index buffer");
   let ibuf = try!(core.dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &idesc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|core.info_queue.clone()));
-  unsafe {
-    upload_into_buffer(&ibuf, &idx[..]);
-  }
+  try!(upload_into_buffer(&ibuf, &idx[..]).map_err(|_|core.info_queue.clone()));
 
   // D3D12GraphicsCommandList::ia_set_index_buffer() binds index buffer to graphics pipeline.
   let i_view = D3D12_INDEX_BUFFER_VIEW {
@@ -338,9 +386,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
 
   // Resource creation for constant buffer is the same as resource creation for vertex buffer
   let cbuf = core.dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(cbsize as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None).unwrap();
-  unsafe {
-    upload_into_buffer(&cbuf, &[cbuf_data]);
-  };
+  try!(upload_into_buffer(&cbuf, &[cbuf_data]).map_err(|_|core.info_queue.clone()));
 
   // But constant buffer view goes into descriptor heap.
   let cbview = 
@@ -360,7 +406,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   let cbvd_heap = core.dev.create_descriptor_heap(&cbv_hd).unwrap();
 
   // CPU side of descriptor heap is an array of unspecified structures of cbv_dsize size.
-  let cbv_dsize = core.dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
+  let _cbv_dsize = core.dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
   // const_dh receives pointer to the start of descriptors array
   let const_dh = cbvd_heap.get_cpu_descriptor_handle_for_heap_start();
   // create_constant_buffer_view creates hardware specific representation of constant buffer view at const_dh address.
@@ -438,12 +484,8 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   // Use fence.set_event_on_completion(fence_value, fence_event) to bind fence to fence_event
   // Use utils::wait_for_single_object() to wait until GPU reaches marker set by D3D12CommandQueue::signal().
   // fence_value identifies particular call to D3D12CommandQueue::signal()
-  let fence_event = unsafe{ CreateEventW(ptr::null_mut(), 0, 0, ptr::null_mut()) };
   debug!("fence_event");
-  if fence_event == ptr::null_mut() {
-    // If OS can't create event, then OS is in weird state, it's unlikely we can recover.
-    panic!("Cannot create event");
-  }
+  let fence_event = create_event();
   
   let mut par_sub = vec![];
   // Fill data required to submit GPU workload in parallel
@@ -470,14 +512,13 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       root_signature: root_sign,
       srv_heap: srv_heap,
       dsd_heap: dsd_heap,
-      cbvd_heap: cbvd_heap,
       pipeline_state: gps,
-      vertex_buffer: vbuf,
+      _vertex_buffer: vbuf,
       vertex_buffer_view: vbview,
-      index_buffer: ibuf,
+      _index_buffer: ibuf,
       index_buffer_view: i_view,
-      constant_buffer: cbuf,
-      tex_resource: tex_resource,
+      _constant_buffer: cbuf,
+      _tex_resource: tex_resource,
       depth_stencil: Some(ds_res),
       frame_index: 0,
       fence_event: fence_event,
@@ -527,8 +568,8 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
     let ps = &data.parallel_submission[data.cur_ps_num];
     let fence = &ps.fence;
     // wait for GPU to execute all command lists, which was previously submitted by current parallel submission
-    fence.set_event_on_completion(ps.fence_val, data.fence_event).unwrap();
-    wait_for_single_object(data.fence_event, INFINITE);
+    fence.set_event_on_completion(ps.fence_val, data.fence_event.handle()).unwrap();
+    wait_for_single_object(&data.fence_event, INFINITE);
   }
   ::perf_wait_end();
   ::perf_fillbuf_start();
@@ -607,16 +648,23 @@ pub fn on_render(data: &mut AppData, x: i32, y: i32) {
   data.parallel_submission[data.cur_ps_num].fence_val = fence_val_next;
   // When GPU reaches this point in its command queue it will set completed value of given fence to fence_val_next
   // I tell CPU to wait for it near the beginning of on_render() to be able to reuse command lists
-  data.core.graphics_queue.signal(&data.parallel_submission[data.cur_ps_num].fence, fence_val_next);
+  data.core.graphics_queue.signal(&data.parallel_submission[data.cur_ps_num].fence, fence_val_next).unwrap();
 
   // Advance to next parallel submission struct. I need a couple of parallel submission structs to
   // avoid waiting for GPU to finish processing command lists.
   data.cur_ps_num = (data.cur_ps_num+1) % data.parallel_submission.len();
   ::perf_exec_end();
   ::perf_present_start();
+
+  let pparms = DXGI_PRESENT_PARAMETERS {
+    DirtyRectsCount: 0,
+    pDirtyRects: ptr::null_mut(),
+    pScrollRect: ptr::null_mut(),
+    pScrollOffset: ptr::null_mut(),
+  };
   // I hope that present waits for back buffer transition into STATE_PRESENT
   // I didn't find anything about this in MSDN.
-  match data.swap_chain.swap_chain.present(0, 0) {
+  match data.swap_chain.swap_chain.present1(0, 0, &pparms) {
     Err(hr) => {
       dump_info_queue(data.core.info_queue.as_ref());
       //TODO: Maybe I can handle DEVICE_REMOVED error by recreating DXCore and DXSwapchain
@@ -932,7 +980,7 @@ impl<T> ParallelSubmissionData<T> {
     let mut c_start = 0;
     let mut remaining = self.buf_count;
     let mut chunks = vec![];
-    for i in 0..threads {
+    for _ in 0..threads {
       if remaining == 0 {
         chunks.push((0,0));
       } else {
@@ -974,7 +1022,7 @@ fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32)
   let cpu_buf_ptr = PtrConstants(ptr as *mut Constants);
 
   let mut clists = vec![];
-  for i in 0 .. thread_count {
+  for _ in 0 .. thread_count {
     debug!("create_command_allocator");
     let callocator = try!(core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
     debug!("create_command_list");

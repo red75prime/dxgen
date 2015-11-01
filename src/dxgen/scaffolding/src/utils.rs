@@ -85,20 +85,65 @@ pub fn dump_info_queue(iq: Option<&D3D12InfoQueue>) {
 
 use std::ptr;
 use std::slice;
-use create_device::*;
 use structwrappers::*;
 use kernel32::*;
 use std::sync::atomic::Ordering;
 
-pub unsafe fn upload_into_buffer<T>(buf: &D3D12Resource, data: &[T]) {
+pub fn get_required_intermediate_size(res: &D3D12Resource) -> HResult<u64> {
+  let desc = res.get_desc();
+  let dev: D3D12Device = try!(res.get_device());
+  let mut required_size = 0;
+  // First zero is index of first subresource, second zero is BaseOffset: u64
+  // TODO: revise this binding. NumSubresources in meaningful even if pLayouts is None.
+  dev.get_copyable_footprints(&desc, 0, 0, None, None, None, Some(&mut required_size));
+  Ok(required_size)
+}
+
+pub fn upload_into_buffer<T>(buf: &D3D12Resource, data: &[T]) -> HResult<()> {
+  let buf_sz = try!(get_required_intermediate_size(buf)) as usize;
   let sz = mem::size_of_val(data);
-//  debug!("Map buffer");
+  assert!(buf_sz < sz);
   let mut p_buf: *mut u8 = ptr::null_mut();
-  buf.map(0, None, Some(&mut p_buf)).unwrap();
-  let buf_slice = slice::from_raw_parts_mut(p_buf, sz);
-  buf_slice.clone_from_slice(slice::from_raw_parts(data.as_ptr() as *const u8, sz)); 
-//  debug!("Unmap buffer");
+  unsafe{ 
+    try!(buf.map(0, None, Some(&mut p_buf))) ;
+    let buf_slice = slice::from_raw_parts_mut(p_buf, sz);
+    buf_slice.clone_from_slice(slice::from_raw_parts(data.as_ptr() as *const u8, sz));
+  }; 
   buf.unmap(0, None);
+  Ok(())
+}
+
+pub trait Handle: Sized {
+  fn handle(&self) -> HANDLE;
+}
+
+#[derive(Debug)]
+pub struct Event(HANDLE);
+
+impl Handle for Event {
+  fn handle(&self) -> HANDLE {
+    self.0
+  }
+}
+
+impl Drop for Event {
+  fn drop(&mut self) {
+    let handle = self.handle();
+    if handle != ptr::null_mut() {
+      unsafe {
+        CloseHandle(handle);
+      }
+    }
+  }
+}
+
+
+pub fn create_event() -> Event {
+  let event_handle = unsafe{ CreateEventW(ptr::null_mut(), 0, 0, ptr::null_mut()) };
+  if event_handle == ptr::null_mut() {
+    panic!("Cannot create event.");
+  }
+  Event(event_handle)
 }
 
 pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usize, data: &[u32]) -> HResult<()> {
@@ -134,9 +179,7 @@ pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usiz
     &temp_buf[y*row_pitch..y*row_pitch+w].clone_from_slice(&data[y*w..y*w+w]);
   }
 
-  unsafe {
-    upload_into_buffer(&res_buf, &temp_buf[..]);
-  };
+  try!(upload_into_buffer(&res_buf, &temp_buf[..]));
 
   let dest = texture_copy_location_index(&tex, 0);
   let src = texture_copy_location_footprint(&res_buf, &psfp[0]);
@@ -156,10 +199,7 @@ pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usiz
   debug!("fence");
   let fence=try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
   debug!("fence_event");
-  let fence_event = unsafe{ CreateEventW(ptr::null_mut(), 0, 0, ptr::null_mut()) };
-  if fence_event == ptr::null_mut() {
-    panic!("Cannot create event");
-  }
+  let fence_event = create_event();
 
   let fv=core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
   debug!("signal");
@@ -167,9 +207,9 @@ pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usiz
   //try!(core.copy_queue.wait(&fence, fv)); // !!! D3D12CommandQueue::wait causes GPU to wait for signal
   if fence.get_completed_value() < fv {
     debug!("set_event_on_completion");
-    try!(fence.set_event_on_completion(fv, fence_event));
+    try!(fence.set_event_on_completion(fv, fence_event.handle()));
     debug!("wait");
-    unsafe { WaitForSingleObject(fence_event, INFINITE) };
+    wait_for_single_object(&fence_event, INFINITE);
   }
   Ok(())
 }
@@ -194,25 +234,25 @@ pub fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12D
   Ok(ds_res)
 }
 
-pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &HANDLE) {
+pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
   // TODO: Look for overflow behaviour of atomics
   let fence_value = core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
 
   core.graphics_queue.signal(fence, fence_value).unwrap();
   if fence.get_completed_value() < fence_value {
-    match fence.set_event_on_completion(fence_value, *fence_event) {
+    match fence.set_event_on_completion(fence_value, fence_event.handle()) {
       Ok(_) => (),
       Err(hr) => {
         dump_info_queue(core.info_queue.as_ref());
         panic!("set_event_on_completion error: 0x{:x}",hr);
       },
     }
-    wait_for_single_object(*fence_event, INFINITE);
+    wait_for_single_object(fence_event, INFINITE);
   }
 }
 
-pub fn wait_for_single_object(event: HANDLE, ms: u32) -> u32 {
-  unsafe { WaitForSingleObject(event, ms) }
+pub fn wait_for_single_object(event: &Event, ms: u32) -> u32 {
+  unsafe { WaitForSingleObject(event.handle(), ms) }
 }
 
 use user32::*;

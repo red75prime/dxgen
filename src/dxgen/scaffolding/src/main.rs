@@ -32,14 +32,9 @@ mod cubes;
 mod camera;
 
 
-use dxsems::VertexFormat;
 use winapi::*;
 use dx_safe::*;
 use create_device::*;
-use kernel32::{CreateEventW, WaitForSingleObject};
-use std::ptr;
-use std::fmt;
-use std::mem;
 use std::env;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -49,9 +44,6 @@ use window::*;
 use utils::*;
 use clock_ticks::*;
 use cgmath::*;
-use core::*;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use rand::Rng;
 use cubes::{Parameters, CubeParms};
 
 #[link(name="d3dcompiler")]
@@ -135,7 +127,7 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
       };
       if let Ok(_) = dev.check_feature_support_format_support(&mut fsup) {
         // We could have few threads running, so take a lock to prevent line interleaving
-        let lock=mutex.lock();
+        let _ = mutex.lock();
         println!("{}", descr);
         println!("Format support for {:?} is {:x}, {:x}", format, fsup.Support1.0, fsup.Support2.0);
       }
@@ -163,10 +155,7 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
   // and state of left mouse button
   let mut mouse_down = false;
   // Profiling stuff
-  let mut frame_count = 0;
-  let mut avg_fps = 0;
   let mut start = precise_time_s();
-  let mut mstart = start;
   // Window::poll_events() returns non-blocking iterator, that return Option<MSG>
   for mmsg in wnd.poll_events() {
     // "if let Some(msg)" extracts msg from mmsg
@@ -291,7 +280,7 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
     }
   }
   // Application should exit fullscreen state before terminating. 
-  data.borrow().set_fullscreen(false).unwrap();
+  data.borrow().set_fullscreen(false).expect("Fullscreen mode isn't supported");
   // copy info queue
   let iq=data.borrow().info_queue().clone();
   // wait for all GPU processing to stop

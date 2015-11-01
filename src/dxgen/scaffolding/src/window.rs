@@ -3,7 +3,7 @@ extern crate user32;
 extern crate kernel32;
 
 use winapi::*;
-use self::user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage, LoadCursorW, PostMessageW };
+use self::user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage, LoadCursorW };
 use self::kernel32::{GetModuleHandleW};
 use std::ptr;
 use libc;
@@ -12,7 +12,7 @@ use utils::*;
 use std::mem;
 use std::cell::RefCell;
 
-use self::user32::{GetMessageW,TranslateMessage,DispatchMessageW,PeekMessageW};
+use self::user32::{TranslateMessage,DispatchMessageW,PeekMessageW};
 //use self::kernel32::{Sleep};
 
 pub struct Window {

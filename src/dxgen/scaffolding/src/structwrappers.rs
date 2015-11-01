@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use winapi::*;
 use dx_safe::*;
 use std::marker::PhantomData;

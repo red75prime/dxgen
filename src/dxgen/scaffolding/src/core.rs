@@ -1,5 +1,5 @@
 use create_device::*;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 use winapi::*;
 use dx_safe::*;

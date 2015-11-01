@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // While there's no support for const fn's in Rust, let's use what we have
 
 // vertex shader input

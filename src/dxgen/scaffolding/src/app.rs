@@ -1,6 +1,6 @@
+/*
 use core::*;
 use winapi::*;
-/*
 pub trait PEnv {
   fn resize(&self, w: u32, h: u32, fullscreen: bool) -> Result<(),()>;
   fn quit(&self);

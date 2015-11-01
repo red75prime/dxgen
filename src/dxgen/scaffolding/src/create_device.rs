@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use winapi::*;
 use dx_safe::*;
 use std::ptr;
@@ -109,7 +111,6 @@ pub fn d3d_compile_from_file(file_name: &str, entry: &str, target: &str, flags: 
 
 use std::ffi::{OsString};
 use std::os::windows::ffi::OsStrExt;
-use std::mem;
 
 fn str_to_vec_u16(s : &str) -> Vec<u16> {
   let osstr = OsString::from(s);

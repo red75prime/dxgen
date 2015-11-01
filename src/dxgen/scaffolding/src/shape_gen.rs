@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use winapi::{D3D_PRIMITIVE_TOPOLOGY, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST};
 use cgmath::*;
 use utils::v3;
