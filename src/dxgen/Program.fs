@@ -62,7 +62,7 @@ let annotations_by_module =
       structs = d3d12structs
     });
     ("dwrite",
-      {interfaces = [];
+      {interfaces = dwrite;
       enums = Map.empty;
       structs = Map.empty
     });
