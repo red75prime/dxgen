@@ -90,6 +90,7 @@ pub struct AppData {
   // core contains D3D12Device, D3D12CommandQueue and few other objects
   // which are required for creating and drawing D3D12 objects such as vertex buffers,
   // textures, command lists and so on. 
+  // Also, it provides central source for all fence values.
   core: DXCore,
   // swap_chain contains DXGISwapChain3, back-buffer resources,
   // render target view heap
@@ -834,6 +835,14 @@ fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12Pi
   Ok((ps, root_sign))
 }
 
+// This function gets called by message loop, when WM_SIZE message arrives.
+// Normally WM_SIZE goes to window procedure, but I found that this can happen
+// inside DXGISwapchain::present() call I do in on_render() function.
+// It causes panic, because in window procedure I borrow RefCell<AppData>, which was 
+// already borrowed for on_render().
+// So I tweaked window procedure and window::PollEventIterator to 
+// insert WM_SIZE into message queue.
+// TODO: return status.
 pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
    debug!("Resize to {},{},{}.",w,h,c);
    if w==0 || h==0 {
@@ -841,17 +850,23 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
       return;
    };
    data.minimized = false;
+   // Before we can resize back buffers, we need to make sure that GPU
+   // no longer draws on them.
    wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
+   // For buffer resize to succeed there should be no outstanding references to back buffers
    drop_render_targets(&mut data.swap_chain);
-   let desc = data.swap_chain.swap_chain.get_desc().unwrap();
+   // Resize back buffers to new size. 
+   //Number of back buffers, back buffer format and swapchain flags remain unchanged.
    let res = data.swap_chain.swap_chain.resize_buffers(0, w, h, DXGI_FORMAT_UNKNOWN, 0);
    match res {
      Err(hr) => {
+       // TODO: Return custom error to facilitate error recovery
        dump_info_queue(data.core.info_queue.as_ref());
        error!("resize_buffers returned 0x{:x}", hr);
      },
      _ => (),
    };
+   // 
    reaquire_render_targets(&data.core, &mut data.swap_chain).unwrap();
    // create new depth stencil
    let ds_format = DXGI_FORMAT_D32_FLOAT;
