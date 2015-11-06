@@ -1123,6 +1123,7 @@ let d3d12annotations=
                                                          ("FormatSupport","D3D12_FEATURE_FORMAT_SUPPORT",Ptr(StructRef "D3D12_FEATURE_DATA_FORMAT_SUPPORT"), InOutOfSize "FeatureSupportDataSize");
                                                          ("MultisampleQualityLevels","D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS",Ptr(StructRef "D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS"), InOutOfSize "FeatureSupportDataSize");
                                                          ("FormatInfo","D3D12_FEATURE_FORMAT_INFO",Ptr(StructRef "D3D12_FEATURE_DATA_FORMAT_INFO"), InOutOfSize "FeatureSupportDataSize");
+                                                         ("VirtualAddress","D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT",Ptr(StructRef "D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT"), InOutOfSize "FeatureSupportDataSize");
                                                          ]));
           ("pFeatureSupportData",InOutOfSize "FeatureSupportDataSize");
           ("FeatureSupportDataSize",ANone);
@@ -2608,9 +2609,9 @@ let dwrite = [
       ("baselineOriginY",ANone);
       ("measuringMode",ANone);
       ("glyphRun",ANone);
-      ("renderingParams",ANone);
+      ("renderingParams",InComPtr);
       ("textColor",ANone);
-      ("blackBoxRect",ANone);
+      ("blackBoxRect",OutOptional);
     ],MANone);
     ("GetMemoryDC",[
       ("This",AThis);
@@ -2624,7 +2625,7 @@ let dwrite = [
     ],MANone);
     ("GetCurrentTransform",[
       ("This",AThis);
-      ("transform",ANone);
+      ("transform",OutReturn);
     ],MANone);
     ("SetCurrentTransform",[
       ("This",AThis);
@@ -2632,7 +2633,7 @@ let dwrite = [
     ],MANone);
     ("GetSize",[
       ("This",AThis);
-      ("size",ANone);
+      ("size",OutReturn);
     ],MANone);
     ("Resize",[
       ("This",AThis);
@@ -2643,54 +2644,54 @@ let dwrite = [
   ("IDWriteFactoryVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("GetSystemFontCollection",[
       ("This",AThis);
-      ("fontCollection",ANone);
+      ("fontCollection",OutReturnComPtr);
       ("checkForUpdates",ANone);
     ],MANone);
     ("CreateCustomFontCollection",[
       ("This",AThis);
-      ("collectionLoader",ANone);
-      ("collectionKey",ANone);
+      ("collectionLoader",InComPtr);
+      ("collectionKey",InOfSize "collectionKeySize");
       ("collectionKeySize",ANone);
-      ("fontCollection",ANone);
+      ("fontCollection",OutReturnComPtr);
     ],MANone);
     ("RegisterFontCollectionLoader",[
       ("This",AThis);
-      ("fontCollectionLoader",ANone);
+      ("fontCollectionLoader",InComPtr);
     ],MANone);
     ("UnregisterFontCollectionLoader",[
       ("This",AThis);
-      ("fontCollectionLoader",ANone);
+      ("fontCollectionLoader",InComPtr);
     ],MANone);
     ("CreateFontFileReference",[
       ("This",AThis);
       ("filePath",ANone);
-      ("lastWriteTime",ANone);
-      ("fontFile",ANone);
+      ("lastWriteTime",InOptional);
+      ("fontFile",OutReturnComPtr);
     ],MANone);
     ("CreateCustomFontFileReference",[
       ("This",AThis);
-      ("fontFileReferenceKey",ANone);
+      ("fontFileReferenceKey",InOfSize "fontFileReferenceKeySize");
       ("fontFileReferenceKeySize",ANone);
-      ("fontFileLoader",ANone);
-      ("fontFile",ANone);
+      ("fontFileLoader",InComPtr);
+      ("fontFile",OutReturnComPtr);
     ],MANone);
     ("CreateFontFace",[
       ("This",AThis);
       ("fontFaceType",ANone);
       ("numberOfFiles",ANone);
-      ("fontFiles",ANone);
+      ("fontFiles",InComPtrArrayOfSize "numberOfFiles"); // TODO: check if it is array
       ("faceIndex",ANone);
       ("fontFaceSimulationFlags",ANone);
-      ("fontFace",ANone);
+      ("fontFace",OutReturnComPtr);
     ],MANone);
     ("CreateRenderingParams",[
       ("This",AThis);
-      ("renderingParams",ANone);
+      ("renderingParams",OutReturnComPtr);
     ],MANone);
     ("CreateMonitorRenderingParams",[
       ("This",AThis);
       ("monitor",ANone);
-      ("renderingParams",ANone);
+      ("renderingParams",OutReturnComPtr);
     ],MANone);
     ("CreateCustomRenderingParams",[
       ("This",AThis);
@@ -2699,71 +2700,71 @@ let dwrite = [
       ("clearTypeLevel",ANone);
       ("pixelGeometry",ANone);
       ("renderingMode",ANone);
-      ("renderingParams",ANone);
+      ("renderingParams",OutReturnComPtr);
     ],MANone);
     ("RegisterFontFileLoader",[
       ("This",AThis);
-      ("fontFileLoader",ANone);
+      ("fontFileLoader",InComPtr);
     ],MANone);
     ("UnregisterFontFileLoader",[
       ("This",AThis);
-      ("fontFileLoader",ANone);
+      ("fontFileLoader",InComPtr);
     ],MANone);
     ("CreateTextFormat",[
       ("This",AThis);
       ("fontFamilyName",ANone);
-      ("fontCollection",ANone);
+      ("fontCollection",InComPtr);
       ("fontWeight",ANone);
       ("fontStyle",ANone);
       ("fontStretch",ANone);
       ("fontSize",ANone);
       ("localeName",ANone);
-      ("textFormat",ANone);
+      ("textFormat",OutReturnComPtr);
     ],MANone);
     ("CreateTypography",[
       ("This",AThis);
-      ("typography",ANone);
+      ("typography",OutReturnComPtr);
     ],MANone);
     ("GetGdiInterop",[
       ("This",AThis);
-      ("gdiInterop",ANone);
+      ("gdiInterop",OutReturnComPtr);
     ],MANone);
     ("CreateTextLayout",[
       ("This",AThis);
-      ("string",ANone);
+      ("string",InArrayOfSize "stringLength"); // TODO: String conversion?
       ("stringLength",ANone);
-      ("textFormat",ANone);
+      ("textFormat",InComPtr);
       ("maxWidth",ANone);
       ("maxHeight",ANone);
-      ("textLayout",ANone);
+      ("textLayout",OutReturnComPtr);
     ],MANone);
     ("CreateGdiCompatibleTextLayout",[
       ("This",AThis);
-      ("string",ANone);
+      ("string",InArrayOfSize "stringLength");
       ("stringLength",ANone);
-      ("textFormat",ANone);
+      ("textFormat",InComPtr);
       ("layoutWidth",ANone);
       ("layoutHeight",ANone);
       ("pixelsPerDip",ANone);
-      ("transform",ANone);
+      ("transform",InOptional);
       ("useGdiNatural",ANone);
-      ("textLayout",ANone);
+      ("textLayout",OutReturnComPtr);
     ],MANone);
     ("CreateEllipsisTrimmingSign",[
       ("This",AThis);
-      ("textFormat",ANone);
-      ("trimmingSign",ANone);
+      ("textFormat",InComPtr);
+      ("trimmingSign",OutReturnComPtr);
     ],MANone);
     ("CreateTextAnalyzer",[
       ("This",AThis);
-      ("textAnalyzer",ANone);
+      ("textAnalyzer",OutReturnComPtr);
     ],MANone);
     ("CreateNumberSubstitution",[
       ("This",AThis);
       ("substitutionMethod",ANone);
       ("localeName",ANone);
       ("ignoreUserOverride",ANone);
-      ("numberSubstitution",ANone);
+      ("numberSubstitution",OutReturnComPtr);
     ],MANone);
     ("CreateGlyphRunAnalysis",[
       ("This",AThis);
@@ -2774,16 +2775,18 @@ let dwrite = [
       ("measuringMode",ANone);
       ("baselineOriginX",ANone);
       ("baselineOriginY",ANone);
-      ("glyphRunAnalysis",ANone);
+      ("glyphRunAnalysis",OutReturnComPtr);
     ],MANone);
   ]);
-  ("IDWriteFontCollectionLoaderVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
+  // This is callback interface.
+  // TODO: Do something to simplify implementation.
+  ("IDWriteFontCollectionLoaderVtbl",IAManual, "IUnknownVtbl", [
     ("CreateEnumeratorFromKey",[
       ("This",AThis);
-      ("factory",ANone);
-      ("collectionKey",ANone);
+      ("factory",InComPtr);
+      ("collectionKey",InOfSize "collectionKeySize");
       ("collectionKeySize",ANone);
-      ("fontFileEnumerator",ANone);
+      ("fontFileEnumerator",OutReturnComPtr);
     ],MANone);
   ]);
   ("IDWriteFontCollectionVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
@@ -2793,18 +2796,18 @@ let dwrite = [
     ("GetFontFamily",[
       ("This",AThis);
       ("index",ANone);
-      ("fontFamily",ANone);
+      ("fontFamily",OutReturnComPtr);
     ],MANone);
     ("FindFamilyName",[
       ("This",AThis);
       ("familyName",ANone);
-      ("index",ANone);
-      ("exists",ANone);
+      ("index",OutReturn);
+      ("exists",OutReturn); // Return values are tupled
     ],MANone);
     ("GetFontFromFontFace",[
       ("This",AThis);
-      ("fontFace",ANone);
-      ("font",ANone);
+      ("fontFace",InComPtr);
+      ("font",OutReturnComPtr);
     ],MANone);
   ]);
   ("IDWriteFontFaceVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
@@ -2813,9 +2816,9 @@ let dwrite = [
     ],MANone);
     ("GetFiles",[
       ("This",AThis);
-      ("numberOfFiles",ANone);
-      ("fontFiles",ANone);
-    ],MANone);
+      ("numberOfFiles",InOutReturn);
+      ("fontFiles",OutArrayOfSize "numberOfFiles"); // Incorrect. TODO: do something about functions that require two calls. First to get size of output array, second to get values.
+    ],MADontImplement);
     ("GetIndex",[
       ("This",AThis);
     ],MANone);
@@ -2827,105 +2830,106 @@ let dwrite = [
     ],MANone);
     ("GetMetrics",[
       ("This",AThis);
-      ("fontFaceMetrics",ANone);
+      ("fontFaceMetrics",OutReturn);
     ],MANone);
     ("GetGlyphCount",[
       ("This",AThis);
     ],MANone);
     ("GetDesignGlyphMetrics",[
       ("This",AThis);
-      ("glyphIndices",ANone);
+      ("glyphIndices",InArrayOfSize "glyphCount");
       ("glyphCount",ANone);
-      ("glyphMetrics",ANone);
+      ("glyphMetrics",OutReturn);
       ("isSideways",ANone);
     ],MANone);
-    ("GetGlyphIndicesA",[
+    ("GetGlyphIndices",[
       ("This",AThis);
-      ("codePoints",ANone);
+      ("codePoints",InArrayOfSize "codePointCount");
       ("codePointCount",ANone);
-      ("glyphIndices",ANone);
+      ("glyphIndices",OutArrayOfSize "codePointCount");
     ],MANone);
     ("TryGetFontTable",[
       ("This",AThis);
       ("openTypeTableTag",ANone);
-      ("tableData",ANone);
+      ("tableData",OutPointer); 
       ("tableSize",ANone);
-      ("tableContext",ANone);
+      ("tableContext",OutPointer); // TODO: add OutHandle, to represent pointer to opaque structure. In this case this handle also needs RAII guard
       ("exists",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("ReleaseFontTable",[
       ("This",AThis);
-      ("tableContext",ANone);
-    ],MANone);
+      ("tableContext",ANone); // The handle, returned by previous method, should be freed by calling this method.
+    ],MADontImplement);
     ("GetGlyphRunOutline",[
       ("This",AThis);
       ("emSize",ANone);
-      ("glyphIndices",ANone);
-      ("glyphAdvances",ANone);
-      ("glyphOffsets",ANone);
+      ("glyphIndices",InArrayOfSize "glyphCount");
+      ("glyphAdvances",InOptionalArrayOfSize "glyphCount");
+      ("glyphOffsets",InOptionalArrayOfSize "glyphCount");
       ("glyphCount",ANone);
       ("isSideways",ANone);
       ("isRightToLeft",ANone);
-      ("geometrySink",ANone);
+      ("geometrySink",InComPtr);
     ],MANone);
     ("GetRecommendedRenderingMode",[
       ("This",AThis);
       ("emSize",ANone);
       ("pixelsPerDip",ANone);
       ("measuringMode",ANone);
-      ("renderingParams",ANone);
-      ("renderingMode",ANone);
+      ("renderingParams",InComPtr);
+      ("renderingMode",OutReturn);
     ],MANone);
     ("GetGdiCompatibleMetrics",[
       ("This",AThis);
       ("emSize",ANone);
       ("pixelsPerDip",ANone);
-      ("transform",ANone);
-      ("fontFaceMetrics",ANone);
+      ("transform",InOptional);
+      ("fontFaceMetrics",OutReturn);
     ],MANone);
     ("GetGdiCompatibleGlyphMetrics",[
       ("This",AThis);
       ("emSize",ANone);
       ("pixelsPerDip",ANone);
-      ("transform",ANone);
+      ("transform",InOptional);
       ("useGdiNatural",ANone);
-      ("glyphIndices",ANone);
+      ("glyphIndices",InArrayOfSize "glyphCount");
       ("glyphCount",ANone);
-      ("glyphMetrics",ANone);
+      ("glyphMetrics",OutArrayOfSize "glyphCount");
       ("isSideways",ANone);
     ],MANone);
   ]);
   ("IDWriteFontFamilyVtbl",IAAutogen(Set.ofList []), "IDWriteFontListVtbl", [
     ("GetFamilyNames",[
       ("This",AThis);
-      ("names",ANone);
+      ("names",OutReturnComPtr);
     ],MANone);
     ("GetFirstMatchingFont",[
       ("This",AThis);
       ("weight",ANone);
       ("stretch",ANone);
       ("style",ANone);
-      ("matchingFont",ANone);
+      ("matchingFont",OutReturnComPtr);
     ],MANone);
     ("GetMatchingFonts",[
       ("This",AThis);
       ("weight",ANone);
       ("stretch",ANone);
       ("style",ANone);
-      ("matchingFonts",ANone);
+      ("matchingFonts",OutReturnComPtr);
     ],MANone);
   ]);
   ("IDWriteFontFileEnumeratorVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("MoveNext",[
       ("This",AThis);
-      ("hasCurrentFile",ANone);
+      ("hasCurrentFile",OutReturn);
     ],MANone);
     ("GetCurrentFontFile",[
       ("This",AThis);
-      ("fontFile",ANone);
+      ("fontFile",OutReturnComPtr);
     ],MANone);
   ]);
-  ("IDWriteFontFileLoaderVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
+  // Another callback interface
+  ("IDWriteFontFileLoaderVtbl",IAManual, "IUnknownVtbl", [
     ("CreateStreamFromKey",[
       ("This",AThis);
       ("fontFileReferenceKey",ANone);
@@ -2933,6 +2937,7 @@ let dwrite = [
       ("fontFileStream",ANone);
     ],MANone);
   ]);
+  // Another void** ridden interface. TODO: wrap it somehow
   ("IDWriteFontFileStreamVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("ReadFileFragment",[
       ("This",AThis);
@@ -2940,42 +2945,43 @@ let dwrite = [
       ("fileOffset",ANone);
       ("fragmentSize",ANone);
       ("fragmentContext",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("ReleaseFileFragment",[
       ("This",AThis);
       ("fragmentContext",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("GetFileSize",[
       ("This",AThis);
       ("fileSize",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("GetLastWriteTime",[
       ("This",AThis);
       ("lastWriteTime",ANone);
-    ],MANone);
+    ],MADontImplement);
   ]);
+  // TODO: implement wrapper
   ("IDWriteFontFileVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("GetReferenceKey",[
       ("This",AThis);
       ("fontFileReferenceKey",ANone);
       ("fontFileReferenceKeySize",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("GetLoader",[
       ("This",AThis);
       ("fontFileLoader",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("Analyze",[
       ("This",AThis);
       ("isSupportedFontType",ANone);
       ("fontFileType",ANone);
       ("fontFaceType",ANone);
       ("numberOfFaces",ANone);
-    ],MANone);
+    ],MADontImplement);
   ]);
   ("IDWriteFontListVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("GetFontCollection",[
       ("This",AThis);
-      ("fontCollection",ANone);
+      ("fontCollection",OutReturnComPtr);
     ],MANone);
     ("GetFontCount",[
       ("This",AThis);
@@ -2983,13 +2989,13 @@ let dwrite = [
     ("GetFont",[
       ("This",AThis);
       ("index",ANone);
-      ("font",ANone);
+      ("font",OutReturnComPtr);
     ],MANone);
   ]);
   ("IDWriteFontVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("GetFontFamily",[
       ("This",AThis);
-      ("fontFamily",ANone);
+      ("fontFamily",OutReturnComPtr);
     ],MANone);
     ("GetWeight",[
       ("This",AThis);
@@ -3005,62 +3011,62 @@ let dwrite = [
     ],MANone);
     ("GetFaceNames",[
       ("This",AThis);
-      ("names",ANone);
+      ("names",OutReturnComPtr);
     ],MANone);
     ("GetInformationalStrings",[
       ("This",AThis);
       ("informationalStringID",ANone);
-      ("informationalStrings",ANone);
-      ("exists",ANone);
+      ("informationalStrings",OutReturnComPtr); //TODO: add OutReturnComPtrOption "exists"
+      ("exists",OutReturn); 
     ],MANone);
     ("GetSimulations",[
       ("This",AThis);
     ],MANone);
     ("GetMetrics",[
       ("This",AThis);
-      ("fontMetrics",ANone);
+      ("fontMetrics",OutReturn);
     ],MANone);
     ("HasCharacter",[
       ("This",AThis);
       ("unicodeValue",ANone);
-      ("exists",ANone);
+      ("exists",OutReturn);
     ],MANone);
     ("CreateFontFace",[
       ("This",AThis);
-      ("fontFace",ANone);
+      ("fontFace",OutReturnComPtr);
     ],MANone);
   ]);
   ("IDWriteGdiInteropVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("CreateFontFromLOGFONT",[
       ("This",AThis);
       ("logFont",ANone);
-      ("font",ANone);
+      ("font",OutReturnComPtr);
     ],MANone);
     ("ConvertFontToLOGFONT",[
       ("This",AThis);
-      ("font",ANone);
-      ("logFont",ANone);
-      ("isSystemFont",ANone);
+      ("font",InComPtr);
+      ("logFont",OutReturn);
+      ("isSystemFont",OutReturn);
     ],MANone);
     ("ConvertFontFaceToLOGFONT",[
       ("This",AThis);
-      ("font",ANone);
-      ("logFont",ANone);
+      ("font",InComPtr);
+      ("logFont",OutReturn);
     ],MANone);
     ("CreateFontFaceFromHdc",[
       ("This",AThis);
       ("hdc",ANone);
-      ("fontFace",ANone);
+      ("fontFace",OutReturnComPtr);
     ],MANone);
     ("CreateBitmapRenderTarget",[
       ("This",AThis);
-      ("hdc",ANone);
+      ("hdc",InOptional);
       ("width",ANone);
       ("height",ANone);
-      ("renderTarget",ANone);
+      ("renderTarget",OutReturnComPtr);
     ],MANone);
   ]);
-  ("IDWriteGeometrySink",IAAutogen(Set.ofList []), "", [
+  ("IDWriteGeometrySink",IAManual, "", [
   ]);
   ("IDWriteGlyphRunAnalysisVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("GetAlphaTextureBounds",[
@@ -3533,38 +3539,38 @@ let dwrite = [
       ("currentPosition",ANone);
       ("nameLength",ANone);
       ("textRange",ANone);
-    ],MANone);
+    ],MAMangle "GetFontFamilyNameLengthTl");
     ("GetFontFamilyName",[
       ("This",AThis);
       ("currentPosition",ANone);
       ("fontFamilyName",ANone);
       ("nameSize",ANone);
       ("textRange",ANone);
-    ],MANone);
+    ],MAMangle "GetFontFamilyNameTl");
     ("GetFontWeight",[
       ("This",AThis);
       ("currentPosition",ANone);
       ("fontWeight",ANone);
       ("textRange",ANone);
-    ],MANone);
+    ],MAMangle "GetFontWeightTl");
     ("GetFontStyle",[
       ("This",AThis);
       ("currentPosition",ANone);
       ("fontStyle",ANone);
       ("textRange",ANone);
-    ],MANone);
+    ],MAMangle "GetFontStyleTl");
     ("GetFontStretch",[
       ("This",AThis);
       ("currentPosition",ANone);
       ("fontStretch",ANone);
       ("textRange",ANone);
-    ],MANone);
+    ],MAMangle "GetFontStretchTl");
     ("GetFontSize",[
       ("This",AThis);
       ("currentPosition",ANone);
       ("fontSize",ANone);
       ("textRange",ANone);
-    ],MANone);
+    ],MAMangle "GetFontSizeTl");
     ("GetUnderline",[
       ("This",AThis);
       ("currentPosition",ANone);
@@ -3600,14 +3606,14 @@ let dwrite = [
       ("currentPosition",ANone);
       ("nameLength",ANone);
       ("textRange",ANone);
-    ],MANone);
+    ],MAMangle "GetLocaleNameLengthTl");
     ("GetLocaleName",[
       ("This",AThis);
       ("currentPosition",ANone);
       ("localeName",ANone);
       ("nameSize",ANone);
       ("textRange",ANone);
-    ],MANone);
+    ],MAMangle "GetLocaleNameTl");
     ("Draw",[
       ("This",AThis);
       ("clientDrawingContext",ANone);

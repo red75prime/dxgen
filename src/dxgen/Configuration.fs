@@ -21,6 +21,9 @@ type Module = {
 
     [<YamlMember("no-winapi-gen")>]
     NoWinapiGen : bool
+
+    [<YamlMember("no-enum-conversion")>]
+    NoEnumConversion : bool
 }
 
 [<CLIMutable>][<NoComparison>]

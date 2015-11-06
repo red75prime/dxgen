@@ -89,13 +89,13 @@ type ParamAnnotation=
   |InOutOfSize of string // Name of size parameter
   |OutOfSize of string // name of size parameter
   |OutOptionalOfSize of string // name of size parameter
-  |OutPointer // pointer to a memory area of unknown size. ID3D12Resource::Map, ppData parameter
+  |OutPointer // parameter of type void**. 
   |InOfSize of string // name of size parameter
   |OutReturn
   |OutReturnCombine of string*string // struct type, struct field
   |OutReturnInterface of string // parameter name of iid
   |OutReturnKnownInterface of string*string // parameter name of iid, interface type
-  |InIUnknown
+  |InIUnknown // TODO: delete it
   |InByteArrayOfSize of string*uint32 // name of array lenght parameter
   |InOptional
   |InComPtr
@@ -105,6 +105,17 @@ type ParamAnnotation=
   |OutReturnBarePointer
   |TypeSelector of string*((string*string*cdesc.CTypeDesc*ParamAnnotation) list) // name of parameter that controls type of this parameter, list of triples (function suffix, selector value, type)
   |AConst of string // Don't use as annotation. For internal use.
+
+let isOptional pa =
+  match pa with
+  |InOutOptional
+  |InOutReturn 
+  |OutOptionalArrayOfSize(_)
+  |OutOptionalOfSize(_)
+  |InOptional
+  |InOptionalComPtr
+  |OutOptional -> true
+  |_ -> false
 
 let getReferencedParameters parameterAnnotation=
   match parameterAnnotation with
@@ -162,6 +173,8 @@ type MethodAnnotation=
   |MAIUnknown // Method is a part of IUnknown interface. 
   |MAUnsafe
   |MADontImplement
+  |MAMangle of string // The method is overloaded.
+                      // I need to give another name to it.
 
 type EnumAnnotation=
   |EAFlags

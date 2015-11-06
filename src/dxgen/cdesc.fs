@@ -245,7 +245,12 @@ let rec typeDesc (ty: Type)=
   |TypeKind.Enum -> 
     EnumRef (getTypeSpellingFS ty)
   |TypeKind.Record ->
-    StructRef (getTypeSpellingFS ty)
+    let ts = getTypeSpellingFS ty
+    let cnst = "const "
+    if ts.StartsWith(cnst) then
+      Const(StructRef (ts.Substring(cnst.Length)))
+    else
+      StructRef (ts)
   |TypeKind.FunctionProto ->
     Unimplemented(getTypeSpellingFS ty)
   |TypeKind.Complex -> Unimplemented (getTypeSpellingFS ty)

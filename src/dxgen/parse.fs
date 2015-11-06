@@ -261,7 +261,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
               ctype |> typeDesc
           let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
           fields := CStructElem(nm, ty, bw) :: !fields
-      if ckind=CursorKind.CxxMethod then
+      else if ckind=CursorKind.CxxMethod then
           assert(isPureVirtualFS cursor)
           let ctype=getCursorType cursor
           let nm=getCursorSpellingFS cursor
@@ -273,6 +273,10 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           fields := CStructElem(nm, ty, None) :: !fields
       else if ckind=CursorKind.UnionDecl then
         fields := CStructElem("", parseUnion cursor, None) :: !fields
+      else if ckind=CursorKind.FirstAttr then
+        let tokens = tokenizeFS cursor
+        let what = getCursorSpellingFS cursor
+        printf "%s" what
       ChildVisitResult.Continue
     visitChildrenFS cursor parseFieldDecl () |> ignore
     (Struct(List.rev !fields, !bas), !itIsClass)

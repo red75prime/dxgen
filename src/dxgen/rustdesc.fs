@@ -204,6 +204,7 @@ type LocalVar={
 
 type MethodRouting={
   className: RName
+  implClassName: RName
   nativeName: RName
   safeName: RName
   unsafe: bool

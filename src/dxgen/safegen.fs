@@ -47,6 +47,11 @@ let emptyAnnotationsGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<stri
         apl("    ],MANone);")
     apl(sprintf "  ]);")
   apl("  ]")
+
+  apl "/*"
+  for (name, _) in vtbls do
+    apl ("print_guid("+name+")")
+  apl "*/"
   sb.ToString()
 
 open annotations
@@ -186,11 +191,11 @@ let deKeyword name=
 let toRustParmName(s:string)=
   // TODO: process prefixes (p, pp)
   let depp=
-    if s.StartsWith("pp") then
+    if s.StartsWith("pp") && s.Length>2 && System.Char.IsUpper(s.Chars(2)) then
       s.Substring(2)
-    else if s.StartsWith("p") then
+    else if s.StartsWith("p") && s.Length>1 && System.Char.IsUpper(s.Chars(1)) then
       s.Substring(1)
-    else if s.StartsWith("dw") then
+    else if s.StartsWith("dw") && s.Length>2 && System.Char.IsUpper(s.Chars(2))  then
       s.Substring(2)
     else
       s
@@ -212,7 +217,10 @@ let rec convertTypeToRustNoArray ty pannot=
   |Array(Const(uty), sz) ->
     RArray((convertTypeToRustNoArray uty pannot),sz)
   |TypedefRef typename |StructRef typename |EnumRef typename->
-    RType typename // struct or enum or something that is already defined in libc or in d3d12_sys.rs
+    if isOptional pannot then
+      raise <| new System.Exception("Typedef, struct, enum cannot be made optional")
+    else
+      RType typename // struct or enum or something that is already defined in libc or in d3d12_sys.rs
   |Const(TypedefRef typename) ->
     RType typename
   |Const(StructRef typename) ->
@@ -235,6 +243,7 @@ let rec convertTypeToRustNoArray ty pannot=
 
 let generateMethodFromRouting 
         { className = clname
+          implClassName = implclass
           nativeName = nname
           safeName = sname
           unsafe = unsafe
@@ -287,7 +296,7 @@ let generateMethodFromRouting
   let nativeInvocation=
     System.String.Concat(
       seq{
-        yield "(*(self.0 as *mut "+clname+"))."+nname+"("
+        yield "(*(self.0 as *mut "+implclass+"))."+nname+"("
         yield System.String.Join(", ", nparms |> List.toSeq |> Seq.tail |> Seq.map snd)
         yield ")"
       })
@@ -317,7 +326,7 @@ pub {0} {{
 // mannot - method's annotation
 // parms - list of annotated parameters
 // rty - return type
-let generateRouting (clname, mname, nname, mannot, parms, rty)=
+let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion:bool) implclass=
   if mannot=MADontImplement then
     ([],[])
   else
@@ -435,7 +444,10 @@ let generateRouting (clname, mname, nname, mannot, parms, rty)=
             addNativeParm pname (Some(safeParmName)) safeParmName
           |EnumRef e ->  
             addSafeParm safeParmName (RType e)
-            addNativeParm pname (Some(safeParmName)) (safeParmName+".0") 
+            if noEnumConversion then
+              addNativeParm pname (Some(safeParmName)) (safeParmName) 
+            else
+              addNativeParm pname (Some(safeParmName)) (safeParmName+".0") 
           |TypedefRef "LPCWSTR" ->
             let locVar=getNextLocVar()
             addLocalVar locVar false (RType "Vec<u16>") (fun m -> "str_to_vec_u16("+safeParmName+")")
@@ -522,7 +534,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty)=
           |Ptr(Const(cty)) ->
             match pannot with
             |InOptional ->
-              addSafeParm safeParmName (ROption(RBorrow(convertTypeToRustNoArray cty pannot)))
+              addSafeParm safeParmName (ROption(RBorrow(convertTypeToRustNoArray cty ANone)))
               addNativeParm pname (Some(safeParmName)) (safeParmName+".as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())")
             |_ ->
               addError (sprintf "%s parameter: InOut parameter should be a pointer to non-const object" pname)
@@ -532,7 +544,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty)=
               addSafeParm safeParmName (RMutBorrow(convertTypeToRustNoArray cty pannot))
               addNativeParm pname (Some(safeParmName)) safeParmName
             |InOutOptional |InOptional |OutOptional -> 
-              addSafeParm safeParmName (ROption(RMutBorrow(convertTypeToRustNoArray cty pannot)))
+              addSafeParm safeParmName (ROption(RMutBorrow(convertTypeToRustNoArray cty ANone)))
               addNativeParm pname (Some(safeParmName)) ("opt_as_mut_ptr(&"+safeParmName+")")
             |_ -> raise <| new System.Exception("Unreachable")
           |Array(cty,num) ->
@@ -546,8 +558,13 @@ let generateRouting (clname, mname, nname, mannot, parms, rty)=
               addNativeParm pname (Some(safeParmName)) ("opt_as_mut_ptr(&"+safeParmName+")")
             |_ -> raise <| new System.Exception("Unreachable")
           |_ -> 
-            addSafeParm safeParmName (convertTypeToRustNoArray pty pannot)
-            addNativeParm pname (Some(safeParmName)) safeParmName
+            match (pannot, pty) with
+            |(InOptional, TypedefRef "HDC") -> // TODO: make this more general
+              addSafeParm safeParmName (convertTypeToRustNoArray pty ANone)
+              addNativeParm pname (Some(safeParmName)) ("match "+safeParmName+"{Some(v)=>v, _=>ptr::null_mut() as HDC}")
+            |_ ->
+              addSafeParm safeParmName (convertTypeToRustNoArray pty pannot)
+              addNativeParm pname (Some(safeParmName)) safeParmName
         |[(rname, InOutOfSize _, _)] |[(rname, OutOfSize _, _)] |[(rname, InOfSize _, _)] |[(rname, InByteArrayOfSize _, _)] ->
           // this parameter conveys the size of another parameter
           match pty with
@@ -636,7 +653,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty)=
         |[(rname,OutOptionalOfSize _,_)] ->
           match pty with
           |Ptr(uty) ->
-            let lvtype=convertTypeToRustNoArray uty pannot
+            let lvtype=convertTypeToRustNoArray uty ANone
             let lv=newLocalVar true lvtype (fun m -> (Map.find rname m)+".as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as "+(tyToRust uty))
             addNativeParm pname None ("&mut "+lv)
             addReturnExpression lv lvtype
@@ -645,7 +662,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty)=
         |[(rname,OutOptionalArrayOfSize _,_)] ->
           match pty with
           |Ptr(uty) ->
-            let lvtype=convertTypeToRustNoArray uty pannot
+            let lvtype=convertTypeToRustNoArray uty ANone
             let lv=newLocalVar true lvtype (fun m -> (Map.find rname m)+".as_ref().map(|v|v.len()).unwrap_or(0) as "+(tyToRust uty))
             addNativeParm pname None ("&mut "+lv)
             addReturnExpression lv lvtype
@@ -679,7 +696,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty)=
             |_ ->
               addError (sprintf "%s parameter: out parameter can't be const" pname)
           |Ptr(uty) ->
-            let ruty=convertTypeToRustNoArray uty pannot
+            let ruty=convertTypeToRustNoArray uty ANone
             match pannot with
             |InArrayOfSize _ |OutArrayOfSize _ |InOutArrayOfSize _ ->
               addSafeParm safeParmName (RMutBorrow(RSlice(ruty)))
@@ -901,6 +918,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty)=
             |> List.filter (fun (sname,_,_) -> Map.forall (fun _ v -> v <> sname) np2sp)]
 
       ([{ className = clname
+          implClassName = implclass
           nativeName = nname
           safeName = toRustMethodName mname
           unsafe = mannot=MAUnsafe
@@ -920,10 +938,16 @@ let bprintfn sb t=
     )
 
 // Removes TypeSelector annotation, generates specialized methods
-let preGenerateMethod clname ((mname, mannot, parms, rty : CTypeDesc) as methoddesc)=
+let preGenerateMethod clname noEnumConversion (implclass, (mname, mannot, parms, rty : CTypeDesc) as methoddesc)=
   if mannot=MAIUnknown || mannot=MADontImplement then
     ""
   else
+    let rustName = 
+      match mannot with
+      |MAMangle name ->
+        name
+      |_ ->
+        mname
     let routings=
       match parms |> List.tryFind (function |(_,TypeSelector _,_) -> true |_ ->false) with
       |Some (sname, TypeSelector (tname,slist), _) ->
@@ -940,12 +964,12 @@ let preGenerateMethod clname ((mname, mannot, parms, rty : CTypeDesc) as methodd
                     else
                       (pname, pannot, pty)
                   )
-              let gparms=(clname, mname+suffix, mname, mannot,parms1,rty)
-              generateRouting gparms)
+              let gparms=(clname, rustName+suffix, mname, mannot,parms1,rty)
+              generateRouting gparms noEnumConversion implclass)
       |Some(_) ->
         raise <| new System.Exception("Unreachable")
       |None ->
-        [generateRouting (clname, mname, mname, mannot, parms, rty)]
+        [generateRouting (clname, rustName, mname, mannot, parms, rty) noEnumConversion implclass]
     let sb=new System.Text.StringBuilder()
     bprintfn sb "//  Method %s" mname
     for (rws,errors) in routings do
@@ -959,10 +983,10 @@ let preGenerateMethod clname ((mname, mannot, parms, rty : CTypeDesc) as methodd
     sb.ToString()
   
 
-let generateMethods clname methods=
+let generateMethods clname noEnumConversion methods=
   let sb=new System.Text.StringBuilder()
   for methoddesc in methods do
-    sb.Append(preGenerateMethod clname methoddesc) |> ignore
+    sb.Append(preGenerateMethod clname noEnumConversion methoddesc) |> ignore
   sb.ToString()
 
 let addCombiningStructs (sb:System.Text.StringBuilder) interfaceAnnotations=
@@ -1000,7 +1024,7 @@ use utils::*;
 let joinMaps a b =
   Map.ofSeq (Seq.concat [Map.toSeq a; Map.toSeq b])
 
-let safeInterfaceGen (header:string) allInterfaces (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,
+let safeInterfaceGen (header:string) allInterfaces noEnumConversion (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,
                                                       funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) 
                         (annotations: Annotations) =
   let sb=new System.Text.StringBuilder()
@@ -1022,7 +1046,7 @@ let safeInterfaceGen (header:string) allInterfaces (types:Map<string,CTypeDesc*C
           else 
             match Map.tryFind bName iamap with
             |Some(bas, meths, header) ->
-              List.concat [ancMeths bas; meths]
+              List.concat [ancMeths bas; meths |> List.map (fun m -> (bName,m))]
             |None -> 
               let error = sprintf "Error: Generating interface for %s. Base class %s is not defined" iname bName
               printfn "%s" error
@@ -1059,7 +1083,7 @@ impl Clone for %s {
 impl %s {
 %s
 }
-"          iname iname implSend iname iname iname iname iname iname iname (generateMethods ("I"+iname) methods1 |> indentBy "  ")
+"          iname iname implSend iname iname iname iname iname iname iname (generateMethods ("I"+iname) noEnumConversion methods1 |> indentBy "  ")
 
     (sb.ToString(), iamap)
   |None -> 

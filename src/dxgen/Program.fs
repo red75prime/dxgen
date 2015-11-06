@@ -124,7 +124,7 @@ let main argv =
                     for KeyValue(f,t) in wapi do
                       use sw=new System.IO.StreamWriter(@".\winapi\"+f)
                       sw.Write(t)
-                  let (rtext, interfaces)=safegen.safeInterfaceGen headerName (!allInterfaces) types annotations
+                  let (rtext, interfaces)=safegen.safeInterfaceGen headerName (!allInterfaces) (codeModule.NoEnumConversion) types annotations
                   allInterfaces := interfaces
                   let moduleName = headerName+"_safe"
                   System.IO.Directory.CreateDirectory(@".\safe") |> ignore //TODO: use Path
