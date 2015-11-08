@@ -3068,71 +3068,72 @@ let dwrite = [
   ]);
   ("IDWriteGeometrySink",IAManual, "", [
   ]);
+  // ---------------------- TODO: Continue here ------------------------------------
   ("IDWriteGlyphRunAnalysisVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("GetAlphaTextureBounds",[
       ("This",AThis);
       ("textureType",ANone);
-      ("textureBounds",ANone);
+      ("textureBounds",OutReturn);
     ],MANone);
     ("CreateAlphaTexture",[
       ("This",AThis);
       ("textureType",ANone);
       ("textureBounds",ANone);
-      ("alphaValues",ANone);
+      ("alphaValues",OutArrayOfSize "bufferSize");
       ("bufferSize",ANone);
     ],MANone);
     ("GetAlphaBlendParams",[
       ("This",AThis);
-      ("renderingParams",ANone);
-      ("blendGamma",ANone);
-      ("blendEnhancedContrast",ANone);
-      ("blendClearTypeLevel",ANone);
+      ("renderingParams",InComPtr);
+      ("blendGamma",OutReturn);
+      ("blendEnhancedContrast",OutReturn);
+      ("blendClearTypeLevel",OutReturn);
     ],MANone);
   ]);
   ("IDWriteInlineObjectVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("Draw",[
       ("This",AThis);
       ("clientDrawingContext",ANone);
-      ("renderer",ANone);
+      ("renderer",InComPtr);
       ("originX",ANone);
       ("originY",ANone);
       ("isSideways",ANone);
       ("isRightToLeft",ANone);
-      ("clientDrawingEffect",ANone);
+      ("clientDrawingEffect",InComPtr);
     ],MANone);
     ("GetMetrics",[
       ("This",AThis);
-      ("metrics",ANone);
+      ("metrics",OutReturn);
     ],MANone);
     ("GetOverhangMetrics",[
       ("This",AThis);
-      ("overhangs",ANone);
+      ("overhangs",OutReturn);
     ],MANone);
     ("GetBreakConditions",[
       ("This",AThis);
-      ("breakConditionBefore",ANone);
-      ("breakConditionAfter",ANone);
+      ("breakConditionBefore",OutReturn);
+      ("breakConditionAfter",OutReturn);
     ],MANone);
   ]);
   ("IDWriteLocalFontFileLoaderVtbl",IAAutogen(Set.ofList []), "IDWriteFontFileLoaderVtbl", [
     ("GetFilePathLengthFromKey",[
       ("This",AThis);
-      ("fontFileReferenceKey",ANone);
+      ("fontFileReferenceKey",InOfSize "fontFileReferenceKeySize");
       ("fontFileReferenceKeySize",ANone);
-      ("filePathLength",ANone);
+      ("filePathLength",OutReturn);
     ],MANone);
     ("GetFilePathFromKey",[
       ("This",AThis);
-      ("fontFileReferenceKey",ANone);
+      ("fontFileReferenceKey",InOfSize "fontFileReferenceKeySize");
       ("fontFileReferenceKeySize",ANone);
-      ("filePath",ANone);
+      ("filePath",OutArrayOfSize "filePathSize");
       ("filePathSize",ANone);
     ],MANone);
     ("GetLastWriteTimeFromKey",[
       ("This",AThis);
-      ("fontFileReferenceKey",ANone);
+      ("fontFileReferenceKey",InOfSize "fontFileReferenceKeySize");
       ("fontFileReferenceKeySize",ANone);
-      ("lastWriteTime",ANone);
+      ("lastWriteTime",OutReturn);
     ],MANone);
   ]);
   ("IDWriteLocalizedStringsVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
@@ -3141,30 +3142,30 @@ let dwrite = [
     ],MANone);
     ("FindLocaleName",[
       ("This",AThis);
-      ("localeName",ANone);
-      ("index",ANone);
-      ("exists",ANone);
+      ("localeName",ANone); // TODO: add annotation for WCHAR zero terminated string
+      ("index",OutReturn);
+      ("exists",OutReturn);
     ],MANone);
     ("GetLocaleNameLength",[
       ("This",AThis);
       ("index",ANone);
-      ("length",ANone);
+      ("length",OutReturn);
     ],MANone);
     ("GetLocaleName",[
       ("This",AThis);
       ("index",ANone);
-      ("localeName",ANone);
+      ("localeName",OutArrayOfSize "size");
       ("size",ANone);
     ],MANone);
     ("GetStringLength",[
       ("This",AThis);
       ("index",ANone);
-      ("length",ANone);
+      ("length",OutReturn);
     ],MANone);
     ("GetString",[
       ("This",AThis);
       ("index",ANone);
-      ("stringBuffer",ANone);
+      ("stringBuffer",OutArrayOfSize "size");
       ("size",ANone);
     ],MANone);
   ]);
@@ -3174,18 +3175,18 @@ let dwrite = [
     ("IsPixelSnappingDisabled",[
       ("This",AThis);
       ("clientDrawingContext",ANone);
-      ("isDisabled",ANone);
-    ],MANone);
+      ("isDisabled",OutReturn);
+    ],MAUnsafe);
     ("GetCurrentTransform",[
       ("This",AThis);
       ("clientDrawingContext",ANone);
-      ("transform",ANone);
-    ],MANone);
+      ("transform",OutReturn);
+    ],MAUnsafe);
     ("GetPixelsPerDip",[
       ("This",AThis);
       ("clientDrawingContext",ANone);
-      ("pixelsPerDip",ANone);
-    ],MANone);
+      ("pixelsPerDip",OutReturn);
+    ],MAUnsafe);
   ]);
   ("IDWriteRenderingParamsVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("GetGamma",[
@@ -3204,7 +3205,7 @@ let dwrite = [
       ("This",AThis);
     ],MANone);
   ]);
-  ("IDWriteTextAnalysisSinkVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
+  ("IDWriteTextAnalysisSinkVtbl",IAManual, "IUnknownVtbl", [
     ("SetScriptAnalysis",[
       ("This",AThis);
       ("textPosition",ANone);
@@ -3231,7 +3232,7 @@ let dwrite = [
       ("numberSubstitution",ANone);
     ],MANone);
   ]);
-  ("IDWriteTextAnalysisSourceVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
+  ("IDWriteTextAnalysisSourceVtbl",IAManual, "IUnknownVtbl", [
     ("GetTextAtPosition",[
       ("This",AThis);
       ("textPosition",ANone);
@@ -3260,7 +3261,7 @@ let dwrite = [
       ("numberSubstitution",ANone);
     ],MANone);
   ]);
-  ("IDWriteTextAnalyzerVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
+  ("IDWriteTextAnalyzerVtbl",IAAutogen(Set.empty), "IUnknownVtbl", [
     ("AnalyzeScript",[
       ("This",AThis);
       ("analysisSource",ANone);
@@ -3383,7 +3384,7 @@ let dwrite = [
     ("SetTrimming",[
       ("This",AThis);
       ("trimmingOptions",ANone);
-      ("trimmingSign",ANone);
+      ("trimmingSign",InComPtr);
     ],MANone);
     ("SetLineSpacing",[
       ("This",AThis);
@@ -3412,24 +3413,24 @@ let dwrite = [
     ("GetTrimming",[
       ("This",AThis);
       ("trimmingOptions",ANone);
-      ("trimmingSign",ANone);
+      ("trimmingSign",OutReturnComPtr);
     ],MANone);
     ("GetLineSpacing",[
       ("This",AThis);
-      ("lineSpacingMethod",ANone);
-      ("lineSpacing",ANone);
-      ("baseline",ANone);
+      ("lineSpacingMethod",OutReturn);
+      ("lineSpacing",OutReturn);
+      ("baseline",OutReturn);
     ],MANone);
     ("GetFontCollection",[
       ("This",AThis);
-      ("fontCollection",ANone);
+      ("fontCollection",OutReturnComPtr);
     ],MANone);
     ("GetFontFamilyNameLength",[
       ("This",AThis);
     ],MANone);
     ("GetFontFamilyName",[
       ("This",AThis);
-      ("fontFamilyName",ANone);
+      ("fontFamilyName",OutArrayOfSize "nameSize");
       ("nameSize",ANone);
     ],MANone);
     ("GetFontWeight",[
@@ -3449,7 +3450,7 @@ let dwrite = [
     ],MANone);
     ("GetLocaleName",[
       ("This",AThis);
-      ("localeName",ANone);
+      ("localeName",OutArrayOfSize "nameSize");
       ("nameSize",ANone);
     ],MANone);
   ]);
@@ -3464,7 +3465,7 @@ let dwrite = [
     ],MANone);
     ("SetFontCollection",[
       ("This",AThis);
-      ("fontCollection",ANone);
+      ("fontCollection",InComPtr);
       ("textRange",ANone);
     ],MANone);
     ("SetFontFamilyName",[
@@ -3504,17 +3505,17 @@ let dwrite = [
     ],MANone);
     ("SetDrawingEffect",[
       ("This",AThis);
-      ("drawingEffect",ANone);
+      ("drawingEffect",InComPtr);
       ("textRange",ANone);
     ],MANone);
     ("SetInlineObject",[
       ("This",AThis);
-      ("inlineObject",ANone);
+      ("inlineObject",InComPtr);
       ("textRange",ANone);
     ],MANone);
     ("SetTypography",[
       ("This",AThis);
-      ("typography",ANone);
+      ("typography",InComPtr);
       ("textRange",ANone);
     ],MANone);
     ("SetLocaleName",[
@@ -3531,45 +3532,45 @@ let dwrite = [
     ("GetFontCollection",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("fontCollection",ANone);
-      ("textRange",ANone);
-    ],MANone);
+      ("fontCollection",OutReturnComPtr);
+      ("textRange",OutReturn);
+    ],MAMangle "GetFontCollectionTl");
     ("GetFontFamilyNameLength",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("nameLength",ANone);
-      ("textRange",ANone);
+      ("nameLength",OutReturn);
+      ("textRange",OutReturn);
     ],MAMangle "GetFontFamilyNameLengthTl");
     ("GetFontFamilyName",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("fontFamilyName",ANone);
+      ("fontFamilyName",OutArrayOfSize "nameSize");
       ("nameSize",ANone);
-      ("textRange",ANone);
+      ("textRange",OutReturn);
     ],MAMangle "GetFontFamilyNameTl");
     ("GetFontWeight",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("fontWeight",ANone);
-      ("textRange",ANone);
+      ("fontWeight",OutReturn);
+      ("textRange",OutReturn);
     ],MAMangle "GetFontWeightTl");
     ("GetFontStyle",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("fontStyle",ANone);
-      ("textRange",ANone);
+      ("fontStyle",OutReturn);
+      ("textRange",OutReturn);
     ],MAMangle "GetFontStyleTl");
     ("GetFontStretch",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("fontStretch",ANone);
-      ("textRange",ANone);
+      ("fontStretch",OutReturn);
+      ("textRange",OutReturn);
     ],MAMangle "GetFontStretchTl");
     ("GetFontSize",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("fontSize",ANone);
-      ("textRange",ANone);
+      ("fontSize",OutReturn);
+      ("textRange",OutReturn);
     ],MAMangle "GetFontSizeTl");
     ("GetUnderline",[
       ("This",AThis);
@@ -3580,86 +3581,86 @@ let dwrite = [
     ("GetStrikethrough",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("hasStrikethrough",ANone);
-      ("textRange",ANone);
+      ("hasStrikethrough",OutReturn);
+      ("textRange",OutReturn);
     ],MANone);
     ("GetDrawingEffect",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("drawingEffect",ANone);
-      ("textRange",ANone);
+      ("drawingEffect",OutReturnComPtr);
+      ("textRange",OutReturn);
     ],MANone);
     ("GetInlineObject",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("inlineObject",ANone);
-      ("textRange",ANone);
+      ("inlineObject",OutReturnComPtr);
+      ("textRange",OutReturn);
     ],MANone);
     ("GetTypography",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("typography",ANone);
-      ("textRange",ANone);
+      ("typography",OutReturnComPtr);
+      ("textRange",OutReturn);
     ],MANone);
     ("GetLocaleNameLength",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("nameLength",ANone);
-      ("textRange",ANone);
+      ("nameLength",OutReturn);
+      ("textRange",OutReturn);
     ],MAMangle "GetLocaleNameLengthTl");
     ("GetLocaleName",[
       ("This",AThis);
       ("currentPosition",ANone);
-      ("localeName",ANone);
+      ("localeName",OutArrayOfSize "nameSize");
       ("nameSize",ANone);
-      ("textRange",ANone);
+      ("textRange",OutReturn);
     ],MAMangle "GetLocaleNameTl");
     ("Draw",[
       ("This",AThis);
       ("clientDrawingContext",ANone);
-      ("renderer",ANone);
+      ("renderer",InComPtr);
       ("originX",ANone);
       ("originY",ANone);
-    ],MANone);
+    ],MAUnsafe);
     ("GetLineMetrics",[
       ("This",AThis);
-      ("lineMetrics",ANone);
+      ("lineMetrics",OutOptionalArrayOfSize "maxLineCount");
       ("maxLineCount",ANone);
-      ("actualLineCount",ANone);
+      ("actualLineCount",OutReturn);
     ],MANone);
     ("GetMetrics",[
       ("This",AThis);
-      ("textMetrics",ANone);
+      ("textMetrics",OutReturn);
     ],MANone);
     ("GetOverhangMetrics",[
       ("This",AThis);
-      ("overhangs",ANone);
+      ("overhangs",OutReturn);
     ],MANone);
     ("GetClusterMetrics",[
       ("This",AThis);
-      ("clusterMetrics",ANone);
+      ("clusterMetrics",OutOptionalArrayOfSize "maxClusterCount");
       ("maxClusterCount",ANone);
-      ("actualClusterCount",ANone);
+      ("actualClusterCount",OutReturn);
     ],MANone);
     ("DetermineMinWidth",[
       ("This",AThis);
-      ("minWidth",ANone);
+      ("minWidth",OutReturn);
     ],MANone);
     ("HitTestPoint",[
       ("This",AThis);
       ("pointX",ANone);
       ("pointY",ANone);
-      ("isTrailingHit",ANone);
-      ("isInside",ANone);
-      ("hitTestMetrics",ANone);
+      ("isTrailingHit",OutReturn);
+      ("isInside",OutReturn);
+      ("hitTestMetrics",OutReturn);
     ],MANone);
     ("HitTestTextPosition",[
       ("This",AThis);
       ("textPosition",ANone);
       ("isTrailingHit",ANone);
-      ("pointX",ANone);
-      ("pointY",ANone);
-      ("hitTestMetrics",ANone);
+      ("pointX",OutReturn);
+      ("pointY",OutReturn);
+      ("hitTestMetrics",OutReturn);
     ],MANone);
     ("HitTestTextRange",[
       ("This",AThis);
@@ -3667,9 +3668,9 @@ let dwrite = [
       ("textLength",ANone);
       ("originX",ANone);
       ("originY",ANone);
-      ("hitTestMetrics",ANone);
+      ("hitTestMetrics",OutOptionalArrayOfSize "maxHitTestMetricsCount");
       ("maxHitTestMetricsCount",ANone);
-      ("actualHitTestMetricsCount",ANone);
+      ("actualHitTestMetricsCount",OutReturn);
     ],MANone);
   ]);
   ("IDWriteTextRendererVtbl",IAAutogen(Set.ofList []), "IDWritePixelSnappingVtbl", [
@@ -3681,34 +3682,34 @@ let dwrite = [
       ("measuringMode",ANone);
       ("glyphRun",ANone);
       ("glyphRunDescription",ANone);
-      ("clientDrawingEffect",ANone);
-    ],MANone);
+      ("clientDrawingEffect",InComPtr);
+    ],MAUnsafe);
     ("DrawUnderline",[
       ("This",AThis);
       ("clientDrawingContext",ANone);
       ("baselineOriginX",ANone);
       ("baselineOriginY",ANone);
       ("underline",ANone);
-      ("clientDrawingEffect",ANone);
-    ],MANone);
+      ("clientDrawingEffect",InComPtr);
+    ],MAUnsafe);
     ("DrawStrikethrough",[
       ("This",AThis);
       ("clientDrawingContext",ANone);
       ("baselineOriginX",ANone);
       ("baselineOriginY",ANone);
       ("strikethrough",ANone);
-      ("clientDrawingEffect",ANone);
-    ],MANone);
+      ("clientDrawingEffect",InComPtr);
+    ],MAUnsafe);
     ("DrawInlineObject",[
       ("This",AThis);
       ("clientDrawingContext",ANone);
       ("originX",ANone);
       ("originY",ANone);
-      ("inlineObject",ANone);
+      ("inlineObject",InComPtr);
       ("isSideways",ANone);
       ("isRightToLeft",ANone);
-      ("clientDrawingEffect",ANone);
-    ],MANone);
+      ("clientDrawingEffect",InComPtr);
+    ],MAUnsafe);
   ]);
   ("IDWriteTypographyVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("AddFontFeature",[
@@ -3721,7 +3722,7 @@ let dwrite = [
     ("GetFontFeature",[
       ("This",AThis);
       ("fontFeatureIndex",ANone);
-      ("fontFeature",ANone);
+      ("fontFeature",OutReturn);
     ],MANone);
   ]);
   ]

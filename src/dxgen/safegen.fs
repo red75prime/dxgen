@@ -560,7 +560,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           |_ -> 
             match (pannot, pty) with
             |(InOptional, TypedefRef "HDC") -> // TODO: make this more general
-              addSafeParm safeParmName (convertTypeToRustNoArray pty ANone)
+              addSafeParm safeParmName (ROption(convertTypeToRustNoArray pty ANone))
               addNativeParm pname (Some(safeParmName)) ("match "+safeParmName+"{Some(v)=>v, _=>ptr::null_mut() as HDC}")
             |_ ->
               addSafeParm safeParmName (convertTypeToRustNoArray pty pannot)
