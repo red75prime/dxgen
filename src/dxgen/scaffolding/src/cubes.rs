@@ -149,8 +149,8 @@ impl AppData {
 
   // renders and presents scene
   // TODO: remove x,y
-  pub fn on_render(&mut self, x: i32, y: i32) {
-    on_render(self, x, y)
+  pub fn on_render(&mut self) {
+    on_render(self)
   }
 
   pub fn is_minimized(&self) -> bool {
@@ -314,12 +314,100 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   debug!("Command allocator");
   let callocator = core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT).unwrap();
 
+  let compile_flags=0;
+  debug!("Vertex shader");
+  // shaders.hlsl should be in process current directory
+  // vshader and pshader are Vec<u8> containing shader byte-code
+  let vshader=d3d_compile_from_file("shaders.hlsl","VSMain","vs_5_0", compile_flags).unwrap();
+  debug!("Pixel shader");
+  let pshader=d3d_compile_from_file("shaders.hlsl","PSMain","ps_5_0", compile_flags).unwrap();
+
+  // Descriptor range is one of several ways of binding descriptor heaps content to
+  // shader registers. It describes type, starting position and count of descriptors in
+  // descriptors heap, as well as shader register(s) to bind to.
+  // Descriptor range goes into RootParameter::descriptor_table, which goes into root signature.
+  let desc_ranges = vec![
+    // This one binds first entry from SRV/CBV/UAV descriptor heap to shader register t0
+    D3D12_DESCRIPTOR_RANGE {
+      // Bind as shader resource view (shader register 't')
+      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+      // One descriptor in range
+      NumDescriptors: 1,
+      // Bind as 't0'
+      BaseShaderRegister: 0,
+      // Shader model 5.0 adds register spaces, e.g. this texture can be refered to as 'Texture2D<float4> tex: register(t0,  space0)'
+      RegisterSpace: 0,
+      // First descriptor in a descriptors heap
+      // You can put D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND here to compute offsets automatically.
+      OffsetInDescriptorsFromTableStart: 0,
+    },
+    // In older version I used this entry to bind constant buffer
+    // In this version I use RootParameter::cbv below and 
+    // D3D12GraphicsCommandList::set_graphics_root_constant_buffer_view()
+    D3D12_DESCRIPTOR_RANGE {
+      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+      NumDescriptors: 1,
+      BaseShaderRegister: 0,
+      RegisterSpace: 0,
+      OffsetInDescriptorsFromTableStart: 1,
+    },
+    // Another remnant of older version.
+    // In this verion sampler goes directly into root signature
+    D3D12_DESCRIPTOR_RANGE {
+      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+      NumDescriptors: 1,
+      BaseShaderRegister: 0,
+      RegisterSpace: 0,
+      OffsetInDescriptorsFromTableStart: 0,
+    },
+  ];
+
+  // Root parameters:
+  let rs_parms = vec![
+    //   Slot 0: register(t0, space0)
+    //     Attach resource to this slot by calling
+    //       D3D12GraphicsCommandList::set_graphics_root_descriptor_table(slot_number, gpu_virtual_address_of_first_descriptor)
+    //     Note, that firstly you need to attach descriptor heaps to command list
+    //        D3D12GraphicsCommandList::set_descriptor_heaps(heaps: &[&D3D12DescriptorHeap])
+    *RootParameter::descriptor_table(&desc_ranges[0..1], D3D12_SHADER_VISIBILITY_PIXEL),
+    //   Slot 1: register(c0, space0), contains constants (uniforms in GL terminology)
+    //     Call D3D12GraphicsCommandList::set_graphics_root_constant_buffer_view(slot_number, gpu_virtual_address_of_constants)
+    //     to bind data to this slot. You don't need descriptor heaps to do that.
+    *RootParameter::cbv(0, 0, D3D12_SHADER_VISIBILITY_ALL),
+  ];
+  // D3D12_ROOT_PARAMETER structure have different sizes for 32-bit and 64-bit code.
+  // I had a fun time adapting wrapper generator to this class of cases.
+  debug!("Size of D3D12_ROOT_PARAMETER:{}", ::std::mem::size_of_val(&rs_parms[0]));
+
+  // Static sampler goes directly into root signature.
+  // It doesn't require descriptor in sampler descriptor heap.
+  let static_samplers = vec![static_sampler_anisotropic_default()];
+
+  // It is the place where all input slots are bound to shader registers.
+  // except for vertex ('v' registers) and index buffers, which do not require binding
+  // TODO: make a wrapper
+  let rsd=D3D12_ROOT_SIGNATURE_DESC{
+    NumParameters: rs_parms.len() as UINT,
+    pParameters: rs_parms[..].as_ptr(),
+    NumStaticSamplers: static_samplers.len() as u32,
+    pStaticSamplers: static_samplers.as_ptr(),
+    Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
+  };
+
+  debug!("Serialize root signature");
+  // Root signature can be embedded into HLSL. You can extract blob from shader text.
+  // https://msdn.microsoft.com/en-us/library/windows/desktop/dn913202(v=vs.85).aspx
+  let blob=try!(d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1).map_err(|_|core.info_queue.clone()));
+
+  debug!("Root signature");
+  // It creates D3D12RoosSignature
+  let root_sign = try!(core.dev.create_root_signature(0, blob_as_slice(&blob)).map_err(|_|core.info_queue.clone()));
   // Graphics pipeline state (GPS) contains settings for all stages in graphics pipeline.
   // Also, it containt root signature that binds descriptor heaps to shader registers
   // Shaders are part of GPS too. D3D12Device::create_graphics_pipeline_state() performs compilation of provided shader bytecode.
   // MSDN suggests to create GPS on separate thread, as this is CPU intensive operation.
   debug!("Graphics pipeline state");
-  let (gps, root_sign)=try!(create_static_sampler_gps::<Vertex>(&core).map_err(|_|core.info_queue.clone()));
+  let gps=try!(create_static_sampler_gps::<Vertex>(&core, &vshader[..], &pshader[..], &root_sign).map_err(|_|core.info_queue.clone()));
 
   // Command lists hold the list of commands to be executed by GPU. D3D12CommanQueue::execute_command_lists() initiates actual execution.
   debug!("Command list");
@@ -499,7 +587,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   for _ in 0 .. *parameters.object_count() {
     rot_spd.push((v3((rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-1.)*200.), 
         v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).mul_s(0.1),
-          v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()*0.1));
+          v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()*1.0));
   }
 
   // Pack all created objects into AppData
@@ -550,7 +638,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
 //-----------------------------------------------------------------------------------------------------
 //----------------- on_render -------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------
-pub fn on_render(data: &mut AppData, x: i32, y: i32) {
+pub fn on_render(data: &mut AppData) {
   use std::f64; 
 
   if cfg!(debug) {debug!("on_render")};
@@ -731,157 +819,6 @@ fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_alloca
 }
 
 //---------------------------
-fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore) -> HResult<(D3D12PipelineState,D3D12RootSignature)> {
-  // Static sampler goes directly into root signature.
-  // It doesn't require descriptor in sampler descriptor heap.
-  let static_samplers = vec![
-    D3D12_STATIC_SAMPLER_DESC {
-      Filter: D3D12_FILTER_ANISOTROPIC,
-      AddressU: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-      AddressV: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-      AddressW: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-      MipLODBias: 0.0,
-      MaxAnisotropy: 16,
-      ComparisonFunc: D3D12_COMPARISON_FUNC_LESS_EQUAL,
-      BorderColor: D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
-      MinLOD: 0.0,
-      MaxLOD: D3D12_FLOAT32_MAX,
-      ShaderRegister: 0,
-      RegisterSpace: 0,
-      ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
-    },
-  ];
-
-  // Descriptor range is one of several ways of binding descriptor heaps content to
-  // shader registers. It describes type, starting position and count of descriptors in
-  // descriptors heap, as well as shader register(s) to bind to.
-  // Descriptor range goes into RootParameter::descriptor_table, which goes into root signature.
-  let desc_ranges = vec![
-    // This one binds first entry from SRV/CBV/UAV descriptor heap to shader register t0
-    D3D12_DESCRIPTOR_RANGE {
-      // Bind as shader resource view (shader register 't')
-      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-      // One descriptor in range
-      NumDescriptors: 1,
-      // Bind as 't0'
-      BaseShaderRegister: 0,
-      // Shader model 5.0 adds register spaces, e.g. this texture can be refered to as 'Texture2D<float4> tex: register(t0,  space0)'
-      RegisterSpace: 0,
-      // First descriptor in a descriptors heap
-      // You can put D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND here to compute offsets automatically.
-      OffsetInDescriptorsFromTableStart: 0,
-    },
-    // In older version I used this entry to bind constant buffer
-    // In this version I use RootParameter::cbv below and 
-    // D3D12GraphicsCommandList::set_graphics_root_constant_buffer_view()
-    D3D12_DESCRIPTOR_RANGE {
-      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
-      NumDescriptors: 1,
-      BaseShaderRegister: 0,
-      RegisterSpace: 0,
-      OffsetInDescriptorsFromTableStart: 1,
-    },
-    // Another remnant of older version.
-    // In this verion sampler goes directly into root signature
-    D3D12_DESCRIPTOR_RANGE {
-      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
-      NumDescriptors: 1,
-      BaseShaderRegister: 0,
-      RegisterSpace: 0,
-      OffsetInDescriptorsFromTableStart: 0,
-    },
-  ];
-
-  // Root parameters:
-  let rs_parms = vec![
-    //   Slot 0: register(t0, space0)
-    //     Attach resource to this slot by calling
-    //       D3D12GraphicsCommandList::set_graphics_root_descriptor_table(slot_number, gpu_virtual_address_of_first_descriptor)
-    //     Note, that firstly you need to attach descriptor heaps to command list
-    //        D3D12GraphicsCommandList::set_descriptor_heaps(heaps: &[&D3D12DescriptorHeap])
-    *RootParameter::descriptor_table(&desc_ranges[0..1], D3D12_SHADER_VISIBILITY_PIXEL),
-    //   Slot 1: register(c0, space0), contains constants (uniforms in GL terminology)
-    //     Call D3D12GraphicsCommandList::set_graphics_root_constant_buffer_view(slot_number, gpu_virtual_address_of_constants)
-    //     to bind data to this slot. You don't need descriptor heaps to do that.
-    *RootParameter::cbv(0, 0, D3D12_SHADER_VISIBILITY_ALL),
-  ];
-  // D3D12_ROOT_PARAMETER structure have different sizes for 32-bit and 64-bit code.
-  // I had a fun time adapting wrapper generator to this class of cases.
-  debug!("Size of D3D12_ROOT_PARAMETER:{}", ::std::mem::size_of_val(&rs_parms[0]));
-
-  // It is the place where all input slots are bound to shader registers.
-  // except for vertex ('v' registers) and index buffers, which do not require binding
-  // TODO: make a wrapper
-  let rsd=D3D12_ROOT_SIGNATURE_DESC{
-    NumParameters: rs_parms.len() as UINT,
-    pParameters: rs_parms[..].as_ptr(),
-    NumStaticSamplers: static_samplers.len() as u32,
-    pStaticSamplers: static_samplers.as_ptr(),
-    Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
-  };
-
-  debug!("Serialize root signature");
-  // Root signature can be embedded into HLSL. You can extract blob from shader text.
-  // https://msdn.microsoft.com/en-us/library/windows/desktop/dn913202(v=vs.85).aspx
-  let blob=try!(d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1));
-
-  debug!("Root signature");
-  // It creates D3D12RoosSignature
-  let root_sign = try!(core.dev.create_root_signature(0, blob_as_slice(&blob)));
-
-  let compile_flags=0;
-  debug!("Vertex shader");
-  // shaders.hlsl should be in process current directory
-  // vshader and pshader are Vec<u8> containing shader byte-code
-  let vshader=d3d_compile_from_file("shaders.hlsl","VSMain","vs_5_0", compile_flags).unwrap();
-  debug!("Pixel shader");
-  let pshader=d3d_compile_from_file("shaders.hlsl","PSMain","ps_5_0", compile_flags).unwrap();
-
-  // dx_vertex! macro implements VertexFormat trait, which allows to
-  // automatically generate description of vertex data
-  let input_elts_desc = T::generate(0);
-
-  // Finally, I combine all the data into pipeline state object description
-  // TODO: make wrapper. Each pointer in this structure can potentially outlive pointee.
-  //       Pointer/length pairs shouldn't be exposed too.
-  let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
-    // DX12 runtime doesn't AddRef root_sign, so I need to keep root_sign myself.
-    // I return root_sign from this function and I keep it inside AppData.
-    pRootSignature: root_sign.iptr() as *mut _,
-    VS: D3D12_SHADER_BYTECODE {
-      pShaderBytecode: vshader.as_ptr() as *const _,
-      BytecodeLength: vshader.len() as SIZE_T,
-    },
-    PS: D3D12_SHADER_BYTECODE {
-      pShaderBytecode: pshader.as_ptr() as *const _ ,
-      BytecodeLength: pshader.len() as SIZE_T, 
-    },
-    RasterizerState: D3D12_RASTERIZER_DESC {
-      CullMode: D3D12_CULL_MODE_FRONT,
-      .. rasterizer_desc_default()
-    },
-    InputLayout: D3D12_INPUT_LAYOUT_DESC {
-      pInputElementDescs: input_elts_desc.as_ptr(),
-      NumElements: input_elts_desc.len() as u32,
-    },
-    PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-    NumRenderTargets: 1,
-    DSVFormat: DXGI_FORMAT_D32_FLOAT,
-    Flags: if cfg!(Debug) {D3D12_PIPELINE_STATE_FLAG_TOOL_DEBUG} else {D3D12_PIPELINE_STATE_FLAG_NONE},
-    // Take other fields from default gps
-    .. graphics_pipeline_state_desc_default()
-  };
-  // This assignment reduces amount of typing. But I could have included 
-  // all 8 members of RTVFormats in the struct initialization above.
-  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-
-  // Note that creation of pipeline state object is time consuming operation.
-  // Compilation of shader byte-code occurs here.
-  let ps = try!(core.dev.create_graphics_pipeline_state(&pso_desc));
-  // DirectX 12 offload resource management to the programmer.
-  // So I need to keep root_sign around, as DX12 runtime doesn't AddRef it.
-  Ok((ps, root_sign))
-}
 
 // This function gets called by message loop, when WM_SIZE message arrives.
 // Normally WM_SIZE goes to window procedure, but I found that this can happen

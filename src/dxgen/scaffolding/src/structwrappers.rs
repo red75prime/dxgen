@@ -463,3 +463,21 @@ pub fn graphics_pipeline_state_desc_default() -> D3D12_GRAPHICS_PIPELINE_STATE_D
 pub fn sample_desc_default() -> DXGI_SAMPLE_DESC {
   DXGI_SAMPLE_DESC {Count: 1, Quality: 0,}
 }
+
+pub fn static_sampler_anisotropic_default() -> D3D12_STATIC_SAMPLER_DESC {
+  D3D12_STATIC_SAMPLER_DESC {
+    Filter: D3D12_FILTER_ANISOTROPIC,
+    AddressU: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    AddressV: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    AddressW: D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+    MipLODBias: 0.0,
+    MaxAnisotropy: 16,
+    ComparisonFunc: D3D12_COMPARISON_FUNC_LESS_EQUAL,
+    BorderColor: D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+    MinLOD: 0.0,
+    MaxLOD: D3D12_FLOAT32_MAX,
+    ShaderRegister: 0,
+    RegisterSpace: 0,
+    ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
+  }
+}

@@ -9,7 +9,7 @@ extern crate libc;
 extern crate winapi;
 extern crate dx_safe;
 //extern crate dxguid_sys;
-extern crate dxgi_sys;
+//extern crate dxgi_sys;
 extern crate kernel32;
 extern crate user32;
 //extern crate d3d12_sys;
@@ -30,6 +30,7 @@ mod core;
 mod app;
 mod cubes;
 mod camera;
+//mod hvoxel;
 
 
 use winapi::*;
@@ -58,10 +59,14 @@ fn main() {
   // Set default values of cubes module parameters
   let mut parms = CubeParms {thread_count: 2, object_count: 2_000,};
   let mut adapters_to_test = vec![];
+  let mut adapters_info = false;
   for arg in env::args() {
     if let Ok(n) = arg.parse::<u32>() {
       // If command line parameter is a number, treat it as a number of graphics adapter.
       adapters_to_test.push(n);
+    }
+    if arg == "-i" || arg == "--info" {
+      adapters_info = true;
     }
     if arg.starts_with("-o") {
       // Command line parameter -o<N> sets number of objects to draw
@@ -87,13 +92,21 @@ fn main() {
     let descr=adapter.get_desc1().unwrap();
     println!("Adapter {}: {}", i, wchar_array_to_string_lossy(&descr.Description));
     println!("   Dedicated video memory: {}MiB", descr.DedicatedVideoMemory/1024/1024);
+    
     if adapters_to_test.len()==0 || adapters_to_test[..].contains(&i) {
       // If there's no numbers in command line add each and every available adapter,
       // otherwise use adapter numbers from command line
+      if adapters_info {
+        print_adapter_info(&adapter);
+      }
       adapters.push(adapter);
     }
     // It's easy to forget this.
     i+=1;
+  }
+
+  if adapters_info {
+    return;
   }
 
   // I used this mutex to sync console output.
@@ -110,6 +123,21 @@ fn main() {
   });
 }
 
+fn print_adapter_info(adapter: &DXGIAdapter1) {
+  if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_11_0) {
+    let mut data = unsafe { ::std::mem::uninitialized() };
+    if let Ok(_) = dev.check_feature_support_virtual_address(&mut data) {
+      // data is guarantied to be initialized here
+      println!("   {:#?}", data);
+    }
+    let mut data = unsafe { ::std::mem::uninitialized() };
+    if let Ok(_) = dev.check_feature_support_options(&mut data) {
+      // data is guarantied to be initialized here
+      println!("   {:#?}", data);
+    }
+  }
+}
+
 fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
   // Setup window. Currently window module supports only one window per thread.
   let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
@@ -118,7 +146,7 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
 
   {
     // This block of code is not required. I just checked some stuff
-    if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_12_1) {
+    if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_12_0) {
       let format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
       let mut fsup = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
         Format: format,
@@ -215,7 +243,7 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
         },
         _ => {},
       };
-    } else {
+    } else { // There's no pending window message.
       let do_not_render = data.borrow().is_minimized();
       if do_not_render {
         // MSDN suggest to use MsgWaitForMultipleObjects here, but 10ms sleep shouldn't create problems
@@ -251,9 +279,8 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
         // For this simple program I don't separate update and render steps.
         // State change and rendering is done inside on_render.
         // Error handling isn't implemented yet. on_render panics, if it needs to.
-        // TODO: remove x,y parameters
         // TODO: process error
-        data.borrow_mut().on_render(x, y);
+        data.borrow_mut().on_render();
         // register rendered frame in performance collector
         ::perf_frame();
         // fps counting stuff

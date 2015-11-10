@@ -264,3 +264,52 @@ pub fn set_capture(hwnd: HWND) -> HWND {
 pub fn release_capture() -> BOOL {
   unsafe{ ReleaseCapture() }
 }
+
+use dxsems::VertexFormat;
+
+pub fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore, vshader: &[u8], pshader: &[u8], root_sign: &D3D12RootSignature) -> HResult<D3D12PipelineState> {
+  // dx_vertex! macro implements VertexFormat trait, which allows to
+  // automatically generate description of vertex data
+  let input_elts_desc = T::generate(0);
+
+  // Finally, I combine all the data into pipeline state object description
+  // TODO: make wrapper. Each pointer in this structure can potentially outlive pointee.
+  //       Pointer/length pairs shouldn't be exposed too.
+  let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+    // DX12 runtime doesn't AddRef root_sign, so I need to keep root_sign myself.
+    // I return root_sign from this function and I keep it inside AppData.
+    pRootSignature: root_sign.iptr() as *mut _,
+    VS: D3D12_SHADER_BYTECODE {
+      pShaderBytecode: vshader.as_ptr() as *const _,
+      BytecodeLength: vshader.len() as SIZE_T,
+    },
+    PS: D3D12_SHADER_BYTECODE {
+      pShaderBytecode: pshader.as_ptr() as *const _ ,
+      BytecodeLength: pshader.len() as SIZE_T, 
+    },
+    RasterizerState: D3D12_RASTERIZER_DESC {
+      CullMode: D3D12_CULL_MODE_FRONT,
+      .. rasterizer_desc_default()
+    },
+    InputLayout: D3D12_INPUT_LAYOUT_DESC {
+      pInputElementDescs: input_elts_desc.as_ptr(),
+      NumElements: input_elts_desc.len() as u32,
+    },
+    PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+    NumRenderTargets: 1,
+    DSVFormat: DXGI_FORMAT_D32_FLOAT,
+    Flags: if cfg!(Debug) {D3D12_PIPELINE_STATE_FLAG_TOOL_DEBUG} else {D3D12_PIPELINE_STATE_FLAG_NONE},
+    // Take other fields from default gps
+    .. graphics_pipeline_state_desc_default()
+  };
+  // This assignment reduces amount of typing. But I could have included 
+  // all 8 members of RTVFormats in the struct initialization above.
+  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
+  // Note that creation of pipeline state object is time consuming operation.
+  // Compilation of shader byte-code occurs here.
+  let ps = try!(core.dev.create_graphics_pipeline_state(&pso_desc));
+  // DirectX 12 offload resource management to the programmer.
+  // So I need to keep root_sign around, as DX12 runtime doesn't AddRef it.
+  Ok(ps)
+}

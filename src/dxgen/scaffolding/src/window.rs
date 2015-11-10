@@ -3,7 +3,7 @@ extern crate user32;
 extern crate kernel32;
 
 use winapi::*;
-use self::user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage, LoadCursorW };
+use self::user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage, LoadCursorW, GetClientRect };
 use self::kernel32::{GetModuleHandleW};
 use std::ptr;
 use libc;
@@ -65,6 +65,16 @@ impl Window {
   }
   pub fn poll_events<'a>(&'a self) -> PollEventIterator<'a> {
     PollEventIterator{wnd: &self}
+  }
+  pub fn size(&self) -> (u32,u32) {
+    let mut rect = RECT {
+      left: 0, top: 0, right: 0, bottom: 0,
+    };
+    if unsafe{ GetClientRect(self.hwnd, &mut rect) } == 0 {
+      (0,0)
+    } else {
+      (rect.right as u32, rect.bottom as u32)
+    }
   }
 }
 

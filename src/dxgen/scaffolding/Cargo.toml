@@ -17,19 +17,19 @@ crossbeam = "0.1"
 
 [dependencies.winapi]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
 
 [dependencies.dxgi-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
 
 [dependencies.user32-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
 
 [dependencies.kernel32-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
 
 # [dependencies.d3d12_sys]
 # git = "https://github.com/red75prime/winapi-rs/"
@@ -37,4 +37,4 @@ branch = "dx12"
 
 [dependencies.dxguid-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12-dwrite-iid"

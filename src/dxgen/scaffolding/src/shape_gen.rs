@@ -64,3 +64,4 @@ pub fn cube_indexed<V: GenVertex>(sz: f32) -> (Vec<V>,Vec<u32>) {
   }
   (ret, idx)
 }
+
