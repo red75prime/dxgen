@@ -66,6 +66,11 @@ let annotations_by_module =
       enums = Map.empty;
       structs = Map.empty
     });
+    ("d2d1",
+      {interfaces = d2d1;
+      enums = Map.empty;
+      structs = Map.empty
+    });
   ] |> Map.ofList
         
 [<EntryPoint>]

@@ -262,15 +262,18 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
           fields := CStructElem(nm, ty, bw) :: !fields
       else if ckind=CursorKind.CxxMethod then
-          assert(isPureVirtualFS cursor)
-          let ctype=getCursorType cursor
           let nm=getCursorSpellingFS cursor
-          let ty = 
-            match parseFunction cursor ctype with
-            |Function(CFuncDesc(parms, rty, cc)) ->
-              Ptr(Function(CFuncDesc(("This", (Ptr(StructRef structName)), NoAnnotation)::parms, rty, cc)))
-            |_ -> raise <| new System.Exception("Unreachable")
-          fields := CStructElem(nm, ty, None) :: !fields
+          if isPureVirtualFS cursor then
+            let ctype=getCursorType cursor
+            let ty = 
+              match parseFunction cursor ctype with
+              |Function(CFuncDesc(parms, rty, cc)) ->
+                Ptr(Function(CFuncDesc(("This", (Ptr(StructRef structName)), NoAnnotation)::parms, rty, cc)))
+              |_ -> raise <| new System.Exception("Unreachable")
+            fields := CStructElem(nm, ty, None) :: !fields
+          else
+            // Skip implementation
+            printfn "Skipping non pure virtual %s::%s" structName nm
       else if ckind=CursorKind.UnionDecl then
         fields := CStructElem("", parseUnion cursor, None) :: !fields
       else if ckind=CursorKind.FirstAttr then
@@ -347,7 +350,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             let vtblName = structName+"Vtbl"
 
             structs := !structs |> Map.add vtblName (strct, locInfo)
-            structs := !structs |> Map.add (structName) (Struct([CStructElem("pVtbl", Ptr(StructRef vtblName), None)],bas), locInfo)
+            structs := !structs |> Map.add (structName) (Struct([CStructElem("pVtbl", Ptr(StructRef vtblName), None)], ""), locInfo)
           else
             structs := !structs |> Map.add structName (strct, locInfo)
 
