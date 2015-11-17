@@ -196,6 +196,7 @@ type Annotations = {
   interfaces: (string*InterfaceAnnotation*string*(string*(string*ParamAnnotation)list*MethodAnnotation)list)list
   enums: Map<string, EnumAnnotation>
   structs: Map<string, (StructFlags*(string*FieldAnnotation)list)>
+  dependencies: string list
 }
 
 let iUnknown=[

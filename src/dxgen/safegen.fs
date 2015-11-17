@@ -1027,6 +1027,7 @@ let joinMaps a b =
 let safeInterfaceGen (header:string) allInterfaces noEnumConversion (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,
                                                       funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) 
                         (annotations: Annotations) =
+  let dependencies = ref Set.empty
   let sb=new System.Text.StringBuilder()
   let vtbls=structs |> List.ofSeq |> List.collect (fun (KeyValue(name,(ty,_))) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl))) 
   match sanityCheck vtbls (annotations.interfaces) with
@@ -1040,6 +1041,13 @@ let safeInterfaceGen (header:string) allInterfaces noEnumConversion (types:Map<s
       match iannot with
       |IAManual -> ()
       |IAAutogen opts ->
+        // if base class is in another module, add dependency
+        match Map.tryFind bas iamap with
+        |Some(_,_,basHeader) when basHeader<>header -> dependencies := Set.add (basHeader+"_safe") !dependencies
+        |Some(_) -> ()
+        |None -> 
+          if bas<>"IUnknown" && bas<>"" then
+            printfn "No header file for base class in %s:%s" iname bas
         let rec ancMeths bName = 
           if bName = "IUnknown" || bName = "" then
             []
@@ -1085,7 +1093,7 @@ impl %s {
 }
 "          iname iname implSend iname iname iname iname iname iname iname (generateMethods ("I"+iname) noEnumConversion methods1 |> indentBy "  ")
 
-    (sb.ToString(), iamap)
+    (sb.ToString(), iamap, !dependencies)
   |None -> 
     printfn "Sanity check failed. No Rust interfaces generated"
-    ("", allInterfaces)
+    ("", allInterfaces, !dependencies)

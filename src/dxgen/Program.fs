@@ -29,47 +29,56 @@ let annotations_by_module =
     ("d3d12",
       {interfaces = d3d12annotations;
       enums = d3d12enums;
-      structs = d3d12structs
+      structs = d3d12structs;
+      dependencies = [];
     });
     ("d3d12sdklayers",
       {interfaces = d3d12sdklayers;
       enums = d3d12enums;
-      structs = d3d12structs
+      structs = d3d12structs;
+      dependencies = [];
     });
     ("d3dcommon",
       {interfaces = d3dcommon;
       enums = d3d12enums;
-      structs = d3d12structs
+      structs = d3d12structs;
+      dependencies = [];
     });
     ("dxgi",
       {interfaces = dxgi;
       enums = d3d12enums;
-      structs = d3d12structs
+      structs = d3d12structs;
+      dependencies = [];
     });
     ("dxgi1_2",
       {interfaces = dxgi1_2;
       enums = d3d12enums;
-      structs = d3d12structs
+      structs = d3d12structs;
+      dependencies = ["dxgi"];
     });
     ("dxgi1_3",
       {interfaces = dxgi1_3;
       enums = d3d12enums;
-      structs = d3d12structs
+      structs = d3d12structs;
+      dependencies = ["dxgi";"dxgi1_2"];
     });
     ("dxgi1_4",
       {interfaces = dxgi1_4;
       enums = d3d12enums;
-      structs = d3d12structs
+      structs = d3d12structs;
+      dependencies = ["dxgi";"dxgi1_2";"dxgi1_3"];
     });
     ("dwrite",
       {interfaces = dwrite;
       enums = Map.empty;
-      structs = Map.empty
+      structs = Map.empty;
+      dependencies = [];
     });
     ("d2d1",
       {interfaces = d2d1;
       enums = Map.empty;
-      structs = Map.empty
+      structs = Map.empty;
+      dependencies = [];
     });
   ] |> Map.ofList
         
@@ -129,13 +138,13 @@ let main argv =
                     for KeyValue(f,t) in wapi do
                       use sw=new System.IO.StreamWriter(@".\winapi\"+f)
                       sw.Write(t)
-                  let (rtext, interfaces)=safegen.safeInterfaceGen headerName (!allInterfaces) (codeModule.NoEnumConversion) types annotations
+                  let (rtext, interfaces, deps)=safegen.safeInterfaceGen headerName (!allInterfaces) (codeModule.NoEnumConversion) types annotations
                   allInterfaces := interfaces
                   let moduleName = headerName+"_safe"
                   System.IO.Directory.CreateDirectory(@".\safe") |> ignore //TODO: use Path
                   use swsi=new System.IO.StreamWriter(@".\safe\"+moduleName+".rs")
-                  for modl in !modules do
-                    swsi.WriteLine("use "+modl+"::*;")
+                  for modl in annotations.dependencies do
+                    swsi.WriteLine("use "+modl+"_safe::*;")
                   swsi.Write(rtext)
                   modules := moduleName :: !modules
                   printfn "Processing header %s" headerPath.FullName
