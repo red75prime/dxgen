@@ -20,19 +20,20 @@ pub fn cube<V: GenVertex>(sz: f32) -> (D3D_PRIMITIVE_TOPOLOGY, Vec<V>) {
     (v3(0.,1.,0.), v3(0.,0.,1.)),
     (v3(0.,-1.,0.), v3(0.,0.,1.)),
   ];
-  for (n, up) in facevecs.into_iter() {
-    let rt = Vector3::cross(&up, &n);
-    let p1 = Vector::mul_s(&(n - up - rt), sz);
-    let p2 = Vector::mul_s(&(n + up - rt), sz);
-    let p3 = Vector::mul_s(&(n + up + rt), sz);
-    let p4 = Vector::mul_s(&(n - up + rt), sz);
-    ret.push(V::new_vertex(&p1).set_normal(&n).set_uv(0., 0.));
-    ret.push(V::new_vertex(&p2).set_normal(&n).set_uv(0., 1.));
-    ret.push(V::new_vertex(&p3).set_normal(&n).set_uv(1., 1.));
+  // TODO: pass by value, when cgmath allows it
+  for &(ref n, ref up) in facevecs.iter() {
+    let rt = &Vector3::cross(up, n);
+    let p1 = n.sub_v(up).sub_v(rt).mul_s(sz);
+    let p2 = n.add_v(up).sub_v(rt).mul_s(sz);
+    let p3 = n.add_v(up).add_v(rt).mul_s(sz);
+    let p4 = n.sub_v(up).add_v(rt).mul_s(sz);
+    ret.push(V::new_vertex(&p1).set_normal(n).set_uv(0., 0.));
+    ret.push(V::new_vertex(&p2).set_normal(n).set_uv(0., 1.));
+    ret.push(V::new_vertex(&p3).set_normal(n).set_uv(1., 1.));
 
-    ret.push(V::new_vertex(&p3).set_normal(&n).set_uv(1., 1.));
-    ret.push(V::new_vertex(&p4).set_normal(&n).set_uv(1., 0.));
-    ret.push(V::new_vertex(&p1).set_normal(&n).set_uv(0., 0.));
+    ret.push(V::new_vertex(&p3).set_normal(n).set_uv(1., 1.));
+    ret.push(V::new_vertex(&p4).set_normal(n).set_uv(1., 0.));
+    ret.push(V::new_vertex(&p1).set_normal(n).set_uv(0., 0.));
   }
   (D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, ret)
 }
@@ -48,12 +49,13 @@ pub fn cube_indexed<V: GenVertex>(sz: f32) -> (Vec<V>,Vec<u32>) {
     (v3(0.,1.,0.), v3(0.,0.,1.)),
     (v3(0.,-1.,0.), v3(0.,0.,1.)),
   ];
-  for (n, up) in facevecs.into_iter() {
-    let rt = Vector3::cross(&up, &n);
-    let p1 = Vector::mul_s(&(n - up - rt), sz);
-    let p2 = Vector::mul_s(&(n + up - rt), sz);
-    let p3 = Vector::mul_s(&(n + up + rt), sz);
-    let p4 = Vector::mul_s(&(n - up + rt), sz);
+  // TODO: pass by value, when cgmath allows it
+  for &(ref n, ref up) in facevecs.iter() {
+    let rt = &Vector3::cross(&up, &n);
+    let p1 = n.sub_v(up).sub_v(rt).mul_s(sz);
+    let p2 = n.add_v(up).sub_v(rt).mul_s(sz);
+    let p3 = n.add_v(up).add_v(rt).mul_s(sz);
+    let p4 = n.sub_v(up).add_v(rt).mul_s(sz);
     let base = ret.len() as u32;
     ret.push(V::new_vertex(&p1).set_normal(&n).set_uv(0., 0.));
     ret.push(V::new_vertex(&p2).set_normal(&n).set_uv(0., 1.));

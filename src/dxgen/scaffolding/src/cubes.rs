@@ -18,6 +18,8 @@ use std::sync::atomic::Ordering;
 use shape_gen;
 use shape_gen::GenVertex;
 
+use downsampler::*;
+
 // dx_vertex! macro implement dxsems::VertexFormat trait for given structure
 // VertexFormat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
 // There's no #[repr(C)], because dx_vertex takes care of measuring field's offsets
@@ -65,11 +67,13 @@ struct Constants {
 pub trait Parameters {
   fn object_count(&self) -> &u32;
   fn thread_count(&self) -> &u32;
+  fn speed_mult(&self) -> f32;
 }
 
 pub struct CubeParms {
   pub object_count: u32,
   pub thread_count: u32,
+  pub speed_mult: f32,
 }
 
 impl Parameters for CubeParms {
@@ -78,6 +82,9 @@ impl Parameters for CubeParms {
   }
   fn thread_count(&self) -> &u32 {
     &self.thread_count
+  }
+  fn speed_mult(&self) -> f32 {
+    self.speed_mult
   }
 }
 
@@ -120,6 +127,7 @@ pub struct AppData {
   minimized: bool,
   camera: Camera,
   rot_spd: Vec<(Vector3<f32>, Vector3<f32>, Vector3<f32>, f32)>,
+  downsampler: Downsampler,
 }
 
 // Parallel GPU workload submission requires some data from AppData.
@@ -215,15 +223,15 @@ fn get_display_mode_list1(output: &DXGIOutput4, format: DXGI_FORMAT, flags: UINT
 
 pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32, parameters: &T) -> Result<AppData, Option<D3D12InfoQueue>> {
   // TODO: get window width and height from wnd
-  let (w, h)=(512., 512.);
   let hwnd=wnd.get_hwnd();
+  let (w, h)=wnd.size();
   debug!("HWND");
   let viewport=D3D12_VIEWPORT {
     TopLeftX: 0.,
     TopLeftY: 0.,
     MinDepth: 0.,
-    Width: w,
-    Height: h,
+    Width: w as f32,
+    Height: h as f32,
     MaxDepth: 1.0,
   };
   let sci_rect=D3D12_RECT {
@@ -235,7 +243,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   
   // core::create_core creates structure that contains D3D12Device, command queues and so on
   // which are required for creation of all other objects
-  let core = try!(create_core(adapter, D3D_FEATURE_LEVEL_11_0, cfg!(debug)).map_err(|err|panic!("Cannot create DXCore: {}", err)));
+  let core = try!(create_core(adapter, D3D_FEATURE_LEVEL_11_0, cfg!(debug_assertions)).map_err(|err|panic!("Cannot create DXCore: {}", err)));
 
   // Get adapter the device was created on
   let adapter_luid = core.dev.get_adapter_luid();
@@ -285,7 +293,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
     Windowed: 1,
   };
   // so I pass DXGI_FORMAT_R8G8B8A8_UNORM_SRGB separately for use in render target view
-  let swap_chain = try!(create_swap_chain(&core, &sc_desc, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, hwnd, Some(&fsd), None)
+  let swap_chain = try!(create_swap_chain(&core, &sc_desc, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, hwnd, None, None)
                       .map_err(|msg|{error!("{}",msg);core.info_queue.clone()}));
 
   // Descriptor heaps store information that GPU needs to access resources like textures, constant buffers, unordered access views
@@ -297,7 +305,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
     Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
     NodeMask: 0,
   };
-  debug!("SRV descriptor heap");
+  trace!("SRV descriptor heap");
   let srv_heap = core.dev.create_descriptor_heap(&srv_hd).unwrap();
 
   // This heap will contain an entry for depth-stencil resource
@@ -308,11 +316,6 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
     NodeMask: 0,
   };
   let dsd_heap = core.dev.create_descriptor_heap(&dsd_hd).unwrap();
-
-  // Command allocator manages storage for command lists.
-  // TODO: remove this one, I don't use it
-  debug!("Command allocator");
-  let callocator = core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT).unwrap();
 
   let compile_flags=0;
   debug!("Vertex shader");
@@ -394,23 +397,29 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
     Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
   };
 
-  debug!("Serialize root signature");
+  trace!("Serialize root signature");
   // Root signature can be embedded into HLSL. You can extract blob from shader text.
   // https://msdn.microsoft.com/en-us/library/windows/desktop/dn913202(v=vs.85).aspx
   let blob=try!(d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1).map_err(|_|core.info_queue.clone()));
 
-  debug!("Root signature");
+  trace!("Root signature");
   // It creates D3D12RoosSignature
   let root_sign = try!(core.dev.create_root_signature(0, blob_as_slice(&blob)).map_err(|_|core.info_queue.clone()));
   // Graphics pipeline state (GPS) contains settings for all stages in graphics pipeline.
   // Also, it containt root signature that binds descriptor heaps to shader registers
   // Shaders are part of GPS too. D3D12Device::create_graphics_pipeline_state() performs compilation of provided shader bytecode.
   // MSDN suggests to create GPS on separate thread, as this is CPU intensive operation.
-  debug!("Graphics pipeline state");
+  trace!("Graphics pipeline state");
   let gps=try!(create_static_sampler_gps::<Vertex>(&core, &vshader[..], &pshader[..], &root_sign).map_err(|_|core.info_queue.clone()));
 
+  // Command allocator manages storage for command lists.
+  trace!("Command allocator");
+  let callocator = core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT).unwrap();
+
   // Command lists hold the list of commands to be executed by GPU. D3D12CommanQueue::execute_command_lists() initiates actual execution.
-  debug!("Command list");
+  // I use this command list once to transition texture to pixel shader resource state.
+  // TODO: don't store callocator and command_list in AppData
+  trace!("Command list");
   let command_list: D3D12GraphicsCommandList = core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
   
   // ------------------- Vertex and index buffer resource init begin ----------------------------
@@ -433,7 +442,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   // create_committed_resource() creates implicit heap large enough to contain resource.
   // GENERIC_READ here is GPU side. It means that all shaders can read the resource and 
   // resource can be source of copy operation.
-  debug!("Vertex buffer");
+  trace!("Vertex buffer");
   let vbuf = try!(core.dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &res_desc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|core.info_queue.clone()));
 
   //Transfer data from vtc into GPU memory allocated for vbuf
@@ -452,7 +461,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   // Creation and filling of index buffer is similar to that of vertex buffer.
   let ibuf_size = mem::size_of_val(&idx[..]);
   let idesc = resource_desc_buffer(ibuf_size as u64);
-  debug!("Index buffer");
+  trace!("Index buffer");
   let ibuf = try!(core.dev.create_committed_resource(&heap_prop, D3D12_HEAP_FLAG_NONE, &idesc, D3D12_RESOURCE_STATE_GENERIC_READ, None).map_err(|_|core.info_queue.clone()));
   try!(upload_into_buffer(&ibuf, &idx[..]).map_err(|_|core.info_queue.clone()));
 
@@ -490,7 +499,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
     Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
     NodeMask: 0,
   };
-  debug!("CBV descriptor heap");
+  trace!("CBV descriptor heap");
   let cbvd_heap = core.dev.create_descriptor_heap(&cbv_hd).unwrap();
 
   // CPU side of descriptor heap is an array of unspecified structures of cbv_dsize size.
@@ -499,7 +508,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   let const_dh = cbvd_heap.get_cpu_descriptor_handle_for_heap_start();
   // create_constant_buffer_view creates hardware specific representation of constant buffer view at const_dh address.
   // In this case const_dh corresponds to first entry in cbvd_heap.
-  debug!("Create shader resource view: constants buffer");
+  trace!("Create shader resource view: constants buffer");
   core.dev.create_constant_buffer_view(Some(&cbview), const_dh);
 
   // ------------------- Constant buffer resource init end  -----------------------------
@@ -518,7 +527,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   // I create texture in default heap, CPU can't get access to this heap.
   // I set initial state of the resource to COPY_DEST, 
   // to prepare it for data transfer thru intermediate resource placed in upload heap
-  debug!("Texture resource");
+  trace!("Texture resource");
   let tex_resource = try!(core.dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, 
                             &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST, None).map_err(|_|core.info_queue.clone()));
   
@@ -529,7 +538,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
     let (x,y) = (i%tex_w, i/tex_w);
     *v =
       if x%10 == 0 || y%10 == 0 {
-        0xff204f4f // yellowish
+        0xff10ff10 // bright green
       } else {
         0xff909090 // light grey
       };
@@ -538,15 +547,45 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
 
   // utils::upload_into_texture() transfers texdata into upload buffer resource,
   // then executed copy command on core.copy_queue
+  trace!("upload_into_texture");
   try!(upload_into_texture(&core, &tex_resource, tex_w, tex_h, &texdata[..]).map_err(|_|core.info_queue.clone()));
+
+  trace!("Downsampler::new");
+  let downsampler = Downsampler::new(&core.dev);
+  //generate mips
+  trace!("Downsampler::generate_mips");
+  try!(downsampler.generate_mips(&tex_resource, &core).map_err(|_|core.info_queue.clone()));
   // upload_into_texture transition tex_resource into common state (it uses copy queue, so it can't set pixel_shader_resource state)
-  command_list.resource_barrier(&mut [*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
+  trace!("resource_barrier");
+  command_list.resource_barrier(&[*ResourceBarrier::transition(&tex_resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
+
+  trace!("Command list Close");
+  command_list.close().unwrap();
+  trace!("Command queue execute");
+  core.graphics_queue.execute_command_lists(&[&command_list]);  
+  // Fences synchronize CPU and GPU.
+  // You can place a fence in the GPU's command queue by calling D3D12CommandQueue::signal().
+  // When GPU reaches the fence, it notifies CPU.
+  // If you want GPU to wait for signal, call D3D12CommandQueue::wait(),
+  // then tell GPU to continue by calling D3D12CommandQueue::signal().
+  trace!("fence");
+  let fence=core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE).unwrap();
+
+  // fence_event communicates GPU's notification to CPU. 
+  // Use fence.set_event_on_completion(fence_value, fence_event) to bind fence to fence_event
+  // Use utils::wait_for_single_object() to wait until GPU reaches marker set by D3D12CommandQueue::signal().
+  // fence_value identifies particular call to D3D12CommandQueue::signal()
+  trace!("fence_event");
+  let fence_event = create_event();
+  
+  trace!("wait_for_prev_frame");
+  wait_for_graphics_queue(&core, &fence, &fence_event);
 
   // create shader resource view in srv_heap descriptor heap
   let srv_desc = shader_resource_view_tex2d_default_mip(DXGI_FORMAT_R8G8B8A8_UNORM, 4);
 
   let srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
-  debug!("Create shader resource view: texture");
+  trace!("Create shader resource view: texture");
   core.dev.create_shader_resource_view(Some(&tex_resource), Some(&srv_desc), srv_dh);
 
   // ------------------- Texture resource init end  -----------------------------
@@ -560,33 +599,20 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
 
   // ------------------- Depth stencil buffer init end --------------------------
 
-  // Fences synchronize CPU and GPU.
-  // You can place a fence in the GPU's command queue by calling D3D12CommandQueue::signal().
-  // When GPU reaches the fence, it notifies CPU.
-  // If you want GPU to wait for signal, call D3D12CommandQueue::wait(),
-  // then tell GPU to continue by calling D3D12CommandQueue::signal().
-  debug!("fence");
-  let fence=core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE).unwrap();
-
-  // fence_event communicates GPU's notification to CPU. 
-  // Use fence.set_event_on_completion(fence_value, fence_event) to bind fence to fence_event
-  // Use utils::wait_for_single_object() to wait until GPU reaches marker set by D3D12CommandQueue::signal().
-  // fence_value identifies particular call to D3D12CommandQueue::signal()
-  debug!("fence_event");
-  let fence_event = create_event();
-  
   let mut par_sub = vec![];
   // Fill data required to submit GPU workload in parallel
   // I create three copies of that data to be able to keep GPU busy.
   // While GPU renders previous frame, I can submit new command lists.
+  trace!("init_parallel_submission");
   for _ in 0..3 {
-    par_sub.push(try!(init_parallel_submission(&core, *parameters.thread_count(), *parameters.object_count()).map_err(|_|core.info_queue.clone())));
+    par_sub.push(try!(init_parallel_submission(&core, *parameters.thread_count(), *parameters.object_count())
+            .map_err(|hr|{error!("init_parallel_submission failed with 0x{:x}", hr); core.info_queue.clone()})));
   }
   // State of the cubes. Tuple (position, speed, rotation axis, rotation speed)
   let mut rot_spd = Vec::with_capacity(*parameters.object_count() as usize);
   for _ in 0 .. *parameters.object_count() {
     rot_spd.push((v3((rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-1.)*200.), 
-        v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).mul_s(0.1),
+        v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).mul_s(parameters.speed_mult()),
           v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()*1.0));
   }
 
@@ -617,20 +643,13 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       minimized: false,
       camera: Camera::new(),
       rot_spd: rot_spd,
+      downsampler: downsampler,
     };
 
   // I can't use 'camera' variable here. I moved it into ret.camera.
   ret.camera.go(-3., 0., 0.);
   ret.camera.aspect = (w as f32)/(h as f32);
   
-  // TODO: remove
-  debug!("Command list Close");
-  command_list.close().unwrap();
-  debug!("Command queue execute");
-  ret.core.graphics_queue.execute_command_lists(&[&command_list]);  
-  debug!("wait_for_prev_frame");
-  wait_for_graphics_queue(&ret.core, &ret.fence, &ret.fence_event);
-
   // Done
   Ok(ret)
 }
@@ -641,10 +660,9 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
 pub fn on_render(data: &mut AppData) {
   use std::f64; 
 
-  if cfg!(debug) {debug!("on_render")};
+  if cfg!(debug_assertions) {trace!("on_render")};
 
   // advance position of cubes
-  // TODO: move to on_update, use delta_t
   for rot in &mut data.rot_spd {
     rot.0 = rot.0.add_v(&rot.1);
   }
@@ -665,7 +683,7 @@ pub fn on_render(data: &mut AppData) {
   data.frame_index = data.swap_chain.swap_chain.get_current_back_buffer_index();
 
   // Setup world, normal, view and projection matrices
-  let mut wm: Matrix4<f32> = Matrix4::identity();
+  let mut wm: Matrix4<f32> = Matrix4::one();
   let mut wm_normal=wm;
   wm_normal.invert_self();
   wm_normal.transpose_self();
@@ -726,7 +744,7 @@ pub fn on_render(data: &mut AppData) {
     ps.transition_list.reset(&ps.ps_allocator, None).unwrap();
     // Resource barrier in this command list tells GPU to make current back buffer ready for presentation
     ps.transition_list.resource_barrier(
-        &mut [*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
+        &[*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
         D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
     ps.transition_list.close().unwrap();
     data.core.graphics_queue.execute_command_lists(&[&ps.transition_list]);
@@ -771,22 +789,22 @@ pub fn on_render(data: &mut AppData) {
 // This function fills graphics command list with instructions
 // for clearing render target and depth-stencil view.
 fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_allocator: &D3D12CommandAllocator, data: &AppData) -> HResult<()> {
-  if cfg!(debug) {debug!("Command allocator reset")};
+  if cfg!(debug_assertions) {trace!("Command allocator reset")};
   // I unwrap() result because it shouldn't panic if I wrote the program correctly.
   // Hmm. I think DEVICE_REMOVED _can_ occur here. Ok. I replaced it with try!.
   // D3D12CommandAllocator::reset() indicates that it is safe to reuse allocated memory.
   // GPU mustn't be using any of command lists associated with this allocator.
   // I ensure this near the beginning of on_render() by waiting for fence.
   try!(command_allocator.reset());
-  if cfg!(debug) {debug!("Command list reset")};
+  if cfg!(debug_assertions) {trace!("Command list reset")};
   // Command lists can be reused immediately after call to D3DCommandQueue::execute_command_lists(),
   // but I don't use this property yes.
   try!(command_list.reset(command_allocator, Some(&data.pipeline_state)));
 
-  if cfg!(debug) {debug!("Resource barrier")};
+  if cfg!(debug_assertions) {trace!("Resource barrier")};
   // It tells GPU to prepare back buffer for use as render target.
   command_list.resource_barrier(
-      &mut [*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
+      &[*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
       D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET).flags(D3D12_RESOURCE_BARRIER_FLAG_NONE)]);
 
   // Essentially, the following is a pointer arithmetics.
@@ -798,14 +816,14 @@ fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_alloca
   // depth-stencil view descriptor heap holds just one descriptor
   // TODO: check if this impacts performance
   let dsvh = data.dsd_heap.get_cpu_descriptor_handle_for_heap_start();
-  if cfg!(debug) {debug!("OM set render targets")};
+  if cfg!(debug_assertions) {trace!("OM set render targets")};
   // ID3D12GraphicsCommandList::OMSetRenderTargets has 4 parameters.
   // I split this method into two: om_set_render_targets() 
   // and om_set_render_targets_arr(), eliminating RTsSingleHandleToDescriptorRange parameter.
   command_list.om_set_render_targets(1, &rtvh, Some(&dsvh));
 
   let clear_color = [0.01, 0.01, 0.15, 1.0];
-  if cfg!(debug) {debug!("clear render target view")};
+  if cfg!(debug_assertions) {trace!("clear render target view")};
   command_list.clear_render_target_view(rtvh, &clear_color, &[]);
   command_list.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
   
@@ -937,6 +955,7 @@ impl<T> ParallelSubmissionData<T> {
 }
 
 fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32) -> HResult<ParallelSubmissionData<Constants>> {
+  trace!("cbsize");
   let cbsize = unsafe {
     let cbuf_data: Constants = ::std::mem::uninitialized();
     let cbsize = mem::size_of_val(&cbuf_data);
@@ -948,10 +967,12 @@ fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32)
 
   let buffer_size = (object_count as usize)*alignment;
   // create resource to hold all constant buffers
+  trace!("create cbuf");
   let cbuf = try!(core.dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(buffer_size as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None));
   let mut ptr: *mut u8 = ptr::null_mut();
   // Indicate that CPU doesn't read from buffer
   let read_range = D3D12_RANGE {Begin: 0, End: 0,};
+  trace!("map cbuf");
   unsafe {
     try!(cbuf.map(0, Some(&read_range), Some(&mut ptr)));
     debug!("cbuf.iptr(): 0x{:x}, ptr: 0x{:x}", cbuf.iptr() as usize, ptr as usize);
@@ -960,9 +981,9 @@ fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32)
 
   let mut clists = vec![];
   for _ in 0 .. thread_count {
-    debug!("create_command_allocator");
+    trace!("create_command_allocator");
     let callocator = try!(core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
-    debug!("create_command_list");
+    trace!("create_command_list");
     let clist: D3D12GraphicsCommandList = try!(core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, None));
     clist.close().unwrap();
     clists.push((clist, callocator));

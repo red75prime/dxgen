@@ -147,16 +147,16 @@ pub fn create_event() -> Event {
 }
 
 pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usize, data: &[u32]) -> HResult<()> {
-  debug!("upload_into_texture");
-  debug!("get_desc tex.iptr(): 0x{:x}, vtbl: 0x{:x}, vtbl[0]: 0x{:x}", tex.iptr() as usize, unsafe{((*tex.iptr()).lpVtbl) as usize}, unsafe{(*(*tex.iptr()).lpVtbl).QueryInterface as usize});
+  trace!("upload_into_texture");
+  trace!("get_desc tex.iptr(): 0x{:x}, vtbl: 0x{:x}, vtbl[0]: 0x{:x}", tex.iptr() as usize, unsafe{((*tex.iptr()).lpVtbl) as usize}, unsafe{(*(*tex.iptr()).lpVtbl).QueryInterface as usize});
   let desc = tex.get_desc();
-  debug!("get_device");
+  trace!("get_device");
   let dev = &core.dev;
   let mut num_rows = [0];
   let mut row_size_bytes = [0];
   let mut total_size_bytes = 0;
   let mut psfp: [D3D12_PLACED_SUBRESOURCE_FOOTPRINT; 1] = [unsafe{ ::std::mem::uninitialized() }];
-  debug!("get_copyable_footprints");
+  trace!("get_copyable_footprints");
   // Microsoft sample application uses HeapAlloc for footprint and other arguments
   // TODO: investigate
   dev.get_copyable_footprints(&desc, 0, 0, Some(&mut psfp), Some(&mut num_rows), Some(&mut row_size_bytes), Some(&mut total_size_bytes));
@@ -167,7 +167,7 @@ pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usiz
   debug!("Placed subres. footprint:{:?}", psfp[0]);
   debug!("Rows:{}, Row len:{}, Row pitch:{}  Total len:{}", rows, row_len, row_pitch, total_len);
 
-  debug!("create_committed_resource");
+  trace!("create_committed_resource");
   let res_buf=try!(dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(total_size_bytes), D3D12_RESOURCE_STATE_GENERIC_READ, None));
   res_buf.set_name("Temporary texture buffer".into()).unwrap();
 
@@ -184,33 +184,26 @@ pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usiz
   let dest = texture_copy_location_index(&tex, 0);
   let src = texture_copy_location_footprint(&res_buf, &psfp[0]);
 
-  debug!("create_command_allocator");
+  trace!("create_command_allocator");
   let callocator = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COPY));
-  debug!("create_command_list");
+  trace!("create_command_list");
   let clist: D3D12GraphicsCommandList = try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COPY, &callocator, None));
   clist.copy_texture_region(&dest, 0, 0, 0, &src, None); 
   clist.resource_barrier(&mut [*ResourceBarrier::transition(&tex, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON)]);
 
-  debug!("Command list Close");
+  trace!("Command list Close");
   try!(clist.close());
 
-  debug!("Command queue execute");
+  trace!("Command queue execute");
   core.copy_queue.execute_command_lists(&[&clist]);
-  debug!("fence");
+  trace!("fence");
   let fence=try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
-  debug!("fence_event");
+  trace!("fence_event");
   let fence_event = create_event();
 
   let fv=core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
-  debug!("signal");
-  try!(core.copy_queue.signal(&fence, fv));
-  //try!(core.copy_queue.wait(&fence, fv)); // !!! D3D12CommandQueue::wait causes GPU to wait for signal
-  if fence.get_completed_value() < fv {
-    debug!("set_event_on_completion");
-    try!(fence.set_event_on_completion(fv, fence_event.handle()));
-    debug!("wait");
-    wait_for_single_object(&fence_event, INFINITE);
-  }
+  trace!("wait for copy queue");
+  wait_for_queue(&core.copy_queue, fv, &fence, &fence_event);
   Ok(())
 }
 
@@ -224,30 +217,37 @@ pub fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12D
   let ds_desc = resource_desc_tex2d_nomip(w, h, ds_format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
   debug!("Depth stencil resource");
   let ds_res=try!(dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &ds_desc, 
-                                          D3D12_RESOURCE_STATE_DEPTH_WRITE, Some(&depth_stencil_clear_value_depth_f32())));
+                                          D3D12_RESOURCE_STATE_DEPTH_WRITE, Some(&depth_stencil_clear_value_depth_f32()))
+                      .map_err(|hr|{error!("create_commited_resource failed with 0x{:x}",hr);hr}));
 
   let dsv_desc = depth_stencil_view_desc_tex2d_default(ds_format);
   let mut handle = dsd_heap.get_cpu_descriptor_handle_for_heap_start();
   handle.ptr += offset as SIZE_T;
+  debug!("Depth stencil view");
   dev.create_depth_stencil_view(Some(&ds_res), Some(&dsv_desc), handle);
 
   Ok(ds_res)
+}
+
+pub fn wait_for_queue(queue: &D3D12CommandQueue, fence_value: u64, fence: &D3D12Fence, fence_event: &Event) -> HResult<()> {
+  queue.signal(fence, fence_value).unwrap();
+  if fence.get_completed_value() < fence_value {
+    try!(fence.set_event_on_completion(fence_value, fence_event.handle()));
+    wait_for_single_object(fence_event, INFINITE);
+  }
+  Ok(())
 }
 
 pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
   // TODO: Look for overflow behaviour of atomics
   let fence_value = core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
 
-  core.graphics_queue.signal(fence, fence_value).unwrap();
-  if fence.get_completed_value() < fence_value {
-    match fence.set_event_on_completion(fence_value, fence_event.handle()) {
-      Ok(_) => (),
-      Err(hr) => {
-        dump_info_queue(core.info_queue.as_ref());
-        panic!("set_event_on_completion error: 0x{:x}",hr);
-      },
-    }
-    wait_for_single_object(fence_event, INFINITE);
+  match wait_for_queue(&core.graphics_queue, fence_value, fence, fence_event) {
+    Ok(_) => (),
+    Err(hr) => {
+      dump_info_queue(core.info_queue.as_ref());
+      panic!("set_event_on_completion error: 0x{:x}",hr);
+    },
   }
 }
 
@@ -298,7 +298,7 @@ pub fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore, vshader: &[u8],
     PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
     NumRenderTargets: 1,
     DSVFormat: DXGI_FORMAT_D32_FLOAT,
-    Flags: if cfg!(Debug) {D3D12_PIPELINE_STATE_FLAG_TOOL_DEBUG} else {D3D12_PIPELINE_STATE_FLAG_NONE},
+    Flags: D3D12_PIPELINE_STATE_FLAG_NONE,
     // Take other fields from default gps
     .. graphics_pipeline_state_desc_default()
   };

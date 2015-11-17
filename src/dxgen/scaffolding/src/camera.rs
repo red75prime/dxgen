@@ -30,7 +30,7 @@ impl Camera {
       fwd: v3(0., 0., 1.),
       up: v3(0., 1., 0.),
       right: v3(1., 0., 0.),
-      rot: <Basis3<f32> as Rotation<_,_,_>>::identity(),
+      rot: <Basis3<f32> as Rotation<_,_,_>>::one(),
       hfov_deg: 60.,
       aspect: 1.,
       near: 0.1,
@@ -63,7 +63,7 @@ impl Camera {
   }
 
   pub fn go(&mut self, fwd: f32, right: f32, up: f32) {
-    self.eye = self.eye.add_v(&(vsmul(&self.fwd, fwd) + vsmul(&self.right, right) + vsmul(&self.up, up)));
+    self.eye = self.eye.add_v(&(vsmul(&self.fwd, fwd).add_v(&vsmul(&self.right, right)).add_v(&vsmul(&self.up, up))));
   }
 
   pub fn view_matrix(&self) -> Matrix4<f32> {

@@ -46,12 +46,14 @@ pub fn create_core(adapter: Option<&DXGIAdapter1>, feature_level: D3D_FEATURE_LE
 
   let gr_q = try!(dev.create_command_queue(&gqd)
         .map_err(|hr|format!("create_command_queue for graphics queue failed with 0x{:x}", hr)));
+  gr_q.set_name("Graphics command queue".into()).unwrap();
   
   let cqd=D3D12_COMMAND_QUEUE_DESC{
     Type: D3D12_COMMAND_LIST_TYPE_COMPUTE, .. gqd
   };
   let cm_q = try!(dev.create_command_queue(&cqd)
         .map_err(|hr|format!("create_command_queue for compute queue failed with 0x{:x}", hr)));
+  cm_q.set_name("Compute command queue".into()).unwrap();
 
   let pqd = D3D12_COMMAND_QUEUE_DESC {
     Type: D3D12_COMMAND_LIST_TYPE_COPY, .. gqd
@@ -59,6 +61,7 @@ pub fn create_core(adapter: Option<&DXGIAdapter1>, feature_level: D3D_FEATURE_LE
 
   let cp_q = try!(dev.create_command_queue(&pqd)
         .map_err(|hr|format!("create_command_queue for copy queue failed with 0x{:x}", hr)));
+  cp_q.set_name("Copy command queue".into()).unwrap();
 
   Ok(DXCore {
     dev: dev,

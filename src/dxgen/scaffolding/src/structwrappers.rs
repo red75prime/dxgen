@@ -11,6 +11,16 @@ pub fn shader_4component_mapping(a: u32, b: u32, c: u32, d: u32) -> UINT {
   (0x1000 | (a & 7) | ((b & 7)*8) | ((c & 7)*8*8) | ((d & 7)*8*8*8)) as UINT
 }
 
+// I should move that into dx_safe
+#[derive(Clone,Copy)]
+pub struct Luid(pub LUID);
+
+impl PartialEq<Luid> for Luid {
+  fn eq(&self, other: &Luid) -> bool {
+    self.0.LowPart == other.0.LowPart && self.0.HighPart == other.0.HighPart
+  }
+}
+
 pub fn resource_desc_buffer(size_in_bytes: u64) -> D3D12_RESOURCE_DESC {
   D3D12_RESOURCE_DESC {
     Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
@@ -323,6 +333,25 @@ pub fn shader_resource_view_tex2d_default(format: DXGI_FORMAT) -> D3D12_SHADER_R
 
 pub fn shader_resource_view_tex2d_default_mip(format: DXGI_FORMAT, mip_levels: UINT) -> D3D12_SHADER_RESOURCE_VIEW_DESC {
   shader_resource_view_tex2d(format, shader_4component_mapping(0,1,2,3), 0, mip_levels, 0, 0.0)
+}
+
+pub fn srv_tex2d_default_slice_mip(format: DXGI_FORMAT, mip_slice: UINT, mip_levels: UINT) -> D3D12_SHADER_RESOURCE_VIEW_DESC {
+  shader_resource_view_tex2d(format, shader_4component_mapping(0,1,2,3), mip_slice, mip_levels, 0, 0.0)
+}
+
+pub fn uav_tex2d_desc(format : DXGI_FORMAT, mip_slice: UINT, plane_slice: UINT) -> D3D12_UNORDERED_ACCESS_VIEW_DESC {
+  let mut ret = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+    Format: format,
+    ViewDimension: D3D12_UAV_DIMENSION_TEXTURE2D,
+    u: unsafe{ mem::uninitialized() },
+  };
+  unsafe {
+    *ret.Texture2D_mut() = D3D12_TEX2D_UAV {
+      MipSlice: mip_slice,
+      PlaneSlice: plane_slice,
+    };
+  };
+  ret
 }
 
 pub fn depth_stencil_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_DEPTH_STENCIL_VIEW_DESC {

@@ -60,3 +60,26 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   ret = texel*(0.1+l*0.6);
   return ret;
 }
+
+#ifdef downscale
+
+#define RSD "RootFlags(0), SRV(t0), UAV(u0)"
+
+Texture2D<float4> mip0: register(t0);
+RWTexture2D<float4> mip1: register(u0);
+
+const float coefs[4] = {1./8., 3./8., 3./8., 1./8.};
+groupshared float4 color_accum=float4(0,0,0,0);
+
+[RootSignature(RSD)]
+[numthreads(4, 4, 1)]
+void downscale(uint3 gtid: SV_GroupThreadId, uint3 gid: SV_GroupId) {
+  float c = coefs[gtid.x]*coefs[gtid.y];
+  InterlockedAdd(color_accum, mip0[gid.xy*2 + gtid.xy + int2(-1,-1)]*c);
+  GroupMemoryBarrierWithGroupSync();
+  if (gtid.xy==uint2(1,1)) {
+    mip1[gid.xy] = color_accum;
+  };
+}
+
+#endif

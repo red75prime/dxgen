@@ -20,3 +20,6 @@ pub use dxgi1_2_safe::*;
 pub use dxgi1_3_safe::*;
 pub use dxgi1_4_safe::*;
 pub use dwrite_safe::*;
+
+// some tweaks
+pub type D3DBlob = D3D10Blob;

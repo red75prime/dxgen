@@ -31,6 +31,8 @@ mod app;
 mod cubes;
 mod camera;
 //mod hvoxel;
+mod downsampler;
+
 
 
 use winapi::*;
@@ -46,9 +48,7 @@ use utils::*;
 use clock_ticks::*;
 use cgmath::*;
 use cubes::{Parameters, CubeParms};
-
-#[link(name="d3dcompiler")]
-extern {}
+use std::time::Duration;
 
 const FRAME_COUNT : u32 = 4;
 
@@ -57,7 +57,7 @@ fn main() {
   env_logger::init().unwrap();
 
   // Set default values of cubes module parameters
-  let mut parms = CubeParms {thread_count: 2, object_count: 2_000,};
+  let mut parms = CubeParms {thread_count: 2, object_count: 2_000, speed_mult: 0.01};
   let mut adapters_to_test = vec![];
   let mut adapters_info = false;
   for arg in env::args() {
@@ -82,9 +82,19 @@ fn main() {
         parms.thread_count = n;
       }
     }
+    if arg.starts_with("-s") {
+      // Command line parameter -s<f32> sets cube speed multiplier
+      if let Ok(s) = (&arg[2..]).parse::<f32>() {
+        parms.speed_mult = s;
+      }
+    }
   }
 
-  let factory: DXGIFactory4 = create_dxgi_factory2().expect("Cannot create DXGIFactory4. No can do.");
+  let factory: DXGIFactory4 = 
+    match create_dxgi_factory2() {
+      Ok(fact) => fact,
+      Err(hr) => panic!("Cannot create DXGIFactory4 (0x{:x}). No can do.",hr),
+    };
   let mut i=0;
   let mut adapters = vec![];
   // Iterate over available GPUs 
@@ -247,7 +257,7 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
       let do_not_render = data.borrow().is_minimized();
       if do_not_render {
         // MSDN suggest to use MsgWaitForMultipleObjects here, but 10ms sleep shouldn't create problems
-        std::thread::sleep_ms(10);
+        std::thread::sleep(Duration::from_millis(10));
       } else {
         {
           // data is Rc<RefCell<cubes::AppData>>
