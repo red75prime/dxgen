@@ -40,41 +40,6 @@ impl Downsampler {
     debug!("Root signature");
     let root_sig = dev.create_root_signature(0, &root_sig_bytecode[..]).expect("Cannot create root signature");
 
-    let srv_range = D3D12_DESCRIPTOR_RANGE {
-      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-      NumDescriptors: 1,
-      BaseShaderRegister: 0,
-      RegisterSpace: 0,
-      OffsetInDescriptorsFromTableStart: 0,
-    };
-
-    let uav_range = D3D12_DESCRIPTOR_RANGE {
-      RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
-      NumDescriptors: 1,
-      BaseShaderRegister: 0,
-      RegisterSpace: 0,
-      OffsetInDescriptorsFromTableStart: 1,
-    }; 
-
-    let rs_parms = vec![
-      *RootParameter::descriptor_table(&[srv_range], D3D12_SHADER_VISIBILITY_ALL),
-      *RootParameter::descriptor_table(&[uav_range], D3D12_SHADER_VISIBILITY_ALL),
-    ];
-
-    let rsd=D3D12_ROOT_SIGNATURE_DESC{
-      NumParameters: rs_parms.len() as UINT,
-      pParameters: rs_parms[..].as_ptr(),
-      NumStaticSamplers: 0,
-      pStaticSamplers: ptr::null(),
-      Flags: D3D12_ROOT_SIGNATURE_FLAGS(0),
-    };
-
-    debug!("Serialize root signature");
-    let root_sig1_blob = d3d12_serialize_root_signature(&rsd, D3D_ROOT_SIGNATURE_VERSION_1).expect("cannot serialize root signature");
-
-    debug!("Root signature1");
-    let root_sig1 = dev.create_root_signature(0, blob_as_slice(&root_sig1_blob)).expect("Cannot create root signature");
-
     //It doesn't work. 
     //let crs = d3d_get_root_signature_from_str(SHADER, dev).expect("Cannot extract root signature");
     let cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
@@ -91,7 +56,7 @@ impl Downsampler {
     let dsize = dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     Downsampler {
       cpso: cpso,
-      root_sig: root_sig, //root_sig1 doesn't work. 
+      root_sig: root_sig,
       luid: Luid(dev.get_adapter_luid()),
       dheap: dheap,
       dsize: dsize,
