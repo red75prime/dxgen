@@ -207,13 +207,8 @@ pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usiz
   Ok(())
 }
 
-pub fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12Device, 
-                        dsd_heap: &D3D12DescriptorHeap, heap_offset: u32) -> HResult<D3D12Resource> {
-  let offset = 
-    if heap_offset == 0 { 0 } 
-    else {
-      dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_DSV)*heap_offset
-    };
+pub fn create_depth_stencil(dev: &D3D12Device, w: u64, h: u32, ds_format: DXGI_FORMAT, 
+                        dheap_handle: D3D12_CPU_DESCRIPTOR_HANDLE) -> HResult<D3D12Resource> {
   let ds_desc = resource_desc_tex2d_nomip(w, h, ds_format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
   debug!("Depth stencil resource");
   let ds_res=try!(dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, &ds_desc, 
@@ -221,10 +216,8 @@ pub fn create_depth_stencil(w: u64, h: u32, ds_format: DXGI_FORMAT, dev: &D3D12D
                       .map_err(|hr|{error!("create_commited_resource failed with 0x{:x}",hr);hr}));
 
   let dsv_desc = depth_stencil_view_desc_tex2d_default(ds_format);
-  let mut handle = dsd_heap.get_cpu_descriptor_handle_for_heap_start();
-  handle.ptr += offset as SIZE_T;
   debug!("Depth stencil view");
-  dev.create_depth_stencil_view(Some(&ds_res), Some(&dsv_desc), handle);
+  dev.create_depth_stencil_view(Some(&ds_res), Some(&dsv_desc), dheap_handle);
 
   Ok(ds_res)
 }

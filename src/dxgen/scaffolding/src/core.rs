@@ -77,13 +77,14 @@ pub fn create_core(adapter: Option<&DXGIAdapter1>, feature_level: D3D_FEATURE_LE
 pub struct DXSwapChain {
   pub swap_chain: DXGISwapChain3,
   pub render_targets: Vec<D3D12Resource>,
-  pub rtv_heap: D3D12DescriptorHeap,
-  pub rtv_dsize: SIZE_T, // render target view descriptor size  
+  pub rtv_heap: DescriptorHeap,
   pub rtv_format: DXGI_FORMAT,
   pub frame_count: u32,
 }
 
-pub fn create_swap_chain(core: &DXCore, desc: &DXGI_SWAP_CHAIN_DESC1, format: DXGI_FORMAT, hwnd: HWND, fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, restrict_to_output: Option<&DXGIOutput>) -> Result<DXSwapChain, String> {
+pub fn create_swap_chain(core: &DXCore, desc: &DXGI_SWAP_CHAIN_DESC1, format: DXGI_FORMAT, hwnd: HWND, 
+                         fullscreen_desc: Option<&DXGI_SWAP_CHAIN_FULLSCREEN_DESC>, 
+                         restrict_to_output: Option<&DXGIOutput>) -> Result<DXSwapChain, String> {
   let swap_chain: DXGISwapChain3 = 
     match core.dxgi_factory.create_swap_chain_for_hwnd(&core.graphics_queue, hwnd, desc, fullscreen_desc, restrict_to_output) {
       Err(hr) => return Err(format!("create_swap_chain failed with 0x{:x}",hr)),
@@ -92,30 +93,20 @@ pub fn create_swap_chain(core: &DXCore, desc: &DXGI_SWAP_CHAIN_DESC1, format: DX
     };
   let frame_count = desc.BufferCount;
 
-  let rtvhd=D3D12_DESCRIPTOR_HEAP_DESC {
-    NumDescriptors: frame_count,
-    Type: D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-    NodeMask: 0,
-  };
-  let rtvheap = try!(core.dev.create_descriptor_heap(&rtvhd)
+  let rtvheap = try!(DescriptorHeap::new(&core.dev, frame_count, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false, 0)
                     .map_err(|hr|format!("create_descriptor_heap failed with 0x{:x}",hr)));
-  let rtvdsize=core.dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_RTV) as SIZE_T;
-  let mut cdh=rtvheap.get_cpu_descriptor_handle_for_heap_start();
   let mut render_targets=vec![];
 
   for i in 0..frame_count {
     let buf = try!(swap_chain.get_buffer::<D3D12Resource>(i as u32)
                    .map_err(|hr|format!("swap_chain.get failed with 0x{:x}",hr)));
-    core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(format)), cdh);
-    cdh.ptr += rtvdsize;
+    core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(format)), rtvheap.cpu_handle(i));
     render_targets.push(buf);
   }
   Ok(DXSwapChain {
     swap_chain: swap_chain,
     render_targets: render_targets,
     rtv_heap: rtvheap,
-    rtv_dsize: rtvdsize,
     rtv_format: format,
     frame_count: frame_count,
   })
@@ -126,12 +117,10 @@ pub fn drop_render_targets(sc: &mut DXSwapChain) {
 }
 
 pub fn reaquire_render_targets(core: &DXCore, sc: &mut DXSwapChain) -> HResult<()> {
-  let mut cdh = sc.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
   sc.render_targets.truncate(0);
   for i in 0 .. sc.frame_count {
     let buf=try!(sc.swap_chain.get_buffer::<D3D12Resource>(i as u32));
-    core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(sc.rtv_format)), cdh);
-    cdh.ptr += sc.rtv_dsize;
+    core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(sc.rtv_format)), sc.rtv_heap.cpu_handle(i));
     sc.render_targets.push(buf);
   }
   Ok(())

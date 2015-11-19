@@ -510,3 +510,45 @@ pub fn static_sampler_anisotropic_default() -> D3D12_STATIC_SAMPLER_DESC {
     ShaderVisibility: D3D12_SHADER_VISIBILITY_PIXEL,
   }
 }
+
+pub struct DescriptorHeap {
+  dheap: D3D12DescriptorHeap,
+  heap_size: u32,
+  handle_size: SIZE_T,
+}
+
+impl DescriptorHeap {
+  pub fn new(dev: &D3D12Device, size: u32, ty: D3D12_DESCRIPTOR_HEAP_TYPE, shader_visible: bool, node_mask: u32) -> HResult<DescriptorHeap> {
+    let dsd_hd=D3D12_DESCRIPTOR_HEAP_DESC{
+      NumDescriptors: size as u32,
+      Type: ty,
+      Flags: if shader_visible {D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE} else {D3D12_DESCRIPTOR_HEAP_FLAG_NONE},
+      NodeMask: node_mask,
+    };
+    let dheap = try!(dev.create_descriptor_heap(&dsd_hd));
+    Ok(DescriptorHeap {
+        dheap: dheap,
+        heap_size: size,
+        handle_size: dev.get_descriptor_handle_increment_size(ty) as SIZE_T,
+    })
+  }
+
+  pub fn cpu_handle(&self, i: u32) -> D3D12_CPU_DESCRIPTOR_HANDLE {
+    assert!(i<self.heap_size);
+    let mut handle = self.dheap.get_cpu_descriptor_handle_for_heap_start();
+    handle.ptr += (i as SIZE_T)*self.handle_size;
+    handle
+  }
+
+  pub fn gpu_handle(&self, i: u32) -> D3D12_GPU_DESCRIPTOR_HANDLE {
+    assert!(i<self.heap_size);
+    let mut handle = self.dheap.get_gpu_descriptor_handle_for_heap_start();
+    handle.ptr += (i as SIZE_T)*self.handle_size;
+    handle
+  }
+
+  pub fn get(&self) -> &D3D12DescriptorHeap {
+    &self.dheap
+  }
+
+}

@@ -9,23 +9,14 @@ use std::ptr;
 pub struct Downsampler {
   cpso: D3D12PipelineState,
   root_sig: D3D12RootSignature,
-  dheap: D3D12DescriptorHeap,
-  // descriptor handle increment size
-  dsize: UINT,
+  dheap: DescriptorHeap,
   // luid of adapter cpso was generated on. generate_mips asserts that it is the same adapter as passed in DXCore
   luid: Luid,
 }
 
 impl Downsampler {
   pub fn new(dev: &D3D12Device) -> Downsampler {
-    // create descriptor heap
-    let c_hd=D3D12_DESCRIPTOR_HEAP_DESC{
-      NumDescriptors: 2,
-      Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-      Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-      NodeMask: 0,
-    };
-    let dheap = dev.create_descriptor_heap(&c_hd).expect("Cannot create descriptor heap");
+    let dheap = DescriptorHeap::new(&dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0).expect("Cannot create descriptor heap");
 
     let shader_bytecode = 
       match d3d_compile_from_str(SHADER, "CSMain", "cs_5_1", 0) {
@@ -53,13 +44,11 @@ impl Downsampler {
       Flags: D3D12_PIPELINE_STATE_FLAG_NONE, 
     };
     let cpso = dev.create_compute_pipeline_state(&cpsd).expect("Cannot create compute pipeline state");
-    let dsize = dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     Downsampler {
       cpso: cpso,
       root_sig: root_sig,
       luid: Luid(dev.get_adapter_luid()),
       dheap: dheap,
-      dsize: dsize,
     }
   }
 
@@ -85,14 +74,9 @@ impl Downsampler {
     let im_tex = try!(core.dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, 
                               &tex_desc, D3D12_RESOURCE_STATE_COMMON, None));
   
-    trace!("dh");
-    let mut dh=self.dheap.get_cpu_descriptor_handle_for_heap_start();
-    // advance handle to next descriptor
-    dh.ptr += self.dsize as SIZE_T;
-    // Descriptor for intermediate texture
     trace!("uav_desc");
     let uav_desc = uav_tex2d_desc(rdesc.Format, 0, 0);
-    core.dev.create_unordered_access_view(Some(&im_tex), None, Some(&uav_desc), dh);
+    core.dev.create_unordered_access_view(Some(&im_tex), None, Some(&uav_desc), self.dheap.cpu_handle(1));
 
     // callocator and clist are destroyed on function exit. 
     // It is not very efficient, but it's ok for now.
@@ -111,27 +95,20 @@ impl Downsampler {
     for i in 0..((rdesc.MipLevels-1) as u32) {
       try!(callocator.reset());
       try!(clist.reset(&callocator, None));
-      // Descriptor handle
-      trace!("dh");
-      let mut dh=self.dheap.get_cpu_descriptor_handle_for_heap_start();
       // Create descriptors in descriptor heap.
       // Their layout should match root signature specified in compute shader below.
       // Descriptor for source mip-map slice
       trace!("srv_desc");
       let srv_desc = srv_tex2d_default_slice_mip(rdesc.Format, i, 1);
-      core.dev.create_shader_resource_view(Some(&tex), Some(&srv_desc), dh);
+      core.dev.create_shader_resource_view(Some(&tex), Some(&srv_desc), self.dheap.cpu_handle(0));
 
       trace!("clist.set_pipeline_state");
       clist.set_pipeline_state(&self.cpso);
       clist.set_compute_root_signature(&self.root_sig);
       trace!("clist.set_descriptor_heaps");
-      clist.set_descriptor_heaps(&[&self.dheap]);
-      let mut gdh = self.dheap.get_gpu_descriptor_handle_for_heap_start();
+      clist.set_descriptor_heaps(&[self.dheap.get()]);
       trace!("clist.set_compute_root_descriptor_table(0, ...");
-      clist.set_compute_root_descriptor_table(0, gdh);
-      //gdh.ptr += self.dsize as SIZE_T;
-      //debug!("clist.set_compute_root_descriptor_table(1, ...");
-      //clist.set_compute_root_descriptor_table(1, gdh);
+      clist.set_compute_root_descriptor_table(0, self.dheap.gpu_handle(0));
 
       trace!("clist.resource_barrier");
       clist.resource_barrier(&[

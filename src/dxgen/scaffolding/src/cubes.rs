@@ -102,8 +102,8 @@ pub struct AppData {
   viewport: D3D12_VIEWPORT,
   scissor_rect: D3D12_RECT,
   root_signature: D3D12RootSignature,
-  srv_heap: D3D12DescriptorHeap,
-  dsd_heap: D3D12DescriptorHeap,
+  srv_heap: DescriptorHeap,
+  dsd_heap: DescriptorHeap,
   pipeline_state: D3D12PipelineState,
   // rustc thinks that _vertex_buffer is never user, but it holds corresponding resource alive,
   // while vertex_buffer_view keeps GPU virtual address of the buffer.
@@ -117,7 +117,7 @@ pub struct AppData {
   index_buffer_view: D3D12_INDEX_BUFFER_VIEW,
   _constant_buffer: D3D12Resource,
   _tex_resource: D3D12Resource,
-  depth_stencil: Option<D3D12Resource>,
+  depth_stencil: Vec<D3D12Resource>,
   frame_index: UINT,
   fence_event: Event,
   fence: D3D12Fence,
@@ -281,41 +281,9 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
     Flags: 0, //DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH.0,
   };
 
-  // I tried to get fullscreen with tearing for unbounded FPS. Unsuccessfully.
-  // Yours truly.
-  // P.S. I found out the cause. I need to enumerate display modes, not to create the struct,
-  // hoping that it will match display mode exactly.
-  // https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Flipping
-  let fsd = DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
-    RefreshRate: DXGI_RATIONAL {Numerator: 59940, Denominator: 1000},
-    ScanlineOrdering: DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE,
-    Scaling: DXGI_MODE_SCALING_UNSPECIFIED,
-    Windowed: 1,
-  };
   // so I pass DXGI_FORMAT_R8G8B8A8_UNORM_SRGB separately for use in render target view
   let swap_chain = try!(create_swap_chain(&core, &sc_desc, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, hwnd, None, None)
                       .map_err(|msg|{error!("{}",msg);core.info_queue.clone()}));
-
-  // Descriptor heaps store information that GPU needs to access resources like textures, constant buffers, unordered access views
-  // Root signature binds descriptor heap entries to shader registers.
-  // This particular descriptor heap will hold information about a texture.
-  let srv_hd=D3D12_DESCRIPTOR_HEAP_DESC{
-    NumDescriptors: 1,
-    Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-    NodeMask: 0,
-  };
-  trace!("SRV descriptor heap");
-  let srv_heap = core.dev.create_descriptor_heap(&srv_hd).unwrap();
-
-  // This heap will contain an entry for depth-stencil resource
-  let dsd_hd=D3D12_DESCRIPTOR_HEAP_DESC{
-    NumDescriptors: 1,
-    Type: D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
-    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
-    NodeMask: 0,
-  };
-  let dsd_heap = core.dev.create_descriptor_heap(&dsd_hd).unwrap();
 
   let compile_flags=0;
   debug!("Vertex shader");
@@ -515,6 +483,12 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
 
   // ------------------- Texture resource init begin  -----------------------------
 
+  // Descriptor heaps store information that GPU needs to access resources like textures, constant buffers, unordered access views
+  // Root signature binds descriptor heap entries to shader registers.
+  // This particular descriptor heap will hold information about a texture.
+  trace!("SRV descriptor heap");
+  let srv_dheap = DescriptorHeap::new(&core.dev, 1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0).unwrap();
+
   let tex_w=256usize;
   let tex_h=256usize;
 
@@ -584,18 +558,25 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   // create shader resource view in srv_heap descriptor heap
   let srv_desc = shader_resource_view_tex2d_default_mip(DXGI_FORMAT_R8G8B8A8_UNORM, 4);
 
-  let srv_dh=srv_heap.get_cpu_descriptor_handle_for_heap_start();
   trace!("Create shader resource view: texture");
-  core.dev.create_shader_resource_view(Some(&tex_resource), Some(&srv_desc), srv_dh);
+  core.dev.create_shader_resource_view(Some(&tex_resource), Some(&srv_desc), srv_dheap.cpu_handle(0));
 
   // ------------------- Texture resource init end  -----------------------------
 
   // ------------------- Depth stencil buffer init begin ------------------------
   
-  // utils::create_depth_stencil() functions handles creation of depth-stencil resource 
-  // and depth-stencil view, and it places depth-stencil view into dsd_heap descriptor heap
+  // This heap will contain entries for depth-stencil resources
+  let dsd_heap = DescriptorHeap::new(&core.dev, frame_count as u32, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false, 0).unwrap();
+
   let ds_format = DXGI_FORMAT_D32_FLOAT;
-  let ds_res = try!(create_depth_stencil(w as u64, h as u32, ds_format, &core.dev, &dsd_heap, 0).map_err(|_|core.info_queue.clone()));
+  let mut ds_res = vec![];
+  // create depth-stencil for each back buffer
+  for i in 0..frame_count {
+    // utils::create_depth_stencil() functions handles creation of depth-stencil resource 
+    // and depth-stencil view, and it places depth-stencil view into dsd_heap descriptor heap
+    let d_res = try!(create_depth_stencil(&core.dev, w as u64, h as u32, ds_format, dsd_heap.cpu_handle(i)).map_err(|_|core.info_queue.clone()));
+    ds_res.push(d_res);
+  }
 
   // ------------------- Depth stencil buffer init end --------------------------
 
@@ -624,7 +605,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       viewport: viewport,
       scissor_rect: sci_rect,
       root_signature: root_sign,
-      srv_heap: srv_heap,
+      srv_heap: srv_dheap,
       dsd_heap: dsd_heap,
       pipeline_state: gps,
       _vertex_buffer: vbuf,
@@ -633,7 +614,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       index_buffer_view: i_view,
       _constant_buffer: cbuf,
       _tex_resource: tex_resource,
-      depth_stencil: Some(ds_res),
+      depth_stencil: ds_res,
       frame_index: 0,
       fence_event: fence_event,
       fence: fence,
@@ -698,26 +679,19 @@ pub fn on_render(data: &mut AppData) {
   // Parallel submission threads use view, proj and light_pos
   let consts = Constants{ model: world_matrix, view: view_matrix, proj: proj_matrix, n_model: world_normal_matrix, light_pos: [lx,ly,-3.0]};
 
-  crossbeam::scope(|scope| {
-    // It's overkill to run those two threads in parallel.
-    // command_list_rt_clear() just creates command list to clear render target and depth-stencil buffer.
-    // Thread creation overhead probably eats all bonuses.
-    // TODO: Compare this and sequential version
-    scope.spawn(|| { 
-        let ps = &data.parallel_submission[data.cur_ps_num];
-        match command_list_rt_clear(&ps.clear_list, &ps.ps_allocator, data) {
-          Err(_) => {
-            dump_info_queue(data.core.info_queue.as_ref());
-            panic!();
-          },
-          _ => {},
-        }
-      });
-    scope.spawn(|| {
-      // this function fills several graphics command lists, each list is filled in its own thread.
-      submit_in_parallel(data, &consts).unwrap();
-    });
-  });
+  {
+    let ps = &data.parallel_submission[data.cur_ps_num];
+    match command_list_rt_clear(&ps.clear_list, &ps.ps_allocator, data) {
+      Err(_) => {
+        dump_info_queue(data.core.info_queue.as_ref());
+        panic!();
+      },
+      _ => {},
+    }
+  }
+
+  submit_in_parallel(data, &consts).unwrap();
+
   ::perf_fillbuf_end();
   ::perf_clear_start();
   // Clear render targets
@@ -807,15 +781,8 @@ fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_alloca
       &[*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
       D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET).flags(D3D12_RESOURCE_BARRIER_FLAG_NONE)]);
 
-  // Essentially, the following is a pointer arithmetics.
-  // TODO: wrap it somehow
-  // rtvh is a pointer to CPU side of render target view descriptor heap
-  let mut rtvh=data.swap_chain.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
-  // advance pointer to a descriptor of current back buffer
-  rtvh.ptr += (data.frame_index as SIZE_T)*data.swap_chain.rtv_dsize;
-  // depth-stencil view descriptor heap holds just one descriptor
-  // TODO: check if this impacts performance
-  let dsvh = data.dsd_heap.get_cpu_descriptor_handle_for_heap_start();
+  let rtvh = data.swap_chain.rtv_heap.cpu_handle(data.frame_index);
+  let dsvh = data.dsd_heap.cpu_handle(data.frame_index);
   if cfg!(debug_assertions) {trace!("OM set render targets")};
   // ID3D12GraphicsCommandList::OMSetRenderTargets has 4 parameters.
   // I split this method into two: om_set_render_targets() 
@@ -858,6 +825,7 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
    wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
    // For buffer resize to succeed there should be no outstanding references to back buffers
    drop_render_targets(&mut data.swap_chain);
+   data.depth_stencil.truncate(0);
    // Resize back buffers to new size. 
    //Number of back buffers, back buffer format and swapchain flags remain unchanged.
    let res = data.swap_chain.swap_chain.resize_buffers(0, w, h, DXGI_FORMAT_UNKNOWN, 0);
@@ -873,7 +841,9 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
    reaquire_render_targets(&data.core, &mut data.swap_chain).unwrap();
    // create new depth stencil
    let ds_format = DXGI_FORMAT_D32_FLOAT;
-   data.depth_stencil = Some(create_depth_stencil(w as u64, h as u32, ds_format, &data.core.dev, &data.dsd_heap, 0).unwrap());
+   for i in 0..(data.swap_chain.frame_count as u32) {
+    data.depth_stencil.push(create_depth_stencil(&data.core.dev, w as u64, h as u32, ds_format, data.dsd_heap.cpu_handle(i)).unwrap());
+   }
   
    data.camera.aspect = (w as f32)/(h as f32);
 
@@ -1018,9 +988,8 @@ fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32)
 fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
   let ps = &data.parallel_submission[data.cur_ps_num];
   let thread_count = ps.thread_count();
-  let dsvh = data.dsd_heap.get_cpu_descriptor_handle_for_heap_start();
-  let mut rtvh=data.swap_chain.rtv_heap.get_cpu_descriptor_handle_for_heap_start();
-  rtvh.ptr += (data.frame_index as SIZE_T)*data.swap_chain.rtv_dsize;
+  let dsvh = data.dsd_heap.cpu_handle(data.frame_index);
+  let rtvh=data.swap_chain.rtv_heap.cpu_handle(data.frame_index);
   let chunks = ps.get_chunks(thread_count);
   //debug!("{:?}", chunks);
 
@@ -1038,11 +1007,11 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
           try!(callocator.reset());
           try!(clist.reset(callocator, Some(&data.pipeline_state)));
           clist.set_graphics_root_signature(&data.root_signature);
-          clist.set_descriptor_heaps(&[&data.srv_heap]);
+          clist.set_descriptor_heaps(&[data.srv_heap.get()]);
           clist.rs_set_viewports(&[data.viewport]);
           clist.rs_set_scissor_rects(&[data.scissor_rect]);
           clist.om_set_render_targets(1, &rtvh, Some(&dsvh));
-          clist.set_graphics_root_descriptor_table(0, data.srv_heap.get_gpu_descriptor_handle_for_heap_start());
+          clist.set_graphics_root_descriptor_table(0, data.srv_heap.gpu_handle(0));
           clist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
           clist.ia_set_vertex_buffers(0, Some(&[data.vertex_buffer_view]));
           clist.ia_set_index_buffer(Some(&data.index_buffer_view));

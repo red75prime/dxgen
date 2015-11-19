@@ -50,7 +50,7 @@ use cgmath::*;
 use cubes::{Parameters, CubeParms};
 use std::time::Duration;
 
-const FRAME_COUNT : u32 = 4;
+const FRAME_COUNT : u32 = 2;
 
 fn main() {
   // Initialize logger
