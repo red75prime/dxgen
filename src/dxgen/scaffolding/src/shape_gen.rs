@@ -5,9 +5,9 @@ use cgmath::*;
 use utils::v3;
 
 pub trait GenVertex {
-  fn new_vertex(p: &Vector3<f32>) -> Self;
+  fn new_vertex(p: Vector3<f32>) -> Self;
   fn set_uv(self, u: f32, v: f32) -> Self;
-  fn set_normal(self, n: &Vector3<f32>) -> Self;
+  fn set_normal(self, n: Vector3<f32>) -> Self;
 }
 
 pub fn cube<V: GenVertex>(sz: f32) -> (D3D_PRIMITIVE_TOPOLOGY, Vec<V>) {
@@ -20,20 +20,19 @@ pub fn cube<V: GenVertex>(sz: f32) -> (D3D_PRIMITIVE_TOPOLOGY, Vec<V>) {
     (v3(0.,1.,0.), v3(0.,0.,1.)),
     (v3(0.,-1.,0.), v3(0.,0.,1.)),
   ];
-  // TODO: pass by value, when cgmath allows it
-  for &(ref n, ref up) in facevecs.iter() {
-    let rt = &Vector3::cross(up, n);
+  for &(n, up) in facevecs.iter() {
+    let rt = Vector3::cross(up, n);
     let p1 = n.sub_v(up).sub_v(rt).mul_s(sz);
     let p2 = n.add_v(up).sub_v(rt).mul_s(sz);
     let p3 = n.add_v(up).add_v(rt).mul_s(sz);
     let p4 = n.sub_v(up).add_v(rt).mul_s(sz);
-    ret.push(V::new_vertex(&p1).set_normal(n).set_uv(0., 0.));
-    ret.push(V::new_vertex(&p2).set_normal(n).set_uv(0., 1.));
-    ret.push(V::new_vertex(&p3).set_normal(n).set_uv(1., 1.));
+    ret.push(V::new_vertex(p1).set_normal(n).set_uv(0., 0.));
+    ret.push(V::new_vertex(p2).set_normal(n).set_uv(0., 1.));
+    ret.push(V::new_vertex(p3).set_normal(n).set_uv(1., 1.));
 
-    ret.push(V::new_vertex(&p3).set_normal(n).set_uv(1., 1.));
-    ret.push(V::new_vertex(&p4).set_normal(n).set_uv(1., 0.));
-    ret.push(V::new_vertex(&p1).set_normal(n).set_uv(0., 0.));
+    ret.push(V::new_vertex(p3).set_normal(n).set_uv(1., 1.));
+    ret.push(V::new_vertex(p4).set_normal(n).set_uv(1., 0.));
+    ret.push(V::new_vertex(p1).set_normal(n).set_uv(0., 0.));
   }
   (D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, ret)
 }
@@ -50,17 +49,17 @@ pub fn cube_indexed<V: GenVertex>(sz: f32) -> (Vec<V>,Vec<u32>) {
     (v3(0.,-1.,0.), v3(0.,0.,1.)),
   ];
   // TODO: pass by value, when cgmath allows it
-  for &(ref n, ref up) in facevecs.iter() {
-    let rt = &Vector3::cross(&up, &n);
+  for &(n, up) in facevecs.iter() {
+    let rt = Vector3::cross(up, n);
     let p1 = n.sub_v(up).sub_v(rt).mul_s(sz);
     let p2 = n.add_v(up).sub_v(rt).mul_s(sz);
     let p3 = n.add_v(up).add_v(rt).mul_s(sz);
     let p4 = n.sub_v(up).add_v(rt).mul_s(sz);
     let base = ret.len() as u32;
-    ret.push(V::new_vertex(&p1).set_normal(&n).set_uv(0., 0.));
-    ret.push(V::new_vertex(&p2).set_normal(&n).set_uv(0., 1.));
-    ret.push(V::new_vertex(&p3).set_normal(&n).set_uv(1., 1.));
-    ret.push(V::new_vertex(&p4).set_normal(&n).set_uv(1., 0.));
+    ret.push(V::new_vertex(p1).set_normal(n).set_uv(0., 0.));
+    ret.push(V::new_vertex(p2).set_normal(n).set_uv(0., 1.));
+    ret.push(V::new_vertex(p3).set_normal(n).set_uv(1., 1.));
+    ret.push(V::new_vertex(p4).set_normal(n).set_uv(1., 0.));
 
     idx.extend([base+0, base+1, base+2, base+2, base+3, base+0].into_iter());
   }

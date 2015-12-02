@@ -32,7 +32,7 @@ dx_vertex!( Vertex {
 
 // implementing shape_gen::GenVertex for Vertex allows its use in shape_gen's functions
 impl GenVertex for Vertex {
-  fn new_vertex(p: &Vector3<f32>) -> Vertex {
+  fn new_vertex(p: Vector3<f32>) -> Vertex {
     Vertex {
       pos: [p.x, p.y, p.z],
       color: [1.,0.5,0.5,],
@@ -45,7 +45,7 @@ impl GenVertex for Vertex {
     Vertex {texc0: [u,v], ..self}
   }
 
-  fn set_normal(self, n: &Vector3<f32>) -> Vertex {
+  fn set_normal(self, n: Vector3<f32>) -> Vertex {
     Vertex {norm: [n.x, n.y, n.z], ..self}
   }
 }
@@ -127,7 +127,7 @@ pub struct AppData {
   minimized: bool,
   camera: Camera,
   rot_spd: Vec<(Vector3<f32>, Vector3<f32>, Vector3<f32>, f32)>,
-  downsampler: Downsampler,
+  _downsampler: Downsampler,
 }
 
 // Parallel GPU workload submission requires some data from AppData.
@@ -222,7 +222,6 @@ fn get_display_mode_list1(output: &DXGIOutput4, format: DXGI_FORMAT, flags: UINT
 }
 
 pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32, parameters: &T) -> Result<AppData, Option<D3D12InfoQueue>> {
-  // TODO: get window width and height from wnd
   let hwnd=wnd.get_hwnd();
   let (w, h)=wnd.size();
   debug!("HWND");
@@ -386,7 +385,6 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
 
   // Command lists hold the list of commands to be executed by GPU. D3D12CommanQueue::execute_command_lists() initiates actual execution.
   // I use this command list once to transition texture to pixel shader resource state.
-  // TODO: don't store callocator and command_list in AppData
   trace!("Command list");
   let command_list: D3D12GraphicsCommandList = core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, Some(&gps)).unwrap();
   
@@ -510,11 +508,15 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   let mut i = 0;
   for v in &mut texdata[..] {
     let (x,y) = (i%tex_w, i/tex_w);
+    let (tex_w, tex_h) = (tex_w as f32, tex_h as f32);
+    let (fx,fy) = (x as f32, y as f32);
+    let (fx,fy) = ((2.*fx-tex_w)/tex_w, (2.*fy-tex_h)/tex_h);
+    let d = (fx*fx+fy*fy).sqrt()*4.0;
     *v =
       if x%10 == 0 || y%10 == 0 {
         0xff10ff10 // bright green
       } else {
-        0xff909090 // light grey
+        0xff009090+(((d.sin()*0.5+0.5)*255.) as u32)*65536
       };
     i+=1;
   }
@@ -585,7 +587,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   // I create three copies of that data to be able to keep GPU busy.
   // While GPU renders previous frame, I can submit new command lists.
   trace!("init_parallel_submission");
-  for _ in 0..3 {
+  for _ in 0..1 {
     par_sub.push(try!(init_parallel_submission(&core, *parameters.thread_count(), *parameters.object_count())
             .map_err(|hr|{error!("init_parallel_submission failed with 0x{:x}", hr); core.info_queue.clone()})));
   }
@@ -594,7 +596,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   for _ in 0 .. *parameters.object_count() {
     rot_spd.push((v3((rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-0.5)*200., (rand::random::<f32>()-1.)*200.), 
         v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).mul_s(parameters.speed_mult()),
-          v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()*1.0));
+          v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()*0.1));
   }
 
   // Pack all created objects into AppData
@@ -624,7 +626,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       minimized: false,
       camera: Camera::new(),
       rot_spd: rot_spd,
-      downsampler: downsampler,
+      _downsampler: downsampler,
     };
 
   // I can't use 'camera' variable here. I moved it into ret.camera.
@@ -645,7 +647,7 @@ pub fn on_render(data: &mut AppData) {
 
   // advance position of cubes
   for rot in &mut data.rot_spd {
-    rot.0 = rot.0.add_v(&rot.1);
+    rot.0 = rot.0.add_v(rot.1);
   }
 
   // measure timings
@@ -664,7 +666,7 @@ pub fn on_render(data: &mut AppData) {
   data.frame_index = data.swap_chain.swap_chain.get_current_back_buffer_index();
 
   // Setup world, normal, view and projection matrices
-  let mut wm: Matrix4<f32> = Matrix4::one();
+  let wm: Matrix4<f32> = Matrix4::one();
   let mut wm_normal=wm;
   wm_normal.invert_self();
   wm_normal.transpose_self();
@@ -679,6 +681,7 @@ pub fn on_render(data: &mut AppData) {
   // Parallel submission threads use view, proj and light_pos
   let consts = Constants{ model: world_matrix, view: view_matrix, proj: proj_matrix, n_model: world_normal_matrix, light_pos: [lx,ly,-3.0]};
 
+  if cfg!(debug_assertions) {trace!("build clear command list")};
   {
     let ps = &data.parallel_submission[data.cur_ps_num];
     match command_list_rt_clear(&ps.clear_list, &ps.ps_allocator, data) {
@@ -690,11 +693,13 @@ pub fn on_render(data: &mut AppData) {
     }
   }
 
+  if cfg!(debug_assertions) {trace!("build command lists in parallel")};
   submit_in_parallel(data, &consts).unwrap();
 
   ::perf_fillbuf_end();
   ::perf_clear_start();
   // Clear render targets
+  if cfg!(debug_assertions) {trace!("execute clear command list")};
   data.core.graphics_queue.execute_command_lists(&[&data.parallel_submission[data.cur_ps_num].clear_list]);
 
   // I'm not sure if GPU parallelizes execution within execute_command_lists only, or across calls too.
@@ -710,6 +715,7 @@ pub fn on_render(data: &mut AppData) {
     // This line creates vector of references to (borrows of) command lists from gc_lists
     // TODO: check if one command allocator is sufficient for parallel lists creation
     let cls: Vec<&D3D12GraphicsCommandList> = ps.gc_lists.iter().map(|&(ref clist, _)|clist).collect();
+    if cfg!(debug_assertions) {trace!("execute render command lists")};
     data.core.graphics_queue.execute_command_lists(&cls[..]);
   }
 
@@ -721,6 +727,7 @@ pub fn on_render(data: &mut AppData) {
         &[*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
         D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
     ps.transition_list.close().unwrap();
+    if cfg!(debug_assertions) {trace!("execute tramsition command list")};
     data.core.graphics_queue.execute_command_lists(&[&ps.transition_list]);
   }
 
@@ -728,7 +735,14 @@ pub fn on_render(data: &mut AppData) {
   data.parallel_submission[data.cur_ps_num].fence_val = fence_val_next;
   // When GPU reaches this point in its command queue it will set completed value of given fence to fence_val_next
   // I tell CPU to wait for it near the beginning of on_render() to be able to reuse command lists
-  data.core.graphics_queue.signal(&data.parallel_submission[data.cur_ps_num].fence, fence_val_next).unwrap();
+  if cfg!(debug_assertions) {trace!("signal")};
+  match data.core.graphics_queue.signal(&data.parallel_submission[data.cur_ps_num].fence, fence_val_next) {
+    Err(hr) => {
+      dump_info_queue(data.core.info_queue.as_ref());
+      panic!("Signal failed with 0x{:x}", hr);
+    },
+    _ => (),
+  };
 
   // Advance to next parallel submission struct. I need a couple of parallel submission structs to
   // avoid waiting for GPU to finish processing command lists.
@@ -744,7 +758,8 @@ pub fn on_render(data: &mut AppData) {
   };
   // I hope that present waits for back buffer transition into STATE_PRESENT
   // I didn't find anything about this in MSDN.
-  match data.swap_chain.swap_chain.present1(0, 0, &pparms) {
+  if cfg!(debug_assertions) {trace!("present")};
+  match data.swap_chain.swap_chain.present1(1, 0, &pparms) {
     Err(hr) => {
       dump_info_queue(data.core.info_queue.as_ref());
       //TODO: Maybe I can handle DEVICE_REMOVED error by recreating DXCore and DXSwapchain
@@ -794,6 +809,7 @@ fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_alloca
   command_list.clear_render_target_view(rtvh, &clear_color, &[]);
   command_list.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
   
+  if cfg!(debug_assertions) {trace!("command list close")};
   match command_list.close() {
     Ok(_) => Ok(()),
     Err(hr) => {
@@ -826,6 +842,9 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
    // For buffer resize to succeed there should be no outstanding references to back buffers
    drop_render_targets(&mut data.swap_chain);
    data.depth_stencil.truncate(0);
+   for ps in &data.parallel_submission {
+     ps.clear_lists();
+   }
    // Resize back buffers to new size. 
    //Number of back buffers, back buffer format and swapchain flags remain unchanged.
    let res = data.swap_chain.swap_chain.resize_buffers(0, w, h, DXGI_FORMAT_UNKNOWN, 0);
@@ -922,6 +941,17 @@ impl<T> ParallelSubmissionData<T> {
   fn thread_count(&self) -> usize {
     self.gc_lists.len()
   }
+
+  fn clear_lists(&self) {
+    self.clear_list.reset(&self.ps_allocator, None).unwrap();
+    self.clear_list.close().unwrap();
+    self.transition_list.reset(&self.ps_allocator, None).unwrap();
+    self.transition_list.close().unwrap();
+    for &(ref list, ref alloc) in &self.gc_lists {
+      list.reset(alloc, None).unwrap();
+      list.close().unwrap();
+    }
+  }
 }
 
 fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32) -> HResult<ParallelSubmissionData<Constants>> {
@@ -1001,8 +1031,8 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
           if count == 0 {
               return Ok(());
           };
-          let seed: &[_] = &[th_n, 3, 3, 4];
-          let mut rng: rand::StdRng = rand::SeedableRng::from_seed(seed);
+          //let seed: &[_] = &[th_n, 3, 3, 4];
+          //let mut rng: rand::StdRng = rand::SeedableRng::from_seed(seed);
 
           try!(callocator.reset());
           try!(clist.reset(callocator, Some(&data.pipeline_state)));
@@ -1022,7 +1052,7 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
           for i in start .. start+count {
             let mut c: Constants = consts.clone();
             let (pos, _, dir, spd) = data.rot_spd[i].clone();
-            let rot = Basis3::from_axis_angle(&dir, rad(1.0 + spd*(data.tick as f32)));
+            let rot = Basis3::from_axis_angle(dir, rad(1.0 + spd*(data.tick as f32)));
             let asfa = rot.as_ref();
             for j in 0..3 {
                 for k in 0..3 {

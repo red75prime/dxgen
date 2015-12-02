@@ -105,6 +105,7 @@ unsafe extern "system" fn wnd_callback(hwnd: HWND, msg: UINT, wparam: WPARAM, lp
     WM_SIZE => {
       // WM_SIZE can be received while calling DXGISwapChain::present
       // so, it's better to postpone processing
+      trace!("WM_SIZE wndproc");
       WINDOW.with(|rc| {
         if let Some(ThreadLocalData {inject_msg: ref mut imsg, ..}) = *rc.borrow_mut() {
             *imsg = Some(MSG {hwnd: hwnd, message: msg, wParam: wparam, 

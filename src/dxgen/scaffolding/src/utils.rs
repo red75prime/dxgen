@@ -146,7 +146,7 @@ pub fn create_event() -> Event {
   Event(event_handle)
 }
 
-pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usize, data: &[u32]) -> HResult<()> {
+pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, _: usize, data: &[u32]) -> HResult<()> {
   trace!("upload_into_texture");
   trace!("get_desc tex.iptr(): 0x{:x}, vtbl: 0x{:x}, vtbl[0]: 0x{:x}", tex.iptr() as usize, unsafe{((*tex.iptr()).lpVtbl) as usize}, unsafe{(*(*tex.iptr()).lpVtbl).QueryInterface as usize});
   let desc = tex.get_desc();
@@ -203,7 +203,7 @@ pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, h: usiz
 
   let fv=core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
   trace!("wait for copy queue");
-  wait_for_queue(&core.copy_queue, fv, &fence, &fence_event);
+  try!(wait_for_queue(&core.copy_queue, fv, &fence, &fence_event));
   Ok(())
 }
 

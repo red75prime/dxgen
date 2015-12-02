@@ -11,7 +11,7 @@ env_logger = "0.3"
 dx_safe = { version = "0.3", path = "lib/d3d12" }
 # gfx = { git = "https://github.com/gfx-rs/gfx/tree/master/src/core" }
 rand = "0.3"
-cgmath = "0.4"
+cgmath = "0.5"
 clock_ticks = "*"
 crossbeam = "0.1"
 
