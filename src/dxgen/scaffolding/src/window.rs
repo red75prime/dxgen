@@ -1,10 +1,6 @@
-extern crate winapi;
-extern crate user32;
-extern crate kernel32;
-
 use winapi::*;
-use self::user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage, LoadCursorW, GetClientRect };
-use self::kernel32::{GetModuleHandleW};
+use user32::{CreateWindowExW,RegisterClassExW, GetClassInfoExW, DefWindowProcW, PostQuitMessage, LoadCursorW, GetClientRect };
+use kernel32::{GetModuleHandleW};
 use std::ptr;
 use libc;
 
@@ -12,8 +8,8 @@ use utils::*;
 use std::mem;
 use std::cell::RefCell;
 
-use self::user32::{TranslateMessage,DispatchMessageW,PeekMessageW};
-//use self::kernel32::{Sleep};
+use user32::{TranslateMessage,DispatchMessageW,PeekMessageW};
+//use kernel32::{Sleep};
 
 pub struct Window {
   hwnd: HWND,
@@ -126,9 +122,9 @@ pub fn create_window(title: &str, width: i32, height: i32) -> Window {
   };
   let class_name=str_to_vec_u16("RustMainWndClass_14f22");
   let h_module=unsafe{GetModuleHandleW(ptr::null_mut())};
-  let mut class=winapi::WNDCLASSEXW{
-    cbSize: mem::size_of::<winapi::WNDCLASSEXW>() as UINT,
-    style: winapi::CS_DBLCLKS | winapi::CS_HREDRAW | winapi::CS_VREDRAW,
+  let mut class=WNDCLASSEXW{
+    cbSize: mem::size_of::<WNDCLASSEXW>() as UINT,
+    style: CS_DBLCLKS | CS_HREDRAW | CS_VREDRAW,
     lpfnWndProc: Some(wnd_callback),
     cbClsExtra: 0,
     cbWndExtra: 0,
@@ -146,8 +142,8 @@ pub fn create_window(title: &str, width: i32, height: i32) -> Window {
 
   let w_title=str_to_vec_u16(title);
   let hwnd=unsafe {CreateWindowExW(0, class_name.as_ptr() ,w_title.as_ptr(), 
-                winapi::WS_VISIBLE | winapi::WS_OVERLAPPEDWINDOW,
-                winapi::CW_USEDEFAULT, winapi::CW_USEDEFAULT, 
+                WS_VISIBLE | WS_OVERLAPPEDWINDOW,
+                CW_USEDEFAULT, CW_USEDEFAULT, 
                 width as libc::c_int, height as libc::c_int, 
                 ptr::null_mut(), ptr::null_mut(), h_module, ptr::null_mut())};
   if hwnd == ptr::null_mut() {
