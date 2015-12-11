@@ -281,7 +281,7 @@ pub fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore, vshader: &[u8],
       BytecodeLength: pshader.len() as SIZE_T, 
     },
     RasterizerState: D3D12_RASTERIZER_DESC {
-      CullMode: D3D12_CULL_MODE_FRONT,
+      CullMode: D3D12_CULL_MODE_NONE,
       .. rasterizer_desc_default()
     },
     InputLayout: D3D12_INPUT_LAYOUT_DESC {

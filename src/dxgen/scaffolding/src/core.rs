@@ -118,6 +118,9 @@ pub fn drop_render_targets(sc: &mut DXSwapChain) {
 
 pub fn reaquire_render_targets(core: &DXCore, sc: &mut DXSwapChain) -> HResult<()> {
   sc.render_targets.truncate(0);
+  info!("Old format: {:?}", sc.rtv_format);
+  sc.rtv_format = sc.swap_chain.get_desc().unwrap().BufferDesc.Format;
+  info!("New format: {:?}", sc.rtv_format);
   for i in 0 .. sc.frame_count {
     let buf=try!(sc.swap_chain.get_buffer::<D3D12Resource>(i as u32));
     core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(sc.rtv_format)), sc.rtv_heap.cpu_handle(i));

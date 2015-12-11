@@ -18,7 +18,7 @@ impl Camera {
   pub fn new() -> Camera {
     Camera {
       eye: p3(0., 0., 0.),
-      fwd: v3(0., 0., 1.),
+      fwd: v3(0., 0., -1.),
       up: v3(0., 1., 0.),
       right: v3(1., 0., 0.),
       rot: <Basis3<f32> as Rotation<_>>::one(),
@@ -48,7 +48,7 @@ impl Camera {
   }
 
   fn update_axes(&mut self) {
-    self.fwd = self.rot.rotate_vector(v3(0., 0., 1.));
+    self.fwd = self.rot.rotate_vector(v3(0., 0., -1.));
     self.right = self.rot.rotate_vector(v3(1., 0., 0.));
     self.up = self.rot.rotate_vector(v3(0., 1., 0.));
   }
@@ -59,7 +59,7 @@ impl Camera {
 
   pub fn view_matrix(&self) -> Matrix4<f32> {
     let mut vm = Matrix4::look_at(self.eye, self.eye + self.fwd, self.up);
-    lhs_to_rhs(&mut vm);
+//    lhs_to_rhs(&mut vm);
     vm
   }
 

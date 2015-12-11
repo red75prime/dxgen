@@ -17,6 +17,7 @@ extern crate rand;
 extern crate clock_ticks;
 extern crate cgmath;
 extern crate crossbeam;
+extern crate obj;
 
 #[macro_use] mod macros;
 mod create_device;
@@ -157,7 +158,7 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
   {
     // This block of code is not required. I just checked some stuff
     if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_12_0) {
-      let format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+      let format = DXGI_FORMAT_R8G8B8A8_UNORM;
       let mut fsup = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
         Format: format,
         Support1: D3D12_FORMAT_SUPPORT1_NONE,
@@ -189,7 +190,7 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
   let mut y:i32=0;
   // TODO: Make this horror go away
   // Simple and crude way to track state of keyboard keys
-  let (mut wdown, mut sdown, mut adown, mut ddown, mut qdown, mut edown) = (false, false, false, false, false, false);
+  let (mut wdown, mut sdown, mut adown, mut ddown, mut qdown, mut edown, mut rdown, mut fdown) = (false, false, false, false, false, false, false, false);
   // and state of left mouse button
   let mut mouse_down = false;
   // Profiling stuff
@@ -218,7 +219,7 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
             let mut data = data.borrow_mut();
             let camera = data.camera();
             camera.rotx(-dx as f32/6.);
-            camera.roty(-dy as f32/6.);
+            camera.roty(dy as f32/6.);
           }
         },
         WM_KEYDOWN => {
@@ -229,6 +230,8 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
             b'W' => wdown = true,
             b'Q' => qdown = true,
             b'E' => edown = true,
+            b'R' => rdown = true,
+            b'F' => fdown = true,
             _ => {},
           }
         },
@@ -240,6 +243,8 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
             b'W' => wdown = false,
             b'Q' => qdown = false,
             b'E' => edown = false,
+            b'R' => rdown = false,
+            b'F' => fdown = false,
             _ => {},
           }
         },
@@ -273,10 +278,16 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
             camera.go(-0.1, 0., 0.);
           };
           if adown {
-            camera.go(0., 0.1, 0.); // Something wrong with signs. Negative value should translate camera to the left
+            camera.go(0., -0.1, 0.); 
           };
           if ddown {
-            camera.go(0., -0.1, 0.);
+            camera.go(0., 0.1, 0.);
+          };
+          if rdown {
+            camera.go(0., 0., 0.1); 
+          };
+          if fdown {
+            camera.go(0., 0.0, -0.1);
           };
           // Process Q and E keys. They control camera's roll
           if qdown {

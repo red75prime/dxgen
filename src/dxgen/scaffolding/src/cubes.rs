@@ -60,6 +60,8 @@ struct Constants {
   view: M4,
   proj: M4,
   n_model: M4,
+  eye_pos: [f32;3],
+  padding1: f32,
   light_pos: [f32;3],
 }
 
@@ -115,7 +117,6 @@ pub struct AppData {
   // same as for _vertex_buffer
   _index_buffer: D3D12Resource,
   index_buffer_view: D3D12_INDEX_BUFFER_VIEW,
-  _constant_buffer: D3D12Resource,
   _tex_resource: D3D12Resource,
   depth_stencil: Vec<D3D12Resource>,
   frame_index: UINT,
@@ -281,7 +282,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   };
 
   // so I pass DXGI_FORMAT_R8G8B8A8_UNORM_SRGB separately for use in render target view
-  let swap_chain = try!(create_swap_chain(&core, &sc_desc, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, hwnd, None, None)
+  let swap_chain = try!(create_swap_chain(&core, &sc_desc, DXGI_FORMAT_R8G8B8A8_UNORM, hwnd, None, None)
                       .map_err(|msg|{error!("{}",msg);core.info_queue.clone()}));
 
   let compile_flags=0;
@@ -440,45 +441,6 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
 
   // ------------------- Vertex and index buffer resource init end ----------------------------
 
-  // ------------------- Constant buffer resource init begin ----------------------------
-  let world_matrix: [[f32;4];4] = [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
-  let view_matrix: [[f32;4];4] = [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
-  let proj_matrix: [[f32;4];4] = [[1.,0.,0.,0.],[0.,1.,0.,0.],[0.,0.,1.,0.],[0.,0.,0.,1.],];
-  let cbuf_data = Constants{ model: world_matrix, view: view_matrix, proj: proj_matrix, n_model: world_matrix, light_pos: [-1.,0.,0.]};
-  let cbsize = mem::size_of_val(&cbuf_data);
-
-  // Resource creation for constant buffer is the same as resource creation for vertex buffer
-  let cbuf = core.dev.create_committed_resource(&heap_properties_upload(), D3D12_HEAP_FLAG_NONE, &resource_desc_buffer(cbsize as u64), D3D12_RESOURCE_STATE_GENERIC_READ, None).unwrap();
-  try!(upload_into_buffer(&cbuf, &[cbuf_data]).map_err(|_|core.info_queue.clone()));
-
-  // But constant buffer view goes into descriptor heap.
-  let cbview = 
-    D3D12_CONSTANT_BUFFER_VIEW_DESC {
-      BufferLocation: cbuf.get_gpu_virtual_address(),
-      SizeInBytes: ((cbsize+255) & !255) as u32, // size of constants buffer in bytes should be divisible by 256.
-  };
-
-  // Create descriptor heap to hold one constant buffer view
-  let cbv_hd=D3D12_DESCRIPTOR_HEAP_DESC{
-    NumDescriptors: 1, 
-    Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-    Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-    NodeMask: 0,
-  };
-  trace!("CBV descriptor heap");
-  let cbvd_heap = core.dev.create_descriptor_heap(&cbv_hd).unwrap();
-
-  // CPU side of descriptor heap is an array of unspecified structures of cbv_dsize size.
-  let _cbv_dsize = core.dev.get_descriptor_handle_increment_size(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) as SIZE_T;
-  // const_dh receives pointer to the start of descriptors array
-  let const_dh = cbvd_heap.get_cpu_descriptor_handle_for_heap_start();
-  // create_constant_buffer_view creates hardware specific representation of constant buffer view at const_dh address.
-  // In this case const_dh corresponds to first entry in cbvd_heap.
-  trace!("Create shader resource view: constants buffer");
-  core.dev.create_constant_buffer_view(Some(&cbview), const_dh);
-
-  // ------------------- Constant buffer resource init end  -----------------------------
-
   // ------------------- Texture resource init begin  -----------------------------
 
   // Descriptor heaps store information that GPU needs to access resources like textures, constant buffers, unordered access views
@@ -587,7 +549,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
   // I create three copies of that data to be able to keep GPU busy.
   // While GPU renders previous frame, I can submit new command lists.
   trace!("init_parallel_submission");
-  for _ in 0..1 {
+  for _ in 0..3 {
     par_sub.push(try!(init_parallel_submission(&core, *parameters.thread_count(), *parameters.object_count())
             .map_err(|hr|{error!("init_parallel_submission failed with 0x{:x}", hr); core.info_queue.clone()})));
   }
@@ -614,7 +576,6 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       vertex_buffer_view: vbview,
       _index_buffer: ibuf,
       index_buffer_view: i_view,
-      _constant_buffer: cbuf,
       _tex_resource: tex_resource,
       depth_stencil: ds_res,
       frame_index: 0,
@@ -673,13 +634,17 @@ pub fn on_render(data: &mut AppData) {
   let world_normal_matrix = matrix4_to_4x4(&wm_normal);
   let world_matrix = matrix4_to_4x4(&wm); 
   let view_matrix = matrix4_to_4x4(&data.camera.view_matrix());
+  //print!("{:?}\r", view_matrix);
   let proj_matrix = matrix4_to_4x4(&data.camera.projection_matrix());
 
   let (lx,ly) = f64::sin_cos(data.tick);
   let (lx,ly) = (lx as f32, ly as f32);
 
   // Parallel submission threads use view, proj and light_pos
-  let consts = Constants{ model: world_matrix, view: view_matrix, proj: proj_matrix, n_model: world_normal_matrix, light_pos: [lx,ly,-3.0]};
+  let consts = Constants{ model: world_matrix, view: view_matrix, 
+                          proj: proj_matrix, n_model: world_normal_matrix, 
+                          light_pos: [lx,ly,-3.0], padding1: 0., 
+                          eye_pos: data.camera.eye.clone().into()};
 
   if cfg!(debug_assertions) {trace!("build clear command list")};
   {
@@ -759,7 +724,7 @@ pub fn on_render(data: &mut AppData) {
   // I hope that present waits for back buffer transition into STATE_PRESENT
   // I didn't find anything about this in MSDN.
   if cfg!(debug_assertions) {trace!("present")};
-  match data.swap_chain.swap_chain.present1(1, 0, &pparms) {
+  match data.swap_chain.swap_chain.present1(0, 0, &pparms) {
     Err(hr) => {
       dump_info_queue(data.core.info_queue.as_ref());
       //TODO: Maybe I can handle DEVICE_REMOVED error by recreating DXCore and DXSwapchain

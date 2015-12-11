@@ -3,6 +3,7 @@ cbuffer cb0 : register(b0) {
   float4x4 view;
   float4x4 proj;
   float4x4 n_model;
+  float3 eye_pos;
   float3 light_pos;
 }
 
@@ -47,17 +48,14 @@ SamplerState  testSamp : register(s0);
 
 float4 PSMain(VS_OUTPUT pv) : SV_Target {
   float4 texel=testTex.Sample(testSamp, pv.texc0.xy);
-
-  float4 ret=pv.vDiffuse;
-  float3 eye_off = -float3(view._41, view._42, view._43) - pv.w_pos;
+  float3 eye_off = eye_pos - pv.w_pos;
   float3 eye_n = normalize(eye_off);
   float3 light_off = light_pos - pv.w_pos;
-  float light_invd = 1. / length(light_off);
+  float light_invd = 10. / length(light_off/5.);
   float3 light_n = normalize(light_off);
   float3 light_r = reflect(-light_n, normalize(pv.norm));
-  float sb=clamp(dot(light_r,pv.norm),0,0.001)/0.001;
+  float sb=1.-clamp(1.-dot(light_r,eye_n),0,0.001)/0.001;
   float l=clamp(dot(light_n,pv.norm),0,1);
-  ret = texel*(0.1+l*0.6);
-  return ret;
+  return texel*l*0.6*light_invd+sb*float4(1,1,1,1)+texel*float4(0.01,0.01,0.15,1);
 }
 
