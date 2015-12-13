@@ -280,6 +280,7 @@ let generateMethodFromRouting
         yield! lvs |> Map.toSeq 
           |> Seq.map 
             (fun (lv, {mut=mut;ty=ty;initExpression=init}) ->
+              let init = if unsafe && init.StartsWith("unsafe ") then init.Substring("unsafe ".Length) else init
               let muts=if mut then "mut " else ""
               let lvtype=": "+(rustTypeToString ty)
               let inits=if System.String.IsNullOrEmpty init then ";" else " = "+init+";"
@@ -306,15 +307,17 @@ let generateMethodFromRouting
   let ftext=
     System.String.Format(
       @"
+#[allow(non_snake_case)]
 pub {0} {{
 {1}
-  let hr=unsafe {{ {2} }};
+  let _hr={4} {{ {2} }};
   {3}
 }}
 "       ,signature,
         lvAndInit,
         nativeInvocation,
-        rval)
+        rval,
+        if unsafe then "" else "unsafe")
   (ftext, signature)
 
 //-------------------------------------------------------------------------------------
@@ -868,25 +871,25 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           ("("+System.String.Join(", ", List.map fst mrv)+")", RType("("+System.String.Join(", ", List.map (snd >> rustTypeToString) mrv)+")"))
         match nrty with
         |Ptr(Const(uty)) ->
-          ("hr", RConstPtr(RType(tyToRust uty)))
+          ("_hr", RConstPtr(RType(tyToRust uty)))
         |TypedefRef "HRESULT" ->
           match !returnVals |> Set.toList with
           |[] ->
-            ("hr2ret(hr,hr)",RType "HResult<HRESULT>")
+            ("hr2ret(_hr,_hr)",RType "HResult<HRESULT>")
           |[(ex,t)] ->
-            ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
+            ("hr2ret(_hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
           |mrv ->
             let (ex,t)=mrv2tuple mrv
-            ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
+            ("hr2ret(_hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
         |StructRef sname |TypedefRef sname |EnumRef sname ->
           match !returnVals |> Set.toList with
           |[] ->
-            ("hr",RType sname)
+            ("_hr",RType sname)
           |[(ex,t)] ->
-            ("(hr,"+ex+")", RType ("("+sname+", "+(rustTypeToString t)+")"))
+            ("(_hr,"+ex+")", RType ("("+sname+", "+(rustTypeToString t)+")"))
           |mrv ->
             let (ex,t)=mrv2tuple (("hr", RType sname) :: mrv)
-            ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
+            ("hr2ret(_hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
         |Primitive Void ->
           match !returnVals |> Set.toList with
           |[] ->
