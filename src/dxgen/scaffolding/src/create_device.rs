@@ -106,6 +106,7 @@ extern "system" {
       SecondaryDataFlags: UINT, pSecondaryData: LPCVOID, SecondaryDataSize: SIZE_T, ppCode: *mut *mut ID3DBlob,
       ppErrorMsgs: *mut *mut ID3DBlob) -> HRESULT;
   fn D3DGetBlobPart(pSrcData: LPCVOID, SrcDataSize: SIZE_T, Part: D3D_BLOB_PART, Flags: UINT, ppBlob: *mut *mut ID3DBlob) -> HRESULT;
+  fn D3DReflect(pSrcData: LPCVOID, SrcDataSize: SIZE_T, pInterface: REFGUID, ppReflector: *mut *mut c_void) -> HRESULT;
 }
 
 pub fn d3d_compile_from_str(shader_text: &str, entry: &str, target: &str, flags: u32) -> Result<Vec<u8>, String> {

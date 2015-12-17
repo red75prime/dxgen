@@ -33,6 +33,7 @@ mod cubes;
 mod camera;
 //mod hvoxel;
 mod downsampler;
+mod tonemapper;
 
 
 
@@ -149,6 +150,15 @@ fn print_adapter_info(adapter: &DXGIAdapter1) {
   }
 }
 
+const VK_A: i32 = b'A' as i32;
+const VK_S: i32 = b'S' as i32;
+const VK_D: i32 = b'D' as i32;
+const VK_F: i32 = b'F' as i32;
+const VK_Q: i32 = b'Q' as i32;
+const VK_W: i32 = b'W' as i32;
+const VK_E: i32 = b'E' as i32;
+const VK_R: i32 = b'R' as i32;
+
 fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
   // Setup window. Currently window module supports only one window per thread.
   let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
@@ -190,7 +200,7 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
   let mut y:i32=0;
   // TODO: Make this horror go away
   // Simple and crude way to track state of keyboard keys
-  let (mut wdown, mut sdown, mut adown, mut ddown, mut qdown, mut edown, mut rdown, mut fdown) = (false, false, false, false, false, false, false, false);
+  let (mut wdown, mut sdown, mut adown, mut ddown, mut qdown, mut edown, mut rdown, mut fdown, mut shdown, mut ctdown) = (false, false, false, false, false, false, false, false, false, false);
   // and state of left mouse button
   let mut mouse_down = false;
   // Profiling stuff
@@ -223,28 +233,32 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
           }
         },
         WM_KEYDOWN => {
-          match msg.wParam as u8 {
-            b'A' => adown = true,
-            b'S' => sdown = true,
-            b'D' => ddown = true,
-            b'W' => wdown = true,
-            b'Q' => qdown = true,
-            b'E' => edown = true,
-            b'R' => rdown = true,
-            b'F' => fdown = true,
+          match msg.wParam as i32 {
+            VK_A => adown = true,
+            VK_S => sdown = true,
+            VK_D => ddown = true,
+            VK_W => wdown = true,
+            VK_Q => qdown = true,
+            VK_E => edown = true,
+            VK_R => rdown = true,
+            VK_F => fdown = true,
+            VK_SHIFT => shdown = true,
+            VK_CONTROL => ctdown = true,
             _ => {},
           }
         },
         WM_KEYUP => {
-          match msg.wParam as u8 {
-            b'A' => adown = false,
-            b'S' => sdown = false,
-            b'D' => ddown = false,
-            b'W' => wdown = false,
-            b'Q' => qdown = false,
-            b'E' => edown = false,
-            b'R' => rdown = false,
-            b'F' => fdown = false,
+          match msg.wParam as i32 {
+            VK_A => adown = false,
+            VK_S => sdown = false,
+            VK_D => ddown = false,
+            VK_W => wdown = false,
+            VK_Q => qdown = false,
+            VK_E => edown = false,
+            VK_R => rdown = false,
+            VK_F => fdown = false,
+            VK_SHIFT => shdown = false,
+            VK_CONTROL => ctdown = false,
             _ => {},
           }
         },
@@ -271,30 +285,33 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
           let mut data = data.borrow_mut();
           // Process WASD keys
           let camera = data.camera();
+
+          let step=if shdown {1.0} else if ctdown {0.01} else {0.1};
+
           if wdown {
-            camera.go(0.1, 0., 0.);
+            camera.go(step, 0., 0.);
           };
           if sdown {
-            camera.go(-0.1, 0., 0.);
+            camera.go(-step, 0., 0.);
           };
           if adown {
-            camera.go(0., -0.1, 0.); 
+            camera.go(0., -step, 0.); 
           };
           if ddown {
-            camera.go(0., 0.1, 0.);
+            camera.go(0., step, 0.);
           };
           if rdown {
-            camera.go(0., 0., 0.1); 
+            camera.go(0., 0., step); 
           };
           if fdown {
-            camera.go(0., 0.0, -0.1);
+            camera.go(0., 0.0, -step);
           };
           // Process Q and E keys. They control camera's roll
           if qdown {
-            camera.rotz(-0.5);
+            camera.rotz(-step);
           };
           if edown {
-            camera.rotz(0.5);
+            camera.rotz(step);
           };
         }
         // For this simple program I don't separate update and render steps.

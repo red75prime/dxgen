@@ -1,5 +1,5 @@
 use create_device::*;
-use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use winapi::*;
 use dx_safe::*;
@@ -13,6 +13,13 @@ pub struct DXCore {
   pub dxgi_factory: DXGIFactory4,
   pub info_queue: Option<D3D12InfoQueue>,
   pub fence_value: Arc<AtomicUsize>,
+}
+
+impl DXCore {
+  // Warning! 32-bit build will convert u32 to u64
+  pub fn next_fence_value(&self) -> u64 {
+    self.fence_value.fetch_add(1, Ordering::Relaxed) as u64
+  }
 }
 
 pub fn create_core(adapter: Option<&DXGIAdapter1>, feature_level: D3D_FEATURE_LEVEL, enable_debug: bool) -> Result<DXCore, String> {
@@ -118,9 +125,9 @@ pub fn drop_render_targets(sc: &mut DXSwapChain) {
 
 pub fn reaquire_render_targets(core: &DXCore, sc: &mut DXSwapChain) -> HResult<()> {
   sc.render_targets.truncate(0);
-  info!("Old format: {:?}", sc.rtv_format);
-  sc.rtv_format = sc.swap_chain.get_desc().unwrap().BufferDesc.Format;
-  info!("New format: {:?}", sc.rtv_format);
+  //info!("Old format: {:?}", sc.rtv_format);
+  //sc.rtv_format = sc.swap_chain.get_desc().unwrap().BufferDesc.Format;
+  //info!("New format: {:?}", sc.rtv_format);
   for i in 0 .. sc.frame_count {
     let buf=try!(sc.swap_chain.get_buffer::<D3D12Resource>(i as u32));
     core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(sc.rtv_format)), sc.rtv_heap.cpu_handle(i));

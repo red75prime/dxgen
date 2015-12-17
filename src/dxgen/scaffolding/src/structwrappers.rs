@@ -398,6 +398,18 @@ pub fn depth_stencil_clear_value_depth_f32() -> D3D12_CLEAR_VALUE {
   ret
 }
 
+pub fn rt_rgba_f32_clear_value(color: [f32;4]) -> D3D12_CLEAR_VALUE {
+  let mut ret = D3D12_CLEAR_VALUE {
+    Format: DXGI_FORMAT_R32G32B32A32_FLOAT,
+    u: unsafe{ mem::uninitialized() },
+  };
+  unsafe {
+    *ret.Color_mut() = color;
+  };
+  ret
+}
+
+
 pub fn depth_stencilop_desc_default() -> D3D12_DEPTH_STENCILOP_DESC {
   D3D12_DEPTH_STENCILOP_DESC {
     StencilFunc: D3D12_COMPARISON_FUNC_ALWAYS,

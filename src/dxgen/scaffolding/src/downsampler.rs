@@ -153,7 +153,7 @@ impl Downsampler {
 
       core.compute_queue.execute_command_lists(&[&clist]);
 
-      let fence_value = core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
+      let fence_value = core.next_fence_value();
       try!(wait_for_queue(&core.compute_queue, fence_value, &fence, &fence_event));
 
       cw /= 2;
@@ -188,9 +188,10 @@ void CSMain(uint3 gtid: SV_GroupThreadId, uint3 gid: SV_GroupId) {//12
   if (gtid.x==1 && gtid.y==1) {//16
     float4 a=float4(0,0,0,0);//17
     for(uint i=0; i<4; ++i) {
-      for(uint j=0; j<4; ++j) {
-         a += color_accum[i][j];
-      };
+       a += color_accum[i][0];
+       a += color_accum[i][1];
+       a += color_accum[i][2];
+       a += color_accum[i][3];
     };
     mip1[gid.xy] = a;//float4(1, 1, 1, 1);//a;
   };

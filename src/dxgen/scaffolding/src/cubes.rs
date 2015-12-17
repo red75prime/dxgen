@@ -19,6 +19,7 @@ use shape_gen;
 use shape_gen::GenVertex;
 
 use downsampler::*;
+use tonemapper::Tonemapper;
 
 // dx_vertex! macro implement dxsems::VertexFormat trait for given structure
 // VertexFormat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
@@ -61,6 +62,8 @@ struct Constants {
   proj: M4,
   n_model: M4,
   eye_pos: [f32;3],
+  // HLSL shader constants have some alignment rules. I need padding here
+  // TODO: Use shader reflection API
   padding1: f32,
   light_pos: [f32;3],
 }
@@ -117,6 +120,9 @@ pub struct AppData {
   // same as for _vertex_buffer
   _index_buffer: D3D12Resource,
   index_buffer_view: D3D12_INDEX_BUFFER_VIEW,
+  // Intermediate HDR render targets and descriptor heap for it
+  hdr_render_targets: Vec<D3D12Resource>,
+  hdr_rtv_heap: DescriptorHeap,
   _tex_resource: D3D12Resource,
   depth_stencil: Vec<D3D12Resource>,
   frame_index: UINT,
@@ -129,6 +135,7 @@ pub struct AppData {
   camera: Camera,
   rot_spd: Vec<(Vector3<f32>, Vector3<f32>, Vector3<f32>, f32)>,
   _downsampler: Downsampler,
+  tonemapper: Tonemapper,
 }
 
 // Parallel GPU workload submission requires some data from AppData.
@@ -220,6 +227,76 @@ fn get_display_mode_list1(output: &DXGIOutput4, format: DXGI_FORMAT, flags: UINT
       Err(hr) => { return Err(hr); },
     } // match query mode count
   }
+}
+
+
+pub fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore, vshader: &[u8], pshader: &[u8], root_sign: &D3D12RootSignature) -> HResult<D3D12PipelineState> {
+  // dx_vertex! macro implements VertexFormat trait, which allows to
+  // automatically generate description of vertex data
+  let input_elts_desc = T::generate(0);
+
+  // Finally, I combine all the data into pipeline state object description
+  // TODO: make wrapper. Each pointer in this structure can potentially outlive pointee.
+  //       Pointer/length pairs shouldn't be exposed too.
+  let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+    // DX12 runtime doesn't AddRef root_sign, so I need to keep root_sign myself.
+    // I return root_sign from this function and I keep it inside AppData.
+    pRootSignature: root_sign.iptr() as *mut _,
+    VS: D3D12_SHADER_BYTECODE {
+      pShaderBytecode: vshader.as_ptr() as *const _,
+      BytecodeLength: vshader.len() as SIZE_T,
+    },
+    PS: D3D12_SHADER_BYTECODE {
+      pShaderBytecode: pshader.as_ptr() as *const _ ,
+      BytecodeLength: pshader.len() as SIZE_T, 
+    },
+    RasterizerState: D3D12_RASTERIZER_DESC {
+      CullMode: D3D12_CULL_MODE_NONE,
+      .. rasterizer_desc_default()
+    },
+    InputLayout: D3D12_INPUT_LAYOUT_DESC {
+      pInputElementDescs: input_elts_desc.as_ptr(),
+      NumElements: input_elts_desc.len() as u32,
+    },
+    PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+    NumRenderTargets: 1,
+    DSVFormat: DXGI_FORMAT_D32_FLOAT,
+    Flags: D3D12_PIPELINE_STATE_FLAG_NONE,
+    // Take other fields from default gps
+    .. graphics_pipeline_state_desc_default()
+  };
+  // This assignment reduces amount of typing. But I could have included 
+  // all 8 members of RTVFormats in the struct initialization above.
+  pso_desc.RTVFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+  // Note that creation of pipeline state object is time consuming operation.
+  // Compilation of shader byte-code occurs here.
+  let ps = try!(core.dev.create_graphics_pipeline_state(&pso_desc));
+  // DirectX 12 offload resource management to the programmer.
+  // So I need to keep root_sign around, as DX12 runtime doesn't AddRef it.
+  Ok(ps)
+}
+
+static CLEAR_COLOR: [f32;4] = [0.01, 0.01, 0.15, 1.0];
+
+pub fn create_hdr_render_targets(core: &DXCore, cnt: u32, w: u32, h: u32) -> HResult<(Vec<D3D12Resource>, DescriptorHeap)> {
+  trace!("DescriptorHeap::new");
+  let dheap = try!(DescriptorHeap::new(&core.dev, cnt, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false, 0));
+  let mut render_targets = vec![];
+
+  let hdr_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+  let tex_desc = resource_desc_tex2d_nomip(w as u64, h as u32, hdr_format, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
+
+  for i in 0..cnt {
+    trace!("create_commited_resource");
+    let buf = try!(core.dev.create_committed_resource(&heap_properties_default(), D3D12_HEAP_FLAG_NONE, 
+                            &tex_desc, D3D12_RESOURCE_STATE_COMMON, Some(&rt_rgba_f32_clear_value(CLEAR_COLOR))));
+    trace!("create_render_target_view");
+    core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(hdr_format)), dheap.cpu_handle(i));
+    render_targets.push(buf);
+  }
+  Ok((render_targets, dheap))
 }
 
 pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32, parameters: &T) -> Result<AppData, Option<D3D12InfoQueue>> {
@@ -561,6 +638,9 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
           v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()*0.1));
   }
 
+  let (hdr_render_targets, hdr_rtv_heap) = try!(create_hdr_render_targets(&core, frame_count, w, h).map_err(|_|core.info_queue.clone()));
+  let tonemapper = Tonemapper::new(&core.dev);
+
   // Pack all created objects into AppData
   let mut ret=
     AppData {
@@ -577,6 +657,8 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       _index_buffer: ibuf,
       index_buffer_view: i_view,
       _tex_resource: tex_resource,
+      hdr_render_targets: hdr_render_targets,
+      hdr_rtv_heap: hdr_rtv_heap,
       depth_stencil: ds_res,
       frame_index: 0,
       fence_event: fence_event,
@@ -588,6 +670,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       camera: Camera::new(),
       rot_spd: rot_spd,
       _downsampler: downsampler,
+      tonemapper: tonemapper,
     };
 
   // I can't use 'camera' variable here. I moved it into ret.camera.
@@ -682,21 +765,23 @@ pub fn on_render(data: &mut AppData) {
     let cls: Vec<&D3D12GraphicsCommandList> = ps.gc_lists.iter().map(|&(ref clist, _)|clist).collect();
     if cfg!(debug_assertions) {trace!("execute render command lists")};
     data.core.graphics_queue.execute_command_lists(&cls[..]);
-  }
 
-  {
-    let ps = &data.parallel_submission[data.cur_ps_num];
     ps.transition_list.reset(&ps.ps_allocator, None).unwrap();
-    // Resource barrier in this command list tells GPU to make current back buffer ready for presentation
+    let render_target = &data.hdr_render_targets[data.frame_index as usize];
+    // Ready hdr render buffer to compute shader processing
     ps.transition_list.resource_barrier(
-        &[*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
-        D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT)]);
+        &[*ResourceBarrier::transition(render_target,
+        D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON)]);
     ps.transition_list.close().unwrap();
     if cfg!(debug_assertions) {trace!("execute tramsition command list")};
     data.core.graphics_queue.execute_command_lists(&[&ps.transition_list]);
+    wait_for_graphics_queue(&data.core, &ps.fence, &data.fence_event);
+
+    data.tonemapper.tonemap(&data.core, render_target, &data.swap_chain.render_targets[data.frame_index as usize]).expect("Tonemap failed");
   }
 
-  let fence_val_next=data.core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
+
+  let fence_val_next=data.core.next_fence_value();
   data.parallel_submission[data.cur_ps_num].fence_val = fence_val_next;
   // When GPU reaches this point in its command queue it will set completed value of given fence to fence_val_next
   // I tell CPU to wait for it near the beginning of on_render() to be able to reuse command lists
@@ -707,7 +792,7 @@ pub fn on_render(data: &mut AppData) {
       panic!("Signal failed with 0x{:x}", hr);
     },
     _ => (),
-  };
+  }
 
   // Advance to next parallel submission struct. I need a couple of parallel submission structs to
   // avoid waiting for GPU to finish processing command lists.
@@ -721,6 +806,8 @@ pub fn on_render(data: &mut AppData) {
     pScrollRect: ptr::null_mut(),
     pScrollOffset: ptr::null_mut(),
   };
+
+
   // I hope that present waits for back buffer transition into STATE_PRESENT
   // I didn't find anything about this in MSDN.
   if cfg!(debug_assertions) {trace!("present")};
@@ -758,10 +845,10 @@ fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_alloca
   if cfg!(debug_assertions) {trace!("Resource barrier")};
   // It tells GPU to prepare back buffer for use as render target.
   command_list.resource_barrier(
-      &[*ResourceBarrier::transition(&data.swap_chain.render_targets[data.frame_index as usize],
-      D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET).flags(D3D12_RESOURCE_BARRIER_FLAG_NONE)]);
+      &[*ResourceBarrier::transition(&data.hdr_render_targets[data.frame_index as usize],
+      D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET).flags(D3D12_RESOURCE_BARRIER_FLAG_NONE)]);
 
-  let rtvh = data.swap_chain.rtv_heap.cpu_handle(data.frame_index);
+  let rtvh = data.hdr_rtv_heap.cpu_handle(data.frame_index);
   let dsvh = data.dsd_heap.cpu_handle(data.frame_index);
   if cfg!(debug_assertions) {trace!("OM set render targets")};
   // ID3D12GraphicsCommandList::OMSetRenderTargets has 4 parameters.
@@ -769,7 +856,7 @@ fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList, command_alloca
   // and om_set_render_targets_arr(), eliminating RTsSingleHandleToDescriptorRange parameter.
   command_list.om_set_render_targets(1, &rtvh, Some(&dsvh));
 
-  let clear_color = [0.01, 0.01, 0.15, 1.0];
+  let clear_color = CLEAR_COLOR;
   if cfg!(debug_assertions) {trace!("clear render target view")};
   command_list.clear_render_target_view(rtvh, &clear_color, &[]);
   command_list.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
@@ -804,6 +891,9 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
    // Before we can resize back buffers, we need to make sure that GPU
    // no longer draws on them.
    wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
+   wait_for_compute_queue(&data.core, &data.fence, &data.fence_event);
+   wait_for_copy_queue(&data.core, &data.fence, &data.fence_event);
+
    // For buffer resize to succeed there should be no outstanding references to back buffers
    drop_render_targets(&mut data.swap_chain);
    data.depth_stencil.truncate(0);
@@ -812,7 +902,7 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
    }
    // Resize back buffers to new size. 
    //Number of back buffers, back buffer format and swapchain flags remain unchanged.
-   let res = data.swap_chain.swap_chain.resize_buffers(0, w, h, DXGI_FORMAT_UNKNOWN, 0);
+   let res = data.swap_chain.swap_chain.resize_buffers(0, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
    match res {
      Err(hr) => {
        // TODO: Return custom error to facilitate error recovery
@@ -822,12 +912,17 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
      _ => (),
    };
    // 
+   data.swap_chain.rtv_format = DXGI_FORMAT_R8G8B8A8_UNORM;
    reaquire_render_targets(&data.core, &mut data.swap_chain).unwrap();
    // create new depth stencil
    let ds_format = DXGI_FORMAT_D32_FLOAT;
    for i in 0..(data.swap_chain.frame_count as u32) {
     data.depth_stencil.push(create_depth_stencil(&data.core.dev, w as u64, h as u32, ds_format, data.dsd_heap.cpu_handle(i)).unwrap());
    }
+
+   let (hdr_render_targets, hdr_rtv_heap) = create_hdr_render_targets(&data.core, data.swap_chain.frame_count, w, h).unwrap();
+  data.hdr_render_targets = hdr_render_targets;
+  data.hdr_rtv_heap = hdr_rtv_heap;
   
    data.camera.aspect = (w as f32)/(h as f32);
 
@@ -984,14 +1079,12 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
   let ps = &data.parallel_submission[data.cur_ps_num];
   let thread_count = ps.thread_count();
   let dsvh = data.dsd_heap.cpu_handle(data.frame_index);
-  let rtvh=data.swap_chain.rtv_heap.cpu_handle(data.frame_index);
+  let rtvh=data.hdr_rtv_heap.cpu_handle(data.frame_index);
   let chunks = ps.get_chunks(thread_count);
   //debug!("{:?}", chunks);
 
   crossbeam::scope(|scope|{
-    let mut jhs = vec![];
     for ((&(start, count), &(ref clist, ref callocator)), th_n) in chunks.iter().zip(ps.gc_lists.iter()).zip(1..) {
-      let jh =
         scope.spawn::<_,HResult<()>>(move|| {
           if count == 0 {
               return Ok(());
@@ -1040,7 +1133,6 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
           try!(clist.close());
           Ok(())
         });
-      jhs.push(jh);
     }
   });
   Ok(())

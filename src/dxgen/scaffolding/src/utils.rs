@@ -201,7 +201,7 @@ pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, _: usiz
   trace!("fence_event");
   let fence_event = create_event();
 
-  let fv=core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
+  let fv=core.next_fence_value();
   trace!("wait for copy queue");
   try!(wait_for_queue(&core.copy_queue, fv, &fence, &fence_event));
   Ok(())
@@ -233,9 +233,35 @@ pub fn wait_for_queue(queue: &D3D12CommandQueue, fence_value: u64, fence: &D3D12
 
 pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
   // TODO: Look for overflow behaviour of atomics
-  let fence_value = core.fence_value.fetch_add(1, Ordering::Relaxed) as u64;
+  let fence_value = core.next_fence_value();
 
   match wait_for_queue(&core.graphics_queue, fence_value, fence, fence_event) {
+    Ok(_) => (),
+    Err(hr) => {
+      dump_info_queue(core.info_queue.as_ref());
+      panic!("set_event_on_completion error: 0x{:x}",hr);
+    },
+  }
+}
+
+pub fn wait_for_compute_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
+  // TODO: Look for overflow behaviour of atomics
+  let fence_value = core.next_fence_value();
+
+  match wait_for_queue(&core.compute_queue, fence_value, fence, fence_event) {
+    Ok(_) => (),
+    Err(hr) => {
+      dump_info_queue(core.info_queue.as_ref());
+      panic!("set_event_on_completion error: 0x{:x}",hr);
+    },
+  }
+}
+
+pub fn wait_for_copy_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
+  // TODO: Look for overflow behaviour of atomics
+  let fence_value = core.next_fence_value();
+
+  match wait_for_queue(&core.copy_queue, fence_value, fence, fence_event) {
     Ok(_) => (),
     Err(hr) => {
       dump_info_queue(core.info_queue.as_ref());
@@ -259,50 +285,3 @@ pub fn release_capture() -> BOOL {
 }
 
 use dxsems::VertexFormat;
-
-pub fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore, vshader: &[u8], pshader: &[u8], root_sign: &D3D12RootSignature) -> HResult<D3D12PipelineState> {
-  // dx_vertex! macro implements VertexFormat trait, which allows to
-  // automatically generate description of vertex data
-  let input_elts_desc = T::generate(0);
-
-  // Finally, I combine all the data into pipeline state object description
-  // TODO: make wrapper. Each pointer in this structure can potentially outlive pointee.
-  //       Pointer/length pairs shouldn't be exposed too.
-  let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
-    // DX12 runtime doesn't AddRef root_sign, so I need to keep root_sign myself.
-    // I return root_sign from this function and I keep it inside AppData.
-    pRootSignature: root_sign.iptr() as *mut _,
-    VS: D3D12_SHADER_BYTECODE {
-      pShaderBytecode: vshader.as_ptr() as *const _,
-      BytecodeLength: vshader.len() as SIZE_T,
-    },
-    PS: D3D12_SHADER_BYTECODE {
-      pShaderBytecode: pshader.as_ptr() as *const _ ,
-      BytecodeLength: pshader.len() as SIZE_T, 
-    },
-    RasterizerState: D3D12_RASTERIZER_DESC {
-      CullMode: D3D12_CULL_MODE_NONE,
-      .. rasterizer_desc_default()
-    },
-    InputLayout: D3D12_INPUT_LAYOUT_DESC {
-      pInputElementDescs: input_elts_desc.as_ptr(),
-      NumElements: input_elts_desc.len() as u32,
-    },
-    PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
-    NumRenderTargets: 1,
-    DSVFormat: DXGI_FORMAT_D32_FLOAT,
-    Flags: D3D12_PIPELINE_STATE_FLAG_NONE,
-    // Take other fields from default gps
-    .. graphics_pipeline_state_desc_default()
-  };
-  // This assignment reduces amount of typing. But I could have included 
-  // all 8 members of RTVFormats in the struct initialization above.
-  pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-
-  // Note that creation of pipeline state object is time consuming operation.
-  // Compilation of shader byte-code occurs here.
-  let ps = try!(core.dev.create_graphics_pipeline_state(&pso_desc));
-  // DirectX 12 offload resource management to the programmer.
-  // So I need to keep root_sign around, as DX12 runtime doesn't AddRef it.
-  Ok(ps)
-}
