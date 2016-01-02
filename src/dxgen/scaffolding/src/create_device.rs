@@ -156,6 +156,28 @@ pub fn d3d_compile_from_file(file_name: &str, entry: &str, target: &str, flags: 
   }
 }
 
+
+pub fn compile_shader_and_root_signature(text: &str, fname: &str, rsname: &str) -> Result<(Vec<u8>, Vec<u8>),()> {
+  let shader_bytecode = 
+    match d3d_compile_from_str(text, fname, "cs_5_1", 0) {
+      Ok(sbc) => sbc,
+      Err(err) => {
+        error!("Shader '{}' compile error: {}", fname, err);
+        return Err(());
+      },
+    };
+  let root_sig_bytecode = 
+    match d3d_compile_from_str(text, rsname, "rootsig_1_0", 0) {
+      Ok(sbc) => sbc,
+      Err(err) => {
+        error!("Root signature '{}' compile error: {}", rsname, err);
+        return Err(());
+      },
+    };
+  Ok((shader_bytecode, root_sig_bytecode))
+}
+
+
 use std::ffi::{OsString};
 use std::os::windows::ffi::OsStrExt;
 

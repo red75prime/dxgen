@@ -19,7 +19,7 @@ use shape_gen;
 use shape_gen::GenVertex;
 
 use downsampler::*;
-use tonemapper::Tonemapper;
+use tonemapper::{Tonemapper, TonemapperResources};
 
 // dx_vertex! macro implement dxsems::VertexFormat trait for given structure
 // VertexFormat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
@@ -136,6 +136,7 @@ pub struct AppData {
   rot_spd: Vec<(Vector3<f32>, Vector3<f32>, Vector3<f32>, f32)>,
   _downsampler: Downsampler,
   tonemapper: Tonemapper,
+  tonemapper_resources: Vec<TonemapperResources>,
 }
 
 // Parallel GPU workload submission requires some data from AppData.
@@ -242,16 +243,10 @@ pub fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore, vshader: &[u8],
     // DX12 runtime doesn't AddRef root_sign, so I need to keep root_sign myself.
     // I return root_sign from this function and I keep it inside AppData.
     pRootSignature: root_sign.iptr() as *mut _,
-    VS: D3D12_SHADER_BYTECODE {
-      pShaderBytecode: vshader.as_ptr() as *const _,
-      BytecodeLength: vshader.len() as SIZE_T,
-    },
-    PS: D3D12_SHADER_BYTECODE {
-      pShaderBytecode: pshader.as_ptr() as *const _ ,
-      BytecodeLength: pshader.len() as SIZE_T, 
-    },
+    VS: ShaderBytecode::from_slice(vshader).get(),
+    PS: ShaderBytecode::from_slice(pshader).get(),
     RasterizerState: D3D12_RASTERIZER_DESC {
-      CullMode: D3D12_CULL_MODE_NONE,
+      CullMode: D3D12_CULL_MODE_BACK,
       .. rasterizer_desc_default()
     },
     InputLayout: D3D12_INPUT_LAYOUT_DESC {
@@ -279,10 +274,11 @@ pub fn create_static_sampler_gps<T: VertexFormat>(core: &DXCore, vshader: &[u8],
 
 static CLEAR_COLOR: [f32;4] = [0.01, 0.01, 0.15, 1.0];
 
-pub fn create_hdr_render_targets(core: &DXCore, cnt: u32, w: u32, h: u32) -> HResult<(Vec<D3D12Resource>, DescriptorHeap)> {
+pub fn create_hdr_render_targets(core: &DXCore, cnt: u32, w: u32, h: u32) -> HResult<(Vec<D3D12Resource>, DescriptorHeap, Vec<TonemapperResources>)> {
   trace!("DescriptorHeap::new");
   let dheap = try!(DescriptorHeap::new(&core.dev, cnt, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false, 0));
   let mut render_targets = vec![];
+  let mut tonemapper_resources = vec![];
 
   let hdr_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 
@@ -295,8 +291,9 @@ pub fn create_hdr_render_targets(core: &DXCore, cnt: u32, w: u32, h: u32) -> HRe
     trace!("create_render_target_view");
     core.dev.create_render_target_view(Some(&buf), Some(&render_target_view_desc_tex2d_default(hdr_format)), dheap.cpu_handle(i));
     render_targets.push(buf);
+    tonemapper_resources.push(TonemapperResources::new(&core.dev, w, h, hdr_format, DXGI_FORMAT_R8G8B8A8_UNORM));
   }
-  Ok((render_targets, dheap))
+  Ok((render_targets, dheap, tonemapper_resources))
 }
 
 pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, frame_count: u32, parameters: &T) -> Result<AppData, Option<D3D12InfoQueue>> {
@@ -638,7 +635,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
           v3(rand::random::<f32>()-0.5, rand::random::<f32>()-0.5, rand::random::<f32>()-0.5).normalize(), rand::random::<f32>()*0.1));
   }
 
-  let (hdr_render_targets, hdr_rtv_heap) = try!(create_hdr_render_targets(&core, frame_count, w, h).map_err(|_|core.info_queue.clone()));
+  let (hdr_render_targets, hdr_rtv_heap, tonemapper_resources) = try!(create_hdr_render_targets(&core, frame_count, w, h).map_err(|_|{error!("Cannot create HDR render targets");core.info_queue.clone()}));
   let tonemapper = Tonemapper::new(&core.dev);
 
   // Pack all created objects into AppData
@@ -671,6 +668,7 @@ pub fn on_init<T: Parameters>(wnd: &Window, adapter: Option<&DXGIAdapter1>, fram
       rot_spd: rot_spd,
       _downsampler: downsampler,
       tonemapper: tonemapper,
+      tonemapper_resources: tonemapper_resources,
     };
 
   // I can't use 'camera' variable here. I moved it into ret.camera.
@@ -698,11 +696,15 @@ pub fn on_render(data: &mut AppData) {
   ::perf_wait_start();
   {
     // data.cur_ps_num is number of currently active parallel submission
-    let ps = &data.parallel_submission[data.cur_ps_num];
+    let ps = &mut data.parallel_submission[data.cur_ps_num];
     let fence = &ps.fence;
     // wait for GPU to execute all command lists, which was previously submitted by current parallel submission
     fence.set_event_on_completion(ps.fence_val, data.fence_event.handle()).unwrap();
     wait_for_single_object(&data.fence_event, INFINITE);
+
+    // This frees temporary resources used by tonemapper
+    // Synchronization becomes complete mess. TODO: reorganize
+    ps.hdr_fence.wait_for_gpu().unwrap();
   }
   ::perf_wait_end();
   ::perf_fillbuf_start();
@@ -758,7 +760,7 @@ pub fn on_render(data: &mut AppData) {
   ::perf_exec_start();
   // Scope prevents 'ps', that borrows part of 'data', from blocking subsequent mutable borrows.
   {
-    let ps = &data.parallel_submission[data.cur_ps_num];
+    let ps = &mut data.parallel_submission[data.cur_ps_num];
     // ParallelSubmission::gc_lists contains Vec of tuples (D3D12GraphicsCommandList, D3D12CommandAllocator)
     // This line creates vector of references to (borrows of) command lists from gc_lists
     // TODO: check if one command allocator is sufficient for parallel lists creation
@@ -777,7 +779,7 @@ pub fn on_render(data: &mut AppData) {
     data.core.graphics_queue.execute_command_lists(&[&ps.transition_list]);
     wait_for_graphics_queue(&data.core, &ps.fence, &data.fence_event);
 
-    data.tonemapper.tonemap(&data.core, render_target, &data.swap_chain.render_targets[data.frame_index as usize]).expect("Tonemap failed");
+    data.tonemapper.tonemap(&data.core, &data.tonemapper_resources[data.frame_index as usize], render_target, &data.swap_chain.render_targets[data.frame_index as usize], &mut ps.hdr_fence).expect("Tonemap failed");
   }
 
 
@@ -920,26 +922,27 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
     data.depth_stencil.push(create_depth_stencil(&data.core.dev, w as u64, h as u32, ds_format, data.dsd_heap.cpu_handle(i)).unwrap());
    }
 
-   let (hdr_render_targets, hdr_rtv_heap) = create_hdr_render_targets(&data.core, data.swap_chain.frame_count, w, h).unwrap();
+   let (hdr_render_targets, hdr_rtv_heap, tonemapper_resources) = create_hdr_render_targets(&data.core, data.swap_chain.frame_count, w, h).unwrap();
   data.hdr_render_targets = hdr_render_targets;
   data.hdr_rtv_heap = hdr_rtv_heap;
+  data.tonemapper_resources = tonemapper_resources;
   
-   data.camera.aspect = (w as f32)/(h as f32);
+  data.camera.aspect = (w as f32)/(h as f32);
 
-   data.viewport=D3D12_VIEWPORT {
-     TopLeftX: 0.,
-     TopLeftY: 0.,
-     MinDepth: 0.,
-     Width: w as f32,
-     Height: h as f32,
-     MaxDepth: 1.0,
-   };
-   data.scissor_rect=D3D12_RECT {
-     right: w as i32,
-     bottom: h as i32,
-     left: 0,
-     top: 0,
-   };
+  data.viewport=D3D12_VIEWPORT {
+    TopLeftX: 0.,
+    TopLeftY: 0.,
+    MinDepth: 0.,
+    Width: w as f32,
+    Height: h as f32,
+    MaxDepth: 1.0,
+  };
+  data.scissor_rect=D3D12_RECT {
+    right: w as i32,
+    bottom: h as i32,
+    left: 0,
+    top: 0,
+  };
   //on_render(data, 1, 1);
 }
 
@@ -962,6 +965,8 @@ struct ParallelSubmissionData<T> {
   transition_list: D3D12GraphicsCommandList,
   fence: D3D12Fence,
   fence_val: u64,
+  // Fence is D3D12Fence wrapper, which holds temporary resources while gpu needs them
+  hdr_fence: Fence, 
 }
 
 impl<T> Drop for ParallelSubmissionData<T> {
@@ -1053,6 +1058,8 @@ fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32)
 
   let fence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
 
+  let hdr_dxfence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
+
   let ps_allocator = try!(core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
   let clear_list: D3D12GraphicsCommandList = try!(core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &ps_allocator, None));
   clear_list.close().unwrap();
@@ -1072,6 +1079,7 @@ fn init_parallel_submission(core: &DXCore, thread_count: u32, object_count: u32)
     transition_list: transition_list,
     fence: fence,
     fence_val: 0,
+    hdr_fence: Fence::new(hdr_dxfence),
   })
 }
 
@@ -1137,4 +1145,3 @@ fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
   });
   Ok(())
 }
-

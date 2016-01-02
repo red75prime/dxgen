@@ -113,39 +113,6 @@ pub fn upload_into_buffer<T>(buf: &D3D12Resource, data: &[T]) -> HResult<()> {
   Ok(())
 }
 
-pub trait Handle: Sized {
-  fn handle(&self) -> HANDLE;
-}
-
-#[derive(Debug)]
-pub struct Event(HANDLE);
-
-impl Handle for Event {
-  fn handle(&self) -> HANDLE {
-    self.0
-  }
-}
-
-impl Drop for Event {
-  fn drop(&mut self) {
-    let handle = self.handle();
-    if handle != ptr::null_mut() {
-      unsafe {
-        CloseHandle(handle);
-      }
-    }
-  }
-}
-
-
-pub fn create_event() -> Event {
-  let event_handle = unsafe{ CreateEventW(ptr::null_mut(), 0, 0, ptr::null_mut()) };
-  if event_handle == ptr::null_mut() {
-    panic!("Cannot create event.");
-  }
-  Event(event_handle)
-}
-
 pub fn upload_into_texture(core: &DXCore, tex: &D3D12Resource, w: usize, _: usize, data: &[u32]) -> HResult<()> {
   trace!("upload_into_texture");
   trace!("get_desc tex.iptr(): 0x{:x}, vtbl: 0x{:x}, vtbl[0]: 0x{:x}", tex.iptr() as usize, unsafe{((*tex.iptr()).lpVtbl) as usize}, unsafe{(*(*tex.iptr()).lpVtbl).QueryInterface as usize});
@@ -223,7 +190,7 @@ pub fn create_depth_stencil(dev: &D3D12Device, w: u64, h: u32, ds_format: DXGI_F
 }
 
 pub fn wait_for_queue(queue: &D3D12CommandQueue, fence_value: u64, fence: &D3D12Fence, fence_event: &Event) -> HResult<()> {
-  queue.signal(fence, fence_value).unwrap();
+  try!(queue.signal(fence, fence_value));
   if fence.get_completed_value() < fence_value {
     try!(fence.set_event_on_completion(fence_value, fence_event.handle()));
     wait_for_single_object(fence_event, INFINITE);
@@ -285,3 +252,57 @@ pub fn release_capture() -> BOOL {
 }
 
 use dxsems::VertexFormat;
+
+// Fence holds temporary resources until it's waited upon.
+pub struct Fence {
+  dxfence: D3D12Fence,
+  event: Event,
+  temp_resources: Vec<D3D12Resource>,
+  first_signal: bool,
+  fence_value: Option<u64>,
+}
+
+impl Fence {
+  pub fn new(fence: D3D12Fence) -> Fence {
+    Fence {
+      dxfence: fence,
+      event: create_event(),
+      temp_resources: vec![],
+      first_signal: true,
+      fence_value: None,
+    }
+  }
+
+  // Fence takes ownership of res
+  pub fn hold(&mut self, res: D3D12Resource) -> &mut Self {
+    self.temp_resources.push(res);
+    self
+  }
+
+  // Marks the point in command queue as safe for releasing temporary resources
+  pub fn signal(&mut self, queue: &D3D12CommandQueue, fence_value: u64) -> HResult<()> {
+    if !self.first_signal {
+      warn!("Two Fence::signal's without Fence::wait_for_gpu in between");
+    }
+    self.first_signal = false;
+    self.fence_value = Some(fence_value);
+    queue.signal(&self.dxfence, fence_value).map(|_|())
+  }
+
+  pub fn wait_for_gpu(&mut self) -> HResult<()> {
+    match self.fence_value {
+      Some(fence_value) => {
+        try!(self.dxfence.set_event_on_completion(fence_value, self.event.handle()));
+        wait_for_single_object(&self.event, INFINITE);
+        self.first_signal = true;
+        self.temp_resources.truncate(0);
+        self.fence_value = None;
+      },
+      None => {
+        // signal wasn't called. Nothing to wait for
+      }
+    }
+    Ok(())
+  }
+
+}

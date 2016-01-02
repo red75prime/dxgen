@@ -4,6 +4,43 @@ use std::sync::Arc;
 use winapi::*;
 use dx_safe::*;
 use structwrappers::*;
+use std::ptr;
+use kernel32;
+
+pub trait Handle: Sized {
+  fn handle(&self) -> HANDLE;
+}
+
+#[derive(Debug)]
+pub struct Event(HANDLE);
+
+unsafe impl Sync for Event {}
+unsafe impl Send for Event {}
+
+impl Handle for Event {
+  fn handle(&self) -> HANDLE {
+    self.0
+  }
+}
+
+impl Drop for Event {
+  fn drop(&mut self) {
+    let handle = self.handle();
+    if handle != ptr::null_mut() {
+      unsafe {
+        kernel32::CloseHandle(handle);
+      }
+    }
+  }
+}
+
+pub fn create_event() -> Event {
+  let event_handle = unsafe{ kernel32::CreateEventW(ptr::null_mut(), 0, 0, ptr::null_mut()) };
+  if event_handle == ptr::null_mut() {
+    panic!("Cannot create event.");
+  }
+  Event(event_handle)
+}
 
 pub struct DXCore {
   pub dev: D3D12Device,

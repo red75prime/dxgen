@@ -564,3 +564,44 @@ impl DescriptorHeap {
   }
 
 }
+
+pub struct ShaderBytecode<'a> {
+  inner: D3D12_SHADER_BYTECODE,
+  ph: PhantomData<&'a u32>,
+}
+
+impl<'g> ShaderBytecode<'g> {
+  pub fn empty() -> ShaderBytecode<'static> {
+    ShaderBytecode {
+      inner: D3D12_SHADER_BYTECODE {
+        pShaderBytecode: ptr::null(),
+        BytecodeLength: 0, 
+      },
+      ph: PhantomData::<&'static _>,
+    }
+  }
+
+  pub fn from_vec<'a>(v: &'a Vec<u8>) -> ShaderBytecode<'a> {
+    ShaderBytecode {
+      inner: D3D12_SHADER_BYTECODE {
+        pShaderBytecode: v.as_ptr() as *const _,
+        BytecodeLength: v.len() as SIZE_T, 
+      },
+      ph: PhantomData::<&'a _>,
+    }
+  }
+
+  pub fn from_slice<'a>(v: &'a [u8]) -> ShaderBytecode<'a> {
+    ShaderBytecode {
+      inner: D3D12_SHADER_BYTECODE {
+        pShaderBytecode: v.as_ptr() as *const _,
+        BytecodeLength: v.len() as SIZE_T, 
+      },
+      ph: PhantomData::<&'a _>,
+    }
+  }
+
+  pub fn get(self) -> D3D12_SHADER_BYTECODE {
+    self.inner
+  }
+}

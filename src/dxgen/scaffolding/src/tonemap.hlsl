@@ -25,6 +25,26 @@ RWTexture2D<float4> dst: register(u0);
 #define VTGroups 128
 #define VKernelSize 8
 
+static const float vkernel[VKernelSize * 2 + 1] = {
+  6.69163E-05,
+  0.000436349,
+  0.002215963,
+  0.008764304,
+  0.026995958,
+  0.064759937,
+  0.12098749,
+  0.176035759,
+  0.199474648,
+  0.176035759,
+  0.12098749,
+  0.064759937,
+  0.026995958,
+  0.008764304,
+  0.002215963,
+  0.000436349,
+  6.69163E-05
+};
+
 groupshared float3 tmp[VTGroups+VKernelSize*2];
 
 [RootSignature(RSD)]
@@ -41,7 +61,7 @@ void CSMain(uint3 gtid: SV_GroupThreadId, uint3 gid: SV_GroupId) {
       float3 acc = float3(0, 0, 0);
       [unroll]
       for(int y=-VKernelSize;y<=VKernelSize;y+=1) {
-        acc = mad(tmp[y + gty], exp(-y*y / 8.)*0.2, acc);
+        acc = mad(tmp[y + gty], vkernel[y+VKernelSize], acc);
       }
 
       float3 cl = src[crd].rgb + acc;
@@ -62,6 +82,42 @@ void CSMain(uint3 gtid: SV_GroupThreadId, uint3 gid: SV_GroupId) {
 #define HTGroups 128
 #define KernelSize 16
 
+static const float kernel[KernelSize * 2 + 1] = {
+3.34587E-05,
+8.8152E-05,
+0.000218178,
+0.00050728,
+0.001108001,
+0.002273471,
+0.00438223,
+0.007935194,
+0.013498219,
+0.021570093,
+0.032380545,
+0.045663887,
+0.060494822,
+0.075287022,
+0.088019446,
+0.09667045,
+0.0997391,
+0.09667045,
+0.088019446,
+0.075287022,
+0.060494822,
+0.045663887,
+0.032380545,
+0.021570093,
+0.013498219,
+0.007935194,
+0.00438223,
+0.002273471,
+0.001108001,
+0.00050728,
+0.000218178,
+8.8152E-05,
+3.34587E-05
+};
+
 groupshared float3 tmp1[HTGroups+KernelSize*2];
 
 [RootSignature(RSDH)]
@@ -79,7 +135,10 @@ void CSHorizontal(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
     float3 acc = float3(0, 0, 0);
     [unroll]
     for (int x = -KernelSize; x <= KernelSize; x += 1) {
-      acc = mad(tmp1[x+gtx], exp(-x*x / 16.)*0.2, acc);
+      float3 cl = tmp1[x + gtx];
+      if (cl.r + cl.g + cl.b > 1.0) {
+        acc = mad(cl, kernel[x + KernelSize], acc);
+      };
     }
 
     dst[crd] = float4(acc,1);

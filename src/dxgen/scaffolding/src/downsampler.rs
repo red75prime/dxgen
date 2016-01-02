@@ -5,6 +5,10 @@ use utils::*;
 use dx_safe::*;
 use structwrappers::*;
 use std::ptr;
+use std::io;
+use std::io::prelude::*;
+use std::fs::File;
+use std::str;
 
 pub struct Downsampler {
   cpso: D3D12PipelineState,
@@ -18,31 +22,27 @@ impl Downsampler {
   pub fn new(dev: &D3D12Device) -> Downsampler {
     let dheap = DescriptorHeap::new(&dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0).expect("Cannot create descriptor heap");
 
-    let shader_bytecode = 
-      match d3d_compile_from_str(SHADER, "CSMain", "cs_5_1", 0) {
-        Ok(sbc) => sbc,
-        Err(err) => panic!("Downsampler shader compile error: {}", err),
-      };
-    let root_sig_bytecode = 
-      match d3d_compile_from_str(SHADER, "RSD", "rootsig_1_0", 0) {
-        Ok(sbc) => sbc,
-        Err(err) => panic!("Downsampler root signature compile error: {}", err),
-      };
-    debug!("Root signature");
+    let mut f = File::open("downsampler.hlsl").expect("Cannot open tonemapper shader file.");
+    let mut content = vec![];
+    f.read_to_end(&mut content).expect("Cannot read tonemapper shader file.");
+    let shader = str::from_utf8(&content[..]).expect("Shader file content is not a valid UTF-8");
+
+    let (shader_bytecode, root_sig_bytecode) =
+      compile_shader_and_root_signature(shader.into(), "CSMain", "RSD").expect("Tonemapper horizontal pass shader compile error");
+
+    trace!("Root signature");
     let root_sig = dev.create_root_signature(0, &root_sig_bytecode[..]).expect("Cannot create root signature");
 
     //It doesn't work. 
     //let crs = d3d_get_root_signature_from_str(SHADER, dev).expect("Cannot extract root signature");
     let cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-      pRootSignature: ptr::null_mut(),
-      CS: D3D12_SHADER_BYTECODE {
-        pShaderBytecode: shader_bytecode.as_ptr() as *const _,
-        BytecodeLength: shader_bytecode.len() as SIZE_T,
-      }, 
+      pRootSignature: root_sig.iptr() as *mut _,
+      CS: ShaderBytecode::from_vec(&shader_bytecode).get(),
       NodeMask: 0,
       CachedPSO: D3D12_CACHED_PIPELINE_STATE {pCachedBlob: ptr::null(), CachedBlobSizeInBytes: 0,},
       Flags: D3D12_PIPELINE_STATE_FLAG_NONE, 
     };
+    trace!("create_compute_pipeline_state");
     let cpso = dev.create_compute_pipeline_state(&cpsd).expect("Cannot create compute pipeline state");
     Downsampler {
       cpso: cpso,
@@ -164,37 +164,3 @@ impl Downsampler {
     Ok(())
   }
 }
-
-static SHADER: &'static str = r#"
-#define RSD "RootFlags(0), DescriptorTable(SRV(t0), UAV(u0))" // 2
-
-Texture2D<float4> mip0: register(t0);//4
-RWTexture2D<float4> mip1: register(u0);//5
-
-static const float coefs[4] = {1./8., 3./8., 3./8., 1./8.};//7
-groupshared float4 color_accum[4][4];//8
-
-[RootSignature(RSD)]//10
-[numthreads(4, 4, 1)]//11
-void CSMain(uint3 gtid: SV_GroupThreadId, uint3 gid: SV_GroupId) {//12
-  int w=0;
-  int h=0;
-  mip0.GetDimensions(w, h);
-  float c = coefs[gtid.x]*coefs[gtid.y];//13
-  int2 idx = clamp(gid.xy*2 + gtid.xy + int2(-1,-1), int2(0,0), int2(w-1,h-1));
-
-  color_accum[gtid.x][gtid.y] = mip0[idx]*c;//14
-  GroupMemoryBarrierWithGroupSync();//15
-  if (gtid.x==1 && gtid.y==1) {//16
-    float4 a=float4(0,0,0,0);//17
-    for(uint i=0; i<4; ++i) {
-       a += color_accum[i][0];
-       a += color_accum[i][1];
-       a += color_accum[i][2];
-       a += color_accum[i][3];
-    };
-    mip1[gid.xy] = a;//float4(1, 1, 1, 1);//a;
-  };
-}
-"#;
-
