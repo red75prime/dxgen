@@ -5,7 +5,7 @@ use rand;
 use cgmath;
 use crossbeam;
 use create_device::*;
-use std::cmp::{min,max};
+use std::cmp::{min, max};
 
 use dxsems::VertexFormat;
 

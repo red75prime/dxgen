@@ -7,7 +7,7 @@ RWTexture2D<float4> mip1: register(u0);
 static float coefs[4] = {1./8., 3./8., 3./8., 1./8.};
 groupshared float4 color_accum[4][4];
 
-//[RootSignature(RSD)]
+[RootSignature(RSD)]
 [numthreads(4, 4, 1)]
 void CSMain(uint3 gtid: SV_GroupThreadId, uint3 gid: SV_GroupId) {
   int w=0;

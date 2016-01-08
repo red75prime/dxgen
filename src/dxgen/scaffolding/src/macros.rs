@@ -53,3 +53,9 @@ macro_rules! dx_vertex {
         }
     }
 }
+
+macro_rules! alias {
+    ($i:ident, $e:expr) => {
+        macro_rules! $i (() => ($e));
+    };
+}
