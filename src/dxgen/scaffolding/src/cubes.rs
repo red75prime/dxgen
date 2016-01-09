@@ -459,7 +459,7 @@ impl FrameResources {
             tonemapper_resources: tonemapper_resources,
         })
     }
-    // rt - render target descriptor handle
+    // rtvh - render target view descriptor handle
     fn render(&mut self, core: &DXCore, rt: &D3D12Resource, rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, cr: &CommonResources, st: &State) -> HResult<()> {
         try!(self.fence.wait_for_gpu());
 
@@ -536,16 +536,25 @@ struct State {
 }
 
 impl State {
-    fn update(&mut self, dt: f32) {
-        self.tick += dt as f64;
+    fn update(&self, dt: f32) -> Self {
         // advance position of cubes
-        for cube in &mut self.cubes {
-            cube.pos = cube.pos + cube.spd * dt;
-            cube.rot = Basis3::from_axis_angle(cube.rot_axe, Angle::from(deg(cube.rot_spd * dt))).concat(&cube.rot);
+        let mut cubes = Vec::with_capacity(self.cubes.len());
+        for cube in &self.cubes {
+            let mut cs = CubeState {
+                pos: cube.pos + cube.spd * dt,
+                rot: Basis3::from_axis_angle(cube.rot_axe, Angle::from(deg(cube.rot_spd * dt))).concat(&cube.rot),
+                .. *cube};
+            cubes.push(cs);
         }
         let (lx, ly) = f64::sin_cos(self.tick);
         let (lx, ly) = (lx as f32, ly as f32);
-        self.light_pos = v3(lx, ly, -3.);
+        let light_pos = v3(lx, ly, -3.);
+        State {
+            tick: self.tick + dt as f64,
+            cubes: cubes,
+            camera: self.camera,
+            light_pos: light_pos,
+        }
     }
 }
 
@@ -944,7 +953,7 @@ pub fn on_render(data: &mut AppData) {
         trace!("on_render")
     };
 
-    data.state.update(data.update_step);
+    data.state = data.state.update(data.update_step);
 
     // measure timings
     ::perf_wait_start();
