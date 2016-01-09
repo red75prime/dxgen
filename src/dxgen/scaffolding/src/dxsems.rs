@@ -16,5 +16,5 @@ pub static TEXCOORD: &'static str = "TEXCOORD\x00";
 use winapi::D3D12_INPUT_ELEMENT_DESC;
 
 pub trait VertexFormat  {
-  fn generate(input_slot: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>;
+    fn generate(input_slot: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>;
 }

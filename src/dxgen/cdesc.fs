@@ -175,13 +175,16 @@ let isVoidPtr ty=
     |_ -> false
   isVoidPtrRec (removeConst ty)
 
-// True iff ty is a typedef of struct that contains only function pointers
+// True iff ty is a typedef of struct that has base struct or (contains only function pointers and is not empty)
 let getVtbl (structs:Map<string, CTypeDesc*CodeLocation>) ty=
   let isStructVtbl ses bas=
-    if List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> true |_ -> false) ses then
+    if not(System.String.IsNullOrEmpty bas) then
       Some(ses,bas)
     else
-      None
+      if (ses <> []) && (List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> true |_ -> false) ses) then
+        Some(ses,bas)
+      else
+        None
 
   match ty with
   |Typedef(StructRef(sname)) |StructRef(sname) -> 

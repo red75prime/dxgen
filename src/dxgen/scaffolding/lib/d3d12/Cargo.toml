@@ -11,16 +11,16 @@ libc = "*"
 
 [dependencies.winapi]
 git = "https://github.com/red75prime/winapi-rs"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
 
 # [dependencies.d3d12_sys]
 # git = "https://github.com/red75prime/winapi-rs"
-# branch = "dx12"
+# branch = "dx12-dwrite-iid"
 
 [dependencies.winapi-build]
 git = "https://github.com/red75prime/winapi-rs"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
 
 [dependencies.dxguid-sys]
 git = "https://github.com/red75prime/winapi-rs"
-branch = "dx12"
+branch = "dx12-dwrite-iid"

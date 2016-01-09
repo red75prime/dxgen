@@ -196,4 +196,29 @@ type Annotations = {
   interfaces: (string*InterfaceAnnotation*string*(string*(string*ParamAnnotation)list*MethodAnnotation)list)list
   enums: Map<string, EnumAnnotation>
   structs: Map<string, (StructFlags*(string*FieldAnnotation)list)>
+  dependencies: string list
 }
+
+let iUnknown=[
+    ("QueryInterface",[],MAIUnknown);
+    ("AddRef",[],MAIUnknown);
+    ("Release",[],MAIUnknown);
+  ]
+
+let (++) xs ys=
+  List.concat [xs;ys]
+
+let populateVtbls annots=
+  let imap=annots |> Seq.map (fun ((iname,_,_,_) & an) ->  (iname,an) ) |> Map.ofSeq
+  let rec fullVtbl iname=
+    match iname with
+    |"" -> []
+    |"IUnknownVtbl" -> iUnknown
+    |_ -> 
+      let (_,_,parent,vtbl)=Map.find iname imap
+      (fullVtbl parent) ++ vtbl
+  annots |>
+    List.map 
+      (fun (iname, annot, pname, vtbl) ->
+        (iname, annot, pname, (fullVtbl pname) ++ vtbl))
+

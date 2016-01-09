@@ -9,7 +9,7 @@ extern crate libc;
 extern crate winapi;
 extern crate dx_safe;
 //extern crate dxguid_sys;
-extern crate dxgi_sys;
+//extern crate dxgi_sys;
 extern crate kernel32;
 extern crate user32;
 //extern crate d3d12_sys;
@@ -17,6 +17,7 @@ extern crate rand;
 extern crate clock_ticks;
 extern crate cgmath;
 extern crate crossbeam;
+extern crate obj;
 
 #[macro_use] mod macros;
 mod create_device;
@@ -30,6 +31,11 @@ mod core;
 mod app;
 mod cubes;
 mod camera;
+//mod hvoxel;
+mod downsampler;
+mod tonemapper;
+mod plshadow;
+
 
 
 use winapi::*;
@@ -43,25 +49,26 @@ use std::collections::HashMap;
 use window::*;
 use utils::*;
 use clock_ticks::*;
-use cgmath::*;
 use cubes::{Parameters, CubeParms};
+use std::time::Duration;
 
-#[link(name="d3dcompiler")]
-extern {}
-
-const FRAME_COUNT : u32 = 4;
+const FRAME_COUNT : u32 = 2;
 
 fn main() {
   // Initialize logger
   env_logger::init().unwrap();
 
   // Set default values of cubes module parameters
-  let mut parms = CubeParms {thread_count: 2, object_count: 2_000,};
+  let mut parms = CubeParms {thread_count: 2, object_count: 2_000, speed_mult: 0.01};
   let mut adapters_to_test = vec![];
+  let mut adapters_info = false;
   for arg in env::args() {
     if let Ok(n) = arg.parse::<u32>() {
       // If command line parameter is a number, treat it as a number of graphics adapter.
       adapters_to_test.push(n);
+    }
+    if arg == "-i" || arg == "--info" {
+      adapters_info = true;
     }
     if arg.starts_with("-o") {
       // Command line parameter -o<N> sets number of objects to draw
@@ -77,9 +84,19 @@ fn main() {
         parms.thread_count = n;
       }
     }
+    if arg.starts_with("-s") {
+      // Command line parameter -s<f32> sets cube speed multiplier
+      if let Ok(s) = (&arg[2..]).parse::<f32>() {
+        parms.speed_mult = s;
+      }
+    }
   }
 
-  let factory: DXGIFactory4 = create_dxgi_factory2().expect("Cannot create DXGIFactory4. No can do.");
+  let factory: DXGIFactory4 = 
+    match create_dxgi_factory2() {
+      Ok(fact) => fact,
+      Err(hr) => panic!("Cannot create DXGIFactory4 (0x{:x}). No can do.",hr),
+    };
   let mut i=0;
   let mut adapters = vec![];
   // Iterate over available GPUs 
@@ -87,13 +104,21 @@ fn main() {
     let descr=adapter.get_desc1().unwrap();
     println!("Adapter {}: {}", i, wchar_array_to_string_lossy(&descr.Description));
     println!("   Dedicated video memory: {}MiB", descr.DedicatedVideoMemory/1024/1024);
+    
     if adapters_to_test.len()==0 || adapters_to_test[..].contains(&i) {
       // If there's no numbers in command line add each and every available adapter,
       // otherwise use adapter numbers from command line
+      if adapters_info {
+        print_adapter_info(&adapter);
+      }
       adapters.push(adapter);
     }
     // It's easy to forget this.
     i+=1;
+  }
+
+  if adapters_info {
+    return;
   }
 
   // I used this mutex to sync console output.
@@ -110,185 +135,227 @@ fn main() {
   });
 }
 
-fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
-  // Setup window. Currently window module supports only one window per thread.
-  let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
-  let title=format!("D3D12 Hello, rusty world! ({})", descr);
-  let wnd=create_window(&title, 512, 256);
+fn print_adapter_info(adapter: &DXGIAdapter1) {
+  if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_11_0) {
+    let mut data = unsafe { ::std::mem::uninitialized() };
+    if let Ok(_) = dev.check_feature_support_virtual_address(&mut data) {
+      // data is guarantied to be initialized here
+      println!("   {:#?}", data);
+    }
+    let mut data = unsafe { ::std::mem::uninitialized() };
+    if let Ok(_) = dev.check_feature_support_options(&mut data) {
+      // data is guarantied to be initialized here
+      println!("   {:#?}", data);
+    }
+  }
+}
 
-  {
+const VK_A: i32 = b'A' as i32;
+const VK_S: i32 = b'S' as i32;
+const VK_D: i32 = b'D' as i32;
+const VK_F: i32 = b'F' as i32;
+const VK_Q: i32 = b'Q' as i32;
+const VK_W: i32 = b'W' as i32;
+const VK_E: i32 = b'E' as i32;
+const VK_R: i32 = b'R' as i32;
+
+fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
+    // Setup window. Currently window module supports only one window per thread.
+    let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
+    let title=format!("D3D12 Hello, rusty world! ({})", descr);
+    let wnd=create_window(&title, 512, 256);
+
+    {
     // This block of code is not required. I just checked some stuff
-    if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_12_1) {
-      let format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-      let mut fsup = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
+    if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_12_0) {
+        let format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        let mut fsup = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
         Format: format,
         Support1: D3D12_FORMAT_SUPPORT1_NONE,
         Support2: D3D12_FORMAT_SUPPORT2_NONE,
-      };
-      if let Ok(_) = dev.check_feature_support_format_support(&mut fsup) {
+        };
+        if let Ok(_) = dev.check_feature_support_format_support(&mut fsup) {
         // We could have few threads running, so take a lock to prevent line interleaving
         let _ = mutex.lock();
         println!("{}", descr);
         println!("Format support for {:?} is {:x}, {:x}", format, fsup.Support1.0, fsup.Support2.0);
-      }
+        }
     }
-  }
+    }
 
-  // Initialization of cubes module data required to render all stuff
-  let data=
+    // Initialization of cubes module data required to render all stuff
+    let data=
     match cubes::AppData::on_init(&wnd, Some(&adapter), FRAME_COUNT, parms) { 
-      Ok(appdata) => {
+        Ok(appdata) => {
         Rc::new(RefCell::new(appdata))
-      },
-      Err(iq) => {
-        dump_info_queue(iq.map(|iq|iq).as_ref());
+        },
+        Err(err) => {
+        error!("AppData creation failed with error code 0x{:x}", err);
         return ();
-      },
+        },
     };
   
-  // x and y store last mouse coords from WM_MOUSEMOVE
-  let mut x:i32=0;
-  let mut y:i32=0;
-  // TODO: Make this horror go away
-  // Simple and crude way to track state of keyboard keys
-  let (mut wdown, mut sdown, mut adown, mut ddown, mut qdown, mut edown) = (false, false, false, false, false, false);
-  // and state of left mouse button
-  let mut mouse_down = false;
-  // Profiling stuff
-  let mut start = precise_time_s();
-  // Window::poll_events() returns non-blocking iterator, that return Option<MSG>
-  for mmsg in wnd.poll_events() {
+    // x and y store last mouse coords from WM_MOUSEMOVE
+    let mut x:i32=0;
+    let mut y:i32=0;
+    // TODO: Make this horror go away
+    // Simple and crude way to track state of keyboard keys
+    let (mut wdown, mut sdown, mut adown, mut ddown, mut qdown, mut edown, mut rdown, mut fdown, mut shdown, mut ctdown) = (false, false, false, false, false, false, false, false, false, false);
+    // and state of left mouse button
+    let mut mouse_down = false;
+    // Profiling stuff
+    let mut start = precise_time_s();
+    // Window::poll_events() returns non-blocking iterator, that return Option<MSG>
+    for mmsg in wnd.poll_events() {
     // "if let Some(msg)" extracts msg from mmsg
     // if mmsg is None, then 'else' branch is taken
     if let Some(msg) = mmsg {
-      // Instead of passing messages into cubes module, I process them here
-      // It is not well-thought-out design decision, it's just slightly simpler now, and cost of changing it is low.
-      match msg.message {
+        // Instead of passing messages into cubes module, I process them here
+        // It is not well-thought-out design decision, it's just slightly simpler now, and cost of changing it is low.
+        match msg.message {
         // Usual message processing stuff
         WM_SIZE => {
-          // Normally this message goes to wndproc, in window.rs I repost it into message queue to prevent reentrancy problems
-          debug!("WM_SIZE {}, {}  ", msg.wParam, msg.lParam);
-          data.borrow_mut().on_resize(LOWORD(msg.lParam as u32) as u32, HIWORD(msg.lParam as u32) as u32, msg.wParam as u32); 
+            // Normally this message goes to wndproc, in window.rs I repost it into message queue to prevent reentrancy problems
+            debug!("WM_SIZE {}, {}  ", msg.wParam, msg.lParam);
+            data.borrow_mut().on_resize(LOWORD(msg.lParam as u32) as u32, HIWORD(msg.lParam as u32) as u32, msg.wParam as u32); 
         },
         WM_MOUSEMOVE => {
-          let x1 = GET_X_LPARAM(msg.lParam) as i32;
-          let y1 = GET_Y_LPARAM(msg.lParam) as i32;
-          let (dx, dy) = (x1 - x, y - y1);
-          x = x1;
-          y = y1;
-          if mouse_down {
+            let x1 = GET_X_LPARAM(msg.lParam) as i32;
+            let y1 = GET_Y_LPARAM(msg.lParam) as i32;
+            let (dx, dy) = (x1 - x, y - y1);
+            x = x1;
+            y = y1;
+            if mouse_down {
             let mut data = data.borrow_mut();
             let camera = data.camera();
             camera.rotx(-dx as f32/6.);
-            camera.roty(-dy as f32/6.);
-          }
+            camera.roty(dy as f32/6.);
+            }
         },
         WM_KEYDOWN => {
-          match msg.wParam as u8 {
-            b'A' => adown = true,
-            b'S' => sdown = true,
-            b'D' => ddown = true,
-            b'W' => wdown = true,
-            b'Q' => qdown = true,
-            b'E' => edown = true,
+            match msg.wParam as i32 {
+            VK_A => adown = true,
+            VK_S => sdown = true,
+            VK_D => ddown = true,
+            VK_W => wdown = true,
+            VK_Q => qdown = true,
+            VK_E => edown = true,
+            VK_R => rdown = true,
+            VK_F => fdown = true,
+            VK_SHIFT => shdown = true,
+            VK_CONTROL => ctdown = true,
             _ => {},
-          }
+            }
         },
         WM_KEYUP => {
-          match msg.wParam as u8 {
-            b'A' => adown = false,
-            b'S' => sdown = false,
-            b'D' => ddown = false,
-            b'W' => wdown = false,
-            b'Q' => qdown = false,
-            b'E' => edown = false,
+            match msg.wParam as i32 {
+            VK_A => adown = false,
+            VK_S => sdown = false,
+            VK_D => ddown = false,
+            VK_W => wdown = false,
+            VK_Q => qdown = false,
+            VK_E => edown = false,
+            VK_R => rdown = false,
+            VK_F => fdown = false,
+            VK_SHIFT => shdown = false,
+            VK_CONTROL => ctdown = false,
             _ => {},
-          }
+            }
         },
         WM_LBUTTONDOWN => {
-          mouse_down = true;
-          set_capture(wnd.get_hwnd());
+            mouse_down = true;
+            set_capture(wnd.get_hwnd());
         },
         WM_LBUTTONUP => {
-          mouse_down = false;
-          release_capture();
+            mouse_down = false;
+            release_capture();
         },
         _ => {},
-      };
-    } else {
-      let do_not_render = data.borrow().is_minimized();
-      if do_not_render {
+        };
+    } else { // There's no pending window message.
+        let do_not_render = data.borrow().is_minimized();
+        if do_not_render {
         // MSDN suggest to use MsgWaitForMultipleObjects here, but 10ms sleep shouldn't create problems
-        std::thread::sleep_ms(10);
-      } else {
+        std::thread::sleep(Duration::from_millis(10));
+        } else {
         {
-          // data is Rc<RefCell<cubes::AppData>>
-          // Rc is not really needed. I didn't pass it around.
-          // Take a mutable reference to cubes::AppData
-          let mut data = data.borrow_mut();
-          // Process WASD keys
-          let camera = data.camera();
-          if wdown {
-            camera.go(0.1, 0., 0.);
-          };
-          if sdown {
-            camera.go(-0.1, 0., 0.);
-          };
-          if adown {
-            camera.go(0., 0.1, 0.); // Something wrong with signs. Negative value should translate camera to the left
-          };
-          if ddown {
-            camera.go(0., -0.1, 0.);
-          };
-          // Process Q and E keys. They control camera's roll
-          if qdown {
-            camera.rotz(-0.5);
-          };
-          if edown {
-            camera.rotz(0.5);
-          };
+            // data is Rc<RefCell<cubes::AppData>>
+            // Rc is not really needed. I didn't pass it around.
+            // Take a mutable reference to cubes::AppData
+            let mut data = data.borrow_mut();
+            // Process WASD keys
+            let camera = data.camera();
+
+            let step=if shdown {1.0} else if ctdown {0.01} else {0.1};
+
+            if wdown {
+            camera.go(step, 0., 0.);
+            };
+            if sdown {
+            camera.go(-step, 0., 0.);
+            };
+            if adown {
+            camera.go(0., -step, 0.); 
+            };
+            if ddown {
+            camera.go(0., step, 0.);
+            };
+            if rdown {
+            camera.go(0., 0., step); 
+            };
+            if fdown {
+            camera.go(0., 0.0, -step);
+            };
+            // Process Q and E keys. They control camera's roll
+            if qdown {
+            camera.rotz(-step);
+            };
+            if edown {
+            camera.rotz(step);
+            };
         }
         // For this simple program I don't separate update and render steps.
         // State change and rendering is done inside on_render.
         // Error handling isn't implemented yet. on_render panics, if it needs to.
-        // TODO: remove x,y parameters
         // TODO: process error
-        data.borrow_mut().on_render(x, y);
+        data.borrow_mut().on_render();
         // register rendered frame in performance collector
         ::perf_frame();
         // fps counting stuff
         let now = precise_time_s();
         let frames = PERFDATA.with(|p_data| p_data.borrow().frames);
         if frames>0 && now<start || now>=(start+1.0) {
-          // Once per second show stats
-          let (clear, fill, exec, present, wait) =
+            // Once per second show stats
+            let (clear, fill, exec, present, wait) =
             PERFDATA.with(|p_data| {
-              let p_data = p_data.borrow();
-              let frames = p_data.frames as f64;
-              (p_data.perf.get("clear").unwrap()*1000./frames, 
+                let p_data = p_data.borrow();
+                let frames = p_data.frames as f64;
+                (p_data.perf.get("clear").unwrap()*1000./frames, 
                 p_data.perf.get("fillbuf").unwrap()*1000./frames, 
                 p_data.perf.get("exec").unwrap()*1000./frames, 
                 p_data.perf.get("present").unwrap()*1000./frames, 
                 p_data.perf.get("wait").unwrap()*1000./frames, )
             });
-          println!("Adapter {} FPS: {:3} clear:{:4.2} fill:{:4.2} exec:{:4.2} present:{:4.2} wait:{:4.2}   \r", id, frames, clear, fill, exec, present, wait);
-          let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
-          perf_reset();
-          start = now;
+            println!("Adapter {} FPS: {:3} clear:{:4.2} fill:{:4.2} exec:{:4.2} present:{:4.2} wait:{:4.2}   \r", id, frames, clear, fill, exec, present, wait);
+            let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
+            perf_reset();
+            start = now;
         }
-      }
+        }
     }
-  }
-  // Application should exit fullscreen state before terminating. 
-  data.borrow().set_fullscreen(false).expect("Fullscreen mode isn't supported");
-  // copy info queue
-  let iq=data.borrow().info_queue().clone();
-  // wait for all GPU processing to stop
-  data.borrow().wait_frame();
-  // release resources
-  drop(data);
-  // maybe debug layer has something to say
-  dump_info_queue(iq.map(|iq|iq).as_ref());
+    }
+    // Application should exit fullscreen state before terminating. 
+    data.borrow().set_fullscreen(false).expect("Fullscreen mode isn't supported");
+    // wait for all GPU processing to stop
+    data.borrow().wait_frame();
+    // Save info_queue before final release of resources
+    let maybe_iq = data.borrow_mut().take_info_queue();
+    // release resources
+    drop(data);
+    // Let debug layer say its last words
+    if let Some(iq) = maybe_iq {
+        core::dump_info_queue(&iq);
+    };
 }
 
 

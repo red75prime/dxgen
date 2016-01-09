@@ -2,6 +2,7 @@ extern crate winapi;
 
 mod utils;
 mod iid;
+pub mod dwrite_safe;
 pub mod d3d12_safe;
 pub mod d3d12sdklayers_safe;
 pub mod d3dcommon_safe;
@@ -18,3 +19,7 @@ pub use dxgi_safe::*;
 pub use dxgi1_2_safe::*;
 pub use dxgi1_3_safe::*;
 pub use dxgi1_4_safe::*;
+pub use dwrite_safe::*;
+
+// some tweaks
+pub type D3DBlob = D3D10Blob;

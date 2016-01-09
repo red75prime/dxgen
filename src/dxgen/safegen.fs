@@ -280,6 +280,7 @@ let generateMethodFromRouting
         yield! lvs |> Map.toSeq 
           |> Seq.map 
             (fun (lv, {mut=mut;ty=ty;initExpression=init}) ->
+              let init = if unsafe && init.StartsWith("unsafe ") then init.Substring("unsafe ".Length) else init
               let muts=if mut then "mut " else ""
               let lvtype=": "+(rustTypeToString ty)
               let inits=if System.String.IsNullOrEmpty init then ";" else " = "+init+";"
@@ -306,15 +307,17 @@ let generateMethodFromRouting
   let ftext=
     System.String.Format(
       @"
+#[allow(non_snake_case)]
 pub {0} {{
 {1}
-  let hr=unsafe {{ {2} }};
+  let _hr={4} {{ {2} }};
   {3}
 }}
 "       ,signature,
         lvAndInit,
         nativeInvocation,
-        rval)
+        rval,
+        if unsafe then "" else "unsafe")
   (ftext, signature)
 
 //-------------------------------------------------------------------------------------
@@ -868,25 +871,25 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           ("("+System.String.Join(", ", List.map fst mrv)+")", RType("("+System.String.Join(", ", List.map (snd >> rustTypeToString) mrv)+")"))
         match nrty with
         |Ptr(Const(uty)) ->
-          ("hr", RConstPtr(RType(tyToRust uty)))
+          ("_hr", RConstPtr(RType(tyToRust uty)))
         |TypedefRef "HRESULT" ->
           match !returnVals |> Set.toList with
           |[] ->
-            ("hr2ret(hr,hr)",RType "HResult<HRESULT>")
+            ("hr2ret(_hr,_hr)",RType "HResult<HRESULT>")
           |[(ex,t)] ->
-            ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
+            ("hr2ret(_hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
           |mrv ->
             let (ex,t)=mrv2tuple mrv
-            ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
+            ("hr2ret(_hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
         |StructRef sname |TypedefRef sname |EnumRef sname ->
           match !returnVals |> Set.toList with
           |[] ->
-            ("hr",RType sname)
+            ("_hr",RType sname)
           |[(ex,t)] ->
-            ("(hr,"+ex+")", RType ("("+sname+", "+(rustTypeToString t)+")"))
+            ("(_hr,"+ex+")", RType ("("+sname+", "+(rustTypeToString t)+")"))
           |mrv ->
             let (ex,t)=mrv2tuple (("hr", RType sname) :: mrv)
-            ("hr2ret(hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
+            ("hr2ret(_hr,"+ex+")", RType ("HResult<"+(rustTypeToString t)+">"))
         |Primitive Void ->
           match !returnVals |> Set.toList with
           |[] ->
@@ -1027,6 +1030,7 @@ let joinMaps a b =
 let safeInterfaceGen (header:string) allInterfaces noEnumConversion (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,
                                                       funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) 
                         (annotations: Annotations) =
+  let dependencies = ref Set.empty
   let sb=new System.Text.StringBuilder()
   let vtbls=structs |> List.ofSeq |> List.collect (fun (KeyValue(name,(ty,_))) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl))) 
   match sanityCheck vtbls (annotations.interfaces) with
@@ -1040,6 +1044,13 @@ let safeInterfaceGen (header:string) allInterfaces noEnumConversion (types:Map<s
       match iannot with
       |IAManual -> ()
       |IAAutogen opts ->
+        // if base class is in another module, add dependency
+        match Map.tryFind bas iamap with
+        |Some(_,_,basHeader) when basHeader<>header -> dependencies := Set.add (basHeader+"_safe") !dependencies
+        |Some(_) -> ()
+        |None -> 
+          if bas<>"IUnknown" && bas<>"" then
+            printfn "No header file for base class in %s:%s" iname bas
         let rec ancMeths bName = 
           if bName = "IUnknown" || bName = "" then
             []
@@ -1085,7 +1096,7 @@ impl %s {
 }
 "          iname iname implSend iname iname iname iname iname iname iname (generateMethods ("I"+iname) noEnumConversion methods1 |> indentBy "  ")
 
-    (sb.ToString(), iamap)
+    (sb.ToString(), iamap, !dependencies)
   |None -> 
     printfn "Sanity check failed. No Rust interfaces generated"
-    ("", allInterfaces)
+    ("", allInterfaces, !dependencies)

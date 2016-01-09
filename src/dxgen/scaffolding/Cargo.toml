@@ -4,32 +4,34 @@ version = "0.3.0"
 authors = ["red75prime <red75prim@gmail.com>"]
 
 [dependencies]
-libc = "0.1"
+libc = "0.2"
 lazy_static = "0.1"
 log = "0.3"
 env_logger = "0.3"
 dx_safe = { version = "0.3", path = "lib/d3d12" }
 # gfx = { git = "https://github.com/gfx-rs/gfx/tree/master/src/core" }
 rand = "0.3"
-cgmath = "0.3"
+cgmath = "0.5"
 clock_ticks = "*"
 crossbeam = "0.1"
+obj = "0.4"
 
 [dependencies.winapi]
+#version = "0.2.5"
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
 
 [dependencies.dxgi-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
 
 [dependencies.user32-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
 
 [dependencies.kernel32-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
 
 # [dependencies.d3d12_sys]
 # git = "https://github.com/red75prime/winapi-rs/"
@@ -37,4 +39,4 @@ branch = "dx12"
 
 [dependencies.dxguid-sys]
 git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12"
+branch = "dx12-dwrite-iid"
