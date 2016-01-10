@@ -15,7 +15,6 @@ use create_device::*;
 use std::cmp::{min, max};
 
 use camera::*;
-use std::sync::atomic::Ordering;
 use shape_gen;
 use shape_gen::GenVertex;
 
@@ -23,7 +22,6 @@ use downsampler::*;
 use tonemapper::{Tonemapper, TonemapperResources};
 use plshadow::PLShadow;
 
-use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 use std::str;
@@ -338,6 +336,7 @@ struct FrameResources {
     calloc: D3D12CommandAllocator,
     glist: D3D12GraphicsCommandList,
     fence: Fence,
+    tm_fence: D3D12Fence, // for tonemapper sync
     i_buffer: D3D12Resource, // instances data
     // I don't know easy way of saying "this borrow lifetime equals lifetime of the structure"
     // I can propagate lifetime parameter all the way up. Later.
@@ -374,6 +373,8 @@ impl FrameResources {
         try!(glist.close());
         trace!("Create fence");
         let fence = Fence::new(try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE)));
+        trace!("Create tm_fence");
+        let tm_fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
 
         let i_buffer_size = mem::size_of::<InstanceData>() * object_cnt;
         trace!("Create i_buffer");
@@ -449,6 +450,7 @@ impl FrameResources {
             calloc: calloc,
             glist: glist,
             fence: fence,
+            tm_fence: tm_fence,
             i_buffer: i_buffer,
             instance_data_mapped: cpu_i_ptr,
             gpu_i_ptr: gpu_i_ptr,
@@ -536,9 +538,10 @@ impl FrameResources {
         core.graphics_queue.execute_command_lists(&[glist]);
         ::perf_exec_end();
         ::perf_clear_end();
-        try!(self.fence.signal(&core.graphics_queue, core.next_fence_value()));
-        try!(self.fence.wait(&core.compute_queue));
-        try!(cr.tonemapper.tonemap(core, &self.tonemapper_resources, &self.hdr_render_target, rt, &mut self.fence));
+        let fence_val = core.next_fence_value();
+        try!(core.graphics_queue.signal(&self.tm_fence, fence_val));
+        try!(core.compute_queue.wait(&self.tm_fence, fence_val));
+        try!(cr.tonemapper.tonemap(core, &mut self.tonemapper_resources, &self.hdr_render_target, rt, &mut self.fence));
 
         Ok(())
     }
@@ -1020,6 +1023,18 @@ pub fn on_render(data: &mut AppData) {
         Err(hr) => {
             data.core.dump_info_queue();
             // TODO: Maybe I can handle DEVICE_REMOVED error by recreating DXCore and DXSwapchain
+            if hr == DXGI_ERROR_DEVICE_REMOVED {
+                if let Err(reason) = data.core.dev.get_device_removed_reason() {
+                    match reason {
+                        DXGI_ERROR_DEVICE_HUNG => error!("Device hung"),
+                        DXGI_ERROR_DEVICE_REMOVED => error!("Device removed"),
+                        DXGI_ERROR_DEVICE_RESET => error!("Device reset"),
+                        DXGI_ERROR_DRIVER_INTERNAL_ERROR => error!("Driver internal error"),
+                        DXGI_ERROR_INVALID_CALL => error!("Invalid call"),
+                        _ => error!("Device removed reason: 0x{:x}",reason),
+                    }
+                };
+            };
             panic!("Present failed with 0x{:x}", hr);
         }
         // TODO: Use STATUS_OCCLUDED to reduce frame rate

@@ -14,6 +14,13 @@ pub struct TonemapperResources {
     h_tex: D3D12Resource,
     im_tex: D3D12Resource,
     srcformat: DXGI_FORMAT,
+    fence: D3D12Fence,
+    calloc: D3D12CommandAllocator,
+    clist: D3D12GraphicsCommandList,
+    gralloc: D3D12CommandAllocator,
+    grlist: D3D12GraphicsCommandList,
+    hpass_dheap: DescriptorHeap,
+    dheap: DescriptorHeap,
 }
 
 // Holds intermediate variables for Tonemapper function.
@@ -45,27 +52,49 @@ impl TonemapperResources {
                                                         &tex_desc,
                                                         D3D12_RESOURCE_STATE_COMMON,
                                                         None));
+        trace!("Create fence");
+        let fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
+        trace!("Create dheap");
+        let dheap = try!(DescriptorHeap::new(&dev, 3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+        trace!("Create hpass_dheap");
+        let hpass_dheap = try!(DescriptorHeap::new(&dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+        trace!("Create calloc");
+        let calloc = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COMPUTE));
+        trace!("Create clist");
+        let clist: D3D12GraphicsCommandList =
+            try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, &calloc, None));
+        trace!("Close clist");
+        try!(clist.close());
+
+        trace!("Create gralloc");
+        let gralloc = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
+        trace!("Create grlist");
+        let grlist: D3D12GraphicsCommandList =
+            try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &gralloc, None));
+        trace!("Close grlist");
+        try!(grlist.close());
+
 
         Ok(TonemapperResources {
             h_tex: h_tex,
             im_tex: im_tex,
             srcformat: srcformat,
+            fence: fence,
+            dheap: dheap,
+            hpass_dheap: hpass_dheap,
+            calloc: calloc,
+            clist: clist,
+            gralloc: gralloc,
+            grlist: grlist,
         })
     }
 }
 
 pub struct Tonemapper {
-    hpass_dheap: DescriptorHeap,
     hpass_cpso: D3D12PipelineState,
     hpass_rs: D3D12RootSignature,
     cpso: D3D12PipelineState,
     root_sig: D3D12RootSignature,
-    dheap: DescriptorHeap,
-    calloc: D3D12CommandAllocator,
-    clist: D3D12GraphicsCommandList,
-    gralloc: D3D12CommandAllocator,
-    grlist: D3D12GraphicsCommandList,
-    fence: D3D12Fence,
     // luid of adapter cpso was generated on. generate_mips asserts that it is the same adapter as passed in DXCore
     luid: Luid,
 }
@@ -78,30 +107,6 @@ impl Tonemapper {
     // TODO: return some error code. Even if nothing meaningful can be done with the error code, at least it allows to shutdown gracefully.
     // I just can't recover from shader compilation error or missing shader file.
     pub fn new(dev: &D3D12Device) -> Tonemapper {
-        let hpass_dheap = DescriptorHeap::new(&dev,
-                                              2,
-                                              D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-                                              true,
-                                              0)
-                              .expect("Cannot create descriptor heap");
-        let dheap = DescriptorHeap::new(&dev, 3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0)
-                        .expect("Cannot create descriptor heap");
-
-        let calloc = dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COMPUTE)
-                        .expect("Cannot create compute command allocator");
-        let clist: D3D12GraphicsCommandList =
-            dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, &calloc, None)
-               .expect("Cannot create compute command list");
-        clist.close().expect("Unexpected error while closing empty compute command list");
-
-        let gralloc = dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT)
-                         .expect("Cannot create graphics command list");
-        let grlist: D3D12GraphicsCommandList =
-            dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &gralloc, None)
-               .expect("Cannot create graphics command list");
-        grlist.close().expect("Unexpected error while closing empty graphics command list");
-
-        let fence = dev.create_fence(0, D3D12_FENCE_FLAG_NONE).expect("Cannot create fence");
 
         let mut f = File::open("tonemap.hlsl").expect("Cannot open tonemapper shader file.");
         let mut content = vec![];
@@ -156,16 +161,9 @@ impl Tonemapper {
         Tonemapper {
             hpass_cpso: hpass_cpso,
             hpass_rs: hpass_rs,
-            hpass_dheap: hpass_dheap,
             cpso: cpso,
             root_sig: root_sig,
             luid: Luid(dev.get_adapter_luid()),
-            dheap: dheap,
-            calloc: calloc,
-            clist: clist,
-            gralloc: gralloc,
-            grlist: grlist,
-            fence: fence,
         }
     }
 
@@ -173,38 +171,40 @@ impl Tonemapper {
     // This function creates GPU "thread", which can be "joined" by using t_fence
     pub fn tonemap(&self,
                    core: &DXCore,
-                   res: &TonemapperResources,
+                   res: &mut TonemapperResources,
                    src: &D3D12Resource,
                    dst: &D3D12Resource,
                    t_fence: &mut Fence)
                    -> HResult<()> {
-        trace!("tonemap");
-        trace!("Assert same adapter");
+        if cfg!(debug_assertions) { trace!("tonemap") };
+        if cfg!(debug_assertions) { trace!("Assert same adapter") };
         assert!(&self.luid == &Luid(core.dev.get_adapter_luid()));
 
-        try!(self.calloc.reset());
-        try!(self.clist.reset(&self.calloc, Some(&self.cpso)));
+        if cfg!(debug_assertions) { trace!("callor.reset") };
+        try!(res.calloc.reset());
+        core.dump_info_queue();
+        try!(res.clist.reset(&res.calloc, Some(&self.cpso)));
 
-        trace!("rdesc");
+        if cfg!(debug_assertions) { trace!("rdesc") };
         let srcdesc = src.get_desc();
         let (cw, ch) = (srcdesc.Width as u32, srcdesc.Height);
 
 
         let dstdesc = dst.get_desc();
-        trace!("uav_desc");
+        if cfg!(debug_assertions) { trace!("uav_desc") };
 
-        let clist = &self.clist;
+        let clist = &res.clist;
         // Horizontal pass
         let src_desc = srv_tex2d_default_slice_mip(srcdesc.Format, 0, 1);
-        core.dev.create_shader_resource_view(Some(&src), Some(&src_desc), self.hpass_dheap.cpu_handle(0));
+        core.dev.create_shader_resource_view(Some(&src), Some(&src_desc), res.hpass_dheap.cpu_handle(0));
 
         let dst_desc = uav_tex2d_desc(srcdesc.Format, 0, 0);
-        core.dev.create_unordered_access_view(Some(&res.h_tex), None, Some(&dst_desc), self.hpass_dheap.cpu_handle(1));
+        core.dev.create_unordered_access_view(Some(&res.h_tex), None, Some(&dst_desc), res.hpass_dheap.cpu_handle(1));
 
         clist.set_pipeline_state(&self.hpass_cpso);
         clist.set_compute_root_signature(&self.hpass_rs);
-        clist.set_descriptor_heaps(&[self.hpass_dheap.get()]);
-        clist.set_compute_root_descriptor_table(0, self.hpass_dheap.gpu_handle(0));
+        clist.set_descriptor_heaps(&[res.hpass_dheap.get()]);
+        clist.set_compute_root_descriptor_table(0, res.hpass_dheap.gpu_handle(0));
 
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&src,
@@ -224,23 +224,23 @@ impl Tonemapper {
         // Vertical and final pass
 
         let srv_desc = srv_tex2d_default_slice_mip(srcdesc.Format, 0, 1);
-        core.dev.create_shader_resource_view(Some(&src), Some(&srv_desc), self.dheap.cpu_handle(0));
+        core.dev.create_shader_resource_view(Some(&src), Some(&srv_desc), res.dheap.cpu_handle(0));
 
         let h_desc = srv_tex2d_default_slice_mip(srcdesc.Format, 0, 1);
         core.dev
-            .create_shader_resource_view(Some(&res.h_tex), Some(&h_desc), self.dheap.cpu_handle(1));
+            .create_shader_resource_view(Some(&res.h_tex), Some(&h_desc), res.dheap.cpu_handle(1));
 
         let uav_desc = uav_tex2d_desc(dstdesc.Format, 0, 0);
         core.dev.create_unordered_access_view(Some(&res.im_tex),
                                               None,
                                               Some(&uav_desc),
-                                              self.dheap.cpu_handle(2));
+                                              res.dheap.cpu_handle(2));
 
 
         clist.set_pipeline_state(&self.cpso);
         clist.set_compute_root_signature(&self.root_sig);
-        clist.set_descriptor_heaps(&[self.dheap.get()]);
-        clist.set_compute_root_descriptor_table(0, self.dheap.gpu_handle(0));
+        clist.set_descriptor_heaps(&[res.dheap.get()]);
+        clist.set_compute_root_descriptor_table(0, res.dheap.gpu_handle(0));
 
         clist.dispatch(cw, ch / VTGroups + 1, 1);
         clist.resource_barrier(&[
@@ -251,7 +251,7 @@ impl Tonemapper {
           *ResourceBarrier::transition(&res.im_tex, 
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
         ]);
-        trace!("Close compute list");
+        if cfg!(debug_assertions) { trace!("Close compute list") };
         try!(clist.close().map_err(|hr| {
             core.dump_info_queue();
             hr
@@ -259,12 +259,16 @@ impl Tonemapper {
         core.compute_queue.execute_command_lists(&[clist]);
 
         let next_fence_val = core.next_fence_value();
-        try!(core.compute_queue.signal(&self.fence, next_fence_val));
+        try!(core.compute_queue.signal(&res.fence, next_fence_val));
+        // Instruct graphics queue to wait for compute queue
+        try!(core.graphics_queue.wait(&res.fence, next_fence_val));
 
         // Swapchain back buffers are special. Only graphics queue associated with swapchain can write them.
-        try!(self.gralloc.reset());
-        try!(self.grlist.reset(&self.gralloc, None));
-        let grlist = &self.grlist;
+        if cfg!(debug_assertions) { trace!("grallor.reset") };
+        try!(res.gralloc.reset());
+        core.dump_info_queue();
+        try!(res.grlist.reset(&res.gralloc, None));
+        let grlist = &res.grlist;
 
         let source_copy_loc = texture_copy_location_index(&res.im_tex, 0);
         let dest_copy_loc = texture_copy_location_index(&dst, 0);
@@ -291,18 +295,17 @@ impl Tonemapper {
                                                                D3D12_RESOURCE_STATE_COPY_DEST,
                                                                D3D12_RESOURCE_STATE_COMMON)]);
 
-        trace!("Close graphics list");
+        if cfg!(debug_assertions) { trace!("Close graphics list") };
         try!(grlist.close().map_err(|hr| {
             core.dump_info_queue();
             hr
         }));
-        // Instruct graphics queue to wait for compute queue
-        try!(core.graphics_queue.wait(&self.fence, next_fence_val));
         core.graphics_queue.execute_command_lists(&[grlist]);
 
-        t_fence.signal(&core.graphics_queue, core.next_fence_value());
+        let fence_val = core.next_fence_value();
+        try!(t_fence.signal(&core.graphics_queue, fence_val));
 
-        trace!("dump_info_queue");
+        if cfg!(debug_assertions) { trace!("dump_info_queue") };
         core.dump_info_queue();
 
         Ok(())

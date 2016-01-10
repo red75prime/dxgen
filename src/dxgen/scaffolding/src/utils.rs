@@ -55,7 +55,6 @@ use std::ptr;
 use std::slice;
 use structwrappers::*;
 use kernel32::*;
-use std::sync::atomic::Ordering;
 
 pub fn get_required_intermediate_size(res: &D3D12Resource) -> HResult<u64> {
     let desc = res.get_desc();
@@ -263,8 +262,6 @@ pub fn set_capture(hwnd: HWND) -> HWND {
 pub fn release_capture() -> BOOL {
     unsafe { ReleaseCapture() }
 }
-
-use dxsems::VertexFormat;
 
 // Fence holds temporary resources until it's waited upon.
 pub struct Fence {
