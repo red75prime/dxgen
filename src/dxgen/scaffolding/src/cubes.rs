@@ -26,6 +26,7 @@ use std::io::prelude::*;
 use std::fs::File;
 use std::str;
 use std::slice;
+use std::sync::Arc;
 
 // dx_vertex! macro implement dxsems::VertexFormat trait for given structure
 // VertexFormat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
@@ -80,29 +81,12 @@ struct InstanceData {
     n_world: [[f32; 3]; 3],
 }
 
-// This trait isn't very useful yet. Maybe it'll never be.
-pub trait Parameters {
-    fn object_count(&self) -> &u32;
-    fn thread_count(&self) -> &u32;
-    fn speed_mult(&self) -> f32;
-}
-
+#[derive(Clone, Copy, Debug)]
 pub struct CubeParms {
     pub object_count: u32,
     pub thread_count: u32,
     pub speed_mult: f32,
-}
-
-impl Parameters for CubeParms {
-    fn object_count(&self) -> &u32 {
-        &self.object_count
-    }
-    fn thread_count(&self) -> &u32 {
-        &self.thread_count
-    }
-    fn speed_mult(&self) -> f32 {
-        self.speed_mult
-    }
+    pub concurrent_state_update: bool,
 }
 
 static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.15, 1.0];
@@ -134,12 +118,14 @@ pub fn create_hdr_render_target
                                   Some(&render_target_view_desc_tex2d_default(hdr_format)),
                                   dheap.cpu_handle(0));
 
+    trace!("Create tonemapper_resource");
     let tonemapper_resource = try!(TonemapperResources::new(dev,
                                                             w,
                                                             h,
                                                             hdr_format,
                                                             DXGI_FORMAT_R8G8B8A8_UNORM));
 
+    trace!("create_hdr_render_target done");
     Ok((render_target, dheap, tonemapper_resource))
 }
 
@@ -444,6 +430,7 @@ impl FrameResources {
             top: 0,
         };
 
+        trace!("Create FrameResources done");
         Ok(FrameResources {
             viewport: viewport,
             sci_rect: sci_rect,
@@ -497,16 +484,14 @@ impl FrameResources {
         //        });
         //    };
         //});
-        for (idx, inst_ref) in self.instance_data_mapped.iter_mut().enumerate() {
-            let cs = &st.cubes[idx];
+        for (inst_ref, cs) in self.instance_data_mapped.iter_mut().zip(st.cubes[..].iter()) {
             *inst_ref = InstanceData {
                 world: rotshift3_to_4x4(&cs.rot, &cs.pos),
                 n_world: rot3_to_3x3(&cs.rot),
             };
         };
         ::perf_fillbuf_end();
-        ::perf_clear_start();
-
+        ::perf_start("listfill");
         try!(self.calloc.reset());
         try!(self.glist.reset(&self.calloc, Some(&cr.pipeline_state)));
 
@@ -534,14 +519,16 @@ impl FrameResources {
             &[*ResourceBarrier::transition(&self.hdr_render_target,
                 D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON)]);
         try!(glist.close());
+        ::perf_end("listfill");
         ::perf_exec_start();
         core.graphics_queue.execute_command_lists(&[glist]);
         ::perf_exec_end();
-        ::perf_clear_end();
+        ::perf_start("tonemap");
         let fence_val = core.next_fence_value();
         try!(core.graphics_queue.signal(&self.tm_fence, fence_val));
         try!(core.compute_queue.wait(&self.tm_fence, fence_val));
         try!(cr.tonemapper.tonemap(core, &mut self.tonemapper_resources, &self.hdr_render_target, rt, &mut self.fence));
+        ::perf_end("tonemap");
 
         Ok(())
     }
@@ -572,23 +559,40 @@ struct State {
 }
 
 impl State {
-    fn update(&self, dt: f32) -> Self {
+    fn update(&self, dt: f32, thread_cnt: u32) -> Self {
         // advance position of cubes
         let mut cubes = Vec::with_capacity(self.cubes.len());
-        for cube in &self.cubes {
-            let mut cs = CubeState {
-                pos: cube.pos + cube.spd * dt,
-                rot: Basis3::from_axis_angle(cube.rot_axe, Angle::from(deg(cube.rot_spd * dt))).concat(&cube.rot),
-                .. *cube};
-            cubes.push(cs);
-        }
-        let (lx, ly) = f64::sin_cos(self.tick*10.);
+        // Initialized content of cubes will be immediately overwritten
+        unsafe{ cubes.set_len(self.cubes.len()) };
+        crossbeam::scope(|scope| {
+            let chunk_len = (cubes.len()/thread_cnt as usize)+1;
+            for (chunk, chunk_src) in cubes[..].chunks_mut(chunk_len).zip(self.cubes[..].chunks(chunk_len)) {
+                scope.spawn(move || {
+                    for (c, cube) in chunk.iter_mut().zip(chunk_src) {
+                        *c = CubeState {
+                            pos: cube.pos + cube.spd * dt,
+                            rot: Basis3::from_axis_angle(cube.rot_axe, Angle::from(deg(cube.rot_spd * dt))).concat(&cube.rot),
+                            .. *cube
+                        };
+                    };
+                });
+            };
+        });
+         
+//        for cube in &self.cubes {
+//            let mut cs = CubeState {
+//                pos: cube.pos + cube.spd * dt,
+//                rot: Basis3::from_axis_angle(cube.rot_axe, Angle::from(deg(cube.rot_spd * dt))).concat(&cube.rot),
+//                .. *cube};
+//            cubes.push(cs);
+//        }
+        let (lx, ly) = f64::sin_cos(self.tick*0.1);
         let (lx, ly) = (lx as f32, ly as f32);
         let light_pos = v3(lx*50., ly*50., -3.);
         State {
             tick: self.tick + dt as f64,
             cubes: cubes,
-            camera: self.camera,
+            camera: self.camera.clone(),
             light_pos: light_pos,
         }
     }
@@ -611,17 +615,11 @@ pub struct AppData {
     object_count: u32,
     frame_count: u32,
     update_step: f32,
+    parameters: CubeParms,
     state: State,
     common_resources: CommonResources,
     frame_resources: Vec<FrameResources>,
 }
-
-// Parallel GPU workload submission requires some data from AppData.
-// So I need to implement Sync for it to be able to pass references to
-// different threads.
-// TODO: rewrite parrallel part to pass only required parts of AppData
-unsafe impl Sync for AppData {}
-
 
 // This impl allows me to write data.on_init() instead of on_init(&data). Well, at least 'dot' operator performs autodereference.
 // TODO: create trait for use in all rendering modules
@@ -631,10 +629,10 @@ impl AppData {
     //   adapter - GPU to use for rendering, or None for default.
     //   frame_count - count of backbuffers in swapchain
     //   parameters - object's count and thread's count
-    pub fn on_init<T: Parameters>(wnd: &Window,
+    pub fn on_init(wnd: &Window,
                                   adapter: Option<&DXGIAdapter1>,
                                   frame_count: u32,
-                                  parameters: &T)
+                                  parameters: &CubeParms)
                                   -> HResult<AppData> {
         on_init(wnd, adapter, frame_count, parameters)
     }
@@ -792,10 +790,10 @@ impl<T> DumpOnError for HResult<T> {
     }
 }
 
-pub fn on_init<T: Parameters>(wnd: &Window,
+pub fn on_init(wnd: &Window,
                               adapter: Option<&DXGIAdapter1>,
                               frame_count: u32,
-                              parameters: &T)
+                              parameters: &CubeParms)
                               -> HResult<AppData> {
     let hwnd = wnd.get_hwnd();
     let (w, h) = wnd.size();
@@ -865,7 +863,7 @@ pub fn on_init<T: Parameters>(wnd: &Window,
 
     let (tex_w, tex_h) = (256u32, 256u32);
 
-    let common_resources = try!(CommonResources::new(&core.dev, tex_w, tex_h, *parameters.thread_count()).dump(&core));
+    let common_resources = try!(CommonResources::new(&core.dev, tex_w, tex_h, parameters.thread_count).dump(&core));
 
 
     // Create pattern to set as texture data
@@ -926,7 +924,7 @@ pub fn on_init<T: Parameters>(wnd: &Window,
     trace!("wait_for_prev_frame");
     wait_for_graphics_queue(&core, &fence, &fence_event);
 
-    let object_count = *parameters.object_count();
+    let object_count = parameters.object_count;
 
     let mut frame_resources = vec![];
     for _ in 0 .. frame_count {
@@ -965,7 +963,8 @@ pub fn on_init<T: Parameters>(wnd: &Window,
         frame_count: frame_count,
         common_resources: common_resources,
         frame_resources: frame_resources,
-        update_step: parameters.speed_mult(),
+        update_step: parameters.speed_mult,
+        parameters: *parameters,
         state: State {
             tick: 0.0,
             camera: Camera::new(),
@@ -988,60 +987,80 @@ pub fn on_render(data: &mut AppData) {
     if cfg!(debug_assertions) {
         trace!("on_render")
     };
-
-    data.state = data.state.update(data.update_step);
-
-    // update index of current back buffer
-    let fi = data.swap_chain.swap_chain.get_current_back_buffer_index();
-    data.frame_index = fi;
-
-    // Render scene
-    data.frame_resources[fi as usize].render(
-        &data.core, 
-        data.swap_chain.render_target(fi), 
-        data.swap_chain.rtv_cpu_handle(fi), 
-        &data.common_resources, 
-        &data.state
-    ).dump(&data.core).unwrap();
-
-    ::perf_present_start();
-
-    let pparms = DXGI_PRESENT_PARAMETERS {
-        DirtyRectsCount: 0,
-        pDirtyRects: ptr::null_mut(),
-        pScrollRect: ptr::null_mut(),
-        pScrollOffset: ptr::null_mut(),
-    };
-
-
-    // I hope that present waits for back buffer transition into STATE_PRESENT
-    // I didn't find anything about this in MSDN.
-    if cfg!(debug_assertions) {
-        trace!("present")
-    };
-    match data.swap_chain.swap_chain.present1(0, 0, &pparms) {
-        Err(hr) => {
-            data.core.dump_info_queue();
-            // TODO: Maybe I can handle DEVICE_REMOVED error by recreating DXCore and DXSwapchain
-            if hr == DXGI_ERROR_DEVICE_REMOVED {
-                if let Err(reason) = data.core.dev.get_device_removed_reason() {
-                    match reason {
-                        DXGI_ERROR_DEVICE_HUNG => error!("Device hung"),
-                        DXGI_ERROR_DEVICE_REMOVED => error!("Device removed"),
-                        DXGI_ERROR_DEVICE_RESET => error!("Device reset"),
-                        DXGI_ERROR_DRIVER_INTERNAL_ERROR => error!("Driver internal error"),
-                        DXGI_ERROR_INVALID_CALL => error!("Invalid call"),
-                        _ => error!("Device removed reason: 0x{:x}",reason),
-                    }
+    data.state = 
+        crossbeam::scope(|scope|{
+            ::perf_start("state_update");
+            let state = &data.state;
+            let update_step = data.update_step;
+            let thread_cnt = data.common_resources.thread_cnt;
+            let state_or_join_handle = 
+                if data.parameters.concurrent_state_update {
+                    // Result is used as Either
+                    Ok(scope.spawn(move||{
+                        state.update(update_step, thread_cnt)
+                    }))
+                } else {
+                    Err(state.update(update_step, thread_cnt))
                 };
-            };
-            panic!("Present failed with 0x{:x}", hr);
-        }
-        // TODO: Use STATUS_OCCLUDED to reduce frame rate
-        _ => (),
-    }
-    ::perf_present_end();
+            ::perf_end("state_update");
 
+            // update index of current back buffer
+            let fi = data.swap_chain.swap_chain.get_current_back_buffer_index();
+            data.frame_index = fi;
+
+            // Render scene
+            data.frame_resources[fi as usize].render(
+                &data.core, 
+                data.swap_chain.render_target(fi), 
+                data.swap_chain.rtv_cpu_handle(fi), 
+                &data.common_resources, 
+                &data.state
+            ).dump(&data.core).unwrap();
+
+            ::perf_present_start();
+
+            let pparms = DXGI_PRESENT_PARAMETERS {
+                DirtyRectsCount: 0,
+                pDirtyRects: ptr::null_mut(),
+                pScrollRect: ptr::null_mut(),
+                pScrollOffset: ptr::null_mut(),
+            };
+
+
+            // I hope that present waits for back buffer transition into STATE_PRESENT
+            // I didn't find anything about this in MSDN.
+            if cfg!(debug_assertions) {
+                trace!("present")
+            };
+            match data.swap_chain.swap_chain.present1(0, 0, &pparms) {
+                Err(hr) => {
+                    data.core.dump_info_queue();
+                    // TODO: Maybe I can handle DEVICE_REMOVED error by recreating DXCore and DXSwapchain
+                    if hr == DXGI_ERROR_DEVICE_REMOVED {
+                        if let Err(reason) = data.core.dev.get_device_removed_reason() {
+                            match reason {
+                                DXGI_ERROR_DEVICE_HUNG => error!("Device hung"),
+                                DXGI_ERROR_DEVICE_REMOVED => error!("Device removed"),
+                                DXGI_ERROR_DEVICE_RESET => error!("Device reset"),
+                                DXGI_ERROR_DRIVER_INTERNAL_ERROR => error!("Driver internal error"),
+                                DXGI_ERROR_INVALID_CALL => error!("Invalid call"),
+                                _ => error!("Device removed reason: 0x{:x}",reason),
+                            }
+                        };
+                    };
+                    panic!("Present failed with 0x{:x}", hr);
+                }
+                // TODO: Use STATUS_OCCLUDED to reduce frame rate
+                _ => (),
+            }
+            ::perf_present_end();
+            ::perf_start("state_update_wait");
+            match state_or_join_handle {
+                Ok(jh) => jh.join(),
+                Err(state) => state,
+            }
+        }); // crossbeam::scope
+    ::perf_end("state_update_wait");
     data.core.dump_info_queue();
 }
 

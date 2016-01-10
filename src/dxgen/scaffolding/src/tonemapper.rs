@@ -74,7 +74,7 @@ impl TonemapperResources {
         trace!("Close grlist");
         try!(grlist.close());
 
-
+        trace!("TonemapperResources created");
         Ok(TonemapperResources {
             h_tex: h_tex,
             im_tex: im_tex,

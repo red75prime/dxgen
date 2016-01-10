@@ -15,6 +15,7 @@ cgmath = "0.5"
 clock_ticks = "*"
 crossbeam = "0.1"
 obj = "0.4"
+itertools = "0.4.6"
 
 [dependencies.winapi]
 #version = "0.2.5"

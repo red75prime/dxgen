@@ -18,6 +18,7 @@ extern crate clock_ticks;
 extern crate cgmath;
 extern crate crossbeam;
 extern crate obj;
+extern crate itertools;
 
 #[macro_use] mod macros;
 mod create_device;
@@ -49,17 +50,18 @@ use std::collections::HashMap;
 use window::*;
 use utils::*;
 use clock_ticks::*;
-use cubes::{Parameters, CubeParms};
+use cubes::CubeParms;
 use std::time::Duration;
+use itertools::Itertools;
 
-const FRAME_COUNT : u32 = 2;
+const FRAME_COUNT : u32 = 3;
 
 fn main() {
   // Initialize logger
   env_logger::init().unwrap();
 
   // Set default values of cubes module parameters
-  let mut parms = CubeParms {thread_count: 2, object_count: 2_000, speed_mult: 0.01};
+  let mut parms = CubeParms {thread_count: 2, object_count: 2_000, speed_mult: 0.01, concurrent_state_update: true};
   let mut adapters_to_test = vec![];
   let mut adapters_info = false;
   for arg in env::args() {
@@ -70,6 +72,9 @@ fn main() {
     if arg == "-i" || arg == "--info" {
       adapters_info = true;
     }
+    if arg == "--seq" {
+        parms.concurrent_state_update = false;
+    };
     if arg.starts_with("-o") {
       // Command line parameter -o<N> sets number of objects to draw
       // Note, that 2 in arg[2..] is a number of bytes, not characters. 
@@ -159,7 +164,7 @@ const VK_W: i32 = b'W' as i32;
 const VK_E: i32 = b'E' as i32;
 const VK_R: i32 = b'R' as i32;
 
-fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &T) {
+fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &CubeParms) {
     // Setup window. Currently window module supports only one window per thread.
     let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
     let title=format!("D3D12 Hello, rusty world! ({})", descr);
@@ -318,7 +323,9 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
         // State change and rendering is done inside on_render.
         // Error handling isn't implemented yet. on_render panics, if it needs to.
         // TODO: process error
+        ::perf_start("total");
         data.borrow_mut().on_render();
+        ::perf_end("total");
         // register rendered frame in performance collector
         ::perf_frame();
         // fps counting stuff
@@ -326,17 +333,16 @@ fn main_prime<T: Parameters>(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<
         let frames = PERFDATA.with(|p_data| p_data.borrow().frames);
         if frames>0 && now<start || now>=(start+1.0) {
             // Once per second show stats
-            let (clear, fill, exec, present, wait) =
+            print!("Adapter {} FPS: {:4}", id, frames);
             PERFDATA.with(|p_data| {
                 let p_data = p_data.borrow();
                 let frames = p_data.frames as f64;
-                (p_data.perf.get("clear").unwrap()*1000./frames, 
-                p_data.perf.get("fillbuf").unwrap()*1000./frames, 
-                p_data.perf.get("exec").unwrap()*1000./frames, 
-                p_data.perf.get("present").unwrap()*1000./frames, 
-                p_data.perf.get("wait").unwrap()*1000./frames, )
+                for (&pname, val) in p_data.perf.iter().sorted_by(|&(&n1,_),&(&n2,_)| n1.cmp(n2)) {
+                    print!(" {}:{:.2}", pname, val*1000./frames);
+                };
+                println!("");
             });
-            println!("Adapter {} FPS: {:3} clear:{:4.2} fill:{:4.2} exec:{:4.2} present:{:4.2} wait:{:4.2}   \r", id, frames, clear, fill, exec, present, wait);
+            //println!("Adapter {} FPS: {:3} clear:{:.2} fill:{:.2} exec:{:.2} present:{:.2} wait:{:.2}  ", id, frames, clear, fill, exec, present, wait);
             let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
             perf_reset();
             start = now;
@@ -367,16 +373,10 @@ pub struct PerfData {
 
 impl PerfData {
   fn new() -> PerfData {
-    let mut pd = PerfData {
+    PerfData {
       frames: 0,
       perf: HashMap::new(),
-    };
-    pd.perf.insert("clear", 0.);
-    pd.perf.insert("fillbuf", 0.);
-    pd.perf.insert("exec", 0.);
-    pd.perf.insert("present", 0.);
-    pd.perf.insert("wait", 0.);
-    pd
+    }
   }
 }
 
@@ -398,7 +398,7 @@ pub fn perf_reset() {
 
 pub fn perf_start(name: &'static str) {
   PERFDATA.with(|pd| {
-    *pd.borrow_mut().perf.get_mut(name).unwrap() -= precise_time_s();
+    *pd.borrow_mut().perf.entry(name).or_insert(0.) -= precise_time_s();
   });
 }
 
