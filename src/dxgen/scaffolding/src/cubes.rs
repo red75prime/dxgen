@@ -164,10 +164,11 @@ struct CommonResources {
     downsampler: Downsampler,
     tonemapper: Tonemapper,
     plshadow: PLShadow<Vertex>,
+    thread_cnt: u32,
 }
 
 impl CommonResources {
-    fn new(dev: &D3D12Device, tex_w: u32, tex_h: u32) -> HResult<CommonResources> {
+    fn new(dev: &D3D12Device, tex_w: u32, tex_h: u32, thread_cnt: u32) -> HResult<CommonResources> {
         trace!("Open 'shaders.hlsl'");
         let mut f = try!(File::open("shaders.hlsl").map_err(|_| DXGI_ERROR_NOT_FOUND));
         let mut content = vec![];
@@ -326,6 +327,7 @@ impl CommonResources {
             downsampler: downsampler,
             tonemapper: tonemapper,
             plshadow: plshadow,
+            thread_cnt: thread_cnt,
         })
     }
 }
@@ -351,6 +353,7 @@ struct FrameResources {
     depth_stencil: D3D12Resource,
     dsd_heap: DescriptorHeap,
     tonemapper_resources: TonemapperResources,
+    object_cnt: u32,
 }
 
 impl FrameResources {
@@ -457,11 +460,16 @@ impl FrameResources {
             depth_stencil: depth_stencil,
             dsd_heap: dsd_heap,
             tonemapper_resources: tonemapper_resources,
+            object_cnt: object_cnt as u32,
         })
     }
     // rtvh - render target view descriptor handle
     fn render(&mut self, core: &DXCore, rt: &D3D12Resource, rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, cr: &CommonResources, st: &State) -> HResult<()> {
+        ::perf_wait_start();
         try!(self.fence.wait_for_gpu());
+        ::perf_wait_end();
+    
+        ::perf_fillbuf_start();
 
         *self.constants_mapped = Constants {
             view: matrix4_to_4x4(&st.camera.view_matrix()),
@@ -471,23 +479,43 @@ impl FrameResources {
             light_pos: st.light_pos.clone().into(),
         };
 
-        for (i, cs) in st.cubes.iter().enumerate() {
-            self.instance_data_mapped[i] = InstanceData {
+        //// Experiments showed no gain from filling instance data using multiple threads
+        //crossbeam::scope(|scope| {
+        //    let chunk_size = (self.instance_data_mapped.len() / cr.thread_cnt as usize)+1;
+        //    for (ch_idx, chunk) in self.instance_data_mapped.chunks_mut(chunk_size).enumerate() {
+        //        scope.spawn(move || {
+        //            let start = ch_idx * chunk_size;
+        //            for (idx, inst_ref) in chunk.iter_mut().enumerate() {
+        //                let cs = &st.cubes[start+idx];
+        //                *inst_ref = InstanceData {
+        //                    world: rotshift3_to_4x4(&cs.rot, &cs.pos),
+        //                    n_world: rot3_to_3x3(&cs.rot),
+        //                };
+        //            };
+        //        });
+        //    };
+        //});
+        for (idx, inst_ref) in self.instance_data_mapped.iter_mut().enumerate() {
+            let cs = &st.cubes[idx];
+            *inst_ref = InstanceData {
                 world: rotshift3_to_4x4(&cs.rot, &cs.pos),
                 n_world: rot3_to_3x3(&cs.rot),
             };
         };
+        ::perf_fillbuf_end();
+        ::perf_clear_start();
 
         try!(self.calloc.reset());
         try!(self.glist.reset(&self.calloc, Some(&cr.pipeline_state)));
 
+        let hdr_rtvh = self.hdr_rtv_heap.cpu_handle(0);
         let dsvh = self.dsd_heap.cpu_handle(0);
         let glist = &self.glist;
         glist.set_graphics_root_signature(&cr.root_signature);
         glist.set_descriptor_heaps(&[cr.srv_heap.get()]);
         glist.rs_set_viewports(&[self.viewport]);
         glist.rs_set_scissor_rects(&[self.sci_rect]);
-        glist.om_set_render_targets(1, &rtvh, Some(&dsvh));
+        glist.om_set_render_targets(1, &hdr_rtvh, Some(&dsvh));
         glist.set_graphics_root_descriptor_table(0, cr.srv_heap.gpu_handle(0));
         glist.set_graphics_root_constant_buffer_view(1, self.gpu_c_ptr);
         glist.set_graphics_root_shader_resource_view(2, self.gpu_i_ptr);
@@ -495,17 +523,22 @@ impl FrameResources {
         glist.ia_set_vertex_buffers(0, Some(&[cr.vertex_buffer_view]));
         glist.ia_set_index_buffer(Some(&cr.index_buffer_view));
         glist.resource_barrier(
-            &[*ResourceBarrier::transition(rt,
+            &[*ResourceBarrier::transition(&self.hdr_render_target,
                D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET)]);
-        glist.clear_render_target_view(rtvh, &CLEAR_COLOR, &[]);
+        glist.clear_render_target_view(hdr_rtvh, &CLEAR_COLOR, &[]);
         glist.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
         glist.draw_indexed_instanced(cr.index_count, st.cubes.len() as u32 ,0 ,0 ,0);
         glist.resource_barrier(
-            &[*ResourceBarrier::transition(rt,
+            &[*ResourceBarrier::transition(&self.hdr_render_target,
                 D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON)]);
         try!(glist.close());
+        ::perf_exec_start();
         core.graphics_queue.execute_command_lists(&[glist]);
+        ::perf_exec_end();
+        ::perf_clear_end();
         try!(self.fence.signal(&core.graphics_queue, core.next_fence_value()));
+        try!(self.fence.wait(&core.compute_queue));
+        try!(cr.tonemapper.tonemap(core, &self.tonemapper_resources, &self.hdr_render_target, rt, &mut self.fence));
 
         Ok(())
     }
@@ -546,9 +579,9 @@ impl State {
                 .. *cube};
             cubes.push(cs);
         }
-        let (lx, ly) = f64::sin_cos(self.tick);
+        let (lx, ly) = f64::sin_cos(self.tick*10.);
         let (lx, ly) = (lx as f32, ly as f32);
-        let light_pos = v3(lx, ly, -3.);
+        let light_pos = v3(lx*50., ly*50., -3.);
         State {
             tick: self.tick + dt as f64,
             cubes: cubes,
@@ -729,7 +762,7 @@ pub fn create_static_sampler_gps<T: VertexFormat>(dev: &D3D12Device,
     };
     // This assignment reduces amount of typing. But I could have included
     // all 8 members of RTVFormats in the struct initialization above.
-    pso_desc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    pso_desc.RTVFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT;
 
     // Note that creation of pipeline state object is time consuming operation.
     // Compilation of shader byte-code occurs here.
@@ -829,7 +862,7 @@ pub fn on_init<T: Parameters>(wnd: &Window,
 
     let (tex_w, tex_h) = (256u32, 256u32);
 
-    let common_resources = try!(CommonResources::new(&core.dev, tex_w, tex_h).dump(&core));
+    let common_resources = try!(CommonResources::new(&core.dev, tex_w, tex_h, *parameters.thread_count()).dump(&core));
 
 
     // Create pattern to set as texture data
@@ -955,14 +988,11 @@ pub fn on_render(data: &mut AppData) {
 
     data.state = data.state.update(data.update_step);
 
-    // measure timings
-    ::perf_wait_start();
-    ::perf_wait_end();
-    ::perf_fillbuf_start();
     // update index of current back buffer
     let fi = data.swap_chain.swap_chain.get_current_back_buffer_index();
     data.frame_index = fi;
 
+    // Render scene
     data.frame_resources[fi as usize].render(
         &data.core, 
         data.swap_chain.render_target(fi), 
@@ -971,80 +1001,6 @@ pub fn on_render(data: &mut AppData) {
         &data.state
     ).dump(&data.core).unwrap();
 
-    alias!(camera, data.state.camera);
-    // Setup world, normal, view and projection matrices
-    let view_matrix = matrix4_to_4x4(&camera!().view_matrix());
-    // print!("{:?}\r", view_matrix);
-    let proj_matrix = matrix4_to_4x4(&camera!().projection_matrix());
-
-
-    // Parallel submission threads use view, proj and light_pos
-    let consts = Constants {
-        view: view_matrix,
-        proj: proj_matrix,
-        eye_pos: camera!().eye.clone().into(),
-        _padding1: 0.,
-        light_pos: [0., 0., -3.0],
-    };
-
-    if cfg!(debug_assertions) {
-        trace!("build clear command list")
-    };
-
-    ::perf_fillbuf_end();
-    ::perf_clear_start();
-    // Clear render targets
-    if cfg!(debug_assertions) {
-        trace!("execute clear command list")
-    };
-
-    // I'm not sure if GPU parallelizes execution within execute_command_lists only, or across calls too.
-    // TODO: make sure that this sync is not needed
-    // wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
-
-    ::perf_clear_end();
-    ::perf_exec_start();
-    // Scope prevents 'ps', that borrows part of 'data', from blocking subsequent mutable borrows.
-    {
-        //let ps = &mut data.parallel_submission[data.cur_ps_num];
-        //// ParallelSubmission::gc_lists contains Vec of tuples (D3D12GraphicsCommandList, D3D12CommandAllocator)
-        //// This line creates vector of references to (borrows of) command lists from gc_lists
-        //// TODO: check if one command allocator is sufficient for parallel lists creation
-        //let cls: Vec<&D3D12GraphicsCommandList> = ps.gc_lists
-        //                                            .iter()
-        //                                            .map(|&(ref clist, _)| clist)
-        //                                            .collect();
-        //if cfg!(debug_assertions) {
-        //    trace!("execute render command lists")
-        //};
-        //data.core.graphics_queue.execute_command_lists(&cls[..]);
-
-        //ps.transition_list.reset(&ps.ps_allocator, None).unwrap();
-        //let render_target = &data.hdr_render_targets[data.frame_index as usize];
-        //// Ready hdr render buffer to compute shader processing
-        //ps.transition_list
-        //  .resource_barrier(&[*ResourceBarrier::transition(render_target,
-        //                                                   D3D12_RESOURCE_STATE_RENDER_TARGET,
-        //                                                   D3D12_RESOURCE_STATE_COMMON)]);
-        //ps.transition_list.close().unwrap();
-        //if cfg!(debug_assertions) {
-        //    trace!("execute tramsition command list")
-        //};
-        //data.core.graphics_queue.execute_command_lists(&[&ps.transition_list]);
-        //wait_for_graphics_queue(&data.core, &ps.fence, &data.fence_event);
-
-        //data.tonemapper
-        //    .tonemap(&data.core,
-        //             &data.tonemapper_resources[data.frame_index as usize],
-        //             render_target,
-        //             &data.swap_chain.render_targets[data.frame_index as usize],
-        //             &mut ps.hdr_fence)
-        //    .expect("Tonemap failed");
-    }
-
-
-
-    ::perf_exec_end();
     ::perf_present_start();
 
     let pparms = DXGI_PRESENT_PARAMETERS {
@@ -1074,66 +1030,6 @@ pub fn on_render(data: &mut AppData) {
     data.core.dump_info_queue();
 }
 
-
-// --------------------------------
-// This function fills graphics command list with instructions
-// for clearing render target and depth-stencil view.
-//fn command_list_rt_clear(command_list: &D3D12GraphicsCommandList,
-//                         command_allocator: &D3D12CommandAllocator,
-//                         data: &AppData)
-//                         -> HResult<()> {
-//    if cfg!(debug_assertions) {
-//        trace!("Command allocator reset")
-//    };
-//    // I unwrap() result because it shouldn't panic if I wrote the program correctly.
-//    // Hmm. I think DEVICE_REMOVED _can_ occur here. Ok. I replaced it with try!.
-//    // D3D12CommandAllocator::reset() indicates that it is safe to reuse allocated memory.
-//    // GPU mustn't be using any of command lists associated with this allocator.
-//    // I ensure this near the beginning of on_render() by waiting for fence.
-//    try!(command_allocator.reset());
-//    if cfg!(debug_assertions) {
-//        trace!("Command list reset")
-//    };
-//    // Command lists can be reused immediately after call to D3DCommandQueue::execute_command_lists(),
-//    // but I don't use this property yes.
-//    try!(command_list.reset(command_allocator, Some(&data.pipeline_state)));
-
-//    if cfg!(debug_assertions) {
-//        trace!("Resource barrier")
-//    };
-//    // It tells GPU to prepare back buffer for use as render target.
-//    command_list.resource_barrier(
-//      &[*ResourceBarrier::transition(&data.hdr_render_targets[data.frame_index as usize],
-//      D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET).flags(D3D12_RESOURCE_BARRIER_FLAG_NONE)]);
-
-//    let rtvh = data.hdr_rtv_heap.cpu_handle(data.frame_index);
-//    let dsvh = data.dsd_heap.cpu_handle(data.frame_index);
-//    if cfg!(debug_assertions) {
-//        trace!("OM set render targets")
-//    };
-//    // ID3D12GraphicsCommandList::OMSetRenderTargets has 4 parameters.
-//    // I split this method into two: om_set_render_targets()
-//    // and om_set_render_targets_arr(), eliminating RTsSingleHandleToDescriptorRange parameter.
-//    command_list.om_set_render_targets(1, &rtvh, Some(&dsvh));
-
-//    let clear_color = CLEAR_COLOR;
-//    if cfg!(debug_assertions) {
-//        trace!("clear render target view")
-//    };
-//    command_list.clear_render_target_view(rtvh, &clear_color, &[]);
-//    command_list.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
-
-//    if cfg!(debug_assertions) {
-//        trace!("command list close")
-//    };
-//    match command_list.close() {
-//        Ok(_) => Ok(()),
-//        Err(hr) => {
-//            data.core.dump_info_queue();
-//            panic!("command_list.close() failed with 0x{:x}", hr);
-//        }
-//    }
-//}
 
 // ---------------------------
 
@@ -1171,218 +1067,3 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
     // on_render(data, 1, 1);
 }
 
-//struct PtrConstants<T>(*mut T);
-
-//unsafe impl<T> Send for PtrConstants<T> {}
-//unsafe impl<T> Sync for PtrConstants<T> {}
-
-//struct ParallelSubmissionData<T> {
-//    c_buffer: D3D12Resource,
-//    // Buffer is kept mapped into CPU address space. Drop unmaps it
-//    // cpu_buf_ptr.0 points to buf_alignment aligned array of buf_count Ts
-//    cpu_buf_ptr: PtrConstants<T>,
-//    gpu_buf_ptr: u64,
-//    buf_alignment: usize,
-//    buf_count: usize,
-//    gc_lists: Vec<(D3D12GraphicsCommandList, D3D12CommandAllocator)>,
-//    ps_allocator: D3D12CommandAllocator,
-//    clear_list: D3D12GraphicsCommandList,
-//    transition_list: D3D12GraphicsCommandList,
-//    fence: D3D12Fence,
-//    fence_val: u64,
-//    // Fence is D3D12Fence wrapper, which holds temporary resources while gpu needs them
-//    hdr_fence: Fence,
-//}
-
-//impl<T> Drop for ParallelSubmissionData<T> {
-//    fn drop(&mut self) {
-//        self.c_buffer.unmap(0, None);
-//    }
-//}
-
-//impl<T> ParallelSubmissionData<T> {
-//    // returns (pointer to i-th constant buffer, gpu virtual address of i-th constant buffer)
-//    fn get_buf_ptr_mut(&self, i: usize) -> (*mut T, u64) {
-//        assert!(i < self.buf_count);
-//        (((self.cpu_buf_ptr.0 as usize) + i * self.buf_alignment) as *mut T,
-//         self.gpu_buf_ptr + ((i * self.buf_alignment) as u64))
-//    }
-
-//    // returns vec of (chunk_start, chunk_size)
-//    fn get_chunks(&self, threads: usize) -> Vec<(usize, usize)> {
-//        let chunk_size = max(1, self.buf_count / threads);
-//        let mut c_start = 0;
-//        let mut remaining = self.buf_count;
-//        let mut chunks = vec![];
-//        for _ in 0..threads {
-//            if remaining == 0 {
-//                chunks.push((0, 0));
-//            } else {
-//                let cur_chunk_size = min(remaining, chunk_size);
-//                chunks.push((c_start, cur_chunk_size));
-//                c_start += cur_chunk_size;
-//                remaining -= cur_chunk_size;
-//            }
-//        }
-//        assert!(chunks.len() == threads);
-//        chunks
-//    }
-
-//    fn thread_count(&self) -> usize {
-//        self.gc_lists.len()
-//    }
-
-//    fn clear_lists(&self) {
-//        self.clear_list.reset(&self.ps_allocator, None).unwrap();
-//        self.clear_list.close().unwrap();
-//        self.transition_list.reset(&self.ps_allocator, None).unwrap();
-//        self.transition_list.close().unwrap();
-//        for &(ref list, ref alloc) in &self.gc_lists {
-//            list.reset(alloc, None).unwrap();
-//            list.close().unwrap();
-//        }
-//    }
-//}
-
-//fn init_parallel_submission(core: &DXCore,
-//                            thread_count: u32,
-//                            object_count: u32)
-//                            -> HResult<ParallelSubmissionData<Constants>> {
-//    trace!("cbsize");
-//    let cbsize = unsafe {
-//        let cbuf_data: Constants = ::std::mem::uninitialized();
-//        let cbsize = mem::size_of_val(&cbuf_data);
-//        mem::forget(cbuf_data);
-//        cbsize
-//    };
-
-//    let alignment = (cbsize + 255) & !255; // TODO: Remove duplication. This is used in D3D12_CONSTANT_BUFFER_VIEW_DESC also.
-
-//    let buffer_size = (object_count as usize) * alignment;
-//    // create resource to hold all constant buffers
-//    trace!("create cbuf");
-//    let cbuf = try!(core.dev.create_committed_resource(&heap_properties_upload(),
-//                                                       D3D12_HEAP_FLAG_NONE,
-//                                                       &resource_desc_buffer(buffer_size as u64),
-//                                                       D3D12_RESOURCE_STATE_GENERIC_READ,
-//                                                       None));
-//    let mut ptr: *mut u8 = ptr::null_mut();
-//    // Indicate that CPU doesn't read from buffer
-//    let read_range = D3D12_RANGE { Begin: 0, End: 0 };
-//    trace!("map cbuf");
-//    unsafe {
-//        try!(cbuf.map(0, Some(&read_range), Some(&mut ptr)));
-//        debug!("cbuf.iptr(): 0x{:x}, ptr: 0x{:x}",
-//               cbuf.iptr() as usize,
-//               ptr as usize);
-//    }
-//    let cpu_buf_ptr = PtrConstants(ptr as *mut Constants);
-
-//    let mut clists = vec![];
-//    for _ in 0..thread_count {
-//        trace!("create_command_allocator");
-//        let callocator = try!(core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
-//        trace!("create_command_list");
-//        let clist: D3D12GraphicsCommandList =
-//            try!(core.dev
-//                     .create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &callocator, None));
-//        clist.close().unwrap();
-//        clists.push((clist, callocator));
-//    }
-
-//    let gpu_buf_ptr = cbuf.get_gpu_virtual_address();
-
-//    let fence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
-
-//    let hdr_dxfence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
-
-//    let ps_allocator = try!(core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
-//    let clear_list: D3D12GraphicsCommandList =
-//        try!(core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &ps_allocator, None));
-//    clear_list.close().unwrap();
-//    let transition_list: D3D12GraphicsCommandList =
-//        try!(core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &ps_allocator, None));
-//    transition_list.close().unwrap();
-
-
-//    Ok(ParallelSubmissionData {
-//        c_buffer: cbuf,
-//        cpu_buf_ptr: cpu_buf_ptr,
-//        gpu_buf_ptr: gpu_buf_ptr,
-//        buf_alignment: alignment,
-//        buf_count: object_count as usize,
-//        gc_lists: clists,
-//        ps_allocator: ps_allocator,
-//        clear_list: clear_list,
-//        transition_list: transition_list,
-//        fence: fence,
-//        fence_val: 0,
-//        hdr_fence: Fence::new(hdr_dxfence),
-//    })
-//}
-
-//fn submit_in_parallel(data: &AppData, consts: &Constants) -> HResult<()> {
-//    let ps = &data.parallel_submission[data.cur_ps_num];
-//    let thread_count = ps.thread_count();
-//    let dsvh = data.dsd_heap.cpu_handle(data.frame_index);
-//    let rtvh = data.hdr_rtv_heap.cpu_handle(data.frame_index);
-//    let chunks = ps.get_chunks(thread_count);
-//    // debug!("{:?}", chunks);
-
-//    crossbeam::scope(|scope| {
-//        for ((&(start, count), &(ref clist, ref callocator)), th_n) in chunks.iter()
-//                                                                             .zip(ps.gc_lists
-//                                                                                    .iter())
-//                                                                             .zip(1..) {
-//            scope.spawn::<_, HResult<()>>(move || {
-//                if count == 0 {
-//                    return Ok(());
-//                };
-//                // let seed: &[_] = &[th_n, 3, 3, 4];
-//                // let mut rng: rand::StdRng = rand::SeedableRng::from_seed(seed);
-
-//                try!(callocator.reset());
-//                try!(clist.reset(callocator, Some(&data.pipeline_state)));
-//                clist.set_graphics_root_signature(&data.root_signature);
-//                clist.set_descriptor_heaps(&[data.srv_heap.get()]);
-//                clist.rs_set_viewports(&[data.viewport]);
-//                clist.rs_set_scissor_rects(&[data.scissor_rect]);
-//                clist.om_set_render_targets(1, &rtvh, Some(&dsvh));
-//                clist.set_graphics_root_descriptor_table(0, data.srv_heap.gpu_handle(0));
-//                clist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-//                clist.ia_set_vertex_buffers(0, Some(&[data.vertex_buffer_view]));
-//                clist.ia_set_index_buffer(Some(&data.index_buffer_view));
-
-//                assert!(data.index_buffer_view.Format == DXGI_FORMAT_R32_UINT);
-//                let num_vtx = data.index_buffer_view.SizeInBytes / 4; //Index size depends on Format
-
-//                for i in start..start + count {
-//                    let mut c: Constants = consts.clone();
-//                    let (pos, _, dir, spd) = data.rot_spd[i].clone();
-//                    let rot = Basis3::from_axis_angle(dir, rad(1.0 + spd * (data.tick as f32)));
-//                    let asfa = rot.as_ref();
-//                    for j in 0..3 {
-//                        for k in 0..3 {
-//                            c.model[j][k] = asfa[k][j];
-//                            c.n_model[j][k] = asfa[k][j];
-//                        }
-//                    }
-//                    c.model[0][3] = pos.x;
-//                    c.model[1][3] = pos.y;
-//                    c.model[2][3] = pos.z;
-//                    let (constants, cb_address) = ps.get_buf_ptr_mut(i);
-//                    unsafe {
-//                        // Write to memory-mapped constant buffer
-//                        *(constants) = c;
-//                    };
-//                    // debug!("cb_address: 0x{:x}", cb_address);
-//                    clist.set_graphics_root_constant_buffer_view(1, cb_address);
-//                    clist.draw_indexed_instanced(num_vtx, 1, 0, 0, 0);
-//                }
-//                try!(clist.close());
-//                Ok(())
-//            });
-//        }
-//    });
-//    Ok(())
-//}
