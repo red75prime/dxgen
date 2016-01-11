@@ -36,6 +36,7 @@ mod camera;
 mod downsampler;
 mod tonemapper;
 mod plshadow;
+mod cubestate;
 
 
 

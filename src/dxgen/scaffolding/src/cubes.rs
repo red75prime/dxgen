@@ -9,16 +9,14 @@ use utils::*;
 use cgmath::*;
 use structwrappers::*;
 use window::*;
-use rand;
 use crossbeam;
 use create_device::*;
-use std::cmp::{min, max};
 
 use camera::*;
 use shape_gen;
 use shape_gen::GenVertex;
 
-use downsampler::*;
+use downsampler::Downsampler;
 use tonemapper::{Tonemapper, TonemapperResources};
 use plshadow::PLShadow;
 
@@ -27,6 +25,7 @@ use std::fs::File;
 use std::str;
 use std::slice;
 use std::sync::Arc;
+use cubestate::{State, StateUpdateAgent};
 
 // dx_vertex! macro implement dxsems::VertexFormat trait for given structure
 // VertexFormat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
@@ -335,7 +334,7 @@ struct FrameResources {
     gpu_c_ptr: u64,
     hdr_render_target: D3D12Resource,
     hdr_rtv_heap: DescriptorHeap,
-    depth_stencil: D3D12Resource,
+    _depth_stencil: D3D12Resource,
     dsd_heap: DescriptorHeap,
     tonemapper_resources: TonemapperResources,
     object_cnt: u32,
@@ -446,14 +445,16 @@ impl FrameResources {
             gpu_c_ptr: gpu_c_ptr,
             hdr_render_target: hdr_render_target,
             hdr_rtv_heap: hdr_rtv_heap,
-            depth_stencil: depth_stencil,
+            _depth_stencil: depth_stencil,
             dsd_heap: dsd_heap,
             tonemapper_resources: tonemapper_resources,
             object_cnt: object_cnt as u32,
         })
     }
     // rtvh - render target view descriptor handle
-    fn render(&mut self, core: &DXCore, rt: &D3D12Resource, rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, cr: &CommonResources, st: &State) -> HResult<()> {
+    fn render(&mut self, core: &DXCore, rt: &D3D12Resource, rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, 
+                cr: &CommonResources, st: &State, camera: &Camera)
+                -> HResult<()> {
         ::perf_wait_start();
         try!(self.fence.wait_for_gpu());
         ::perf_wait_end();
@@ -461,9 +462,9 @@ impl FrameResources {
         ::perf_fillbuf_start();
 
         *self.constants_mapped = Constants {
-            view: matrix4_to_4x4(&st.camera.view_matrix()),
-            proj: matrix4_to_4x4(&st.camera.projection_matrix()),
-            eye_pos: st.camera.eye.clone().into(),
+            view: matrix4_to_4x4(&camera.view_matrix()),
+            proj: matrix4_to_4x4(&camera.projection_matrix()),
+            eye_pos: camera.eye.clone().into(),
             _padding1: 0.,
             light_pos: st.light_pos.clone().into(),
         };
@@ -485,10 +486,18 @@ impl FrameResources {
         //    };
         //});
         for (inst_ref, cs) in self.instance_data_mapped.iter_mut().zip(st.cubes[..].iter()) {
-            *inst_ref = InstanceData {
-                world: rotshift3_to_4x4(&cs.rot, &cs.pos),
-                n_world: rot3_to_3x3(&cs.rot),
+            unsafe { // 
+                // memory at inst_ref is write-only. ptr::write ensures that it is not read.
+                // There should be no performance inprovement compared to "*inst_ref =", but somehow there is small speedup.
+                ptr::write(inst_ref as *mut _, InstanceData {
+                    world: rotshift3_to_4x4(&cs.rot, &cs.pos),
+                    n_world: rot3_to_3x3(&cs.rot),
+                });
             };
+            //*inst_ref = InstanceData {
+            //    world: rotshift3_to_4x4(&cs.rot, &cs.pos),
+            //    n_world: rot3_to_3x3(&cs.rot),
+            //};
         };
         ::perf_fillbuf_end();
         ::perf_start("listfill");
@@ -514,7 +523,7 @@ impl FrameResources {
                D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET)]);
         glist.clear_render_target_view(hdr_rtvh, &CLEAR_COLOR, &[]);
         glist.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
-        glist.draw_indexed_instanced(cr.index_count, st.cubes.len() as u32 ,0 ,0 ,0);
+        glist.draw_indexed_instanced(cr.index_count, st.cubes.len() as u32, 0, 0, 0);
         glist.resource_barrier(
             &[*ResourceBarrier::transition(&self.hdr_render_target,
                 D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON)]);
@@ -541,62 +550,6 @@ impl Drop for FrameResources {
     }
 }
 
-type V3 = Vector3<f32>;
-
-struct CubeState {
-    pos: V3,
-    rot: Basis3<f32>,
-    spd: V3,
-    rot_axe: V3,
-    rot_spd: f32,
-}
-
-struct State {
-    tick: f64,
-    camera: Camera,
-    cubes: Vec<CubeState>,
-    light_pos: V3,
-}
-
-impl State {
-    fn update(&self, dt: f32, thread_cnt: u32) -> Self {
-        // advance position of cubes
-        let mut cubes = Vec::with_capacity(self.cubes.len());
-        // Initialized content of cubes will be immediately overwritten
-        unsafe{ cubes.set_len(self.cubes.len()) };
-        crossbeam::scope(|scope| {
-            let chunk_len = (cubes.len()/thread_cnt as usize)+1;
-            for (chunk, chunk_src) in cubes[..].chunks_mut(chunk_len).zip(self.cubes[..].chunks(chunk_len)) {
-                scope.spawn(move || {
-                    for (c, cube) in chunk.iter_mut().zip(chunk_src) {
-                        *c = CubeState {
-                            pos: cube.pos + cube.spd * dt,
-                            rot: Basis3::from_axis_angle(cube.rot_axe, Angle::from(deg(cube.rot_spd * dt))).concat(&cube.rot),
-                            .. *cube
-                        };
-                    };
-                });
-            };
-        });
-         
-//        for cube in &self.cubes {
-//            let mut cs = CubeState {
-//                pos: cube.pos + cube.spd * dt,
-//                rot: Basis3::from_axis_angle(cube.rot_axe, Angle::from(deg(cube.rot_spd * dt))).concat(&cube.rot),
-//                .. *cube};
-//            cubes.push(cs);
-//        }
-        let (lx, ly) = f64::sin_cos(self.tick*0.1);
-        let (lx, ly) = (lx as f32, ly as f32);
-        let light_pos = v3(lx*50., ly*50., -3.);
-        State {
-            tick: self.tick + dt as f64,
-            cubes: cubes,
-            camera: self.camera.clone(),
-            light_pos: light_pos,
-        }
-    }
-}
 
 // This struct contains all data the rendering needs.
 pub struct AppData {
@@ -616,9 +569,11 @@ pub struct AppData {
     frame_count: u32,
     update_step: f32,
     parameters: CubeParms,
-    state: State,
+    state: Arc<State>,
     common_resources: CommonResources,
     frame_resources: Vec<FrameResources>,
+    camera: Camera,
+    su_agent: StateUpdateAgent,
 }
 
 // This impl allows me to write data.on_init() instead of on_init(&data). Well, at least 'dot' operator performs autodereference.
@@ -666,18 +621,13 @@ impl AppData {
         wait_for_graphics_queue(&self.core, &self.fence, &self.fence_event);
     }
 
-    // returns queue of debug layer's messages
-    pub fn info_queue(&self) -> &Option<D3D12InfoQueue> {
-        &self.core.info_queue
-    }
-
-    pub fn take_info_queue(&mut self) -> Option<D3D12InfoQueue> {
-        self.core.info_queue.take()
+    pub fn take_info_queue(&self) -> Option<D3D12InfoQueue> {
+        self.core.info_queue.clone()
     }
 
     // allows message loop fiddle with camera
     pub fn camera(&mut self) -> &mut Camera {
-        &mut self.state.camera
+        &mut self.camera
     }
 }
 
@@ -931,25 +881,6 @@ pub fn on_init(wnd: &Window,
         frame_resources.push(try!(FrameResources::new(&core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, object_count).dump(&core)));
     };
 
-    // State of the cubes. Tuple (position, speed, rotation axis, rotation speed)
-    let mut cubes = Vec::with_capacity(object_count as usize);
-    for _ in 0 .. object_count {
-        let cube_state = CubeState {
-            pos: v3((rand::random::<f32>() - 0.5) * 200.,
-                         (rand::random::<f32>() - 0.5) * 200.,
-                         (rand::random::<f32>() - 1.) * 200.),
-            rot: <Basis3<f32> as Rotation<_>>::one(),
-            spd: v3(rand::random::<f32>() - 0.5,
-                         rand::random::<f32>() - 0.5,
-                         rand::random::<f32>() - 0.5),
-            rot_axe: v3(rand::random::<f32>() - 0.5,
-                         rand::random::<f32>() - 0.5,
-                         rand::random::<f32>() - 0.5)
-                          .normalize(),
-            rot_spd: rand::random::<f32>()*90.0,
-        };
-        cubes.push(cube_state);
-    }
 
     // Pack all created objects into AppData
     let mut ret = AppData {
@@ -965,16 +896,13 @@ pub fn on_init(wnd: &Window,
         frame_resources: frame_resources,
         update_step: parameters.speed_mult,
         parameters: *parameters,
-        state: State {
-            tick: 0.0,
-            camera: Camera::new(),
-            cubes: cubes,
-            light_pos: v3(0., 0., 0.),
-        },
+        state: Arc::new(State::new(parameters.object_count)),
+        camera: Camera::new(),
+        su_agent: StateUpdateAgent::new(parameters.thread_count),
     };
 
-    ret.state.camera.go(-3., 0., 0.);
-    ret.state.camera.aspect = (w as f32) / (h as f32);
+    ret.camera.go(-3., 0., 0.);
+    ret.camera.aspect = (w as f32) / (h as f32);
 
     // Done
     Ok(ret)
@@ -984,83 +912,79 @@ pub fn on_init(wnd: &Window,
 // ----------------- on_render -------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------
 pub fn on_render(data: &mut AppData) {
+    use std::thread::sleep_ms;
     if cfg!(debug_assertions) {
         trace!("on_render")
     };
-    data.state = 
-        crossbeam::scope(|scope|{
-            ::perf_start("state_update");
-            let state = &data.state;
-            let update_step = data.update_step;
-            let thread_cnt = data.common_resources.thread_cnt;
-            let state_or_join_handle = 
-                if data.parameters.concurrent_state_update {
-                    // Result is used as Either
-                    Ok(scope.spawn(move||{
-                        state.update(update_step, thread_cnt)
-                    }))
-                } else {
-                    Err(state.update(update_step, thread_cnt))
+    let maybe_future_state = 
+        if data.parameters.concurrent_state_update {
+            ::perf_start("state_update_start");
+            let ret = Some(data.su_agent.start_update(data.state.clone(), data.update_step));
+            ::perf_end("state_update_start");
+            ret
+        } else {
+            None
+        };
+
+    // update index of current back buffer
+    let fi = data.swap_chain.swap_chain.get_current_back_buffer_index();
+    data.frame_index = fi;
+
+    // Render scene
+    data.frame_resources[fi as usize].render(
+        &data.core, 
+        data.swap_chain.render_target(fi), 
+        data.swap_chain.rtv_cpu_handle(fi), 
+        &data.common_resources, 
+        &data.state,
+        &data.camera
+    ).dump(&data.core).unwrap();
+
+    ::perf_present_start();
+
+    let pparms = DXGI_PRESENT_PARAMETERS {
+        DirtyRectsCount: 0,
+        pDirtyRects: ptr::null_mut(),
+        pScrollRect: ptr::null_mut(),
+        pScrollOffset: ptr::null_mut(),
+    };
+
+
+    // I hope that present waits for back buffer transition into STATE_PRESENT
+    // I didn't find anything about this in MSDN.
+    if cfg!(debug_assertions) {
+        trace!("present")
+    };
+    match data.swap_chain.swap_chain.present1(1, 0, &pparms) {
+        Err(hr) => {
+            data.core.dump_info_queue();
+            // TODO: Maybe I can handle DEVICE_REMOVED error by recreating DXCore and DXSwapchain
+            if hr == DXGI_ERROR_DEVICE_REMOVED {
+                if let Err(reason) = data.core.dev.get_device_removed_reason() {
+                    match reason {
+                        DXGI_ERROR_DEVICE_HUNG => error!("Device hung"),
+                        DXGI_ERROR_DEVICE_REMOVED => error!("Device removed"),
+                        DXGI_ERROR_DEVICE_RESET => error!("Device reset"),
+                        DXGI_ERROR_DRIVER_INTERNAL_ERROR => error!("Driver internal error"),
+                        DXGI_ERROR_INVALID_CALL => error!("Invalid call"),
+                        _ => error!("Device removed reason: 0x{:x}",reason),
+                    }
                 };
-            ::perf_end("state_update");
-
-            // update index of current back buffer
-            let fi = data.swap_chain.swap_chain.get_current_back_buffer_index();
-            data.frame_index = fi;
-
-            // Render scene
-            data.frame_resources[fi as usize].render(
-                &data.core, 
-                data.swap_chain.render_target(fi), 
-                data.swap_chain.rtv_cpu_handle(fi), 
-                &data.common_resources, 
-                &data.state
-            ).dump(&data.core).unwrap();
-
-            ::perf_present_start();
-
-            let pparms = DXGI_PRESENT_PARAMETERS {
-                DirtyRectsCount: 0,
-                pDirtyRects: ptr::null_mut(),
-                pScrollRect: ptr::null_mut(),
-                pScrollOffset: ptr::null_mut(),
             };
-
-
-            // I hope that present waits for back buffer transition into STATE_PRESENT
-            // I didn't find anything about this in MSDN.
-            if cfg!(debug_assertions) {
-                trace!("present")
-            };
-            match data.swap_chain.swap_chain.present1(0, 0, &pparms) {
-                Err(hr) => {
-                    data.core.dump_info_queue();
-                    // TODO: Maybe I can handle DEVICE_REMOVED error by recreating DXCore and DXSwapchain
-                    if hr == DXGI_ERROR_DEVICE_REMOVED {
-                        if let Err(reason) = data.core.dev.get_device_removed_reason() {
-                            match reason {
-                                DXGI_ERROR_DEVICE_HUNG => error!("Device hung"),
-                                DXGI_ERROR_DEVICE_REMOVED => error!("Device removed"),
-                                DXGI_ERROR_DEVICE_RESET => error!("Device reset"),
-                                DXGI_ERROR_DRIVER_INTERNAL_ERROR => error!("Driver internal error"),
-                                DXGI_ERROR_INVALID_CALL => error!("Invalid call"),
-                                _ => error!("Device removed reason: 0x{:x}",reason),
-                            }
-                        };
-                    };
-                    panic!("Present failed with 0x{:x}", hr);
-                }
-                // TODO: Use STATUS_OCCLUDED to reduce frame rate
-                _ => (),
-            }
-            ::perf_present_end();
-            ::perf_start("state_update_wait");
-            match state_or_join_handle {
-                Ok(jh) => jh.join(),
-                Err(state) => state,
-            }
-        }); // crossbeam::scope
-    ::perf_end("state_update_wait");
+            panic!("Present failed with 0x{:x}", hr);
+        }
+        // TODO: Use STATUS_OCCLUDED to reduce frame rate
+        _ => (),
+    }
+    sleep_ms(100);
+    ::perf_present_end();
+    ::perf_start("state_update");
+    if let Some(mut future_state) = maybe_future_state {
+        data.state = Arc::new(future_state.get());
+    } else {
+        data.state = Arc::new(data.state.update(data.update_step, data.common_resources.thread_cnt));
+    }
+    ::perf_end("state_update");
     data.core.dump_info_queue();
 }
 
@@ -1088,7 +1012,7 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
     wait_for_compute_queue(&data.core, &data.fence, &data.fence_event);
     wait_for_copy_queue(&data.core, &data.fence, &data.fence_event);
 
-    data.swap_chain.resize(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM);
+    data.swap_chain.resize(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM).expect("swap_chain.resize failed");
 
     data.camera().aspect = (w as f32) / (h as f32);
 

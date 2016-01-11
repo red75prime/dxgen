@@ -100,8 +100,8 @@ pub struct Tonemapper {
 }
 
 // TODO: Use shader reflection to get count of thread groups from shader
-const HTGroups: u32 = 128;
-const VTGroups: u32 = 128;
+const HTGROUPS: u32 = 128;
+const VTGROUPS: u32 = 128;
 
 impl Tonemapper {
     // TODO: return some error code. Even if nothing meaningful can be done with the error code, at least it allows to shutdown gracefully.
@@ -213,7 +213,7 @@ impl Tonemapper {
             D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
         ]);
 
-        clist.dispatch(cw / HTGroups + 1, ch, 1);
+        clist.dispatch(cw / HTGROUPS + 1, ch, 1);
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&res.h_tex, 
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
@@ -242,7 +242,7 @@ impl Tonemapper {
         clist.set_descriptor_heaps(&[res.dheap.get()]);
         clist.set_compute_root_descriptor_table(0, res.dheap.gpu_handle(0));
 
-        clist.dispatch(cw, ch / VTGroups + 1, 1);
+        clist.dispatch(cw, ch / VTGROUPS + 1, 1);
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&src,
             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
@@ -264,7 +264,7 @@ impl Tonemapper {
         try!(core.graphics_queue.wait(&res.fence, next_fence_val));
 
         // Swapchain back buffers are special. Only graphics queue associated with swapchain can write them.
-        if cfg!(debug_assertions) { trace!("grallor.reset") };
+        if cfg!(debug_assertions) { trace!("gralloc.reset") };
         try!(res.gralloc.reset());
         core.dump_info_queue();
         try!(res.grlist.reset(&res.gralloc, None));

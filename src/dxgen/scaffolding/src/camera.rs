@@ -59,9 +59,7 @@ impl Camera {
     }
 
     pub fn view_matrix(&self) -> Matrix4<f32> {
-        let mut vm = Matrix4::look_at(self.eye, self.eye + self.fwd, self.up);
-        // lhs_to_rhs(&mut vm);
-        vm
+        Matrix4::look_at(self.eye, self.eye + self.fwd, self.up)
     }
 
     pub fn projection_matrix(&self) -> Matrix4<f32> {
