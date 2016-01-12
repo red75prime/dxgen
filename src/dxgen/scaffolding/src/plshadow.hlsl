@@ -1,11 +1,15 @@
 #define RSD "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT),CBV(b0),SRV(t0)"
 
-cbuffer cb0: register(b0) {
-  float3 lightPos;
+cbuffer cb0 : register(b0) {
+  float4x4 view;
+  float4x4 proj;
+  float3 eye_pos;
+  float3 light_pos;
 }
 
 struct InstanceData {
-  float3x3 wMat;
+  float4x4 world;
+  float3x3 n_world;
 };
 
 StructuredBuffer<InstanceData> instances : register(t0);
@@ -24,7 +28,7 @@ struct VS_OUTPUT {
 [RootSignature(RSD)]
 VS_OUTPUT VSMain(VS_INPUT input, uint iidx: SV_InstanceID) {
   VS_OUTPUT ret;
-  ret.pos = float4(mul(instances[iidx].wMat, input.vPosition) - lightPos, 0);
+  ret.pos = mul(instances[iidx].world, input.vPosition) - float4(light_pos,0);
   return ret;
 };
 
@@ -100,8 +104,8 @@ struct PS_OUT {
   float depth : SV_Depth;
 };
 
-PS_OUT PSMain(PS_IN input) {
-  PS_OUT ret;
-  ret.depth = input.z;
-  return ret;
+void PSMain(PS_IN input) {
+//  PS_OUT ret;
+//  ret.depth = input.z;
+//  return ret;
 }

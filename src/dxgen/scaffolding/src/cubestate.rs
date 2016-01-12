@@ -33,7 +33,7 @@ impl State {
                 rot: <Basis3<f32> as Rotation<_>>::one(),
                 spd: v3(rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5,
-                             rng.next_f32() - 0.5),
+                             rng.next_f32() - 0.5).normalize()*rng.next_f32(),
                 rot_axe: v3(rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5)
@@ -52,7 +52,7 @@ impl State {
     pub fn update(&self, dt: f32, thread_cnt: u32) -> Self {
         // advance position of cubes
         let mut cubes = Vec::with_capacity(self.cubes.len());
-        // Initialized content of cubes will be immediately overwritten
+        // Uninitialized content of cubes will be immediately overwritten
         unsafe{ cubes.set_len(self.cubes.len()) };
         crossbeam::scope(|scope| {
             let chunk_len = (cubes.len()/thread_cnt as usize)+1;

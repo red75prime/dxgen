@@ -25,7 +25,7 @@ impl Camera {
             hfov_deg: 60.,
             aspect: 1.,
             near: 0.1,
-            far: 1000.,
+            far: 10000.,
         }
     }
 

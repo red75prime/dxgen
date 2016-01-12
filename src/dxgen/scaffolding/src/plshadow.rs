@@ -89,7 +89,7 @@ impl<T: VertexFormat> PLShadow<T> {
         })
     }
 
-    pub fn fill_cubemap() -> HResult<()> {
+    pub fn fill_cubemap(core: &core::DXCore) -> HResult<()> {
         Ok(())
     }
 }

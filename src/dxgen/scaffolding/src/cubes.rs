@@ -955,7 +955,7 @@ pub fn on_render(data: &mut AppData) {
     if cfg!(debug_assertions) {
         trace!("present")
     };
-    match data.swap_chain.swap_chain.present1(1, 0, &pparms) {
+    match data.swap_chain.swap_chain.present1(0, 0, &pparms) {
         Err(hr) => {
             data.core.dump_info_queue();
             // TODO: Maybe I can handle DEVICE_REMOVED error by recreating DXCore and DXSwapchain
@@ -976,7 +976,7 @@ pub fn on_render(data: &mut AppData) {
         // TODO: Use STATUS_OCCLUDED to reduce frame rate
         _ => (),
     }
-    sleep_ms(100);
+    //sleep_ms(100);
     ::perf_present_end();
     ::perf_start("state_update");
     if let Some(mut future_state) = maybe_future_state {
