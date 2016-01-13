@@ -16,7 +16,9 @@ static const float3x3 xyz2rgb =
 static const float thres1 = 6*6*6/29/29/29;
 static const float c1 = 29*29/6/6/3;
 
-#define RSD "RootFlags(0), DescriptorTable(SRV(t0), SRV(t1), UAV(u0)), StaticSampler(s0, filter=FILTER_MIN_MAG_LINEAR_MIP_POINT)"
+#define RSD "RootFlags(0), DescriptorTable(SRV(t0), SRV(t1), UAV(u0))" \
+            ",StaticSampler(s0, filter=FILTER_MIN_MAG_LINEAR_MIP_POINT, " \
+            "addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP)"
 
 Texture2D<float4> src: register(t0);
 Texture2D<float4> hvtemp: register(t1);
@@ -91,7 +93,7 @@ void CSHorizontal(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
   uint srcx = gid.x * HTGroups + gtid.x - KernelSize;
   uint srcy = gid.y * 2;
   float3 scl = (src[uint2(srcx, srcy)].rgb + src[uint2(srcx, srcy + 1)].rgb) / 2;
-  tmp1[gtid.x] = (scl.r + scl.g + scl.g > 1.0) ? scl : float3(0, 0, 0);
+  tmp1[gtid.x] = (scl.r + scl.g + scl.g > 4.0) ? scl : float3(0, 0, 0);
 
   AllMemoryBarrierWithGroupSync();
 
@@ -161,4 +163,64 @@ void CSVertical(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
     dst[uint2(srcx, srcy)] = float4(acc, 1);
   };
 
+}
+
+#define TotalGroups 32
+#define RSDT "RootFlags(0), DescriptorTable(SRV(t0), UAV(u0))" // Descriptor table is required for texture
+
+Texture2D<float4> tsrc: register(t0);
+RWStructuredBuffer<uint> total : register(u0);
+
+groupshared float4 bpacked[TotalGroups*TotalGroups];
+
+float brightness(float4 cl) {
+  // TODO: replace with correct implementation
+  return cl.r + cl.g + cl.b;
+}
+
+[RootSignature(RSDT)]
+[numthreads(1,1,1)]
+void CSClearTotal() {
+  total[0] = asuint(0.0);
+}
+
+[RootSignature(RSDT)]
+[numthreads(TotalGroups,TotalGroups,1)]
+void CSTotal(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId, uint gindex : SV_GroupIndex, uint3 dtid : SV_DispatchThreadID) {
+  uint2 crd = (gid.xy * TotalGroups + gtid.xy)*2;
+  float br[4];
+  [unroll]
+  for (uint x = 0; x < 2; ++x) {
+    [unroll]
+    for (uint y = 0; y < 2; ++y) {
+      // Color outside of tsrc is guarantied to be 0.
+      br[y * 2 + x] = brightness(tsrc[crd+uint2(x,y)]);
+    }
+  }
+  bpacked[gindex] = float4(br[0],br[1],br[2],br[3]);
+
+  AllMemoryBarrierWithGroupSync();
+
+  [unroll]
+  for (uint thres = TotalGroups*TotalGroups / 2; thres > 0; thres /= 2) {
+    if (gindex < thres) {
+      bpacked[gindex] += bpacked[gindex + thres];
+    }
+    AllMemoryBarrierWithGroupSync();
+  };
+
+  if (gindex == 0) {
+    float4 cl = bpacked[0];
+    float value = cl.r + cl.g + cl.b + cl.a;
+
+    //uint uval = value * 1000;
+    //InterlockedAdd(total[0], uval);
+
+    uint comp, orig = total[0];
+    [allow_uav_condition]do
+    {
+      comp = orig;
+      InterlockedCompareExchange(total[0], comp, asuint(asfloat(orig) + value), orig);
+    } while (orig != comp);
+  };
 }

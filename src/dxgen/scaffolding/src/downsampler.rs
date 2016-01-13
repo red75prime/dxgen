@@ -63,8 +63,6 @@ impl Downsampler {
     }
 
     pub fn generate_mips(&self, tex: &D3D12Resource, core: &DXCore) -> HResult<()> {
-        use std::sync::atomic::Ordering;
-
         trace!("generate_mips");
         trace!("Assert same adapter");
         assert!(&self.luid == &Luid(core.dev.get_adapter_luid()));

@@ -39,6 +39,24 @@ pub fn resource_desc_buffer(size_in_bytes: u64) -> D3D12_RESOURCE_DESC {
     }
 }
 
+pub fn resource_desc_buffer_uav(size_in_bytes: u64) -> D3D12_RESOURCE_DESC {
+    D3D12_RESOURCE_DESC {
+        Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
+        Alignment: 0,
+        Width: size_in_bytes,
+        Height: 1,
+        DepthOrArraySize: 1,
+        MipLevels: 1,
+        Format: DXGI_FORMAT_UNKNOWN,
+        SampleDesc: DXGI_SAMPLE_DESC {
+            Count: 1,
+            Quality: 0,
+        },
+        Layout: D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+        Flags: D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+    }
+}
+
 pub fn resource_desc_tex2d_nomip(width: u64,
                                  height: u32,
                                  format: DXGI_FORMAT,
@@ -64,6 +82,16 @@ pub fn resource_desc_tex2d_nomip(width: u64,
 pub fn heap_properties_upload() -> D3D12_HEAP_PROPERTIES {
     D3D12_HEAP_PROPERTIES {
         Type: D3D12_HEAP_TYPE_UPLOAD,
+        CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+        MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
+        CreationNodeMask: 0,
+        VisibleNodeMask: 0,
+    }
+}
+
+pub fn heap_properties_readback() -> D3D12_HEAP_PROPERTIES {
+    D3D12_HEAP_PROPERTIES {
+        Type: D3D12_HEAP_TYPE_READBACK,
         CPUPageProperty: D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
         MemoryPoolPreference: D3D12_MEMORY_POOL_UNKNOWN,
         CreationNodeMask: 0,
@@ -431,6 +459,44 @@ pub fn uav_tex2d_desc(format: DXGI_FORMAT,
     ret
 }
 
+pub fn uav_buffer_desc(count: u32, size: u32)
+                      -> D3D12_UNORDERED_ACCESS_VIEW_DESC {
+    let mut ret = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+        Format: DXGI_FORMAT_UNKNOWN,
+        ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+        u: unsafe { mem::uninitialized() },
+    };
+    unsafe {
+        *ret.Buffer_mut() = D3D12_BUFFER_UAV {
+            FirstElement: 0,
+            NumElements: count,
+            StructureByteStride: size,
+            CounterOffsetInBytes: 0,
+            Flags: D3D12_BUFFER_UAV_FLAG_NONE,
+        };
+    };
+    ret
+}
+
+pub fn uav_raw_buffer_desc(size: u32)
+                      -> D3D12_UNORDERED_ACCESS_VIEW_DESC {
+    let mut ret = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+        Format: DXGI_FORMAT_R32_TYPELESS,
+        ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+        u: unsafe { mem::uninitialized() },
+    };
+    unsafe {
+        *ret.Buffer_mut() = D3D12_BUFFER_UAV {
+            FirstElement: 0,
+            NumElements: size,
+            StructureByteStride: 1,
+            CounterOffsetInBytes: 0,
+            Flags: D3D12_BUFFER_UAV_FLAG_RAW,
+        };
+    };
+    ret
+}
+
 pub fn depth_stencil_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_DEPTH_STENCIL_VIEW_DESC {
     let mut ret = D3D12_DEPTH_STENCIL_VIEW_DESC {
         Format: format,
@@ -599,6 +665,22 @@ pub fn graphics_pipeline_state_desc_default() -> D3D12_GRAPHICS_PIPELINE_STATE_D
                      DXGI_FORMAT_UNKNOWN],
         DSVFormat: DXGI_FORMAT_D32_FLOAT,
         SampleDesc: sample_desc_default(),
+        NodeMask: 0,
+        CachedPSO: D3D12_CACHED_PIPELINE_STATE {
+            pCachedBlob: ptr::null(),
+            CachedBlobSizeInBytes: 0,
+        },
+        Flags: D3D12_PIPELINE_STATE_FLAG_NONE,
+    }
+}
+
+pub fn compute_pipeline_state_desc_default() -> D3D12_COMPUTE_PIPELINE_STATE_DESC {
+    D3D12_COMPUTE_PIPELINE_STATE_DESC {
+        pRootSignature: ptr::null_mut(),
+        CS: D3D12_SHADER_BYTECODE {
+            pShaderBytecode: ptr::null(),
+            BytecodeLength: 0,
+        },
         NodeMask: 0,
         CachedPSO: D3D12_CACHED_PIPELINE_STATE {
             pCachedBlob: ptr::null(),
