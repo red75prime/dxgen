@@ -86,6 +86,8 @@ pub struct CubeParms {
     pub thread_count: u32,
     pub speed_mult: f32,
     pub concurrent_state_update: bool,
+    pub debug_layer: bool,
+    pub rt_format: DXGI_FORMAT,
 }
 
 static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.15, 1.0];
@@ -93,12 +95,13 @@ static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.15, 1.0];
 pub fn create_hdr_render_target
     (dev: &D3D12Device,
      w: u32,
-     h: u32)
+     h: u32,
+     parameters: &CubeParms)
      -> HResult<(D3D12Resource, DescriptorHeap, TonemapperResources)> {
     trace!("DescriptorHeap::new");
     let dheap = try!(DescriptorHeap::new(dev, 1, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false, 0));
 
-    let hdr_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    let hdr_format = parameters.rt_format;
 
     let tex_desc = resource_desc_tex2d_nomip(w as u64,
                                              h as u32,
@@ -111,7 +114,7 @@ pub fn create_hdr_render_target
                                            D3D12_HEAP_FLAG_NONE,
                                            &tex_desc,
                                            D3D12_RESOURCE_STATE_COMMON,
-                                           Some(&rt_rgba_f32_clear_value(CLEAR_COLOR))));
+                                           Some(&rt_rgba_clear_value(hdr_format, CLEAR_COLOR))));
     trace!("create_render_target_view");
     dev.create_render_target_view(Some(&render_target),
                                   Some(&render_target_view_desc_tex2d_default(hdr_format)),
@@ -132,7 +135,7 @@ pub fn create_hdr_render_target
 struct CommonResources {
     pipeline_state: D3D12PipelineState,
     root_signature: D3D12RootSignature,
-    srv_heap: DescriptorHeap,
+    tex_desc: D3D12_SHADER_RESOURCE_VIEW_DESC,
     // rustc thinks that _vertex_buffer is never user, but it holds corresponding resource alive,
     // while vertex_buffer_view keeps GPU virtual address of the buffer.
     // underscore prevents warning
@@ -151,7 +154,7 @@ struct CommonResources {
 }
 
 impl CommonResources {
-    fn new(dev: &D3D12Device, tex_w: u32, tex_h: u32, thread_cnt: u32) -> HResult<CommonResources> {
+    fn new(dev: &D3D12Device, tex_w: u32, tex_h: u32, parameters: &CubeParms) -> HResult<CommonResources> {
         trace!("Open 'shaders.hlsl'");
         let mut f = try!(File::open("shaders.hlsl").map_err(|_| DXGI_ERROR_NOT_FOUND));
         let mut content = vec![];
@@ -163,17 +166,18 @@ impl CommonResources {
         // shaders.hlsl should be in process current directory
         // vshader_bc and pshader_bc are Vec<u8> containing shader byte-code
         trace!("Vertex shader compilation");
-        let vshader_bc = try!(d3d_compile_from_str(shader, "VSMain", "vs_5_0", 0).map_err(|err| {
+        let vshader_bc = try!(d3d_compile_from_str(shader, "shaders.hlsl::VSMain", "VSMain", "vs_5_0", 0).map_err(|err| {
             error!("Vertex shader compilation error: {}", err);
             E_FAIL
         }));
         trace!("Pixel shader compilation");
-        let pshader_bc = try!(d3d_compile_from_str(shader, "PSMain", "ps_5_0", 0).map_err(|err| {
-            error!("Pixel shader compilation error: {}", err);
-            E_FAIL
-        }));
+        let pshader_bc = try!(d3d_compile_from_str(shader, "shaders.hlsl::PSMain", "PSMain", "ps_5_0", D3DCOMPILE_OPTIMIZATION_LEVEL3)
+                .map_err(|err| {
+                    error!("Pixel shader compilation error: {}", err);
+                    E_FAIL
+                }));
         trace!("Root signature compilation");
-        let root_signature_bc = try!(d3d_compile_from_str(shader, "RSD", "rootsig_1_0", 0)
+        let root_signature_bc = try!(d3d_compile_from_str(shader, "shaders.hlsl::RSD" ,"RSD", "rootsig_1_0", 0)
                                          .map_err(|err| {
                                              error!("Root signature compilation error: {}", err);
                                              E_FAIL
@@ -193,7 +197,8 @@ impl CommonResources {
         let pipeline_state = try!(create_static_sampler_gps::<Vertex>(dev,
                                                                       &vshader_bc[..],
                                                                       &pshader_bc[..],
-                                                                      &root_signature));
+                                                                      &root_signature,
+                                                                      parameters.rt_format));
 
         // ------------------- Vertex and index buffer resource init begin ----------------------------
 
@@ -276,9 +281,7 @@ impl CommonResources {
                                                                    D3D12_RESOURCE_STATE_COMMON,
                                                                    None));
 
-        let srv_heap = try!(DescriptorHeap::new(dev, 1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
-        let srv_desc = srv_tex2d_default_slice_mip(tex_desc.Format, 0, 4);
-        dev.create_shader_resource_view(Some(&tex_resource), Some(&srv_desc), srv_heap.cpu_handle(0));
+        let tex_desc = srv_tex2d_default_slice_mip(tex_desc.Format, 0, 4);
 
         // ------------------- Texture resource init end  -----------------------------
         trace!("Downsampler::new");
@@ -294,7 +297,6 @@ impl CommonResources {
         Ok(CommonResources {
             pipeline_state: pipeline_state,
             root_signature: root_signature,
-            srv_heap: srv_heap,
             // rustc thinks that _vertex_buffer is never user, but it holds corresponding resource alive,
             // while vertex_buffer_view keeps GPU virtual address of the buffer.
             // underscore prevents warning
@@ -307,10 +309,11 @@ impl CommonResources {
             index_buffer_view: index_buffer_view,
             index_count: idx.len() as u32,
             tex_resource: tex_resource,
+            tex_desc: tex_desc,
             downsampler: downsampler,
             tonemapper: tonemapper,
             plshadow: plshadow,
-            thread_cnt: thread_cnt,
+            thread_cnt: parameters.thread_count,
         })
     }
 }
@@ -322,20 +325,20 @@ struct FrameResources {
     glist: D3D12GraphicsCommandList,
     fence: Fence,
     tm_fence: D3D12Fence, // for tonemapper sync
-    i_buffer: D3D12Resource, // instances data
+    i_buffer: D3D12Resource, // instances data upload buffer
+    ir_buffer: D3D12Resource, // instances data GPU resident buffer
     // I don't know easy way of saying "this borrow lifetime equals lifetime of the structure"
     // I can propagate lifetime parameter all the way up. Later.
     // TODO: replace 'static
     instance_data_mapped: &'static mut [InstanceData],
-    gpu_i_ptr: u64,
     c_buffer: D3D12Resource, // constants data
     // TODO: replace 'static
     constants_mapped: &'static mut Constants,
-    gpu_c_ptr: u64,
     hdr_render_target: D3D12Resource,
     hdr_rtv_heap: DescriptorHeap,
     _depth_stencil: D3D12Resource,
     dsd_heap: DescriptorHeap,
+    srv_heap: DescriptorHeap,
     tonemapper_resources: TonemapperResources,
     object_cnt: u32,
 }
@@ -346,9 +349,9 @@ impl FrameResources {
                w: u32,
                h: u32,
                format: DXGI_FORMAT,
-               object_cnt: u32)
+               parameters: &CubeParms)
                -> HResult<FrameResources> {
-        let object_cnt = object_cnt as usize;
+        let object_cnt = parameters.object_count as usize;
         trace!("FrameResources::new()");
         trace!("Create calloc");
         let calloc = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
@@ -361,14 +364,26 @@ impl FrameResources {
         trace!("Create tm_fence");
         let tm_fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
 
-        let i_buffer_size = mem::size_of::<InstanceData>() * object_cnt;
+        let srv_heap = try!(DescriptorHeap::new(dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+
+        let i_buffer_size = mem::size_of::<InstanceData>() * parameters.object_count as usize;
+        trace!("Create ir_buffer");
+        let ir_buffer = try!(dev.create_committed_resource(&heap_properties_default(),
+                                                          D3D12_HEAP_FLAG_NONE,
+                                                          &resource_desc_buffer(i_buffer_size as u64),
+                                                          D3D12_RESOURCE_STATE_COMMON,
+                                                          None));
+        try!(ir_buffer.set_name("Instance data buffer".into()));
+
         trace!("Create i_buffer");
         let i_buffer = try!(dev.create_committed_resource(&heap_properties_upload(),
                                                           D3D12_HEAP_FLAG_NONE,
                                                           &resource_desc_buffer(i_buffer_size as u64),
                                                           D3D12_RESOURCE_STATE_GENERIC_READ,
                                                           None));
-        try!(i_buffer.set_name("Instance data buffer".into()));
+        try!(i_buffer.set_name("Instance data upload buffer".into()));
+
+
 
         // Indicate that CPU doesn't read from buffer
         let read_range = D3D12_RANGE { Begin: 0, End: 0 };
@@ -378,10 +393,9 @@ impl FrameResources {
             try!(i_buffer.map(0, Some(&read_range), Some(&mut ptr)));
             slice::from_raw_parts_mut(ptr as *mut InstanceData, object_cnt)
         };
-        let gpu_i_ptr = i_buffer.get_gpu_virtual_address();
 
 
-        let c_buffer_size = mem::size_of::<Constants>();
+        let c_buffer_size = ((mem::size_of::<Constants>()-1)/256+1)*256;
         trace!("Create c_buffer");
         let c_buffer = try!(dev.create_committed_resource(&heap_properties_upload(),
                                                           D3D12_HEAP_FLAG_NONE,
@@ -396,7 +410,6 @@ impl FrameResources {
             try!(c_buffer.map(0, Some(&read_range), Some(&mut ptr)));
             &mut *(ptr as *mut Constants)
         };
-        let gpu_c_ptr = c_buffer.get_gpu_virtual_address();
 
         trace!("Create depth stencil descriptor heap");
         let dsd_heap = try!(DescriptorHeap::new(dev, 1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false, 0));
@@ -412,7 +425,7 @@ impl FrameResources {
                                                       dsd_heap.cpu_handle(0)));
         trace!("Create HDR render target");
         let (hdr_render_target, hdr_rtv_heap, tonemapper_resources) =
-            try!(create_hdr_render_target(dev, w, h));
+            try!(create_hdr_render_target(dev, w, h, parameters));
 
         let viewport = D3D12_VIEWPORT {
             TopLeftX: 0.,
@@ -438,17 +451,17 @@ impl FrameResources {
             fence: fence,
             tm_fence: tm_fence,
             i_buffer: i_buffer,
+            ir_buffer: ir_buffer,
             instance_data_mapped: cpu_i_ptr,
-            gpu_i_ptr: gpu_i_ptr,
             c_buffer: c_buffer,
             constants_mapped: cpu_c_ptr,
-            gpu_c_ptr: gpu_c_ptr,
             hdr_render_target: hdr_render_target,
             hdr_rtv_heap: hdr_rtv_heap,
             _depth_stencil: depth_stencil,
             dsd_heap: dsd_heap,
             tonemapper_resources: tonemapper_resources,
             object_cnt: object_cnt as u32,
+            srv_heap: srv_heap,
         })
     }
     // rtvh - render target view descriptor handle
@@ -504,30 +517,51 @@ impl FrameResources {
         try!(self.calloc.reset());
         try!(self.glist.reset(&self.calloc, Some(&cr.pipeline_state)));
 
+        core.dev.create_shader_resource_view(Some(&cr.tex_resource), Some(&cr.tex_desc), self.srv_heap.cpu_handle(0));
+        let inst_desc = srv_buffer(self.object_cnt, mem::size_of::<InstanceData>() as u32);
+        core.dev.create_shader_resource_view(Some(&self.ir_buffer), Some(&inst_desc), self.srv_heap.cpu_handle(1));
+
         let hdr_rtvh = self.hdr_rtv_heap.cpu_handle(0);
         let dsvh = self.dsd_heap.cpu_handle(0);
         let glist = &self.glist;
+        glist.set_pipeline_state(&cr.pipeline_state);
         glist.set_graphics_root_signature(&cr.root_signature);
-        glist.set_descriptor_heaps(&[cr.srv_heap.get()]);
+        glist.set_descriptor_heaps(&[self.srv_heap.get()]);
         glist.rs_set_viewports(&[self.viewport]);
         glist.rs_set_scissor_rects(&[self.sci_rect]);
         glist.om_set_render_targets(1, &hdr_rtvh, Some(&dsvh));
-        glist.set_graphics_root_descriptor_table(0, cr.srv_heap.gpu_handle(0));
-        glist.set_graphics_root_constant_buffer_view(1, self.gpu_c_ptr);
-        glist.set_graphics_root_shader_resource_view(2, self.gpu_i_ptr);
+        glist.set_graphics_root_descriptor_table(1, self.srv_heap.gpu_handle(0));
+        if cfg!(debug_assertions) { trace!("cubes set_graphics_root_constant_buffer_view") };
+        let gpu_cbuf_ptr = self.c_buffer.get_gpu_virtual_address();
+        glist.set_graphics_root_constant_buffer_view(0, gpu_cbuf_ptr);
+        // When working over RDP after window resizing debug layer complains 
+        // that "Total brightness read-back" buffer from tonemapper.rs cannot 
+        // be set as constant buffer. Weird.
+        core.dump_info_queue(); 
+        //glist.set_graphics_root_shader_resource_view(2, self.i_buffer.get_gpu_virtual_address());
         glist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         glist.ia_set_vertex_buffers(0, Some(&[cr.vertex_buffer_view]));
         glist.ia_set_index_buffer(Some(&cr.index_buffer_view));
         glist.resource_barrier(
             &[*ResourceBarrier::transition(&self.hdr_render_target,
-               D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET)]);
+               D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET),
+              *ResourceBarrier::transition(&self.ir_buffer,
+               D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST)]);
+        glist.copy_resource(&self.ir_buffer, &self.i_buffer);
+        glist.resource_barrier(
+            &[*ResourceBarrier::transition(&self.ir_buffer,
+               D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)]);
         glist.clear_render_target_view(hdr_rtvh, &CLEAR_COLOR, &[]);
         glist.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
         glist.draw_indexed_instanced(cr.index_count, st.cubes.len() as u32, 0, 0, 0);
         glist.resource_barrier(
             &[*ResourceBarrier::transition(&self.hdr_render_target,
-                D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON)]);
+                D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON),
+              *ResourceBarrier::transition(&self.ir_buffer,
+               D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON)]);
+        if cfg!(debug_assertions) { trace!("cubes glist.close") };
         try!(glist.close());
+        core.dump_info_queue();
         ::perf_end("listfill");
         ::perf_exec_start();
         core.graphics_queue.execute_command_lists(&[glist]);
@@ -538,6 +572,7 @@ impl FrameResources {
         try!(core.compute_queue.wait(&self.tm_fence, fence_val));
         try!(cr.tonemapper.tonemap(core, &mut self.tonemapper_resources, &self.hdr_render_target, rt, &mut self.fence));
         ::perf_end("tonemap");
+
 
         Ok(())
     }
@@ -681,7 +716,8 @@ fn get_display_mode_list1(output: &DXGIOutput4,
 pub fn create_static_sampler_gps<T: VertexFormat>(dev: &D3D12Device,
                                                   vshader: &[u8],
                                                   pshader: &[u8],
-                                                  root_sign: &D3D12RootSignature)
+                                                  root_sign: &D3D12RootSignature,
+                                                  rt_format: DXGI_FORMAT)
                                                   -> HResult<D3D12PipelineState> {
     // dx_vertex! macro implements VertexFormat trait, which allows to
     // automatically generate description of vertex data
@@ -713,7 +749,7 @@ pub fn create_static_sampler_gps<T: VertexFormat>(dev: &D3D12Device,
     };
     // This assignment reduces amount of typing. But I could have included
     // all 8 members of RTVFormats in the struct initialization above.
-    pso_desc.RTVFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    pso_desc.RTVFormats[0] = rt_format;
 
     // Note that creation of pipeline state object is time consuming operation.
     // Compilation of shader byte-code occurs here.
@@ -751,7 +787,7 @@ pub fn on_init(wnd: &Window,
     // core::create_core creates structure that contains D3D12Device, command queues and so on
     // which are required for creation of all other objects
     let core = 
-        match core::create_core(adapter, D3D_FEATURE_LEVEL_11_0, cfg!(debug_assertions)) {
+        match core::create_core(adapter, D3D_FEATURE_LEVEL_11_0, parameters.debug_layer) {
             Ok(core) => core,
             Err(desc) => {
                 error!("{}", desc);
@@ -813,7 +849,7 @@ pub fn on_init(wnd: &Window,
 
     let (tex_w, tex_h) = (256u32, 256u32);
 
-    let common_resources = try!(CommonResources::new(&core.dev, tex_w, tex_h, parameters.thread_count).dump(&core));
+    let common_resources = try!(CommonResources::new(&core.dev, tex_w, tex_h, parameters).dump(&core));
 
 
     // Create pattern to set as texture data
@@ -874,11 +910,9 @@ pub fn on_init(wnd: &Window,
     trace!("wait_for_prev_frame");
     wait_for_graphics_queue(&core, &fence, &fence_event);
 
-    let object_count = parameters.object_count;
-
     let mut frame_resources = vec![];
     for _ in 0 .. frame_count {
-        frame_resources.push(try!(FrameResources::new(&core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, object_count).dump(&core)));
+        frame_resources.push(try!(FrameResources::new(&core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, parameters).dump(&core)));
     };
 
 
@@ -890,7 +924,7 @@ pub fn on_init(wnd: &Window,
         fence_event: fence_event,
         fence: fence,
         minimized: false,
-        object_count: object_count,
+        object_count: parameters.object_count,
         frame_count: frame_count,
         common_resources: common_resources,
         frame_resources: frame_resources,
@@ -1019,7 +1053,7 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
     data.frame_resources.truncate(0);
     for _ in 0 .. data.frame_count {
         data.frame_resources.push(
-            FrameResources::new(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, data.object_count).unwrap());
+            FrameResources::new(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, &data.parameters).unwrap());
     }
 
     // on_render(data, 1, 1);

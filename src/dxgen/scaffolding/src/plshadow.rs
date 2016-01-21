@@ -34,19 +34,19 @@ impl<T: VertexFormat> PLShadow<T> {
                          .expect("'plshadow.hlsl' file content is not a valid UTF-8");
 
         trace!("Vertex shader compilation");
-        let vshader_bc = create_device::d3d_compile_from_str(shader, "VSMain", "vs_5_0", 0)
+        let vshader_bc = create_device::d3d_compile_from_str(shader, "plshadow.hlsl::VSMain", "VSMain", "vs_5_0", 0)
                              .map_err(|err| error!("Vertex shader compilation error: {}", err))
                              .unwrap();
         trace!("Geometry shader compilation");
-        let gshader_bc = create_device::d3d_compile_from_str(shader, "GSMain", "gs_5_0", 0)
+        let gshader_bc = create_device::d3d_compile_from_str(shader, "plshadow.hlsl::GSMain", "GSMain", "gs_5_0", 0)
                              .map_err(|err| error!("Geometry shader compilation error: {}", err))
                              .unwrap();
         trace!("Pixel shader compilation");
-        let pshader_bc = create_device::d3d_compile_from_str(shader, "PSMain", "ps_5_0", 0)
+        let pshader_bc = create_device::d3d_compile_from_str(shader, "plshadow.hlsl::PSMain", "PSMain", "ps_5_0", 0)
                              .map_err(|err| error!("Pixel shader compilation error: {}", err))
                              .unwrap();
         trace!("Root signature compilation");
-        let rsig_bc = create_device::d3d_compile_from_str(shader, "RSD", "rootsig_1_0", 0)
+        let rsig_bc = create_device::d3d_compile_from_str(shader, "plshadow.hlsl::RSD", "RSD", "rootsig_1_0", 0)
                           .map_err(|err| error!("Root signature compilation error: {}", err))
                           .unwrap();
 

@@ -166,61 +166,91 @@ void CSVertical(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
 }
 
 #define TotalGroups 32
-#define RSDT "RootFlags(0), DescriptorTable(SRV(t0), UAV(u0))" // Descriptor table is required for texture
+#define RSDT "RootFlags(0), RootConstants(num32BitConstants=1, b0), DescriptorTable(SRV(t0), UAV(u0))" // Descriptor table is required for texture
 
+cbuffer cb0 : register(b0) {
+  uint HDispatch;
+};
 Texture2D<float4> tsrc: register(t0);
-RWStructuredBuffer<uint> total : register(u0);
+RWStructuredBuffer<float> total : register(u0);
 
 groupshared float4 bpacked[TotalGroups*TotalGroups];
 
 float brightness(float4 cl) {
   // TODO: replace with correct implementation
-  return cl.r + cl.g + cl.b;
-}
-
-[RootSignature(RSDT)]
-[numthreads(1,1,1)]
-void CSClearTotal() {
-  total[0] = asuint(0.0);
+  return dot(float3(1, 1, 1), cl.rgb); //cl.r + cl.g + cl.b;
 }
 
 [RootSignature(RSDT)]
 [numthreads(TotalGroups,TotalGroups,1)]
-void CSTotal(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId, uint gindex : SV_GroupIndex, uint3 dtid : SV_DispatchThreadID) {
-  uint2 crd = (gid.xy * TotalGroups + gtid.xy)*2;
-  float br[4];
-  [unroll]
-  for (uint x = 0; x < 2; ++x) {
-    [unroll]
-    for (uint y = 0; y < 2; ++y) {
-      // Color outside of tsrc is guarantied to be 0.
-      br[y * 2 + x] = brightness(tsrc[crd+uint2(x,y)]);
-    }
-  }
-  bpacked[gindex] = float4(br[0],br[1],br[2],br[3]);
-
-  AllMemoryBarrierWithGroupSync();
+void CSTotal(uint3 globalId: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, uint3 groupId : SV_GroupId) {
+  uint gindex = localId.x + localId.y*TotalGroups;
+  uint2 crd = uint2(globalId.x*2, globalId.y*2);
+  float b1 = brightness(tsrc[crd]);
+  float b2 = brightness(tsrc[uint2(crd.x + 1, crd.y)]);
+  float b3 = brightness(tsrc[uint2(crd.x, crd.y + 1)]);
+  float b4 = brightness(tsrc[uint2(crd.x + 1, crd.y + 1)]);
+  bpacked[gindex] = float4(b1,b2,b3,b4);
+  
+  GroupMemoryBarrierWithGroupSync();
 
   [unroll]
   for (uint thres = TotalGroups*TotalGroups / 2; thres > 0; thres /= 2) {
     if (gindex < thres) {
       bpacked[gindex] += bpacked[gindex + thres];
     }
-    AllMemoryBarrierWithGroupSync();
+    GroupMemoryBarrierWithGroupSync();
   };
+  //if (gindex < 32) {
+  //  // TODO: Check if this works on AMD
+  //  bpacked[gindex] += bpacked[gindex + 32];
+  //  bpacked[gindex] += bpacked[gindex + 16];
+  //  bpacked[gindex] += bpacked[gindex + 8];
+  //  bpacked[gindex] += bpacked[gindex + 4];
+  //  bpacked[gindex] += bpacked[gindex + 2];
+  //  bpacked[gindex] += bpacked[gindex + 1];
+  //}
 
   if (gindex == 0) {
-    float4 cl = bpacked[0];
-    float value = cl.r + cl.g + cl.b + cl.a;
-
-    //uint uval = value * 1000;
-    //InterlockedAdd(total[0], uval);
-
-    uint comp, orig = total[0];
-    [allow_uav_condition]do
-    {
-      comp = orig;
-      InterlockedCompareExchange(total[0], comp, asuint(asfloat(orig) + value), orig);
-    } while (orig != comp);
+    float value = dot(bpacked[0], float4(1, 1, 1, 1));
+    total[groupId.x + groupId.y*HDispatch] = 1;//value;
   };
+  AllMemoryBarrier();
+}
+
+#define BufTotal 1024
+groupshared float stotal[BufTotal];
+
+// Only Dispatch(1,1,1) is supported
+
+[RootSignature(RSDT)]
+[numthreads(BufTotal, 1, 1)]
+void CSBufTotal(uint3 localId : SV_GroupThreadId) {
+  uint gi = localId.x;
+  uint gi4 = gi * 4;
+  stotal[gi] = total[gi4+0] + total[gi4 + 1] + total[gi4 + 2] + total[gi4 + 3];
+
+  GroupMemoryBarrierWithGroupSync();
+
+  [unroll]
+  for (uint thres = BufTotal / 2; thres > 0; thres /= 2) {
+    if (gi < thres) {
+      stotal[gi] += stotal[gi + thres];
+    }
+    GroupMemoryBarrierWithGroupSync();
+  };
+  //if (gi < 32) {
+  //  // TODO: Check if this works on AMD
+  //  stotal[gi] += stotal[gi + 32];
+  //  stotal[gi] += stotal[gi + 16];
+  //  stotal[gi] += stotal[gi + 8];
+  //  stotal[gi] += stotal[gi + 4];
+  //  stotal[gi] += stotal[gi + 2];
+  //  stotal[gi] += stotal[gi + 1];
+  //}
+
+  if (gi == 0) {
+    total[0] = stotal[0];
+  }
+  AllMemoryBarrier();
 }

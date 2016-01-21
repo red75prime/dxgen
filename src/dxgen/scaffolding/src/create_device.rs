@@ -137,6 +137,11 @@ pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC
 #[repr(C)]
 pub struct D3D_BLOB_PART(UINT);
 pub const D3D_BLOB_ROOT_SIGNATURE: D3D_BLOB_PART = D3D_BLOB_PART(11);
+pub const D3DCOMPILE_OPTIMIZATION_LEVEL3: u32 = 1 << 15;
+pub const D3DCOMPILE_OPTIMIZATION_LEVEL2: u32 = ((1 << 14) | (1 << 15));
+pub const D3DCOMPILE_OPTIMIZATION_LEVEL1: u32 = 0;
+pub const D3DCOMPILE_OPTIMIZATION_LEVEL0: u32 = 1 << 14;
+pub const D3DCOMPILE_ENABLE_STRICTNESS: u32 = (1 << 11);
 
 #[link(name="d3dcompiler")]
 extern "system" {
@@ -179,7 +184,7 @@ extern "system" {
                   -> HRESULT;
 }
 
-pub fn d3d_compile_from_str(shader_text: &str,
+pub fn d3d_compile_from_str(shader_text: &str, shader_name: &str,
                             entry: &str,
                             target: &str,
                             flags: u32)
@@ -191,7 +196,7 @@ pub fn d3d_compile_from_str(shader_text: &str,
     let hr = unsafe {
         D3DCompile2(shader_text.as_ptr() as *const _,
                     shader_text.len() as SIZE_T,
-                    ptr::null(),
+                    str_to_cstring(shader_name).as_ptr(),
                     ptr::null(),
                     ptr::null_mut(),
                     cstr_entry.as_ptr(),
@@ -205,6 +210,9 @@ pub fn d3d_compile_from_str(shader_text: &str,
                     &mut error_blob)
     };
     if SUCCEEDED(hr) {
+        if error_blob != ptr::null_mut() {
+            warn!("{}", blob_to_string(&D3DBlob::new(error_blob as *mut _)));
+        };
         assert!(code_blob != ptr::null_mut());
         Ok(blob_to_vec(&D3DBlob::new(code_blob as *mut _)))
     } else {
@@ -267,18 +275,19 @@ pub fn d3d_compile_from_file(file_name: &str,
 }
 
 
-pub fn compile_shader_and_root_signature(text: &str,
+pub fn compile_shader_and_root_signature(text: &str, file_name: &str,
                                          fname: &str,
-                                         rsname: &str)
+                                         rsname: &str,
+                                         flags: u32)
                                          -> Result<(Vec<u8>, Vec<u8>), ()> {
-    let shader_bytecode = match d3d_compile_from_str(text, fname, "cs_5_1", 0) {
+    let shader_bytecode = match d3d_compile_from_str(text, file_name, fname, "cs_5_1", flags) {
         Ok(sbc) => sbc,
         Err(err) => {
             error!("Shader '{}' compile error: {}", fname, err);
             return Err(());
         }
     };
-    let root_sig_bytecode = match d3d_compile_from_str(text, rsname, "rootsig_1_0", 0) {
+    let root_sig_bytecode = match d3d_compile_from_str(text, file_name, rsname, "rootsig_1_0", flags) {
         Ok(sbc) => sbc,
         Err(err) => {
             error!("Root signature '{}' compile error: {}", rsname, err);

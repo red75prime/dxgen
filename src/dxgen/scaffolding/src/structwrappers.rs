@@ -390,6 +390,25 @@ pub fn texture_copy_location_index(res: &D3D12Resource,
     }
 }
 
+pub fn srv_buffer(cnt: u32, struct_stride: u32)
+                                  -> D3D12_SHADER_RESOURCE_VIEW_DESC {
+    let mut ret = D3D12_SHADER_RESOURCE_VIEW_DESC {
+        Format: DXGI_FORMAT_UNKNOWN,
+        ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
+        Shader4ComponentMapping: shader_4component_mapping(0, 1, 2, 3),
+        u: unsafe { mem::uninitialized() },
+    };
+    unsafe {
+        *ret.Buffer_mut() = D3D12_BUFFER_SRV {
+            FirstElement: 0,
+            NumElements: cnt,
+            StructureByteStride: struct_stride,
+            Flags: D3D12_BUFFER_SRV_FLAG_NONE,
+        };
+    };
+    ret
+}
+
 pub fn srv_tex2d(format: DXGI_FORMAT,
                                   four_comp_map: UINT,
                                   most_det_mip: UINT,
@@ -542,6 +561,17 @@ pub fn depth_stencil_clear_value_depth_f32() -> D3D12_CLEAR_VALUE {
 pub fn rt_rgba_f32_clear_value(color: [f32; 4]) -> D3D12_CLEAR_VALUE {
     let mut ret = D3D12_CLEAR_VALUE {
         Format: DXGI_FORMAT_R32G32B32A32_FLOAT,
+        u: unsafe { mem::uninitialized() },
+    };
+    unsafe {
+        *ret.Color_mut() = color;
+    };
+    ret
+}
+
+pub fn rt_rgba_clear_value(format: DXGI_FORMAT, color: [f32; 4]) -> D3D12_CLEAR_VALUE {
+    let mut ret = D3D12_CLEAR_VALUE {
+        Format: format,
         u: unsafe { mem::uninitialized() },
     };
     unsafe {

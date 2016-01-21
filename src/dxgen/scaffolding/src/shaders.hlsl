@@ -1,7 +1,12 @@
+// When I place CBV(b0) after descriptor table, debug layer on GTX 980 in RDP session 
+// sometimes starts to complain about wrong heap of "tonemapper readback buffer"
+// in SetGraphicsRootConstantBufferView in FrameResources::render.
+// Well. It still does, when I draw less than 41 cubes, or after some number of window resizes.
+// Totally mind-boggling.
+// The program keeps going despite the error messages.
 #define RSD "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
-            "DescriptorTable(SRV(t0),visibility=SHADER_VISIBILITY_PIXEL)," \
             "CBV(b0)," \
-            "SRV(t1)," \
+            "DescriptorTable(SRV(t0), SRV(t1), visibility=SHADER_VISIBILITY_ALL)," \
             "StaticSampler(s0)"
 
 cbuffer cb0 : register(b0) {
@@ -64,11 +69,11 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   float3 eye_off = eye_pos - pv.w_pos;
   float3 eye_n = normalize(eye_off);
   float3 light_off = light_pos - pv.w_pos;
-  float light_invd = 10. / length(light_off/10.);
+  float light_invd = 10. / (1. + length(light_off)/10);
   float3 light_n = normalize(light_off);
   float3 light_r = reflect(-light_n, normalize(pv.norm));
   float sb=1.-clamp(1.-dot(light_r,eye_n),0,0.0001)/0.0001;
   float l=clamp(dot(light_n,pv.norm),0,1);
-  return texel*l*0.6*light_invd+sb*float4(10,10,30,1)+texel*float4(0.01,0.01,0.15,1);
+  return texel*l*0.6*light_invd+sb*float4(10,10,300,1)/(0.1+(length(light_off)+length(eye_off))/1000)+texel*float4(0.01,0.01,0.15,1);
 }
 

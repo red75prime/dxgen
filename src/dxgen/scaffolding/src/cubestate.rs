@@ -143,7 +143,7 @@ impl<'a> UpdateResult<'a> {
 impl<'a> Drop for UpdateResult<'a> {
     fn drop(&mut self) {
         if !self.result_aquired {
-            panic!("Update result is not retrieved");
+            error!("Update result is not retrieved");
         }
     }
 }

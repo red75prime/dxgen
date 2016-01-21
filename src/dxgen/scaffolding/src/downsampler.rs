@@ -29,9 +29,9 @@ impl Downsampler {
         let shader = str::from_utf8(&content[..])
                          .expect("Shader file content is not a valid UTF-8");
 
-        let (shader_bytecode, root_sig_bytecode) = compile_shader_and_root_signature(shader.into(),
+        let (shader_bytecode, root_sig_bytecode) = compile_shader_and_root_signature(shader.into(), "downsampler.hlsl",
                                                                                      "CSMain",
-                                                                                     "RSD")
+                                                                                     "RSD", 0)
                                                        .expect("Tonemapper horizontal pass \
                                                                 shader compile error");
 

@@ -23,6 +23,7 @@ pub struct TonemapperResources {
     gralloc: D3D12CommandAllocator,
     grlist: D3D12GraphicsCommandList,
     total_dheap: DescriptorHeap,
+    total_cuav_dheap: DescriptorHeap, // ClearUnorderedAccessView requires shader inaccessible descriptor heap
     hpass_dheap: DescriptorHeap,
     vpass_dheap: DescriptorHeap,
     dheap: DescriptorHeap,
@@ -46,23 +47,29 @@ impl TonemapperResources {
           &resource_desc_tex2d_nomip(temp_w as u64, temp_h as u32, 
               srcformat, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS), 
           D3D12_RESOURCE_STATE_COMMON, None));
+        try!(h_tex.set_name("Horizontal gaussian".into()));
         trace!("Create texture for resulting gaussian kernel convolution storage");
         let hv_tex = try!(dev.create_committed_resource(
           &heap_properties_default(), D3D12_HEAP_FLAG_NONE, 
           &resource_desc_tex2d_nomip(temp_w as u64, temp_h as u32, 
               srcformat, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS), 
           D3D12_RESOURCE_STATE_COMMON, None));
+        try!(hv_tex.set_name("gaussian".into()));
 
-        trace!("Create buffer for total brightness value");
+        trace!("Create buffer for brightness values");
+        let buf_size = ((w-1)/TOTAL_CHUNK_SIZE+1)*((h-1)/TOTAL_CHUNK_SIZE+1);
+        assert!(buf_size <= 4096); // Maximum buffer size CSBufTotal can process
         let rw_total = try!(dev.create_committed_resource(
           &heap_properties_default(), D3D12_HEAP_FLAG_NONE, 
-          &resource_desc_buffer_uav(16), 
+          &resource_desc_buffer_uav((buf_size*4) as u64), 
           D3D12_RESOURCE_STATE_COMMON, None));
+        try!(rw_total.set_name("Total brightness".into()));
         trace!("Create read-back buffer for total brightness value");
         let rb_total = try!(dev.create_committed_resource(
           &heap_properties_readback(), D3D12_HEAP_FLAG_NONE, 
-          &resource_desc_buffer(16), 
+          &resource_desc_buffer(4), 
           D3D12_RESOURCE_STATE_COPY_DEST, None));
+        try!(rb_total.set_name("Total brightness read-back".into()));
 
         let tex_desc = resource_desc_tex2d_nomip(w as u64,
                                                  h as u32,
@@ -75,6 +82,7 @@ impl TonemapperResources {
                                                         &tex_desc,
                                                         D3D12_RESOURCE_STATE_COMMON,
                                                         None));
+        try!(im_tex.set_name("Intermediate texture for copying into back-buffer".into()));
         trace!("Create fence");
         let fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
         trace!("Create dheap");
@@ -85,6 +93,8 @@ impl TonemapperResources {
         let vpass_dheap = try!(DescriptorHeap::new(&dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
         trace!("Create total_dheap");
         let total_dheap = try!(DescriptorHeap::new(&dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+        trace!("Create total_cuav_dheap");
+        let total_cuav_dheap = try!(DescriptorHeap::new(&dev, 1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, false, 0));
         trace!("Create calloc");
         let calloc = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COMPUTE));
         trace!("Create clist");
@@ -92,6 +102,10 @@ impl TonemapperResources {
             try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, &calloc, None));
         trace!("Close clist");
         try!(clist.close());
+
+        let total_desc = uav_buffer_desc(buf_size, 4);
+        dev.create_unordered_access_view(Some(&rw_total), None, Some(&total_desc), total_dheap.cpu_handle(1));
+        dev.create_unordered_access_view(Some(&rw_total), None, Some(&total_desc), total_cuav_dheap.cpu_handle(0));
 
         trace!("Create gralloc");
         let gralloc = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_DIRECT));
@@ -112,6 +126,7 @@ impl TonemapperResources {
             fence: fence,
             dheap: dheap,
             total_dheap: total_dheap,
+            total_cuav_dheap: total_cuav_dheap,
             hpass_dheap: hpass_dheap,
             vpass_dheap: vpass_dheap,
             calloc: calloc,
@@ -136,9 +151,10 @@ impl TonemapperResources {
 }
 
 pub struct Tonemapper {
-    total_clear_cpso: D3D12PipelineState,
+    tb_event: Event,
     total_cpso: D3D12PipelineState,
     total_rs: D3D12RootSignature,
+    buf_total_cpso: D3D12PipelineState,
     hpass_cpso: D3D12PipelineState,
     hpass_rs: D3D12RootSignature,
     vpass_cpso: D3D12PipelineState,
@@ -153,7 +169,7 @@ pub struct Tonemapper {
 const HTGROUPS: u32 = 128;
 const VTGROUPS: u32 = 128;
 const COMBINE_GROUPS: u32 = 32;
-const TOTAL_CHUNK_SIZE: u32 = 32*2; // twice the size of TotalGroups in tonemap.hlsl
+const TOTAL_CHUNK_SIZE: u32 = 32*2; // Twice the TotalGroups from shader
 
 impl Tonemapper {
     // TODO: return some error code. Even if nothing meaningful can be done with the error code, at least it allows to shutdown gracefully.
@@ -166,13 +182,28 @@ impl Tonemapper {
         let shader = str::from_utf8(&content[..])
                          .expect("Shader file content is not a valid UTF-8");
 
-        let (total_shader_bc, total_rs_bc) = compile_shader_and_root_signature(shader.into(),
-                                                                               "CSTotal",
-                                                                               "RSDT")
-                                                 .expect("Tonemapper total brightness shader compile error");
-
+        let (buf_total_shader_bc, total_rs_bc) = compile_shader_and_root_signature(shader.into(), "tonemap.hlsl",
+                                                                               "CSBufTotal",
+                                                                               "RSDT",
+                                                                                D3DCOMPILE_OPTIMIZATION_LEVEL2)
+                                                 .expect("Tonemapper buffer reduce shader compile error");
+        // CSBufTotal and CSTotal shaders share the same root signature
         let total_rs = dev.create_root_signature(0, &total_rs_bc[..])
                           .expect("Cannot create RSDT root signature");
+
+        let buf_total_cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
+            pRootSignature: total_rs.iptr() as *mut _,
+            CS: ShaderBytecode::from_vec(&buf_total_shader_bc).get(),
+            .. compute_pipeline_state_desc_default()
+        };
+        let buf_total_cpso = dev.create_compute_pipeline_state(&buf_total_cpsd)
+                            .expect("Cannot create buffer reduce compute pipeline state");
+
+        let (total_shader_bc, _) = compile_shader_and_root_signature(shader.into(), "tonemap.hlsl",
+                                                                               "CSTotal",
+                                                                               "RSDT",
+                                                                                D3DCOMPILE_OPTIMIZATION_LEVEL2 | D3DCOMPILE_ENABLE_STRICTNESS)
+                                                 .expect("Tonemapper total brightness shader compile error");
 
         let total_cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
             pRootSignature: total_rs.iptr() as *mut _,
@@ -182,21 +213,9 @@ impl Tonemapper {
         let total_cpso = dev.create_compute_pipeline_state(&total_cpsd)
                             .expect("Cannot create total brightness compute pipeline state");
 
-        let clear_total_bc = d3d_compile_from_str(shader, "CSClearTotal", "cs_5_0", 0)
-                                .expect("CSClearTotal compile error");
-
-        let total_clear_cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-            pRootSignature: total_rs.iptr() as *mut _,
-            CS: ShaderBytecode::from_vec(&clear_total_bc).get(),
-            .. compute_pipeline_state_desc_default()
-        };
-        let total_clear_cpso = dev.create_compute_pipeline_state(&total_clear_cpsd)
-                            .expect("Cannot create total brightness compute pipeline state");
-
-
-        let (hpass_shader_bc, hpass_rs_bc) = compile_shader_and_root_signature(shader.into(),
+        let (hpass_shader_bc, hpass_rs_bc) = compile_shader_and_root_signature(shader.into(), "tonemap.hlsl",
                                                                                "CSHorizontal",
-                                                                               "RSDH")
+                                                                               "RSDH", 0)
                                                  .expect("Tonemapper horizontal pass shader compile error");
 
         let hpass_rs = dev.create_root_signature(0, &hpass_rs_bc[..])
@@ -210,9 +229,9 @@ impl Tonemapper {
         let hpass_cpso = dev.create_compute_pipeline_state(&hpass_cpsd)
                             .expect("Cannot create horiziontal pass compute pipeline state");
 
-        let (vpass_shader_bc, vpass_rs_bc) = compile_shader_and_root_signature(shader.into(),
+        let (vpass_shader_bc, vpass_rs_bc) = compile_shader_and_root_signature(shader.into(), "tonemap.hlsl",
                                                                                "CSVertical",
-                                                                               "RSDV")
+                                                                               "RSDV", 0)
                                                  .expect("Tonemapper vertical pass shader compile error");
 
         let vpass_rs = dev.create_root_signature(0, &vpass_rs_bc[..])
@@ -226,9 +245,9 @@ impl Tonemapper {
         let vpass_cpso = dev.create_compute_pipeline_state(&vpass_cpsd)
                             .expect("Cannot create horiziontal pass compute pipeline state");
 
-        let (shader_bytecode, root_sig_bytecode) = compile_shader_and_root_signature(shader.into(),
+        let (shader_bytecode, root_sig_bytecode) = compile_shader_and_root_signature(shader.into(), "tonemap.hlsl",
                                                                                      "CSMain",
-                                                                                     "RSD")
+                                                                                     "RSD", 0)
                                                        .expect("Tonemapper shader compile error");
 
         trace!("Root signature");
@@ -244,9 +263,10 @@ impl Tonemapper {
                       .expect("Cannot create compute pipeline state");
 
         Tonemapper {
-            total_clear_cpso: total_clear_cpso,
+            tb_event: create_event(),
             total_cpso: total_cpso,
             total_rs: total_rs,
+            buf_total_cpso: buf_total_cpso,
             hpass_cpso: hpass_cpso,
             hpass_rs: hpass_rs,
             vpass_cpso: vpass_cpso,
@@ -269,7 +289,12 @@ impl Tonemapper {
         if cfg!(debug_assertions) { trace!("tonemap") };
         if cfg!(debug_assertions) { trace!("Assert same adapter") };
         assert!(&self.luid == &Luid(core.dev.get_adapter_luid()));
+        // TODO: Remove. This is for total brightness calculation bench
+        //wait_for_compute_queue(core, &res.fence, &self.tb_event);
+        //wait_for_graphics_queue(core, &res.fence, &self.tb_event);
+        //wait_for_copy_queue(core, &res.fence, &self.tb_event);
 
+        ::perf_start("tbr");
         if cfg!(debug_assertions) { trace!("calloc.reset") };
         try!(res.calloc.reset());
         core.dump_info_queue();
@@ -279,7 +304,6 @@ impl Tonemapper {
         let srcdesc = src.get_desc();
         let (cw, ch) = (srcdesc.Width as u32, srcdesc.Height);
 
-
         if cfg!(debug_assertions) { trace!("dstdesc") };
         let dstdesc = dst.get_desc();
 
@@ -287,13 +311,12 @@ impl Tonemapper {
         // Total brightness
         let src_desc = srv_tex2d_default_slice_mip(srcdesc.Format, 0, 1);
         core.dev.create_shader_resource_view(Some(&src), Some(&src_desc), res.total_dheap.cpu_handle(0));
-        let total_desc = uav_buffer_desc(1, 4);
-        core.dev.create_unordered_access_view(Some(&res.rw_total), None, Some(&total_desc), res.total_dheap.cpu_handle(1));
 
+        clist.set_pipeline_state(&self.total_cpso);
         clist.set_compute_root_signature(&self.total_rs);
         clist.set_descriptor_heaps(&[res.total_dheap.get()]);
 //        clist.set_compute_root_unordered_access_view(0, res.rw_total.get_gpu_virtual_address());
-        clist.set_compute_root_descriptor_table(0, res.total_dheap.gpu_handle(0));
+        clist.set_compute_root_descriptor_table(1, res.total_dheap.gpu_handle(0));
 
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&src,
@@ -302,18 +325,24 @@ impl Tonemapper {
             D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
         ]);
 
-        // Clearing UAV misteriously doesn't work on GTX 980
-        //if cfg!(debug_assertions) { trace!("Clear unordered access view") };
-        //clist.clear_unordered_access_view_uint(res.total_dheap.gpu_handle(1), res.total_dheap.cpu_handle(1), &res.rw_total, &[0,0,0,0], &[]);
-        clist.set_pipeline_state(&self.total_clear_cpso);
-        clist.dispatch(1, 1, 1);
-        clist.set_pipeline_state(&self.total_cpso);
-        clist.dispatch(cw / TOTAL_CHUNK_SIZE, ch / TOTAL_CHUNK_SIZE, 1);
+        if cfg!(debug_assertions) { trace!("Clear unordered access view") };
+        // UAV for CPU handle MUST be in shader inaccessible descriptor heap
+        clist.clear_unordered_access_view_float(res.total_cuav_dheap.gpu_handle(0), res.total_cuav_dheap.cpu_handle(0), &res.rw_total, &[0.,0.,0.,0.], &[]);
+        clist.set_descriptor_heaps(&[res.total_dheap.get()]);
+        let hdispatch = (cw-1) / TOTAL_CHUNK_SIZE + 1;
+        let vdispatch = (ch-1) / TOTAL_CHUNK_SIZE + 1;
+        clist.set_compute_root32_bit_constant(0, hdispatch, 0);
+        clist.dispatch(hdispatch, vdispatch, 1);
+
+        clist.set_pipeline_state(&self.buf_total_cpso);
+        clist.dispatch(1,1,1);
+
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&res.rw_total,
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE),
         ]);
-        clist.copy_resource(&res.rb_total, &res.rw_total);
+        // copy_resource cannot be used here. buffers have different sizes.
+        clist.copy_buffer_region(&res.rb_total, 0, &res.rw_total, 0, 4);
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&res.rw_total,
             D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON),
@@ -324,13 +353,15 @@ impl Tonemapper {
         if cfg!(debug_assertions) { trace!("Execute total brightness") };
         core.compute_queue.execute_command_lists(&[clist]);
 
-        wait_for_compute_queue(core, &res.fence, &create_event());
+        wait_for_compute_queue(core, &res.fence, &self.tb_event);
 
         let total_brightness = res.total_brightness();
         let avg_brightness = total_brightness / cw as f32 / ch as f32;
-
-        print!("Total brightness: {:10.3} Average brightness: {:.3}           \r", total_brightness, avg_brightness);
-        let _ = ::std::io::Write::flush(&mut ::std::io::stdout());
+        ::perf_end("tbr");
+        if total_brightness as u32 != hdispatch*vdispatch {
+            println!("Total brightness: {:10.3} Average brightness: {:.3} Dispatch treads: {:6} rw_total size: {:4}          \r", total_brightness, avg_brightness, hdispatch*vdispatch, res.rw_total.get_desc().Width/4);
+            let _ = ::std::io::Write::flush(&mut ::std::io::stdout());
+        };
 
         try!(res.clist.reset(&res.calloc, None));
 

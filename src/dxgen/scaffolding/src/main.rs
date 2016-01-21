@@ -62,7 +62,14 @@ fn main() {
   env_logger::init().unwrap();
 
   // Set default values of cubes module parameters
-  let mut parms = CubeParms {thread_count: 2, object_count: 2_000, speed_mult: 0.01, concurrent_state_update: true};
+  let mut parms = CubeParms {
+        thread_count: 2, 
+        object_count: 2_000, 
+        speed_mult: 0.01, 
+        concurrent_state_update: true,
+        debug_layer: cfg!(debug_assertions), 
+        rt_format: DXGI_FORMAT_R16G16B16A16_FLOAT,
+    };
   let mut adapters_to_test = vec![];
   let mut adapters_info = false;
   for arg in env::args() {
@@ -73,9 +80,18 @@ fn main() {
     if arg == "-i" || arg == "--info" {
       adapters_info = true;
     }
+    if arg == "-f" || arg == "--f32-color" {
+        parms.rt_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    }
     if arg == "--seq" {
         parms.concurrent_state_update = false;
-    };
+    }
+    if arg == "-d" || arg == "--debug" {
+        parms.debug_layer = true;
+    }
+    if arg == "--nodebug" {
+        parms.debug_layer = false;
+    }
     if arg.starts_with("-o") {
       // Command line parameter -o<N> sets number of objects to draw
       // Note, that 2 in arg[2..] is a number of bytes, not characters. 
