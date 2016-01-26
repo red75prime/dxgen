@@ -29,8 +29,8 @@ SamplerState  linSamp : register(s0);
 
 [RootSignature(RSD)]
 [numthreads(CombineGroups, CombineGroups, 1)]
-void CSMain(uint3 gtid: SV_GroupThreadId, uint3 gid: SV_GroupId) {
-  uint2 crd = gid.xy*CombineGroups + gtid.xy;
+void CSMain(uint3 dtid: SV_DispatchThreadId, uint3 gtid: SV_GroupThreadId, uint3 gid: SV_GroupId) {
+  uint2 crd = dtid.xy;
   uint w, h;
   dst.GetDimensions(w, h);
   float3 cl = src[crd].rgb + hvtemp.SampleLevel(linSamp,crd/float2(w-1,h-1), 0).rgb;
@@ -147,7 +147,7 @@ void CSVertical(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
   uint srcy = gid.y * VTGroups + gtid.y - VKernelSize;
   tmp[gtid.y] = src[uint2(srcx, srcy)].rgb;
 
-  AllMemoryBarrierWithGroupSync();
+  GroupMemoryBarrierWithGroupSync();
 
   uint gtx = gtid.y;
 
@@ -163,94 +163,4 @@ void CSVertical(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
     dst[uint2(srcx, srcy)] = float4(acc, 1);
   };
 
-}
-
-#define TotalGroups 32
-#define RSDT "RootFlags(0), RootConstants(num32BitConstants=1, b0), DescriptorTable(SRV(t0), UAV(u0))" // Descriptor table is required for texture
-
-cbuffer cb0 : register(b0) {
-  uint HDispatch;
-};
-Texture2D<float4> tsrc: register(t0);
-RWStructuredBuffer<float> total : register(u0);
-
-groupshared float4 bpacked[TotalGroups*TotalGroups];
-
-float brightness(float4 cl) {
-  // TODO: replace with correct implementation
-  return dot(float3(1, 1, 1), cl.rgb); //cl.r + cl.g + cl.b;
-}
-
-[RootSignature(RSDT)]
-[numthreads(TotalGroups,TotalGroups,1)]
-void CSTotal(uint3 globalId: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, uint3 groupId : SV_GroupId) {
-  uint gindex = localId.x + localId.y*TotalGroups;
-  uint2 crd = uint2(globalId.x*2, globalId.y*2);
-  float b1 = brightness(tsrc[crd]);
-  float b2 = brightness(tsrc[uint2(crd.x + 1, crd.y)]);
-  float b3 = brightness(tsrc[uint2(crd.x, crd.y + 1)]);
-  float b4 = brightness(tsrc[uint2(crd.x + 1, crd.y + 1)]);
-  bpacked[gindex] = float4(b1,b2,b3,b4);
-  
-  GroupMemoryBarrierWithGroupSync();
-
-  [unroll]
-  for (uint thres = TotalGroups*TotalGroups / 2; thres > 0; thres /= 2) {
-    if (gindex < thres) {
-      bpacked[gindex] += bpacked[gindex + thres];
-    }
-    GroupMemoryBarrierWithGroupSync();
-  };
-  //if (gindex < 32) {
-  //  // TODO: Check if this works on AMD
-  //  bpacked[gindex] += bpacked[gindex + 32];
-  //  bpacked[gindex] += bpacked[gindex + 16];
-  //  bpacked[gindex] += bpacked[gindex + 8];
-  //  bpacked[gindex] += bpacked[gindex + 4];
-  //  bpacked[gindex] += bpacked[gindex + 2];
-  //  bpacked[gindex] += bpacked[gindex + 1];
-  //}
-
-  if (gindex == 0) {
-    float value = dot(bpacked[0], float4(1, 1, 1, 1));
-    total[groupId.x + groupId.y*HDispatch] = 1;//value;
-  };
-  AllMemoryBarrier();
-}
-
-#define BufTotal 1024
-groupshared float stotal[BufTotal];
-
-// Only Dispatch(1,1,1) is supported
-
-[RootSignature(RSDT)]
-[numthreads(BufTotal, 1, 1)]
-void CSBufTotal(uint3 localId : SV_GroupThreadId) {
-  uint gi = localId.x;
-  uint gi4 = gi * 4;
-  stotal[gi] = total[gi4+0] + total[gi4 + 1] + total[gi4 + 2] + total[gi4 + 3];
-
-  GroupMemoryBarrierWithGroupSync();
-
-  [unroll]
-  for (uint thres = BufTotal / 2; thres > 0; thres /= 2) {
-    if (gi < thres) {
-      stotal[gi] += stotal[gi + thres];
-    }
-    GroupMemoryBarrierWithGroupSync();
-  };
-  //if (gi < 32) {
-  //  // TODO: Check if this works on AMD
-  //  stotal[gi] += stotal[gi + 32];
-  //  stotal[gi] += stotal[gi + 16];
-  //  stotal[gi] += stotal[gi + 8];
-  //  stotal[gi] += stotal[gi + 4];
-  //  stotal[gi] += stotal[gi + 2];
-  //  stotal[gi] += stotal[gi + 1];
-  //}
-
-  if (gi == 0) {
-    total[0] = stotal[0];
-  }
-  AllMemoryBarrier();
 }

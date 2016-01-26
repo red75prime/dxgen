@@ -23,7 +23,6 @@ extern crate itertools;
 #[macro_use] mod macros;
 mod create_device;
 mod window;
-mod structwrappers;
 mod utils;
 //mod gfx_d3d12;
 mod shape_gen;

@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use winapi::*;
 use dx_safe::*;
-use structwrappers::*;
+use dx_safe::structwrappers::*;
 use std::ptr;
 use kernel32;
 use std::mem;

@@ -311,3 +311,118 @@ use std::ffi::CString;
 pub fn str_to_cstring(s: &str) -> CString {
     CString::new(s).unwrap()
 }
+
+use std::io;
+use std::error;
+use std::fmt;
+use std::fs::File;
+use std::io::Read;
+
+#[derive(Debug)]
+pub enum ShaderInnerError {
+    Io(io::Error),
+    Utf8(::std::str::Utf8Error),
+    Compile(String),
+}
+
+#[derive(Debug)]
+pub struct ShaderCompileError {
+    inner: ShaderInnerError,
+}
+
+impl fmt::Display for ShaderCompileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.inner {
+            ShaderInnerError::Io(ref err) => write!(f, "IO error: {}", err),
+            ShaderInnerError::Utf8(ref err) => write!(f, "Utf8 error: {}", err),
+            ShaderInnerError::Compile(ref err) => write!(f, "{}", err),
+        }
+    }
+}
+
+impl error::Error for ShaderCompileError {
+    fn description(&self) -> &str {
+        match self.inner {
+            ShaderInnerError::Io(ref err) => err.description(),
+            ShaderInnerError::Utf8(ref err) => err.description(),
+            ShaderInnerError::Compile(ref err) => err.as_ref(),
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match self.inner {
+            ShaderInnerError::Io(ref err) => Some(err),
+            ShaderInnerError::Utf8(ref err) => Some(err),
+            ShaderInnerError::Compile(ref err) => None,
+        }
+    }
+}
+
+impl From<io::Error> for ShaderCompileError {
+    fn from(err: io::Error) -> ShaderCompileError {
+        ShaderCompileError {
+            inner: ShaderInnerError::Io(err),
+        }
+    }
+}
+
+impl From<::std::str::Utf8Error> for ShaderCompileError {
+    fn from(err: ::std::str::Utf8Error) -> ShaderCompileError {
+        ShaderCompileError {
+            inner: ShaderInnerError::Utf8(err),
+        }
+    }
+}
+
+pub trait TryCollect<I,E> {
+    fn try_collect(self) -> Result<Vec<I>,E>
+        where Self: Iterator<Item=Result<I,E>> + Sized;
+}
+
+impl<T,I,E> TryCollect<I,E> for T where T: Iterator<Item=Result<I,E>> {
+    fn try_collect(self) -> Result<Vec<I>,E> {
+        let mut ret = vec![];
+        for item in self {
+            match item {
+                Ok(v) => ret.push(v),
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(ret)
+    }
+}
+
+use std::collections::HashMap;
+
+pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static str, &mut Vec<u8>)],
+                        root_signature_name: &str, flags: u32) 
+                        -> Result<Vec<u8>, ShaderCompileError> {
+    let mut f = try!(File::open(file_name));
+    let mut content = vec![];
+    try!(f.read_to_end(&mut content));
+    let shader = try!(::std::str::from_utf8(&content[..]));
+
+    let ret = 
+        try!(func_names.iter_mut().map(|&mut(fname, target, ref mut bytecode)|{
+            match d3d_compile_from_str(shader, file_name, fname, target, flags) {
+                Ok(mut bc) => {
+                        bytecode.truncate(0);
+                        bytecode.append(&mut bc);
+                        Ok(())
+                    },
+                Err(err) => Err(ShaderCompileError{ 
+                        inner: ShaderInnerError::Compile(format!("{}: {}", fname, err)),
+                    }),
+            }
+        }).try_collect());
+    let root_signature_bytecode = 
+        match d3d_compile_from_str(shader, file_name, root_signature_name, "rootsig_1_0", 0) {
+            Ok(sbc) => sbc,
+            Err(err) => {
+                return Err(ShaderCompileError{ 
+                    inner: ShaderInnerError::Compile(format!("{}: {}", root_signature_name, err)),
+                    });
+            },
+        };
+    Ok(root_signature_bytecode)
+}    

@@ -10,6 +10,7 @@ pub mod dxgi_safe;
 pub mod dxgi1_2_safe;
 pub mod dxgi1_3_safe;
 pub mod dxgi1_4_safe;
+pub mod structwrappers;
 
 pub use iid::*;
 pub use d3d12_safe::*;

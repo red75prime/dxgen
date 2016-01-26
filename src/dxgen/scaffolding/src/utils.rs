@@ -53,7 +53,7 @@ use core::*;
 use std::mem;
 use std::ptr;
 use std::slice;
-use structwrappers::*;
+use dx_safe::structwrappers::*;
 use kernel32::*;
 
 pub fn get_required_intermediate_size(res: &D3D12Resource) -> HResult<u64> {

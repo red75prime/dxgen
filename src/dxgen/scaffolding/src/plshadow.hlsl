@@ -28,7 +28,7 @@ struct VS_OUTPUT {
 [RootSignature(RSD)]
 VS_OUTPUT VSMain(VS_INPUT input, uint iidx: SV_InstanceID) {
   VS_OUTPUT ret;
-  ret.pos = mul(instances[iidx].world, input.vPosition) - float4(light_pos,0);
+  ret.pos = mul(instances[iidx].world, float4(input.vPosition,1)) - float4(light_pos,0);
   return ret;
 };
 
@@ -44,60 +44,66 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
   // Ok. We have triangle in light-centric coordinates. 
   // Let's go now to replicate it onto appropriate cube sides.
   PS_IN outval;
-
-  // x, y  +z
-  outval.face = 0;
-  for (uint i = 0; i < 3; i++) {
-    outval.pos = float4(input[i].pos.xyz, input[i].pos.z);
-    outval.z = outval.pos.z;
-    outstream.Append(outval);
+  {
+    // x, y  +z
+    outval.face = 0;
+    for (uint i = 0; i < 3; i++) {
+      outval.pos = float4(input[i].pos.xyz, input[i].pos.z);
+      outval.z = outval.pos.z;
+      outstream.Append(outval);
+    }
+    outstream.RestartStrip();
   }
-  outstream.RestartStrip();
-
-  // x, y  -z
-  outval.face = 1;
-  for (uint i = 0; i < 3; i++) {
-    outval.pos = float4(input[i].pos.xy, -input[i].pos.z, -input[i].pos.z);
-    outval.z = outval.pos.z;
-    outstream.Append(outval);
+  {
+    // x, y  -z
+    outval.face = 1;
+    for (uint i = 0; i < 3; i++) {
+      outval.pos = float4(input[i].pos.xy, -input[i].pos.z, -input[i].pos.z);
+      outval.z = outval.pos.z;
+      outstream.Append(outval);
+    }
+    outstream.RestartStrip();
   }
-  outstream.RestartStrip();
-
-  // z, y  +x
-  outval.face = 2;
-  for (uint i = 0; i < 3; i++) {
-    outval.pos = float4(input[i].pos.zy, input[i].pos.x, input[i].pos.x);
-    outval.z = outval.pos.z;
-    outstream.Append(outval);
+  {
+    // z, y  +x
+    outval.face = 2;
+    for (uint i = 0; i < 3; i++) {
+      outval.pos = float4(input[i].pos.zy, input[i].pos.x, input[i].pos.x);
+      outval.z = outval.pos.z;
+      outstream.Append(outval);
+    }
+    outstream.RestartStrip();
   }
-  outstream.RestartStrip();
-
-  // z, y  -x
-  outval.face = 3;
-  for (uint i = 0; i < 3; i++) {
-    outval.pos = float4(input[i].pos.zy, -input[i].pos.x, -input[i].pos.x);
-    outval.z = outval.pos.z;
-    outstream.Append(outval);
+  {
+    // z, y  -x
+    outval.face = 3;
+    for (uint i = 0; i < 3; i++) {
+      outval.pos = float4(input[i].pos.zy, -input[i].pos.x, -input[i].pos.x);
+      outval.z = outval.pos.z;
+      outstream.Append(outval);
+    }
+    outstream.RestartStrip();
   }
-  outstream.RestartStrip();
-
-  // x, z  +y
-  outval.face = 4;
-  for (uint i = 0; i < 3; i++) {
-    outval.pos = float4(input[i].pos.xz, input[i].pos.y, input[i].pos.y);
-    outval.z = outval.pos.z;
-    outstream.Append(outval);
+  {
+    // x, z  +y
+    outval.face = 4;
+    for (uint i = 0; i < 3; i++) {
+      outval.pos = float4(input[i].pos.xz, input[i].pos.y, input[i].pos.y);
+      outval.z = outval.pos.z;
+      outstream.Append(outval);
+    }
+    outstream.RestartStrip();
   }
-  outstream.RestartStrip();
-
-  // x, z  -y
-  outval.face = 5;
-  for (uint i = 0; i < 3; i++) {
-    outval.pos = float4(input[i].pos.xz, -input[i].pos.y, -input[i].pos.y);
-    outval.z = outval.pos.z;
-    outstream.Append(outval);
+  {
+    // x, z  -y
+    outval.face = 5;
+    for (uint i = 0; i < 3; i++) {
+      outval.pos = float4(input[i].pos.xz, -input[i].pos.y, -input[i].pos.y);
+      outval.z = outval.pos.z;
+      outstream.Append(outval);
+    }
+    outstream.RestartStrip();
   }
-  outstream.RestartStrip();
 };
 
 struct PS_OUT {

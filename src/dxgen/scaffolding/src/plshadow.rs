@@ -3,7 +3,7 @@ use core;
 use create_device;
 use utils;
 use dx_safe::*;
-use structwrappers::*;
+use dx_safe::structwrappers::*;
 use std::ptr;
 use std::io;
 use std::io::prelude::*;

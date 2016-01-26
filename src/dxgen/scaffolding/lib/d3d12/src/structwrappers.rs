@@ -1,7 +1,6 @@
-#![allow(dead_code)]
-
 use winapi::*;
-use dx_safe::*;
+use iid::{HResult, HasIID};
+use d3d12_safe::*;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::mem;

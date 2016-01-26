@@ -1,4 +1,4 @@
-use winapi::{ULONG,HRESULT,REFGUID,c_void};
+use winapi::{HRESULT,REFGUID,c_void};
 
 pub mod iids {
   use winapi::IID;
@@ -9,7 +9,7 @@ pub mod iids {
 
 pub type HResult<T>=Result<T, HRESULT>;
 
-use winapi::{IUnknownVtbl, IUnknown};
+use winapi::IUnknown;
 
 pub trait HasIID {
   fn iid() -> REFGUID;

@@ -7,6 +7,7 @@ pub use std::os::windows::ffi::OsStrExt;
 
 pub use iid::*;
 
+#[allow(dead_code)]
 pub fn os_str_to_vec_u16(s : &OsStr) -> Vec<u16> {
   s.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
 }
@@ -41,24 +42,28 @@ pub fn str_to_vec_u16(s : Cow<str>) -> Vec<u16> {
 // returns Some(len) if all inputs are Some(len) or None (or Some(0) if all inputs are None), 
 //         None otherwise
 pub fn same_length(lens:&[Option<usize>]) -> Option<usize> {
-    let res=lens.iter().fold(Ok(None), 
-        |sz, mlen| { 
-            match sz { 
-                Err(_) => sz, 
-                Ok(None) => Ok(mlen.map(|l1|l1)), 
-                Ok(Some(l)) => 
-                    match *mlen {
-                        None => sz, 
-                        Some(l1) => 
-                            if l1==l {
-                                sz
-                            } else {
-                                Err(())
-                            }
-                    }
-            }
-        });
-    res.map(|ms|{ms.unwrap_or(0)}).ok()
+    if lens.len() == 1 {
+        Some(lens[0].unwrap_or(0))
+    } else {
+        let res=lens.iter().fold(Ok(None), 
+            |sz, mlen| { 
+                match sz { 
+                    Err(_) => sz, 
+                    Ok(None) => Ok(mlen.map(|l1|l1)), 
+                    Ok(Some(l)) => 
+                        match *mlen {
+                            None => sz, 
+                            Some(l1) => 
+                                if l1==l {
+                                    sz
+                                } else {
+                                    Err(())
+                                }
+                        }
+                }
+            });
+        res.map(|ms|{ms.unwrap_or(0)}).ok()
+    }
 }
 
 pub fn hr2ret<T>(hr : HRESULT, res:T) -> HResult<T> {
@@ -69,14 +74,12 @@ pub fn hr2ret<T>(hr : HRESULT, res:T) -> HResult<T> {
   }
 }
 
-pub unsafe fn zeroinit_com_wrapper<T: HasIID>() -> T {
-  T::new(ptr::null_mut())
-}
-
+#[allow(dead_code)]
 pub fn opt_slice_to_mut_ptr<T>(os: Option<&mut [T]>) -> *mut T {
   os.map(|s|s.as_mut_ptr()).unwrap_or(::std::ptr::null_mut())
 }
 
+#[allow(dead_code)]
 pub fn opt_slice_to_ptr<T>(os: Option<&[T]>) -> *const T {
   os.map(|s|s.as_ptr()).unwrap_or(::std::ptr::null())
 }

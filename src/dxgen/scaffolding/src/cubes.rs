@@ -7,7 +7,7 @@ use core;
 use core::{DXCore, DXSwapChain, Event};
 use utils::*;
 use cgmath::*;
-use structwrappers::*;
+use dx_safe::structwrappers::*;
 use window::*;
 use crossbeam;
 use create_device::*;
@@ -90,7 +90,7 @@ pub struct CubeParms {
     pub rt_format: DXGI_FORMAT,
 }
 
-static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.15, 1.0];
+static CLEAR_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 
 pub fn create_hdr_render_target
     (dev: &D3D12Device,
@@ -530,10 +530,10 @@ impl FrameResources {
         glist.rs_set_viewports(&[self.viewport]);
         glist.rs_set_scissor_rects(&[self.sci_rect]);
         glist.om_set_render_targets(1, &hdr_rtvh, Some(&dsvh));
-        glist.set_graphics_root_descriptor_table(1, self.srv_heap.gpu_handle(0));
         if cfg!(debug_assertions) { trace!("cubes set_graphics_root_constant_buffer_view") };
         let gpu_cbuf_ptr = self.c_buffer.get_gpu_virtual_address();
         glist.set_graphics_root_constant_buffer_view(0, gpu_cbuf_ptr);
+        glist.set_graphics_root_descriptor_table(1, self.srv_heap.gpu_handle(0));
         // When working over RDP after window resizing debug layer complains 
         // that "Total brightness read-back" buffer from tonemapper.rs cannot 
         // be set as constant buffer. Weird.
