@@ -221,7 +221,7 @@ const HTGROUPS: u32 = 128;
 const VTGROUPS: u32 = 128;
 const COMBINE_GROUPS: u32 = 32;
 const TOTAL_CHUNK_SIZE: u32 = 32*2; // Twice the TotalGroups from shader
-const BUF_TOTAL_CHUNK_SIZE: u32 = 1024; 
+const BUF_TOTAL_CHUNK_SIZE: u32 = 512; 
 
 impl Tonemapper {
     // TODO: return some error code. Even if nothing meaningful can be done with the error code, at least it allows to shutdown gracefully.

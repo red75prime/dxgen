@@ -17,6 +17,7 @@ float brightness(float4 cl) {
 }
 
 float br(uint x, uint y) {
+  //// Could it be non-zero values outsize texture?
   //return brightness((x < Width && y < Height) ? tsrc[uint2(x, y)] : float4(0, 0, 0, 0));
   return brightness(tsrc[uint2(x, y)]);
 }
@@ -57,7 +58,7 @@ void CSTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, 
   };
 }
 
-#define BufTotal 1024
+#define BufTotal 512
 groupshared float stotal[BufTotal];
 Buffer<float> r_total : register(t1);
 //globallycoherent RWBuffer<float> ui_total : register(u1);
@@ -70,21 +71,22 @@ void CSBufTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadI
   GroupMemoryBarrierWithGroupSync();
 
   [unroll]
-  for (uint thres = BufTotal / 2; thres > 32; thres /= 2) {
+  for (uint thres = BufTotal / 2; thres > 0; thres /= 2) {
     if (gi < thres) {
       stotal[gi] += stotal[gi + thres];
     }
     GroupMemoryBarrierWithGroupSync();
   };
-  if (gi < 32) {
-    // TODO: Check if this works on HD 4600
-    stotal[gi] += stotal[gi + 32];
-    stotal[gi] += stotal[gi + 16];
-    stotal[gi] += stotal[gi + 8];
-    stotal[gi] += stotal[gi + 4];
-    stotal[gi] += stotal[gi + 2];
-    stotal[gi] += stotal[gi + 1];
-  }
+  // Doesn't work on R7 360
+  //if (gi < 32) {
+  //  // TODO: Check if this works on HD 4600
+  //  stotal[gi] += stotal[gi + 32];
+  //  stotal[gi] += stotal[gi + 16];
+  //  stotal[gi] += stotal[gi + 8];
+  //  stotal[gi] += stotal[gi + 4];
+  //  stotal[gi] += stotal[gi + 2];
+  //  stotal[gi] += stotal[gi + 1];
+  //}
 
   if (gi == 0) {
     float value = stotal[0];
@@ -96,3 +98,4 @@ void CSBufTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadI
     } while (orig != comp);
   };
 }
+
