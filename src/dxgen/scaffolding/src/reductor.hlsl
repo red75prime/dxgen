@@ -1,4 +1,4 @@
-#define TotalGroups 16
+#define TotalGroups 32
 #define RSDT "RootFlags(0), RootConstants(num32BitConstants=3, b0), DescriptorTable(SRV(t0), UAV(u0), UAV(u1), SRV(t1))" // Descriptor table is required for texture
 
 cbuffer cb0 : register(b0) {
@@ -35,21 +35,21 @@ void CSTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, 
   GroupMemoryBarrierWithGroupSync();
 
   [unroll]
-  for (uint thres = TotalGroups*TotalGroups / 2; thres > 0; thres /= 2) {
+  for (uint thres = TotalGroups*TotalGroups / 2; thres > 32; thres /= 2) {
     if (gi < thres) {
       bpacked[gi] += bpacked[gi + thres];
     }
     GroupMemoryBarrierWithGroupSync();
   };
-  //if (gindex < 32) {
-  //  // TODO: Check if this works on AMD
-  //  bpacked[gindex] += bpacked[gindex + 32];
-  //  bpacked[gindex] += bpacked[gindex + 16];
-  //  bpacked[gindex] += bpacked[gindex + 8];
-  //  bpacked[gindex] += bpacked[gindex + 4];
-  //  bpacked[gindex] += bpacked[gindex + 2];
-  //  bpacked[gindex] += bpacked[gindex + 1];
-  //}
+  if (gi < 32) {
+    // TODO: Check if this works on HD 4600
+    bpacked[gi] += bpacked[gi + 32];
+    bpacked[gi] += bpacked[gi + 16];
+    bpacked[gi] += bpacked[gi + 8];
+    bpacked[gi] += bpacked[gi + 4];
+    bpacked[gi] += bpacked[gi + 2];
+    bpacked[gi] += bpacked[gi + 1];
+  }
 
   if (gi == 0) {
     float value = dot(bpacked[0], float4(1, 1, 1, 1));
@@ -57,7 +57,7 @@ void CSTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, 
   };
 }
 
-#define BufTotal 256
+#define BufTotal 1024
 groupshared float stotal[BufTotal];
 Buffer<float> r_total : register(t1);
 //globallycoherent RWBuffer<float> ui_total : register(u1);
@@ -67,31 +67,26 @@ RWByteAddressBuffer ui_total : register(u1);
 [numthreads(BufTotal, 1, 1)]
 void CSBufTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, uint gi : SV_GroupIndex, uint3 gid: SV_GroupID) {
   stotal[gi] = total[dtid.x];
-  //if (dtid.x == 0) {
-  //  ui_total.Store(0, asuint(0.0));
-  //};
-
   GroupMemoryBarrierWithGroupSync();
 
   [unroll]
-  for (uint thres = BufTotal / 2; thres > 0; thres /= 2) {
+  for (uint thres = BufTotal / 2; thres > 32; thres /= 2) {
     if (gi < thres) {
       stotal[gi] += stotal[gi + thres];
     }
     GroupMemoryBarrierWithGroupSync();
   };
-  //if (gi < 32) {
-  //  // TODO: Check if this works on AMD and HD 4600
-  //  stotal[gi] += stotal[gi + 32];
-  //  stotal[gi] += stotal[gi + 16];
-  //  stotal[gi] += stotal[gi + 8];
-  //  stotal[gi] += stotal[gi + 4];
-  //  stotal[gi] += stotal[gi + 2];
-  //  stotal[gi] += stotal[gi + 1];
-  //}
+  if (gi < 32) {
+    // TODO: Check if this works on HD 4600
+    stotal[gi] += stotal[gi + 32];
+    stotal[gi] += stotal[gi + 16];
+    stotal[gi] += stotal[gi + 8];
+    stotal[gi] += stotal[gi + 4];
+    stotal[gi] += stotal[gi + 2];
+    stotal[gi] += stotal[gi + 1];
+  }
 
   if (gi == 0) {
-    //ui_total[0] += stotal[0];
     float value = stotal[0];
     uint comp, orig = ui_total.Load(0);
     [allow_uav_condition]do
@@ -99,10 +94,5 @@ void CSBufTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadI
       comp = orig;
       ui_total.InterlockedCompareExchange(0, comp, asuint(asfloat(orig) + value), orig);
     } while (orig != comp);
-
-    //// Fixed point
-    //uint value = uint(stotal[0]*1000.);
-    //ui_total.InterlockedAdd(0, value);
-
   };
 }

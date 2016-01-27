@@ -220,8 +220,8 @@ pub struct Tonemapper {
 const HTGROUPS: u32 = 128;
 const VTGROUPS: u32 = 128;
 const COMBINE_GROUPS: u32 = 32;
-const TOTAL_CHUNK_SIZE: u32 = 16*2; // Twice the TotalGroups from shader
-const BUF_TOTAL_CHUNK_SIZE: u32 = 256; 
+const TOTAL_CHUNK_SIZE: u32 = 32*2; // Twice the TotalGroups from shader
+const BUF_TOTAL_CHUNK_SIZE: u32 = 1024; 
 
 impl Tonemapper {
     // TODO: return some error code. Even if nothing meaningful can be done with the error code, at least it allows to shutdown gracefully.
@@ -392,6 +392,8 @@ impl Tonemapper {
         clear_list.clear_unordered_access_view_float(res.total_cuav_dheap.gpu_handle(1), res.total_cuav_dheap.cpu_handle(1), &res.rw_buf_total, &[0.,0.,0.,0.], &[]);
         //clear_list.clear_unordered_access_view_uint(res.total_cuav_dheap.gpu_handle(1), res.total_cuav_dheap.cpu_handle(1), &res.rw_buf_total, &[0,0,0,0], &[]);
         clear_list.resource_barrier(&[
+          *ResourceBarrier::uav(&res.rw_total),
+          *ResourceBarrier::uav(&res.rw_buf_total),
           *ResourceBarrier::transition(&res.rw_total,
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
           *ResourceBarrier::transition(&res.rw_buf_total,
@@ -464,13 +466,13 @@ impl Tonemapper {
         wait_for_compute_queue(core, &res.fence, &self.tb_event);
         wait_for_graphics_queue(core, &res.fence, &self.tb_event);
         wait_for_copy_queue(core, &res.fence, &self.tb_event);
+        ::perf_end("tbr");
 
         try!(clist.reset(&res.calloc, None));
 
         let total_one = res.total_brightness();
         let total_brightness = res.total_brightness_full();
         let avg_brightness = total_brightness.0 / cw as f32 / ch as f32;
-        ::perf_end("tbr");
         print!("Total brightness: {:10.1}/{:?} Average brightness: {:.3} Dispatch treads: {}*{}={} rw_total size: {:4} bdispatch: {}         \r", total_one, total_brightness, avg_brightness, hdispatch, vdispatch, hdispatch*vdispatch, res.rw_total.get_desc().Width/4, bdispatch);
         let _ = ::std::io::Write::flush(&mut ::std::io::stdout());
 
