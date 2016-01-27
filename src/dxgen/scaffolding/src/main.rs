@@ -38,7 +38,6 @@ mod plshadow;
 mod cubestate;
 
 
-
 use winapi::*;
 use dx_safe::*;
 use create_device::*;
@@ -71,45 +70,39 @@ fn main() {
     };
   let mut adapters_to_test = vec![];
   let mut adapters_info = false;
-  for arg in env::args() {
+  for arg in env::args().skip(1) {
     if let Ok(n) = arg.parse::<u32>() {
       // If command line parameter is a number, treat it as a number of graphics adapter.
       adapters_to_test.push(n);
-    }
-    if arg == "-i" || arg == "--info" {
+    } else if arg == "-i" || arg == "--info" {
       adapters_info = true;
-    }
-    if arg == "-f" || arg == "--f32-color" {
+    } else if arg == "-f" || arg == "--f32-color" {
         parms.rt_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    }
-    if arg == "--seq" {
+    } else if arg == "--seq" {
         parms.concurrent_state_update = false;
-    }
-    if arg == "-d" || arg == "--debug" {
+    } else if arg == "-d" || arg == "--debug" {
         parms.debug_layer = true;
-    }
-    if arg == "--nodebug" {
+    } else if arg == "--nodebug" {
         parms.debug_layer = false;
-    }
-    if arg.starts_with("-o") {
+    } else if arg.starts_with("-o") {
       // Command line parameter -o<N> sets number of objects to draw
       // Note, that 2 in arg[2..] is a number of bytes, not characters. 
       if let Ok(n) = (&arg[2..]).parse::<u32>() {
         parms.object_count = n;
       }
-    }
-    if arg.starts_with("-t") {
+    } else if arg.starts_with("-t") {
       // Command line parameter -t<N> sets number of threads and graphics command lists
       // to use for sending workload to GPU
       if let Ok(n) = (&arg[2..]).parse::<u32>() {
         parms.thread_count = n;
       }
-    }
-    if arg.starts_with("-s") {
+    } else if arg.starts_with("-s") {
       // Command line parameter -s<f32> sets cube speed multiplier
       if let Ok(s) = (&arg[2..]).parse::<f32>() {
         parms.speed_mult = s;
       }
+    } else {
+        panic!("Unrecognized option: {}", arg);
     }
   }
 
