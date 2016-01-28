@@ -236,7 +236,7 @@ impl Tonemapper {
                 &mut[
                     ("CSBufTotal", "cs_5_1", &mut buf_total_shader_bc),
                     ("CSTotal", "cs_5_1", &mut total_shader_bc),
-                ], "RSDT", D3DCOMPILE_OPTIMIZATION_LEVEL3).unwrap();
+                ], "RSDT", D3DCOMPILE_OPTIMIZATION_LEVEL0).unwrap();
 
         //let mut f = File::open("reductor.hlsl").expect("Cannot open reductor.hlsl");
         //let mut content = vec![];
@@ -313,7 +313,7 @@ impl Tonemapper {
             .. compute_pipeline_state_desc_default()
         };
         let vpass_cpso = dev.create_compute_pipeline_state(&vpass_cpsd)
-                            .expect("Cannot create horiziontal pass compute pipeline state");
+                            .expect("Cannot create horizontal pass compute pipeline state");
 
         let (shader_bytecode, root_sig_bytecode) = compile_shader_and_root_signature(shader.into(), "tonemap.hlsl",
                                                                                      "CSMain",

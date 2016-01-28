@@ -48,7 +48,7 @@ pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>,
     }
 }
 
-pub fn create_dxgi_factory2<T: HasIID>() -> HResult<T> {
+pub fn create_dxgi_factory2<T: HasIID>(debug: bool) -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
     if cfg!(debug_assertions) {
         debug!("cfg!(debug_assertions) is true");
@@ -56,7 +56,7 @@ pub fn create_dxgi_factory2<T: HasIID>() -> HResult<T> {
         debug!("cfg!(debug_assertions) is false");
     };
     let hr = unsafe {
-        CreateDXGIFactory2(if cfg!(debug_assertions) {
+        CreateDXGIFactory2(if debug {
                                DXGI_CREATE_FACTORY_DEBUG
                            } else {
                                0

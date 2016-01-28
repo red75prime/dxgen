@@ -98,7 +98,7 @@ void CSBufTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadI
 
   if (gi == 0) {
     float value = stotal[0];
-    printf("%f", value);
+//    printf("%f", value);
     uint comp, orig = ui_total.Load(0);
     [allow_uav_condition]do
     {

@@ -107,7 +107,7 @@ fn main() {
   }
 
   let factory: DXGIFactory4 = 
-    match create_dxgi_factory2() {
+    match create_dxgi_factory2(parms.debug_layer) {
       Ok(fact) => fact,
       Err(hr) => panic!("Cannot create DXGIFactory4 (0x{:x}). No can do.",hr),
     };

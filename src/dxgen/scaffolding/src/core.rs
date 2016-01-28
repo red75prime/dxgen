@@ -130,7 +130,7 @@ pub fn create_core(adapter: Option<&DXGIAdapter1>,
         None
     };
 
-    let factory: DXGIFactory4 = try!(create_dxgi_factory2().map_err(|hr| {
+    let factory: DXGIFactory4 = try!(create_dxgi_factory2(enable_debug).map_err(|hr| {
         format!("create_dxgi_factory2 failed with 0x{:x}", hr)
     }));
 
