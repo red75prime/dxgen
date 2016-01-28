@@ -93,7 +93,7 @@ pub struct CubeParms {
 static CLEAR_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
 
 pub fn create_hdr_render_target
-    (dev: &D3D12Device,
+    (dev: &D3D12Device, tonemapper: &Tonemapper,
      w: u32,
      h: u32,
      parameters: &CubeParms)
@@ -121,7 +121,7 @@ pub fn create_hdr_render_target
                                   dheap.cpu_handle(0));
 
     trace!("Create tonemapper_resource");
-    let tonemapper_resource = try!(TonemapperResources::new(dev,
+    let tonemapper_resource = try!(TonemapperResources::new(dev, tonemapper,
                                                             w,
                                                             h,
                                                             hdr_format,
@@ -332,6 +332,7 @@ struct FrameResources {
     // TODO: replace 'static
     instance_data_mapped: &'static mut [InstanceData],
     c_buffer: D3D12Resource, // constants data
+    c_buffer_size: u32,
     // TODO: replace 'static
     constants_mapped: &'static mut Constants,
     hdr_render_target: D3D12Resource,
@@ -345,12 +346,14 @@ struct FrameResources {
 
 impl FrameResources {
     // Creates frame resources for rendering onto back-buffer of given dimensions and format
-    fn new(dev: &D3D12Device,
+    fn new(core: &DXCore, cr: &CommonResources,
                w: u32,
                h: u32,
                format: DXGI_FORMAT,
                parameters: &CubeParms)
                -> HResult<FrameResources> {
+        let dev = &core.dev;
+
         let object_cnt = parameters.object_count as usize;
         trace!("FrameResources::new()");
         trace!("Create calloc");
@@ -360,11 +363,11 @@ impl FrameResources {
             try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &calloc, None));
         try!(glist.close());
         trace!("Create fence");
-        let fence = Fence::new(try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE)));
+        let fence = Fence::new(try!(dev.create_fence(0, D3D12_FENCE_FLAG_SHARED)));
         trace!("Create tm_fence");
-        let tm_fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
+        let tm_fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_SHARED));
 
-        let srv_heap = try!(DescriptorHeap::new(dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+        let srv_heap = try!(DescriptorHeap::new(dev, 3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
 
         let i_buffer_size = mem::size_of::<InstanceData>() * parameters.object_count as usize;
         trace!("Create ir_buffer");
@@ -395,11 +398,12 @@ impl FrameResources {
         };
 
 
-        let c_buffer_size = ((mem::size_of::<Constants>()-1)/256+1)*256;
+        //let c_buffer_size = ((mem::size_of::<Constants>()+255)/256*256) as u32;
+        let c_buffer_size = ((mem::size_of::<Constants>()+65535)/65536*65536) as u32; 
         trace!("Create c_buffer");
         let c_buffer = try!(dev.create_committed_resource(&heap_properties_upload(),
                                                           D3D12_HEAP_FLAG_NONE,
-                                                          &resource_desc_buffer(c_buffer_size as u64),
+                                                          &resource_desc_const_buffer(c_buffer_size as u64),
                                                           D3D12_RESOURCE_STATE_GENERIC_READ,
                                                           None));
         try!(c_buffer.set_name("Constants buffer".into()));
@@ -410,6 +414,15 @@ impl FrameResources {
             try!(c_buffer.map(0, Some(&read_range), Some(&mut ptr)));
             &mut *(ptr as *mut Constants)
         };
+
+        trace!("Create instance buffer resource view");
+        let inst_desc = srv_buffer(object_cnt as u32, mem::size_of::<InstanceData>() as u32);
+        dev.create_shader_resource_view(Some(&ir_buffer), Some(&inst_desc), srv_heap.cpu_handle(1));
+        let gpu_cbuf_ptr = c_buffer.get_gpu_virtual_address();
+        debug!("c_buffer GPU VA:0x{:x}", c_buffer.get_gpu_virtual_address());
+        core.dump_info_queue_tagged("Before create_constant_buffer_view"); 
+        dev.create_constant_buffer_view(Some(&cbv_desc(gpu_cbuf_ptr, c_buffer_size)), srv_heap.cpu_handle(2));
+        core.dump_info_queue_tagged("After create_constant_buffer_view"); 
 
         trace!("Create depth stencil descriptor heap");
         let dsd_heap = try!(DescriptorHeap::new(dev, 1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false, 0));
@@ -425,7 +438,7 @@ impl FrameResources {
                                                       dsd_heap.cpu_handle(0)));
         trace!("Create HDR render target");
         let (hdr_render_target, hdr_rtv_heap, tonemapper_resources) =
-            try!(create_hdr_render_target(dev, w, h, parameters));
+            try!(create_hdr_render_target(dev, &cr.tonemapper, w, h, parameters));
 
         let viewport = D3D12_VIEWPORT {
             TopLeftX: 0.,
@@ -454,6 +467,7 @@ impl FrameResources {
             ir_buffer: ir_buffer,
             instance_data_mapped: cpu_i_ptr,
             c_buffer: c_buffer,
+            c_buffer_size: c_buffer_size as u32,
             constants_mapped: cpu_c_ptr,
             hdr_render_target: hdr_render_target,
             hdr_rtv_heap: hdr_rtv_heap,
@@ -515,30 +529,32 @@ impl FrameResources {
         ::perf_fillbuf_end();
         ::perf_start("listfill");
         try!(self.calloc.reset());
+        core.dump_info_queue_tagged("Before glist.reset"); 
         try!(self.glist.reset(&self.calloc, Some(&cr.pipeline_state)));
+        core.dump_info_queue_tagged("After glist.reset"); 
 
         core.dev.create_shader_resource_view(Some(&cr.tex_resource), Some(&cr.tex_desc), self.srv_heap.cpu_handle(0));
-        let inst_desc = srv_buffer(self.object_cnt, mem::size_of::<InstanceData>() as u32);
-        core.dev.create_shader_resource_view(Some(&self.ir_buffer), Some(&inst_desc), self.srv_heap.cpu_handle(1));
 
         let hdr_rtvh = self.hdr_rtv_heap.cpu_handle(0);
         let dsvh = self.dsd_heap.cpu_handle(0);
         let glist = &self.glist;
-        glist.set_pipeline_state(&cr.pipeline_state);
-        glist.set_graphics_root_signature(&cr.root_signature);
+        core.dump_info_queue_tagged("Before set_descriptor_heaps"); 
         glist.set_descriptor_heaps(&[self.srv_heap.get()]);
-        glist.rs_set_viewports(&[self.viewport]);
-        glist.rs_set_scissor_rects(&[self.sci_rect]);
-        glist.om_set_render_targets(1, &hdr_rtvh, Some(&dsvh));
-        if cfg!(debug_assertions) { trace!("cubes set_graphics_root_constant_buffer_view") };
-        let gpu_cbuf_ptr = self.c_buffer.get_gpu_virtual_address();
-        glist.set_graphics_root_constant_buffer_view(0, gpu_cbuf_ptr);
-        glist.set_graphics_root_descriptor_table(1, self.srv_heap.gpu_handle(0));
+        core.dump_info_queue_tagged("After set_descriptor_heaps"); 
+        //glist.set_pipeline_state(&cr.pipeline_state);
+        glist.set_graphics_root_signature(&cr.root_signature);
+        core.dump_info_queue_tagged("After set_graphics_root_signature"); 
+        glist.set_graphics_root_descriptor_table(0, self.srv_heap.gpu_handle(0));
+        core.dump_info_queue_tagged("After set_graphics_root_descriptor_table"); 
+        //glist.set_graphics_root_constant_buffer_view(0, gpu_cbuf_ptr);
         // When working over RDP after window resizing debug layer complains 
         // that "Total brightness read-back" buffer from tonemapper.rs cannot 
         // be set as constant buffer. Weird.
-        core.dump_info_queue(); 
+        //core.dump_info_queue_tagged("After set_graphics_root_constant_buffer_view"); 
         //glist.set_graphics_root_shader_resource_view(2, self.i_buffer.get_gpu_virtual_address());
+        glist.rs_set_viewports(&[self.viewport]);
+        glist.rs_set_scissor_rects(&[self.sci_rect]);
+        glist.om_set_render_targets(1, &hdr_rtvh, Some(&dsvh));
         glist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         glist.ia_set_vertex_buffers(0, Some(&[cr.vertex_buffer_view]));
         glist.ia_set_index_buffer(Some(&cr.index_buffer_view));
@@ -875,7 +891,7 @@ pub fn on_init(wnd: &Window,
     // If you want GPU to wait for signal, call D3D12CommandQueue::wait(),
     // then tell GPU to continue by calling D3D12CommandQueue::signal().
     trace!("fence");
-    let fence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE).dump(&core));
+    let fence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_SHARED).dump(&core));
 
     // fence_event communicates GPU's notification to CPU.
     // Use fence.set_event_on_completion(fence_value, fence_event) to bind fence to fence_event
@@ -912,7 +928,7 @@ pub fn on_init(wnd: &Window,
 
     let mut frame_resources = vec![];
     for _ in 0 .. frame_count {
-        frame_resources.push(try!(FrameResources::new(&core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, parameters).dump(&core)));
+        frame_resources.push(try!(FrameResources::new(&core, &common_resources, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, parameters).dump(&core)));
     };
 
 
@@ -1053,7 +1069,7 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
     data.frame_resources.truncate(0);
     for _ in 0 .. data.frame_count {
         data.frame_resources.push(
-            FrameResources::new(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, &data.parameters).unwrap());
+            FrameResources::new(&data.core, &data.common_resources, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, &data.parameters).unwrap());
     }
 
     // on_render(data, 1, 1);

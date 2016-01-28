@@ -65,6 +65,14 @@ impl DXCore {
         }
     }
 
+    pub fn dump_info_queue_tagged(&self, tag: &str) {
+        if let Some(ref iq) = self.info_queue {
+            if iq.get_num_stored_messages_allowed_by_retrieval_filter() != 0 {
+                println!("{}", tag);
+            };
+            dump_info_queue(iq);
+        }
+    }
 }
 
 pub fn dump_info_queue(iq: &D3D12InfoQueue) {

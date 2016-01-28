@@ -39,7 +39,7 @@ pub struct TonemapperResources {
 // Creation of temporary intermediate resource on each call to Tonemapper::tonemap() is very slow. This structure hold them.
 // Note that the structure must be recreated when dimensions of Tonemapper input change.
 impl TonemapperResources {
-    pub fn new(dev: &D3D12Device,
+    pub fn new(dev: &D3D12Device, tonemapper: &Tonemapper,
                w: u32,
                h: u32,
                srcformat: DXGI_FORMAT,
@@ -72,21 +72,22 @@ impl TonemapperResources {
         trace!("Create buffer for brightness value");
         let rw_buf_total = try!(dev.create_committed_resource(
           &heap_properties_default(), D3D12_HEAP_FLAG_NONE, 
-          &resource_desc_buffer_uav(4), 
+          &resource_desc_buffer_uav(16), 
           D3D12_RESOURCE_STATE_COMMON, None));
         try!(rw_buf_total.set_name("rw_buf_total".into()));
 
         trace!("Create read-back buffer for total brightness values");
         let rb_total = try!(dev.create_committed_resource(
           &heap_properties_readback(), D3D12_HEAP_FLAG_NONE, 
-          &resource_desc_buffer(4*rw_total_len as u64), 
+          &resource_desc_const_buffer(4*rw_total_len as u64), 
           D3D12_RESOURCE_STATE_COPY_DEST, None));
         try!(rb_total.set_name("rb_total".into()));
+        debug!("rb_total GPU VA:0x{:x}", rb_total.get_gpu_virtual_address());
 
         trace!("Create read-back buffer for total brightness value");
         let rb_one_total = try!(dev.create_committed_resource(
           &heap_properties_readback(), D3D12_HEAP_FLAG_NONE, 
-          &resource_desc_buffer(4), 
+          &resource_desc_const_buffer(16),
           D3D12_RESOURCE_STATE_COPY_DEST, None));
         try!(rb_one_total.set_name("rb_one_total".into()));
 
@@ -103,7 +104,7 @@ impl TonemapperResources {
                                                         None));
         try!(im_tex.set_name("Intermediate texture for copying into back-buffer".into()));
         trace!("Create fence");
-        let fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
+        let fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_SHARED));
         trace!("Create dheap");
         let dheap = try!(DescriptorHeap::new(&dev, 3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
         trace!("Create hpass_dheap");
@@ -118,7 +119,7 @@ impl TonemapperResources {
         let calloc = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COMPUTE));
         trace!("Create clist");
         let clist: D3D12GraphicsCommandList =
-            try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, &calloc, None));
+            try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, &calloc, Some(&tonemapper.total_cpso)));
         trace!("Close clist");
         try!(clist.close());
         trace!("Create clear_list");
@@ -379,7 +380,16 @@ impl Tonemapper {
 
         let clear_list = &res.clear_list;
 
-        clear_list.resource_barrier(&[
+        try!(clear_list.close());
+
+        let clist = &res.clist;
+        if cfg!(debug_assertions) { trace!("clist.reset") };
+        try!(clist.reset(&res.calloc, Some(&self.total_cpso)));
+        // Total brightness
+        clist.set_descriptor_heaps(&[res.total_dheap.get()]);
+        //clist.set_pipeline_state(&self.total_cpso);
+
+        clist.resource_barrier(&[
           *ResourceBarrier::transition(&res.rw_total,
             D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
           *ResourceBarrier::transition(&res.rw_buf_total,
@@ -389,37 +399,31 @@ impl Tonemapper {
         // UAV for CPU handle MUST be in shader inaccessible descriptor heap
         if cfg!(debug_assertions) { trace!("Clear unordered access view") };
         //clear_list.clear_unordered_access_view_float(res.total_cuav_dheap.gpu_handle(0), res.total_cuav_dheap.cpu_handle(0), &res.rw_total, &[0.,0.,0.,0.], &[]);
-        clear_list.clear_unordered_access_view_float(res.total_cuav_dheap.gpu_handle(1), res.total_cuav_dheap.cpu_handle(1), &res.rw_buf_total, &[0.,0.,0.,0.], &[]);
+        clist.clear_unordered_access_view_float(res.total_cuav_dheap.gpu_handle(1), res.total_cuav_dheap.cpu_handle(1), &res.rw_buf_total, &[0.,0.,0.,0.], &[]);
         //clear_list.clear_unordered_access_view_uint(res.total_cuav_dheap.gpu_handle(1), res.total_cuav_dheap.cpu_handle(1), &res.rw_buf_total, &[0,0,0,0], &[]);
-        clear_list.resource_barrier(&[
+        clist.resource_barrier(&[
           *ResourceBarrier::uav(&res.rw_total),
           *ResourceBarrier::uav(&res.rw_buf_total),
-          *ResourceBarrier::transition(&res.rw_total,
-            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
-          *ResourceBarrier::transition(&res.rw_buf_total,
-            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
+          //*ResourceBarrier::transition(&res.rw_total,
+          //  D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
+          //*ResourceBarrier::transition(&res.rw_buf_total,
+          //  D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
         ]);
-        try!(clear_list.close());
 
-        let clist = &res.clist;
-        if cfg!(debug_assertions) { trace!("clist.reset") };
-        try!(clist.reset(&res.calloc, None));
-        // Total brightness
         let src_desc = srv_tex2d_default_slice_mip(srcdesc.Format, 0, 1);
         core.dev.create_shader_resource_view(Some(&src), Some(&src_desc), res.total_dheap.cpu_handle(0));
 
-        clist.set_pipeline_state(&self.total_cpso);
+
         clist.set_compute_root_signature(&self.total_rs);
-        clist.set_descriptor_heaps(&[res.total_dheap.get()]);
         clist.set_compute_root_descriptor_table(1, res.total_dheap.gpu_handle(0));
 
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&src,
             D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
-          *ResourceBarrier::transition(&res.rw_total,
-            D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
-          *ResourceBarrier::transition(&res.rw_buf_total,
-            D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
+          //*ResourceBarrier::transition(&res.rw_total,
+          //  D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
+          //*ResourceBarrier::transition(&res.rw_buf_total,
+          //  D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
         ]);
 
         let hdispatch = (cw-1) / TOTAL_CHUNK_SIZE + 1;
@@ -429,8 +433,17 @@ impl Tonemapper {
         clist.set_compute_root32_bit_constant(0, ch, 2);
         clist.dispatch(hdispatch, vdispatch, 1);
 
+        //clist.resource_barrier(&[
+        //  *ResourceBarrier::uav(&res.rw_total),
+        //]);
         clist.resource_barrier(&[
-          *ResourceBarrier::uav(&res.rw_total),
+          *ResourceBarrier::transition(&res.rw_total,
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE),
+        ]);
+        clist.copy_resource(&res.rb_total, &res.rw_total);
+        clist.resource_barrier(&[
+          *ResourceBarrier::transition(&res.rw_total,
+            D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
         ]);
 
         clist.set_pipeline_state(&self.buf_total_cpso);
@@ -442,39 +455,37 @@ impl Tonemapper {
         clist.dispatch(bdispatch, 1, 1);
 
         clist.resource_barrier(&[
-          *ResourceBarrier::transition(&res.rw_total,
-            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE),
-          *ResourceBarrier::uav(&res.rw_buf_total),
           *ResourceBarrier::transition(&res.rw_buf_total,
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE),
         ]);
         // copy_resource cannot be used here. buffers have different sizes.
         clist.copy_buffer_region(&res.rb_one_total, 0, &res.rw_buf_total, 0, 4);
-        clist.copy_resource(&res.rb_total, &res.rw_total);
+        //clist.copy_buffer_region(&res.rb_total, 0, &res.rw_total, 0, 4);
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&res.rw_total,
-            D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON),
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
           *ResourceBarrier::transition(&res.rw_buf_total,
             D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON),
         ]);
         if cfg!(debug_assertions) { trace!("clist.close") };
         try!(clist.close());
-        core.dump_info_queue();
+        core.dump_info_queue_tagged("Before execute total brightness");
         if cfg!(debug_assertions) { trace!("Execute total brightness") };
-        core.compute_queue.execute_command_lists(&[clear_list, clist]);
-        core.dump_info_queue();
-        wait_for_compute_queue(core, &res.fence, &self.tb_event);
-        wait_for_graphics_queue(core, &res.fence, &self.tb_event);
-        wait_for_copy_queue(core, &res.fence, &self.tb_event);
-        ::perf_end("tbr");
+        core.compute_queue.execute_command_lists(&[clist]);
+        core.dump_info_queue_tagged("After execute total brightness");
 
-        try!(clist.reset(&res.calloc, None));
+        wait_for_compute_queue(core, &res.fence, &self.tb_event);
+        //wait_for_graphics_queue(core, &res.fence, &self.tb_event);
+        //wait_for_copy_queue(core, &res.fence, &self.tb_event);
+        ::perf_end("tbr");
 
         let total_one = res.total_brightness();
         let total_brightness = res.total_brightness_full();
         let avg_brightness = total_brightness.0 / cw as f32 / ch as f32;
         print!("Total brightness: {:10.1}/{:?} Average brightness: {:.3} Dispatch treads: {}*{}={} rw_total size: {:4} bdispatch: {}         \r", total_one, total_brightness, avg_brightness, hdispatch, vdispatch, hdispatch*vdispatch, res.rw_total.get_desc().Width/4, bdispatch);
         let _ = ::std::io::Write::flush(&mut ::std::io::stdout());
+
+        try!(clist.reset(&res.calloc, Some(&self.hpass_cpso)));
 
         // Horizontal pass
         let src_desc = srv_tex2d_default_slice_mip(srcdesc.Format, 0, 1);

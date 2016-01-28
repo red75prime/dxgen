@@ -5,8 +5,7 @@
 // Totally mind-boggling.
 // The program keeps going despite the error messages.
 #define RSD "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
-            "CBV(b0)," \
-            "DescriptorTable(SRV(t0), SRV(t1), visibility=SHADER_VISIBILITY_ALL)," \
+            "DescriptorTable(SRV(t0), SRV(t1), CBV(b0), visibility=SHADER_VISIBILITY_ALL)," \
             "StaticSampler(s0)"
 
 cbuffer cb0 : register(b0) {

@@ -7,7 +7,9 @@ cbuffer cb0 : register(b0) {
   uint Height;
 };
 Texture2D<float4> tsrc: register(t0);
-RWBuffer<float> total : register(u0);
+//// HD 4600 requires RWStructuredBuffer instead of RWBuffer.
+// RWBuffer<float> total : register(u0)
+RWStructuredBuffer<float> total : register(u0);
 
 groupshared float4 bpacked[TotalGroups*TotalGroups];
 
@@ -20,6 +22,12 @@ float br(uint x, uint y) {
   //// Could it be non-zero values outsize texture?
   //return brightness((x < Width && y < Height) ? tsrc[uint2(x, y)] : float4(0, 0, 0, 0));
   return brightness(tsrc[uint2(x, y)]);
+}
+
+[RootSignature(RSDT)]
+[numthreads(1,1,1)]
+void CSFake(uint3 gid : SV_GroupId) {
+  total[gid.x] = 121;
 }
 
 [RootSignature(RSDT)]
@@ -90,6 +98,7 @@ void CSBufTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadI
 
   if (gi == 0) {
     float value = stotal[0];
+    printf("%f", value);
     uint comp, orig = ui_total.Load(0);
     [allow_uav_condition]do
     {

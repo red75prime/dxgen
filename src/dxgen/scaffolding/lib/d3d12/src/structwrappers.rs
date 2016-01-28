@@ -38,6 +38,24 @@ pub fn resource_desc_buffer(size_in_bytes: u64) -> D3D12_RESOURCE_DESC {
     }
 }
 
+pub fn resource_desc_const_buffer(size_in_bytes: u64) -> D3D12_RESOURCE_DESC {
+    D3D12_RESOURCE_DESC {
+        Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
+        Alignment: 65536,
+        Width: size_in_bytes,
+        Height: 1,
+        DepthOrArraySize: 1,
+        MipLevels: 1,
+        Format: DXGI_FORMAT_UNKNOWN,
+        SampleDesc: DXGI_SAMPLE_DESC {
+            Count: 1,
+            Quality: 0,
+        },
+        Layout: D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+        Flags: D3D12_RESOURCE_FLAG_NONE,
+    }
+}
+
 pub fn resource_desc_buffer_uav(size_in_bytes: u64) -> D3D12_RESOURCE_DESC {
     D3D12_RESOURCE_DESC {
         Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
@@ -494,6 +512,13 @@ pub fn uav_buffer_desc(count: u32, size: u32)
         };
     };
     ret
+}
+
+pub fn cbv_desc(location: D3D12_GPU_VIRTUAL_ADDRESS, size: u32) -> D3D12_CONSTANT_BUFFER_VIEW_DESC {
+    D3D12_CONSTANT_BUFFER_VIEW_DESC {
+        BufferLocation: location,
+        SizeInBytes: (size+255)/256*256,
+    }
 }
 
 pub fn uav_raw_buffer_desc(size: u32)
