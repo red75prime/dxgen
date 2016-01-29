@@ -255,7 +255,7 @@ impl Tonemapper {
         let mut vpass_shader_bc = vec![];
         let mut final_shader_bc = vec![];
 
-        compile_shaders("tohemap.hlsl", 
+        compile_shaders("tonemap.hlsl", 
             &mut[
                 ("RSDH",        "rootsig_1_0", &mut hpass_rs_bc),
                 ("RSDV",        "rootsig_1_0", &mut vpass_rs_bc),
@@ -267,19 +267,15 @@ impl Tonemapper {
 
         let hpass_rs = dev.create_root_signature(0, &hpass_rs_bc[..])
                           .expect("Cannot create horisontal pass root signature");
+        let vpass_rs = dev.create_root_signature(0, &vpass_rs_bc[..])
+                          .expect("Cannot create vertical pass root signature");
+        let final_rs = dev.create_root_signature(0, &final_rs_bc[..])
+                          .expect("Cannot create root signature");
 
         let hpass_cpso = create_default_cpso(dev, &hpass_rs, hpass_shader_bc)
                             .expect("Cannot create horiziontal pass compute pipeline state");
-
-        let vpass_rs = dev.create_root_signature(0, &vpass_rs_bc[..])
-                          .expect("Cannot create vertical pass root signature");
-
         let vpass_cpso = create_default_cpso(dev, &vpass_rs, vpass_shader_bc)
                             .expect("Cannot create horizontal pass compute pipeline state");
-
-        let final_rs = dev.create_root_signature(0, &final_shader_bc[..])
-                          .expect("Cannot create root signature");
-
         let cpso = create_default_cpso(dev, &final_rs, final_shader_bc)
                       .expect("Cannot create compute pipeline state");
 
