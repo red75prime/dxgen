@@ -859,3 +859,14 @@ impl<'g> ShaderBytecode<'g> {
         self.inner
     }
 }
+
+pub fn create_default_cpso(dev: &D3D12Device, 
+                            root_signature: &D3D12RootSignature, 
+                            shader_bytecode: Vec<u8>) -> HResult<D3D12PipelineState> {
+    let cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
+        pRootSignature: root_signature.iptr() as *mut _,
+        CS: ShaderBytecode::from_vec(&shader_bytecode).get(),
+        .. compute_pipeline_state_desc_default()
+    };
+    dev.create_compute_pipeline_state(&cpsd)
+}

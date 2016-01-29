@@ -394,35 +394,27 @@ impl<T,I,E> TryCollect<I,E> for T where T: Iterator<Item=Result<I,E>> {
 
 use std::collections::HashMap;
 
-pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static str, &mut Vec<u8>)],
-                        root_signature_name: &str, flags: u32) 
-                        -> Result<Vec<u8>, ShaderCompileError> {
+pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static str, &mut Vec<u8>)], flags: u32) 
+                        -> Result<(), ShaderCompileError> {
     let mut f = try!(File::open(file_name));
     let mut content = vec![];
     try!(f.read_to_end(&mut content));
     let shader = try!(::std::str::from_utf8(&content[..]));
 
-    let ret = 
-        try!(func_names.iter_mut().map(|&mut(fname, target, ref mut bytecode)|{
-            match d3d_compile_from_str(shader, file_name, fname, target, flags) {
-                Ok(mut bc) => {
-                        bytecode.truncate(0);
-                        bytecode.append(&mut bc);
-                        Ok(())
-                    },
-                Err(err) => Err(ShaderCompileError{ 
-                        inner: ShaderInnerError::Compile(format!("{}: {}", fname, err)),
-                    }),
-            }
-        }).try_collect());
-    let root_signature_bytecode = 
-        match d3d_compile_from_str(shader, file_name, root_signature_name, "rootsig_1_0", 0) {
-            Ok(sbc) => sbc,
-            Err(err) => {
-                return Err(ShaderCompileError{ 
-                    inner: ShaderInnerError::Compile(format!("{}: {}", root_signature_name, err)),
-                    });
-            },
-        };
-    Ok(root_signature_bytecode)
+    let all_ok = func_names.iter_mut().map(|&mut(fname, target, ref mut bytecode)|{
+        match d3d_compile_from_str(shader, file_name, fname, target, flags) {
+            Ok(mut bc) => {
+                    bytecode.truncate(0);
+                    bytecode.append(&mut bc);
+                    Ok(())
+                },
+            Err(err) => Err(ShaderCompileError{ 
+                    inner: ShaderInnerError::Compile(format!("{}: {}", fname, err)),
+                }),
+        }
+        }).try_collect();
+    match all_ok {
+        Ok(_) => Ok(()),
+        Err(e) => Err(e),
+    }
 }    

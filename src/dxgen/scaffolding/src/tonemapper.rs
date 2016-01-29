@@ -231,105 +231,56 @@ impl Tonemapper {
 
         let mut buf_total_shader_bc = vec![];
         let mut total_shader_bc = vec![];
-        let total_rs_bc = 
-            compile_shaders("reductor.hlsl", 
-                &mut[
-                    ("CSBufTotal", "cs_5_1", &mut buf_total_shader_bc),
-                    ("CSTotal", "cs_5_1", &mut total_shader_bc),
-                ], "RSDT", D3DCOMPILE_OPTIMIZATION_LEVEL0).unwrap();
+        let mut total_rs_bc = vec![];
+        compile_shaders("reductor.hlsl", 
+            &mut[
+                ("CSBufTotal", "cs_5_1", &mut buf_total_shader_bc),
+                ("CSTotal", "cs_5_1", &mut total_shader_bc),
+                ("RSDT", "rootsig_1_0", &mut total_rs_bc),
+            ], D3DCOMPILE_OPTIMIZATION_LEVEL3).unwrap();
 
-        //let mut f = File::open("reductor.hlsl").expect("Cannot open reductor.hlsl");
-        //let mut content = vec![];
-        //f.read_to_end(&mut content).expect("Cannot read reductor.hlsl");
-        //let shader = str::from_utf8(&content[..])
-        //                 .expect("Content of reductor.hlsl is not a valid UTF-8");
-
-
-
-        //let (buf_total_shader_bc, total_rs_bc) = compile_shader_and_root_signature(shader.into(), "reductor.hlsl",
-        //                                                                       "CSBufTotal",
-        //                                                                       "RSDT",
-        //                                                                        D3DCOMPILE_OPTIMIZATION_LEVEL2)
-        //                                         .expect("Tonemapper buffer reduce shader compile error");
-        // CSBufTotal and CSTotal shaders share the same root signature
         let total_rs = dev.create_root_signature(0, &total_rs_bc[..])
                           .expect("Cannot create RSDT root signature");
 
-        let buf_total_cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-            pRootSignature: total_rs.iptr() as *mut _,
-            CS: ShaderBytecode::from_vec(&buf_total_shader_bc).get(),
-            .. compute_pipeline_state_desc_default()
-        };
-        let buf_total_cpso = dev.create_compute_pipeline_state(&buf_total_cpsd)
-                            .expect("Cannot create buffer reduce compute pipeline state");
+        let buf_total_cpso = create_default_cpso(dev, &total_rs, buf_total_shader_bc)
+                                .expect("Cannot create buffer reduce compute pipeline state");
 
-        //let (total_shader_bc, _) = compile_shader_and_root_signature(shader.into(), "reductor.hlsl",
-        //                                                                       "CSTotal",
-        //                                                                       "RSDT",
-        //                                                                        D3DCOMPILE_OPTIMIZATION_LEVEL2 | D3DCOMPILE_ENABLE_STRICTNESS)
-        //                                         .expect("Tonemapper total brightness shader compile error");
-
-        let total_cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-            pRootSignature: total_rs.iptr() as *mut _,
-            CS: ShaderBytecode::from_vec(&total_shader_bc).get(),
-            .. compute_pipeline_state_desc_default()
-        };
-        let total_cpso = dev.create_compute_pipeline_state(&total_cpsd)
+        let total_cpso = create_default_cpso(dev, &total_rs, total_shader_bc)
                             .expect("Cannot create total brightness compute pipeline state");
 
-        let mut f = File::open("tonemap.hlsl").expect("Cannot open tonemap.hlsl");
-        let mut content = vec![];
-        f.read_to_end(&mut content).expect("Cannot read tonemap.hlsl");
-        let shader = str::from_utf8(&content[..])
-                         .expect("Content of tonemap.hlsl is not a valid UTF-8");
+        let mut hpass_rs_bc = vec![];
+        let mut vpass_rs_bc = vec![];
+        let mut final_rs_bc = vec![];
+        let mut hpass_shader_bc = vec![];
+        let mut vpass_shader_bc = vec![];
+        let mut final_shader_bc = vec![];
 
-        let (hpass_shader_bc, hpass_rs_bc) = compile_shader_and_root_signature(shader.into(), "tonemap.hlsl",
-                                                                               "CSHorizontal",
-                                                                               "RSDH", 0)
-                                                 .expect("Tonemapper horizontal pass shader compile error");
+        compile_shaders("tohemap.hlsl", 
+            &mut[
+                ("RSDH",        "rootsig_1_0", &mut hpass_rs_bc),
+                ("RSDV",        "rootsig_1_0", &mut vpass_rs_bc),
+                ("RSD",         "rootsig_1_0", &mut final_rs_bc),
+                ("CSHorizontal","cs_5_1", &mut hpass_shader_bc),
+                ("CSVertical",  "cs_5_1", &mut vpass_shader_bc),
+                ("CSMain",      "cs_5_1", &mut final_shader_bc),
+            ], D3DCOMPILE_OPTIMIZATION_LEVEL3).unwrap();
 
         let hpass_rs = dev.create_root_signature(0, &hpass_rs_bc[..])
                           .expect("Cannot create horisontal pass root signature");
 
-        let hpass_cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-            pRootSignature: hpass_rs.iptr() as *mut _,
-            CS: ShaderBytecode::from_vec(&hpass_shader_bc).get(),
-            .. compute_pipeline_state_desc_default()
-        };
-        let hpass_cpso = dev.create_compute_pipeline_state(&hpass_cpsd)
+        let hpass_cpso = create_default_cpso(dev, &hpass_rs, hpass_shader_bc)
                             .expect("Cannot create horiziontal pass compute pipeline state");
-
-        let (vpass_shader_bc, vpass_rs_bc) = compile_shader_and_root_signature(shader.into(), "tonemap.hlsl",
-                                                                               "CSVertical",
-                                                                               "RSDV", 0)
-                                                 .expect("Tonemapper vertical pass shader compile error");
 
         let vpass_rs = dev.create_root_signature(0, &vpass_rs_bc[..])
                           .expect("Cannot create vertical pass root signature");
 
-        let vpass_cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-            pRootSignature: vpass_rs.iptr() as *mut _,
-            CS: ShaderBytecode::from_vec(&vpass_shader_bc).get(),
-            .. compute_pipeline_state_desc_default()
-        };
-        let vpass_cpso = dev.create_compute_pipeline_state(&vpass_cpsd)
+        let vpass_cpso = create_default_cpso(dev, &vpass_rs, vpass_shader_bc)
                             .expect("Cannot create horizontal pass compute pipeline state");
 
-        let (shader_bytecode, root_sig_bytecode) = compile_shader_and_root_signature(shader.into(), "tonemap.hlsl",
-                                                                                     "CSMain",
-                                                                                     "RSD", 0)
-                                                       .expect("Tonemapper shader compile error");
-
-        trace!("Root signature");
-        let root_sig = dev.create_root_signature(0, &root_sig_bytecode[..])
+        let final_rs = dev.create_root_signature(0, &final_shader_bc[..])
                           .expect("Cannot create root signature");
 
-        let cpsd = D3D12_COMPUTE_PIPELINE_STATE_DESC {
-            pRootSignature: ptr::null_mut(),
-            CS: ShaderBytecode::from_vec(&shader_bytecode).get(),
-            .. compute_pipeline_state_desc_default()
-        };
-        let cpso = dev.create_compute_pipeline_state(&cpsd)
+        let cpso = create_default_cpso(dev, &final_rs, final_shader_bc)
                       .expect("Cannot create compute pipeline state");
 
         Tonemapper {
@@ -342,7 +293,7 @@ impl Tonemapper {
             vpass_cpso: vpass_cpso,
             vpass_rs: vpass_rs,
             cpso: cpso,
-            root_sig: root_sig,
+            root_sig: final_rs,
             luid: Luid(dev.get_adapter_luid()),
         }
     }
