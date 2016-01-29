@@ -25,12 +25,6 @@ float br(uint x, uint y) {
 }
 
 [RootSignature(RSDT)]
-[numthreads(1,1,1)]
-void CSFake(uint3 gid : SV_GroupId) {
-  total[gid.x] = 121;
-}
-
-[RootSignature(RSDT)]
 [numthreads(TotalGroups,TotalGroups,1)]
 void CSTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, uint3 gid : SV_GroupId, uint gi : SV_GroupIndex) {
   uint x = dtid.x * 2;//(groupId.x*TotalGroups + localId.x) * 2;
@@ -51,7 +45,7 @@ void CSTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, 
     GroupMemoryBarrierWithGroupSync();
   };
   if (gi < 32) {
-    // TODO: Check if this works on HD 4600
+    // It works on HD 4600, when TotalGroups equals 32. WTF?
     bpacked[gi] += bpacked[gi + 32];
     bpacked[gi] += bpacked[gi + 16];
     bpacked[gi] += bpacked[gi + 8];

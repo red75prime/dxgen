@@ -201,11 +201,11 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
     let data=
     match cubes::AppData::on_init(&wnd, Some(&adapter), FRAME_COUNT, parms) { 
         Ok(appdata) => {
-        Rc::new(RefCell::new(appdata))
+            Rc::new(RefCell::new(appdata))
         },
         Err(err) => {
-        error!("AppData creation failed with error code 0x{:x}", err);
-        return ();
+            error!("AppData creation failed with error code 0x{:x}", err);
+            return ();
         },
     };
   

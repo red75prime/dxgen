@@ -263,7 +263,7 @@ impl Tonemapper {
                 ("CSHorizontal","cs_5_1", &mut hpass_shader_bc),
                 ("CSVertical",  "cs_5_1", &mut vpass_shader_bc),
                 ("CSMain",      "cs_5_1", &mut final_shader_bc),
-            ], D3DCOMPILE_OPTIMIZATION_LEVEL3).unwrap();
+            ], D3DCOMPILE_OPTIMIZATION_LEVEL1).unwrap();
 
         let hpass_rs = dev.create_root_signature(0, &hpass_rs_bc[..])
                           .expect("Cannot create horisontal pass root signature");
@@ -276,7 +276,8 @@ impl Tonemapper {
                             .expect("Cannot create horiziontal pass compute pipeline state");
         let vpass_cpso = create_default_cpso(dev, &vpass_rs, vpass_shader_bc)
                             .expect("Cannot create horizontal pass compute pipeline state");
-        let cpso = create_default_cpso(dev, &final_rs, final_shader_bc)
+
+        let final_cpso = create_default_cpso(dev, &final_rs, final_shader_bc)
                       .expect("Cannot create compute pipeline state");
 
         Tonemapper {
@@ -288,7 +289,7 @@ impl Tonemapper {
             hpass_rs: hpass_rs,
             vpass_cpso: vpass_cpso,
             vpass_rs: vpass_rs,
-            cpso: cpso,
+            cpso: final_cpso,
             root_sig: final_rs,
             luid: Luid(dev.get_adapter_luid()),
         }
@@ -422,8 +423,8 @@ impl Tonemapper {
         core.dump_info_queue_tagged("After execute total brightness");
 
         wait_for_compute_queue(core, &res.fence, &self.tb_event);
-        //wait_for_graphics_queue(core, &res.fence, &self.tb_event);
-        //wait_for_copy_queue(core, &res.fence, &self.tb_event);
+        wait_for_graphics_queue(core, &res.fence, &self.tb_event);
+        wait_for_copy_queue(core, &res.fence, &self.tb_event);
         ::perf_end("tbr");
 
         let total_one = res.total_brightness();

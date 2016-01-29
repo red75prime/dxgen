@@ -363,9 +363,9 @@ impl FrameResources {
             try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &calloc, None));
         try!(glist.close());
         trace!("Create fence");
-        let fence = Fence::new(try!(dev.create_fence(0, D3D12_FENCE_FLAG_SHARED)));
+        let fence = Fence::new(try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE)));
         trace!("Create tm_fence");
-        let tm_fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_SHARED));
+        let tm_fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
 
         let srv_heap = try!(DescriptorHeap::new(dev, 3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
 
@@ -891,7 +891,7 @@ pub fn on_init(wnd: &Window,
     // If you want GPU to wait for signal, call D3D12CommandQueue::wait(),
     // then tell GPU to continue by calling D3D12CommandQueue::signal().
     trace!("fence");
-    let fence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_SHARED).dump(&core));
+    let fence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE).dump(&core));
 
     // fence_event communicates GPU's notification to CPU.
     // Use fence.set_event_on_completion(fence_value, fence_event) to bind fence to fence_event
