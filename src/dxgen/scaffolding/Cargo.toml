@@ -19,25 +19,25 @@ itertools = "0.4.6"
 
 [dependencies.winapi]
 #version = "0.2.5"
-git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12-dwrite-iid"
+git = "https://github.com/retep998/winapi-rs/"
+branch = "master"
 
 [dependencies.dxgi-sys]
-git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12-dwrite-iid"
+git = "https://github.com/retep998/winapi-rs/"
+branch = "master"
 
 [dependencies.user32-sys]
-git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12-dwrite-iid"
+git = "https://github.com/retep998/winapi-rs/"
+branch = "master"
 
 [dependencies.kernel32-sys]
-git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12-dwrite-iid"
+git = "https://github.com/retep998/winapi-rs/"
+branch = "master"
 
-# [dependencies.d3d12_sys]
-# git = "https://github.com/red75prime/winapi-rs/"
-# branch = "dx12"
+[dependencies.d3d12-sys]
+git = "https://github.com/retep998/winapi-rs/"
+branch = "master"
 
 [dependencies.dxguid-sys]
-git = "https://github.com/red75prime/winapi-rs/"
-branch = "dx12-dwrite-iid"
+git = "https://github.com/retep998/winapi-rs/"
+branch = "master"

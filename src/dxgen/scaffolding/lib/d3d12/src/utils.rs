@@ -1,4 +1,5 @@
 pub use winapi::*;
+pub use dxguid::*;
 pub use std::ptr;
 pub use std::mem;
 pub use std::borrow::Cow;
