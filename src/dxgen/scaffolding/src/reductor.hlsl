@@ -38,22 +38,29 @@ void CSTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, 
   GroupMemoryBarrierWithGroupSync();
 
   [unroll]
-  for (uint thres = TotalGroups*TotalGroups / 2; thres > 32; thres /= 2) {
+  for (uint thres = TotalGroups*TotalGroups / 2; thres > 0; thres /= 2) {
     if (gi < thres) {
       bpacked[gi] += bpacked[gi + thres];
     }
     GroupMemoryBarrierWithGroupSync();
   };
-  if (gi < 32) {
-    // It works on HD 4600, when TotalGroups equals 32. WTF?
+// Doesn't work on microsoft basic render driver
+/*  if (gi < 32) {
+    // It works correctly on HD 4600, when TotalGroups equals 32 only. WTF?
     bpacked[gi] += bpacked[gi + 32];
+    GroupMemoryBarrierWithGroupSync();
     bpacked[gi] += bpacked[gi + 16];
+    GroupMemoryBarrierWithGroupSync();
     bpacked[gi] += bpacked[gi + 8];
+    GroupMemoryBarrierWithGroupSync();
     bpacked[gi] += bpacked[gi + 4];
+    GroupMemoryBarrierWithGroupSync();
     bpacked[gi] += bpacked[gi + 2];
+    GroupMemoryBarrierWithGroupSync();
     bpacked[gi] += bpacked[gi + 1];
+    GroupMemoryBarrierWithGroupSync();
   }
-
+*/
   if (gi == 0) {
     float value = dot(bpacked[0], float4(1, 1, 1, 1));
     total[gid.x + gid.y*HDispatch] = value;
