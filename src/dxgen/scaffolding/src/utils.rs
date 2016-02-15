@@ -148,6 +148,9 @@ pub fn upload_into_texture(core: &DXCore,
     trace!("create_command_list");
     let clist: D3D12GraphicsCommandList =
         try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COPY, &callocator, None));
+    clist.resource_barrier(&mut [*ResourceBarrier::transition(&tex,
+                                                              D3D12_RESOURCE_STATE_COMMON,
+                                                              D3D12_RESOURCE_STATE_COPY_DEST)]);
     clist.copy_texture_region(&dest, 0, 0, 0, &src, None);
     clist.resource_barrier(&mut [*ResourceBarrier::transition(&tex,
                                                               D3D12_RESOURCE_STATE_COPY_DEST,
