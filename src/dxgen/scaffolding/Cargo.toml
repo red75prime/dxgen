@@ -12,7 +12,7 @@ dx_safe = { version = "0.3", path = "lib/d3d12" }
 # gfx = { git = "https://github.com/gfx-rs/gfx/tree/master/src/core" }
 rand = "0.3"
 cgmath = "0.5"
-clock_ticks = "*"
+time = "0.1"
 crossbeam = "0.1"
 obj = "0.4"
 itertools = "0.4.6"

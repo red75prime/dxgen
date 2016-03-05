@@ -14,7 +14,7 @@ extern crate kernel32;
 extern crate user32;
 //extern crate d3d12_sys;
 extern crate rand;
-extern crate clock_ticks;
+extern crate time;
 extern crate cgmath;
 extern crate crossbeam;
 extern crate obj;
@@ -48,7 +48,6 @@ use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use window::*;
 use utils::*;
-use clock_ticks::*;
 use cubes::CubeParms;
 use std::time::Duration;
 use itertools::Itertools;
@@ -218,7 +217,7 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
     // and state of left mouse button
     let mut mouse_down = false;
     // Profiling stuff
-    let mut start = precise_time_s();
+    let mut start = time::precise_time_s();
     // Window::poll_events() returns non-blocking iterator, that return Option<MSG>
     for mmsg in wnd.poll_events() {
     // "if let Some(msg)" extracts msg from mmsg
@@ -338,7 +337,7 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
         // register rendered frame in performance collector
         ::perf_frame();
         // fps counting stuff
-        let now = precise_time_s();
+        let now = time::precise_time_s();
         let frames = PERFDATA.with(|p_data| p_data.borrow().frames);
         if frames>0 && now<start || now>=(start+1.0) {
             // Once per second show stats
@@ -407,13 +406,13 @@ pub fn perf_reset() {
 
 pub fn perf_start(name: &'static str) {
   PERFDATA.with(|pd| {
-    *pd.borrow_mut().perf.entry(name).or_insert(0.) -= precise_time_s();
+    *pd.borrow_mut().perf.entry(name).or_insert(0.) -= time::precise_time_s();
   });
 }
 
 pub fn perf_end(name: &'static str) {
   PERFDATA.with(|pd| {
-    *pd.borrow_mut().perf.get_mut(name).unwrap() += precise_time_s();
+    *pd.borrow_mut().perf.get_mut(name).unwrap() += time::precise_time_s();
   });
 }
 
