@@ -129,7 +129,7 @@ unsafe extern "system" fn wnd_callback(hwnd: HWND,
     DefWindowProcW(hwnd, msg, wparam, lparam)
 }
 
-// No more than 1 (one) window for now
+// No more than 1 (one) window per thread for now
 pub fn create_window(title: &str, width: i32, height: i32) -> Window {
     if let Some(wnd) = WINDOW.with(|rc| {
         match *rc.borrow() {
