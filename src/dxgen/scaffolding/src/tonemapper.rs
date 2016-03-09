@@ -32,6 +32,7 @@ pub struct TonemapperResources {
     hpass_dheap: DescriptorHeap,
     vpass_dheap: DescriptorHeap,
     dheap: DescriptorHeap,
+    tb_fence_val: Option<u64>, // fence value for total brightness calculation finish
 }
 
 // Holds intermediate variables for Tonemapper function.
@@ -168,12 +169,13 @@ impl TonemapperResources {
             clear_list: clear_list,
             gralloc: gralloc,
             grlist: grlist,
+            tb_fence_val: None,
         })
     }
 
     fn total_brightness(&self) -> f32 {
         let read_range = D3D12_RANGE { Begin: 0, End: 4 };
-
+        // Read-back buffer cannot be permanently mapped. It needs map/unmap to get actual data from GPU.
         let total_brightness = unsafe {
             let mut ptr: *mut u8 = ptr::null_mut();
             self.rb_one_total.map(0, Some(&read_range), Some(&mut ptr)).expect("Cannot map rb_total");
@@ -222,7 +224,7 @@ const HTGROUPS: u32 = 128;
 const VTGROUPS: u32 = 128;
 const COMBINE_GROUPS: u32 = 32;
 const TOTAL_CHUNK_SIZE: u32 = 32*2; // Twice the TotalGroups from shader
-const BUF_TOTAL_CHUNK_SIZE: u32 = 512; 
+const BUF_TOTAL_CHUNK_SIZE: u32 = 1024; // Equals BufTotal from reductor.hlsl
 
 impl Tonemapper {
     // TODO: return some error code. Even if nothing meaningful can be done with the error code, at least it allows to shutdown gracefully.
@@ -263,7 +265,7 @@ impl Tonemapper {
                 ("CSHorizontal","cs_5_1", &mut hpass_shader_bc),
                 ("CSVertical",  "cs_5_1", &mut vpass_shader_bc),
                 ("CSMain",      "cs_5_1", &mut final_shader_bc),
-            ], D3DCOMPILE_OPTIMIZATION_LEVEL1).unwrap();
+            ], D3DCOMPILE_OPTIMIZATION_LEVEL3).unwrap();
 
         let hpass_rs = dev.create_root_signature(0, &hpass_rs_bc[..])
                           .expect("Cannot create horisontal pass root signature");
@@ -302,15 +304,29 @@ impl Tonemapper {
                    res: &mut TonemapperResources,
                    src: &D3D12Resource,
                    dst: &D3D12Resource,
-                   t_fence: &mut Fence)
-                   -> HResult<()> {
+                   t_fence: &mut Fence,
+                   avg_brightness_in: f32)
+                   -> HResult<f32> {
         if cfg!(debug_assertions) { trace!("tonemap") };
         if cfg!(debug_assertions) { trace!("Assert same adapter") };
         assert!(&self.luid == &Luid(core.dev.get_adapter_luid()));
+
+        if cfg!(debug_assertions) { trace!("srcdesc") };
+        let srcdesc = src.get_desc();
+        let (cw, ch) = (srcdesc.Width as u32, srcdesc.Height);
+
+        let avg_brightness = 
+            if let Some(tb_fence_val) = res.tb_fence_val {
+                try!(wait_for_queue(&core.compute_queue, tb_fence_val, &res.fence, &self.tb_event));
+                let total = res.total_brightness();
+                f32::exp(total / cw as f32 / ch as f32 + f32::ln(0.0001))
+            } else {
+                0.1
+            };
         // TODO: Remove. This is for total brightness calculation bench
-        wait_for_compute_queue(core, &res.fence, &self.tb_event);
-        wait_for_graphics_queue(core, &res.fence, &self.tb_event);
-        wait_for_copy_queue(core, &res.fence, &self.tb_event);
+        //wait_for_compute_queue(core, &res.fence, &self.tb_event);
+        //wait_for_graphics_queue(core, &res.fence, &self.tb_event);
+        //wait_for_copy_queue(core, &res.fence, &self.tb_event);
 
         ::perf_start("tbr");
         if cfg!(debug_assertions) { trace!("calloc.reset") };
@@ -318,10 +334,6 @@ impl Tonemapper {
         core.dump_info_queue();
         if cfg!(debug_assertions) { trace!("clear_list.reset") };
         try!(res.clear_list.reset(&res.calloc, None));
-
-        if cfg!(debug_assertions) { trace!("srcdesc") };
-        let srcdesc = src.get_desc();
-        let (cw, ch) = (srcdesc.Width as u32, srcdesc.Height);
 
         if cfg!(debug_assertions) { trace!("dstdesc") };
         let dstdesc = dst.get_desc();
@@ -381,18 +393,18 @@ impl Tonemapper {
         clist.set_compute_root32_bit_constant(0, ch, 2);
         clist.dispatch(hdispatch, vdispatch, 1);
 
+        clist.resource_barrier(&[
+          *ResourceBarrier::uav(&res.rw_total),
+        ]);
         //clist.resource_barrier(&[
-        //  *ResourceBarrier::uav(&res.rw_total),
+        //  *ResourceBarrier::transition(&res.rw_total,
+        //    D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE),
         //]);
-        clist.resource_barrier(&[
-          *ResourceBarrier::transition(&res.rw_total,
-            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE),
-        ]);
-        clist.copy_resource(&res.rb_total, &res.rw_total);
-        clist.resource_barrier(&[
-          *ResourceBarrier::transition(&res.rw_total,
-            D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
-        ]);
+        //clist.copy_resource(&res.rb_total, &res.rw_total);
+        //clist.resource_barrier(&[
+        //  *ResourceBarrier::transition(&res.rw_total,
+        //    D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
+        //]);
 
         clist.set_pipeline_state(&self.buf_total_cpso);
         clist.set_compute_root_signature(&self.total_rs);
@@ -422,16 +434,23 @@ impl Tonemapper {
         core.compute_queue.execute_command_lists(&[clist]);
         core.dump_info_queue_tagged("After execute total brightness");
 
-        wait_for_compute_queue(core, &res.fence, &self.tb_event);
-        wait_for_graphics_queue(core, &res.fence, &self.tb_event);
-        wait_for_copy_queue(core, &res.fence, &self.tb_event);
+        let tb_fence_val = core.next_fence_value();
+        try!(core.compute_queue.signal(&res.fence, tb_fence_val));
+        res.tb_fence_val = Some(tb_fence_val);
+
+        //wait_for_compute_queue(core, &res.fence, &self.tb_event);
+        //wait_for_graphics_queue(core, &res.fence, &self.tb_event);
+        //wait_for_copy_queue(core, &res.fence, &self.tb_event);
         ::perf_end("tbr");
 
-        let total_one = res.total_brightness();
-        let total_brightness = res.total_brightness_full();
-        let avg_brightness = total_brightness.0 / cw as f32 / ch as f32;
-        print!("Total brightness: {:10.1}/{:?} Average brightness: {:.3} Dispatch treads: {}*{}={} rw_total size: {:4} bdispatch: {}         \r", total_one, total_brightness, avg_brightness, hdispatch, vdispatch, hdispatch*vdispatch, res.rw_total.get_desc().Width/4, bdispatch);
+        //let total_one = res.total_brightness();
+        //let total_brightness = res.total_brightness_full();
+        //let avg_brightness = f32::exp(total_one / cw as f32 / ch as f32 + f32::ln(0.0001));
+        print!("Average brightness: {:.3} Dispatch treads: {}*{}={} rw_total size: {:4} bdispatch: {}         \r", avg_brightness, hdispatch, vdispatch, hdispatch*vdispatch, res.rw_total.get_desc().Width/4, bdispatch);
         let _ = ::std::io::Write::flush(&mut ::std::io::stdout());
+
+        //let key = (0.1 + f32::max(0., 1.5 - 1.5/(avg_brightness*0.1+1.)))/avg_brightness;
+        let key = (1.03 - 2./(2.+f32::log10(avg_brightness_in+1.)))/avg_brightness_in;
 
         try!(clist.reset(&res.calloc, Some(&self.hpass_cpso)));
 
@@ -446,6 +465,7 @@ impl Tonemapper {
         clist.set_compute_root_signature(&self.hpass_rs);
         clist.set_descriptor_heaps(&[res.hpass_dheap.get()]);
         clist.set_compute_root_descriptor_table(0, res.hpass_dheap.gpu_handle(0));
+        clist.set_compute_root32_bit_constant(1, unsafe{::std::mem::transmute(key)}, 0);
 
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&res.h_tex,
@@ -505,6 +525,7 @@ impl Tonemapper {
         clist.set_compute_root_signature(&self.root_sig);
         clist.set_descriptor_heaps(&[res.dheap.get()]);
         clist.set_compute_root_descriptor_table(0, res.dheap.gpu_handle(0));
+        clist.set_compute_root32_bit_constant(1, unsafe{::std::mem::transmute(key)}, 0);
 
         clist.dispatch(cw / COMBINE_GROUPS + 1, ch / COMBINE_GROUPS + 1, 1);
         clist.resource_barrier(&[
@@ -573,6 +594,6 @@ impl Tonemapper {
         if cfg!(debug_assertions) { trace!("dump_info_queue") };
         core.dump_info_queue();
 
-        Ok(())
+        Ok(avg_brightness)
     }
 }

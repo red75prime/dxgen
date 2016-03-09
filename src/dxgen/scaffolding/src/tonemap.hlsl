@@ -17,8 +17,13 @@ static const float thres1 = 6*6*6/29/29/29;
 static const float c1 = 29*29/6/6/3;
 
 #define RSD "RootFlags(0), DescriptorTable(SRV(t0), SRV(t1), UAV(u0))" \
+            ",RootConstants(num32BitConstants=1, b0)" \
             ",StaticSampler(s0, filter=FILTER_MIN_MAG_LINEAR_MIP_POINT, " \
             "addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP)"
+
+cbuffer cb0 : register(b0) {
+  float key;
+};
 
 Texture2D<float4> src: register(t0);
 Texture2D<float4> hvtemp: register(t1);
@@ -27,24 +32,29 @@ SamplerState  linSamp : register(s0);
 
 #define CombineGroups 32
 
+float brightness(float3 cl) {
+  return dot(float3(0.2126, 0.7152, 0.0722), cl.rgb);
+}
+
 [RootSignature(RSD)]
 [numthreads(CombineGroups, CombineGroups, 1)]
 void CSMain(uint3 dtid: SV_DispatchThreadId, uint3 gtid: SV_GroupThreadId, uint3 gid: SV_GroupId) {
   uint2 crd = dtid.xy;
   uint w, h;
   dst.GetDimensions(w, h);
-  float3 cl = src[crd].rgb + hvtemp.SampleLevel(linSamp,crd/float2(w-1,h-1), 0).rgb;
+  float3 cl = src[crd].rgb*float3(key, key, key) + hvtemp.SampleLevel(linSamp,crd/float2(w-1,h-1), 0).rgb;
 
-  float br = cl.r+cl.g+cl.b;
+  float br = brightness(cl);
   float3 clcl = clamp(cl, float3(0,0,0), float3(1,1,1));
-  float brcl = clcl.r+clcl.g+clcl.b;
+  float brcl = brightness(clcl);
   if (brcl < br) {
     clcl += br - brcl;
   };
   dst[crd] = float4(clcl, 1);
+  //dst[crd] = float4(cl, 1);
 }
 
-#define RSDH "RootFlags(0), DescriptorTable(SRV(t0), UAV(u0))"
+#define RSDH "RootFlags(0), DescriptorTable(SRV(t0), UAV(u0)), RootConstants(num32BitConstants=1, b0)"
 
 #define HTGroups 128
 #define KernelSize 16
@@ -92,8 +102,8 @@ groupshared float3 tmp1[HTGroups+KernelSize*2];
 void CSHorizontal(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
   uint srcx = gid.x * HTGroups + gtid.x - KernelSize;
   uint srcy = gid.y * 2;
-  float3 scl = (src[uint2(srcx, srcy)].rgb + src[uint2(srcx, srcy + 1)].rgb) / 2;
-  tmp1[gtid.x] = (scl.r + scl.g + scl.g > 4.0) ? scl : float3(0, 0, 0);
+  float3 scl = (src[uint2(srcx, srcy)].rgb + src[uint2(srcx, srcy + 1)].rgb)*float3(key/2, key/2, key/2);
+  tmp1[gtid.x] = brightness(scl)>1.0 ? scl : float3(0, 0, 0);
 
   AllMemoryBarrierWithGroupSync();
 

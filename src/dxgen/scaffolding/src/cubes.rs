@@ -90,7 +90,7 @@ pub struct CubeParms {
     pub rt_format: DXGI_FORMAT,
 }
 
-static CLEAR_COLOR: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
+static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.02, 1.0];
 
 pub fn create_hdr_render_target
     (dev: &D3D12Device, tonemapper: &Tonemapper,
@@ -151,6 +151,7 @@ struct CommonResources {
     tonemapper: Tonemapper,
     plshadow: PLShadow<Vertex>,
     thread_cnt: u32,
+    avg_brightness_smoothed: f32,
 }
 
 impl CommonResources {
@@ -314,6 +315,7 @@ impl CommonResources {
             tonemapper: tonemapper,
             plshadow: plshadow,
             thread_cnt: parameters.thread_count,
+            avg_brightness_smoothed: 0.1,
         })
     }
 }
@@ -480,7 +482,7 @@ impl FrameResources {
     }
     // rtvh - render target view descriptor handle
     fn render(&mut self, core: &DXCore, rt: &D3D12Resource, rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, 
-                cr: &CommonResources, st: &State, camera: &Camera)
+                cr: &mut CommonResources, st: &State, camera: &Camera)
                 -> HResult<()> {
         ::perf_wait_start();
         try!(self.fence.wait_for_gpu());
@@ -496,22 +498,6 @@ impl FrameResources {
             light_pos: st.light_pos.clone().into(),
         };
 
-        //// Experiments showed no gain from filling instance data using multiple threads
-        //crossbeam::scope(|scope| {
-        //    let chunk_size = (self.instance_data_mapped.len() / cr.thread_cnt as usize)+1;
-        //    for (ch_idx, chunk) in self.instance_data_mapped.chunks_mut(chunk_size).enumerate() {
-        //        scope.spawn(move || {
-        //            let start = ch_idx * chunk_size;
-        //            for (idx, inst_ref) in chunk.iter_mut().enumerate() {
-        //                let cs = &st.cubes[start+idx];
-        //                *inst_ref = InstanceData {
-        //                    world: rotshift3_to_4x4(&cs.rot, &cs.pos),
-        //                    n_world: rot3_to_3x3(&cs.rot),
-        //                };
-        //            };
-        //        });
-        //    };
-        //});
         for (inst_ref, cs) in self.instance_data_mapped.iter_mut().zip(st.cubes[..].iter()) {
             unsafe { // 
                 // memory at inst_ref is write-only. ptr::write ensures that it is not read.
@@ -586,7 +572,13 @@ impl FrameResources {
         let fence_val = core.next_fence_value();
         try!(core.graphics_queue.signal(&self.tm_fence, fence_val));
         try!(core.compute_queue.wait(&self.tm_fence, fence_val));
-        try!(cr.tonemapper.tonemap(core, &mut self.tonemapper_resources, &self.hdr_render_target, rt, &mut self.fence));
+        let avg_brightness = try!(cr.tonemapper.tonemap(core, &mut self.tonemapper_resources, &self.hdr_render_target, rt, &mut self.fence, cr.avg_brightness_smoothed));
+        cr.avg_brightness_smoothed = 
+            if avg_brightness < cr.avg_brightness_smoothed {
+                cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.01
+            } else {
+                cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.02
+            };
         ::perf_end("tonemap");
 
 
@@ -985,7 +977,7 @@ pub fn on_render(data: &mut AppData) {
         &data.core, 
         data.swap_chain.render_target(fi), 
         data.swap_chain.rtv_cpu_handle(fi), 
-        &data.common_resources, 
+        &mut data.common_resources, 
         &data.state,
         &data.camera
     ).dump(&data.core).unwrap();
