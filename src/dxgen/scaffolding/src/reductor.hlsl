@@ -1,11 +1,15 @@
 #define TotalGroups 32
 #define RSDT "RootFlags(0), RootConstants(num32BitConstants=3, b0), DescriptorTable(SRV(t0), UAV(u0), UAV(u1), SRV(t1))" // Descriptor table is required for texture
 
+
 cbuffer cb0 : register(b0) {
+  // According to https://msdn.microsoft.com/en-us/library/windows/desktop/bb509632(v=vs.85).aspx
+  // these values are packed into one 16 byte group
   uint HDispatch;
   uint Width;
   uint Height;
 };
+
 Texture2D<float4> tsrc: register(t0);
 //// HD 4600 requires RWStructuredBuffer instead of RWBuffer.
 // RWBuffer<float> total : register(u0)
@@ -14,21 +18,18 @@ RWStructuredBuffer<float> total : register(u0);
 groupshared float4 bpacked[TotalGroups*TotalGroups];
 
 float brightness(float4 cl) {
-  // TODO: replace with correct implementation
-  return dot(float3(1, 1, 1), cl.rgb); //cl.r + cl.g + cl.b;
+  return log(dot(float3(0.2126, 0.7152, 0.0722), cl.rgb)+0.0001)-log(0.0001);
 }
 
 float br(uint x, uint y) {
-  //// Could it be non-zero values outsize texture?
-  //return brightness((x < Width && y < Height) ? tsrc[uint2(x, y)] : float4(0, 0, 0, 0));
   return brightness(tsrc[uint2(x, y)]);
 }
 
 [RootSignature(RSDT)]
 [numthreads(TotalGroups,TotalGroups,1)]
 void CSTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, uint3 gid : SV_GroupId, uint gi : SV_GroupIndex) {
-  uint x = dtid.x * 2;//(groupId.x*TotalGroups + localId.x) * 2;
-  uint y = dtid.y * 2;//(groupId.y*TotalGroups + localId.y) * 2;
+  uint x = dtid.x * 2;
+  uint y = dtid.y * 2;
   float b1 = br(x,y);
   float b2 = br(x + 1, y);
   float b3 = br(x, y + 1);
@@ -48,17 +49,11 @@ void CSTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, 
 /*  if (gi < 32) {
     // It works correctly on HD 4600, when TotalGroups equals 32 only. WTF?
     bpacked[gi] += bpacked[gi + 32];
-    GroupMemoryBarrierWithGroupSync();
     bpacked[gi] += bpacked[gi + 16];
-    GroupMemoryBarrierWithGroupSync();
     bpacked[gi] += bpacked[gi + 8];
-    GroupMemoryBarrierWithGroupSync();
     bpacked[gi] += bpacked[gi + 4];
-    GroupMemoryBarrierWithGroupSync();
     bpacked[gi] += bpacked[gi + 2];
-    GroupMemoryBarrierWithGroupSync();
     bpacked[gi] += bpacked[gi + 1];
-    GroupMemoryBarrierWithGroupSync();
   }
 */
   if (gi == 0) {
@@ -67,11 +62,9 @@ void CSTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadId, 
   };
 }
 
-#define BufTotal 512
+#define BufTotal 1024
 groupshared float stotal[BufTotal];
-Buffer<float> r_total : register(t1);
-//globallycoherent RWBuffer<float> ui_total : register(u1);
-RWByteAddressBuffer ui_total : register(u1);
+RWStructuredBuffer<uint> ui_total : register(u1);
 
 [RootSignature(RSDT)]
 [numthreads(BufTotal, 1, 1)]
@@ -99,13 +92,11 @@ void CSBufTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadI
 
   if (gi == 0) {
     float value = stotal[0];
-//    printf("%f", value);
-    uint comp, orig = ui_total.Load(0);
+    uint comp, orig = ui_total[0];
     [allow_uav_condition]do
     {
       comp = orig;
-      ui_total.InterlockedCompareExchange(0, comp, asuint(asfloat(orig) + value), orig);
+      InterlockedCompareExchange(ui_total[0], comp, asuint(asfloat(orig) + value), orig);
     } while (orig != comp);
   };
 }
-
