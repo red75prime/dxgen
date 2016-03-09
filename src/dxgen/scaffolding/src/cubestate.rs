@@ -21,24 +21,26 @@ pub struct State {
     pub light_pos: V3,
 }
 
+const CUBE_SPAN : f32 = 200.;
+
 impl State {
     pub fn new(object_count: u32) -> Self {
         let mut rng = rand::XorShiftRng::new_unseeded();
         let mut cubes = Vec::with_capacity(object_count as usize);
         for _ in 0 .. object_count {
             let cube_state = CubeState {
-                pos: v3((rng.next_f32() - 0.5) * 200.,
-                             (rng.next_f32() - 0.5) * 200.,
-                             (rng.next_f32() - 1.) * 200.),
+                pos: v3((rng.next_f32() - 0.5) * CUBE_SPAN,
+                             (rng.next_f32() - 0.5) * CUBE_SPAN,
+                             (rng.next_f32() - 1.) * CUBE_SPAN),
                 rot: <Basis3<f32> as Rotation<_>>::one(),
                 spd: v3(rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5,
-                             rng.next_f32() - 0.5).normalize()*rng.next_f32(),
+                             rng.next_f32() - 0.5).normalize()*rng.next_f32()*1.,
                 rot_axe: v3(rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5)
                               .normalize(),
-                rot_spd: rng.next_f32()*90.0,
+                rot_spd: rng.next_f32()*30.0,
             };
             cubes.push(cube_state);
         };
@@ -59,8 +61,35 @@ impl State {
             for (chunk, chunk_src) in cubes[..].chunks_mut(chunk_len).zip(self.cubes[..].chunks(chunk_len)) {
                 scope.spawn(move || {
                     for (c, cube) in chunk.iter_mut().zip(chunk_src) {
+                        let mut new_spd = cube.spd;
+                        let mut new_pos = cube.pos + cube.spd * dt;
+                        if new_pos.x < -CUBE_SPAN/2. {
+                            new_pos.x = -CUBE_SPAN/2.;
+                            new_spd.x = -new_spd.x;
+                        }
+                        if new_pos.x > CUBE_SPAN/2. {
+                            new_pos.x = CUBE_SPAN/2.;
+                            new_spd.x = -new_spd.x;
+                        }
+                        if new_pos.y < -CUBE_SPAN/2. {
+                            new_pos.y = -CUBE_SPAN/2.;
+                            new_spd.y = -new_spd.y;
+                        }
+                        if new_pos.y > CUBE_SPAN/2. {
+                            new_pos.y = CUBE_SPAN/2.;
+                            new_spd.y = -new_spd.y;
+                        }
+                        if new_pos.z < -CUBE_SPAN {
+                            new_pos.z = -CUBE_SPAN;
+                            new_spd.z = -new_spd.z;
+                        }
+                        if new_pos.z > 0. {
+                            new_pos.z = 0.;
+                            new_spd.z = -new_spd.z;
+                        }
                         *c = CubeState {
-                            pos: cube.pos + cube.spd * dt,
+                            pos: new_pos,
+                            spd: new_spd,
                             rot: Basis3::from_axis_angle(cube.rot_axe, Angle::from(deg(cube.rot_spd * dt))).concat(&cube.rot),
                             .. *cube
                         };
@@ -94,9 +123,9 @@ use std::sync::mpsc::{sync_channel, channel, Receiver, SyncSender, Sender};
 fn state_update_agent(thread_cnt: u32, rx: Receiver<(Arc<State>, f32)>, tx: Sender<State>) {
     loop {
         if let Ok((state_ref, dt)) = rx.recv() {
-                if let Err(_) = tx.send(state_ref.update(dt, thread_cnt)) {
-                    return ();
-                }
+            if let Err(_) = tx.send(state_ref.update(dt, thread_cnt)) {
+                return ();
+            }
         } else {
             return ();
         }
@@ -143,7 +172,7 @@ impl<'a> UpdateResult<'a> {
 impl<'a> Drop for UpdateResult<'a> {
     fn drop(&mut self) {
         if !self.result_aquired {
-            error!("Update result is not retrieved");
+            error!("Update result is not retrieved before drop");
         }
     }
 }
