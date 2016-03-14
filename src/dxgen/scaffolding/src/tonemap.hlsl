@@ -1,20 +1,17 @@
 
 
-static const float3x3 rgb2xyz = 
-  {
- 0.4124564,  0.3575761,  0.1804375,
- 0.2126729,  0.7151522,  0.0721750,
- 0.0193339,  0.1191920,  0.9503041  };
+static const float3x3 RGB2XYZ = { 0.5141364, 0.3238786, 0.16036376, 0.265068, 0.67023428, 0.06409157, 0.0241188, 0.1228178, 0.84442666 };
 
-static const float3x3 xyz2rgb =
-{
-3.2404542, -1.5371385, -0.4985314,
--0.9692660,  1.8760108,  0.0415560,
- 0.0556434, -0.2040259,  1.0572252
-};
+static const float3x3 XYZ2RGB = { 2.5651,-1.1665,-0.3986, -1.0217, 1.9777, 0.0439, 0.0753, -0.2543, 1.1892 };
 
-static const float thres1 = 6*6*6/29/29/29;
-static const float c1 = 29*29/6/6/3;
+float3 rgb2Yxy(float3 cl) {
+  float3 xyz = mul(RGB2XYZ, cl);
+  return float3(xyz.g, xyz.rg / dot(float3(1,1,1),xyz));
+}
+float3 Yxy2rgb(float3 Yxy) {
+  float3 xyz = float3(Yxy.r*Yxy.g / Yxy.b, Yxy.r, Yxy.r*(1 - Yxy.g - Yxy.b) / Yxy.b);
+  return mul(XYZ2RGB, xyz);
+}
 
 #define RSD "RootFlags(0), DescriptorTable(SRV(t0), SRV(t1), UAV(u0))" \
             ",RootConstants(num32BitConstants=1, b0)" \
@@ -23,6 +20,7 @@ static const float c1 = 29*29/6/6/3;
 
 cbuffer cb0 : register(b0) {
   float key;
+  float avg_brightness;
 };
 
 Texture2D<float4> src: register(t0);
@@ -42,16 +40,20 @@ void CSMain(uint3 dtid: SV_DispatchThreadId, uint3 gtid: SV_GroupThreadId, uint3
   uint2 crd = dtid.xy;
   uint w, h;
   dst.GetDimensions(w, h);
-  float3 cl = src[crd].rgb*float3(key, key, key) + hvtemp.SampleLevel(linSamp,crd/float2(w-1,h-1), 0).rgb;
+  float3 cl = src[crd].rgb + hvtemp.SampleLevel(linSamp,crd/float2(w-1,h-1), 0).rgb;
 
-  float br = brightness(cl);
-  float3 clcl = clamp(cl, float3(0,0,0), float3(1,1,1));
-  float brcl = brightness(clcl);
-  if (brcl < br) {
-    clcl += br - brcl;
-  };
-  dst[crd] = float4(clcl, 1);
-  //dst[crd] = float4(cl, 1);
+  float3 Yxy = rgb2Yxy(cl);
+  Yxy.r *= key;
+  dst[crd] = float4(Yxy2rgb(Yxy), 1);
+
+  //float br = brightness(cl);
+  //float3 clcl = clamp(cl, float3(0,0,0), float3(1,1,1));
+  //float brcl = brightness(clcl);
+  //if (brcl < br) {
+  //  clcl += br - brcl;
+  //};
+  //dst[crd] = float4(clcl, 1);
+  ////dst[crd] = float4(cl, 1);
 }
 
 #define RSDH "RootFlags(0), DescriptorTable(SRV(t0), UAV(u0)), RootConstants(num32BitConstants=1, b0)"
@@ -102,8 +104,8 @@ groupshared float3 tmp1[HTGroups+KernelSize*2];
 void CSHorizontal(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
   uint srcx = gid.x * HTGroups + gtid.x - KernelSize;
   uint srcy = gid.y * 2;
-  float3 scl = (src[uint2(srcx, srcy)].rgb + src[uint2(srcx, srcy + 1)].rgb)*float3(key/2, key/2, key/2);
-  tmp1[gtid.x] = brightness(scl)>1.0 ? scl : float3(0, 0, 0);
+  float3 scl = (src[uint2(srcx, srcy)].rgb + src[uint2(srcx, srcy + 1)].rgb);
+  tmp1[gtid.x] = brightness(scl)>avg_brightness*4 ? scl : float3(0, 0, 0);
 
   AllMemoryBarrierWithGroupSync();
 

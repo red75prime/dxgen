@@ -575,9 +575,9 @@ impl FrameResources {
         let avg_brightness = try!(cr.tonemapper.tonemap(core, &mut self.tonemapper_resources, &self.hdr_render_target, rt, &mut self.fence, cr.avg_brightness_smoothed));
         cr.avg_brightness_smoothed = 
             if avg_brightness < cr.avg_brightness_smoothed {
-                cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.01
+                cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.001
             } else {
-                cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.02
+                cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.002
             };
         ::perf_end("tonemap");
 
@@ -784,6 +784,12 @@ impl<T> DumpOnError for HResult<T> {
     }
 }
 
+fn clamp(x: f32, l:f32, h:f32) -> u32 {
+    if x<=l { 0 } 
+    else if x>=h { h as u32 }
+    else { x as u32 }
+}
+
 pub fn on_init(wnd: &Window,
                               adapter: Option<&DXGIAdapter1>,
                               frame_count: u32,
@@ -872,7 +878,8 @@ pub fn on_init(wnd: &Window,
         *v = if x % 10 == 0 || y % 10 == 0 {
             0xff10ff10 // bright green
         } else {
-            0xff009090 + (((d.sin() * 0.5 + 0.5) * 255.) as u32) * 65536
+            let b = clamp((f32::sin(d)*0.5+0.51)*255., 0., 255.);
+            0xff009090 + b * 65536
         };
         i += 1;
     }

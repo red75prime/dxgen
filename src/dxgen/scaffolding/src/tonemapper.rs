@@ -466,6 +466,7 @@ impl Tonemapper {
         clist.set_descriptor_heaps(&[res.hpass_dheap.get()]);
         clist.set_compute_root_descriptor_table(0, res.hpass_dheap.gpu_handle(0));
         clist.set_compute_root32_bit_constant(1, unsafe{::std::mem::transmute(key)}, 0);
+        clist.set_compute_root32_bit_constant(1, unsafe{::std::mem::transmute(avg_brightness_in)}, 1);
 
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&res.h_tex,
@@ -526,6 +527,7 @@ impl Tonemapper {
         clist.set_descriptor_heaps(&[res.dheap.get()]);
         clist.set_compute_root_descriptor_table(0, res.dheap.gpu_handle(0));
         clist.set_compute_root32_bit_constant(1, unsafe{::std::mem::transmute(key)}, 0);
+        clist.set_compute_root32_bit_constant(1, unsafe{::std::mem::transmute(avg_brightness_in)}, 1);
 
         clist.dispatch(cw / COMBINE_GROUPS + 1, ch / COMBINE_GROUPS + 1, 1);
         clist.resource_barrier(&[
