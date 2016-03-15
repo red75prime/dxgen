@@ -42,10 +42,25 @@ impl Camera {
     }
 
     pub fn rotz(&mut self, ang: f32) {
-        // vv Isn't it supposed to be generic over angle type?
         let rotm = Basis3::from_axis_angle(self.fwd, Angle::from(deg(ang)));
         self.rot = rotm.concat(&self.rot);
         self.update_axes();
+    }
+
+    /// rotate camera by at most deg degrees around fwd axis to make up axis point at +y direction
+    pub fn restore_up(&mut self, deg: f32) {
+        // if fwd points more than 60 deg up or down, then skip this
+        let fwd_y_proj = self.fwd.dot(v3(0., 1., 0.));
+        if fwd_y_proj < -0.87 || fwd_y_proj > 0.87 {
+            return;
+        }
+        // project y axis onto up/right plane
+        let pi = ::std::f32::consts::PI;
+        let x = self.up.dot(v3(0., 1., 0.));
+        let y = self.right.dot(v3(0., 1., 0.));
+        let ang = y.atan2(x)/pi*180.;
+        let ang = if ang > deg { deg } else if ang < -deg { -deg } else { ang };
+        self.rotz(ang);
     }
 
     fn update_axes(&mut self) {

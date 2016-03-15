@@ -218,6 +218,7 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
     let mut mouse_down = false;
     // Profiling stuff
     let mut start = time::precise_time_s();
+    let mut prev_frame_time = time::precise_time_s();
     // Window::poll_events() returns non-blocking iterator, that return Option<MSG>
     for mmsg in wnd.poll_events() {
     // "if let Some(msg)" extracts msg from mmsg
@@ -292,12 +293,17 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
         std::thread::sleep(Duration::from_millis(10));
         } else {
         {
+            let cur_frame_time = time::precise_time_s();
+            let frame_dt = cur_frame_time - prev_frame_time;
+            prev_frame_time = cur_frame_time;
             // data is Rc<RefCell<cubes::AppData>>
             // Rc is not really needed. I didn't pass it around.
             // Take a mutable reference to cubes::AppData
             let mut data = data.borrow_mut();
             // Process WASD keys
             let camera = data.camera();
+            
+            camera.restore_up((45.*frame_dt) as f32);
 
             let step=if shdown {1.0} else if ctdown {0.01} else {0.1};
 
