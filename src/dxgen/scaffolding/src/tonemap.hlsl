@@ -1,20 +1,17 @@
-
-
-static const float3x3 RGB2XYZ = { 0.5141364, 0.3238786, 0.16036376, 0.265068, 0.67023428, 0.06409157, 0.0241188, 0.1228178, 0.84442666 };
-
-static const float3x3 XYZ2RGB = { 2.5651,-1.1665,-0.3986, -1.0217, 1.9777, 0.0439, 0.0753, -0.2543, 1.1892 };
-
 float3 rgb2Yxy(float3 cl) {
+  const float3x3 RGB2XYZ = { 0.5141364, 0.3238786, 0.16036376, 0.265068, 0.67023428, 0.06409157, 0.0241188, 0.1228178, 0.84442666 };
   float3 xyz = mul(RGB2XYZ, cl);
   return float3(xyz.g, xyz.rg / dot(float3(1,1,1),xyz));
 }
+
 float3 Yxy2rgb(float3 Yxy) {
+  const float3x3 XYZ2RGB = { 2.5651,-1.1665,-0.3986, -1.0217, 1.9777, 0.0439, 0.0753, -0.2543, 1.1892 };
   float3 xyz = float3(Yxy.r*Yxy.g / Yxy.b, Yxy.r, Yxy.r*(1 - Yxy.g - Yxy.b) / Yxy.b);
   return mul(XYZ2RGB, xyz);
 }
 
 #define RSD "RootFlags(0), DescriptorTable(SRV(t0), SRV(t1), UAV(u0))" \
-            ",RootConstants(num32BitConstants=1, b0)" \
+            ",RootConstants(num32BitConstants=2, b0)" \
             ",StaticSampler(s0, filter=FILTER_MIN_MAG_LINEAR_MIP_POINT, " \
             "addressU=TEXTURE_ADDRESS_CLAMP, addressV=TEXTURE_ADDRESS_CLAMP)"
 
@@ -44,19 +41,12 @@ void CSMain(uint3 dtid: SV_DispatchThreadId, uint3 gtid: SV_GroupThreadId, uint3
 
   float3 Yxy = rgb2Yxy(cl);
   Yxy.r *= key;
+
   dst[crd] = float4(Yxy2rgb(Yxy), 1);
 
-  //float br = brightness(cl);
-  //float3 clcl = clamp(cl, float3(0,0,0), float3(1,1,1));
-  //float brcl = brightness(clcl);
-  //if (brcl < br) {
-  //  clcl += br - brcl;
-  //};
-  //dst[crd] = float4(clcl, 1);
-  ////dst[crd] = float4(cl, 1);
 }
 
-#define RSDH "RootFlags(0), DescriptorTable(SRV(t0), UAV(u0)), RootConstants(num32BitConstants=1, b0)"
+#define RSDH "RootFlags(0), DescriptorTable(SRV(t0), UAV(u0)), RootConstants(num32BitConstants=2, b0)"
 
 #define HTGroups 128
 #define KernelSize 16
