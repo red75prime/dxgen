@@ -133,16 +133,6 @@ pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC
     }
 }
 
-// TODO: generate winapi bindings
-#[repr(C)]
-pub struct D3D_BLOB_PART(UINT);
-pub const D3D_BLOB_ROOT_SIGNATURE: D3D_BLOB_PART = D3D_BLOB_PART(11);
-pub const D3DCOMPILE_OPTIMIZATION_LEVEL3: u32 = 1 << 15;
-pub const D3DCOMPILE_OPTIMIZATION_LEVEL2: u32 = ((1 << 14) | (1 << 15));
-pub const D3DCOMPILE_OPTIMIZATION_LEVEL1: u32 = 0;
-pub const D3DCOMPILE_OPTIMIZATION_LEVEL0: u32 = 1 << 14;
-pub const D3DCOMPILE_ENABLE_STRICTNESS: u32 = (1 << 11);
-
 #[link(name="d3dcompiler")]
 extern "system" {
     fn D3DCompileFromFile(file_name: LPCWSTR,
