@@ -7,7 +7,7 @@ authors = ["red75prime <red75prim@gmail.com>"]
 name = "dx_safe"
 
 [dependencies]
-libc = "*"
+libc = "0.2"
 
 [dependencies.winapi]
 git = "https://github.com/retep998/winapi-rs/"
