@@ -90,7 +90,7 @@ pub struct CubeParms {
     pub rt_format: DXGI_FORMAT,
 }
 
-static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.02, 1.0];
+static CLEAR_COLOR: [f32; 4] = [0.005, 0.005, 0.01, 1.0];
 
 pub fn create_hdr_render_target
     (dev: &D3D12Device, tonemapper: &Tonemapper,
@@ -156,33 +156,21 @@ struct CommonResources {
 
 impl CommonResources {
     fn new(dev: &D3D12Device, tex_w: u32, tex_h: u32, parameters: &CubeParms) -> HResult<CommonResources> {
-        trace!("Open 'shaders.hlsl'");
-        let mut f = try!(File::open("shaders.hlsl").map_err(|_| DXGI_ERROR_NOT_FOUND));
-        let mut content = vec![];
-        trace!("Read 'shaders.hlsl'");
-        try!(f.read_to_end(&mut content).map_err(|_| DXGI_ERROR_NOT_FOUND));
-        trace!("Try interpret 'shaders.hlsl' content as UTF-8");
-        let shader = try!(str::from_utf8(&content[..]).map_err(|_| DXGI_ERROR_INVALID_CALL));
-
-        // shaders.hlsl should be in process current directory
-        // vshader_bc and pshader_bc are Vec<u8> containing shader byte-code
-        trace!("Vertex shader compilation");
-        let vshader_bc = try!(d3d_compile_from_str(shader, "shaders.hlsl::VSMain", "VSMain", "vs_5_0", 0).map_err(|err| {
-            error!("Vertex shader compilation error: {}", err);
-            E_FAIL
-        }));
-        trace!("Pixel shader compilation");
-        let pshader_bc = try!(d3d_compile_from_str(shader, "shaders.hlsl::PSMain", "PSMain", "ps_5_0", D3DCOMPILE_OPTIMIZATION_LEVEL3)
-                .map_err(|err| {
-                    error!("Pixel shader compilation error: {}", err);
-                    E_FAIL
-                }));
-        trace!("Root signature compilation");
-        let root_signature_bc = try!(d3d_compile_from_str(shader, "shaders.hlsl::RSD" ,"RSD", "rootsig_1_0", 0)
-                                         .map_err(|err| {
-                                             error!("Root signature compilation error: {}", err);
-                                             E_FAIL
-                                         }));
+        let mut vshader_bc = vec![];
+        let mut pshader_bc = vec![];
+        let mut root_signature_bc = vec![];
+        trace!("Compiling 'shaders.hlsl'");
+        match compile_shaders("shaders.hlsl", &mut [
+                    ("VSMain", "vs_5_0", &mut vshader_bc),
+                    ("PSMain", "ps_5_0", &mut pshader_bc),
+                    ("RSD", "rootsig_1_0", &mut root_signature_bc),
+                ], D3DCOMPILE_OPTIMIZATION_LEVEL3) {
+            Err(err) => {
+                error!("File 'shaders.hlsl'. {}", err);
+                return Err(E_FAIL);
+            },
+            _ => {},
+        };
 
         trace!("Root signature creation");
         let root_signature = try!(dev.create_root_signature(0, &root_signature_bc[..]));
