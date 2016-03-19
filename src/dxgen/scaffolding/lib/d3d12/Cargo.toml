@@ -8,15 +8,18 @@ name = "dx_safe"
 
 [dependencies]
 libc = "0.2"
+winapi = "0.2.6"
+winapi-build = "0.1"
+dxguid-sys = "0.2"
 
-[dependencies.winapi]
-git = "https://github.com/retep998/winapi-rs/"
-branch = "master"
+#[dependencies.winapi]
+#git = "https://github.com/retep998/winapi-rs/"
+#branch = "master"
 
-[dependencies.winapi-build]
-git = "https://github.com/retep998/winapi-rs/"
-branch = "master"
+#[dependencies.winapi-build]
+#git = "https://github.com/retep998/winapi-rs/"
+#branch = "master"
 
-[dependencies.dxguid-sys]
-git = "https://github.com/retep998/winapi-rs/"
-branch = "master"
+#[dependencies.dxguid-sys]
+#git = "https://github.com/retep998/winapi-rs/"
+#branch = "master"

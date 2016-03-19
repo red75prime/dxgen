@@ -16,28 +16,33 @@ time = "0.1"
 crossbeam = "0.1"
 obj = "0.4"
 itertools = "0.4.6"
+winapi = "0.2.6"
+dxgi-sys = "0.2"
+user32-sys = "0.1"
+kernel32-sys = "0.2"
+dxguid-sys = "0.2"
 
-[dependencies.winapi]
-#version = "0.2.5"
-git = "https://github.com/retep998/winapi-rs/"
-branch = "master"
+#[dependencies.winapi]
+##version = "0.2.5"
+#git = "https://github.com/retep998/winapi-rs/"
+#branch = "master"
 
-[dependencies.dxgi-sys]
-git = "https://github.com/retep998/winapi-rs/"
-branch = "master"
+#[dependencies.dxgi-sys]
+#git = "https://github.com/retep998/winapi-rs/"
+#branch = "master"
 
-[dependencies.user32-sys]
-git = "https://github.com/retep998/winapi-rs/"
-branch = "master"
+#[dependencies.user32-sys]
+#git = "https://github.com/retep998/winapi-rs/"
+#branch = "master"
 
-[dependencies.kernel32-sys]
-git = "https://github.com/retep998/winapi-rs/"
-branch = "master"
+#[dependencies.kernel32-sys]
+#git = "https://github.com/retep998/winapi-rs/"
+#branch = "master"
 
 [dependencies.d3d12-sys]
 git = "https://github.com/retep998/winapi-rs/"
 branch = "master"
 
-[dependencies.dxguid-sys]
-git = "https://github.com/retep998/winapi-rs/"
-branch = "master"
+#[dependencies.dxguid-sys]
+#git = "https://github.com/retep998/winapi-rs/"
+#branch = "master"
