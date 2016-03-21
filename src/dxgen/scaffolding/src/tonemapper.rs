@@ -5,10 +5,6 @@ use utils::*;
 use dx_safe::*;
 use dx_safe::structwrappers::*;
 use std::ptr;
-use std::io;
-use std::io::prelude::*;
-use std::fs::File;
-use std::str;
 use std::slice;
 
 pub struct TonemapperResources {
@@ -20,7 +16,6 @@ pub struct TonemapperResources {
     rw_buf_total: D3D12Resource,
     rb_total: D3D12Resource,
     rb_one_total: D3D12Resource,
-    srcformat: DXGI_FORMAT,
     fence: D3D12Fence,
     calloc: D3D12CommandAllocator,
     clist: D3D12GraphicsCommandList,
@@ -157,7 +152,6 @@ impl TonemapperResources {
             rw_buf_total: rw_buf_total,
             rb_total: rb_total,
             rb_one_total: rb_one_total,
-            srcformat: srcformat,
             fence: fence,
             dheap: dheap,
             total_dheap: total_dheap,
@@ -187,6 +181,7 @@ impl TonemapperResources {
         ret
     }
 
+    #[allow(dead_code)]
     fn total_brightness_full(&self) -> (f32,f32,f32) {
         let read_range = D3D12_RANGE { Begin: 0, End: 4*self.rw_total_len as u64 };
 

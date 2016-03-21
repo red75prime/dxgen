@@ -1,5 +1,5 @@
 use winapi::*;
-use core;
+use core::DXCore;
 use create_device;
 use utils;
 use dx_safe::*;
@@ -89,7 +89,7 @@ impl<T: VertexFormat> PLShadow<T> {
         })
     }
 
-    pub fn fill_cubemap(core: &core::DXCore) -> HResult<()> {
+    pub fn fill_cubemap(core: &DXCore, cubemap: &D3D12Resource) -> HResult<()> {
         Ok(())
     }
 }

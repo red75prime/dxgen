@@ -343,7 +343,7 @@ impl error::Error for ShaderCompileError {
         match self.inner {
             ShaderInnerError::Io(ref err) => Some(err),
             ShaderInnerError::Utf8(ref err) => Some(err),
-            ShaderInnerError::Compile(ref err) => None,
+            ShaderInnerError::Compile(ref _err) => None,
         }
     }
 }
@@ -381,8 +381,6 @@ impl<T,I,E> TryCollect<I,E> for T where T: Iterator<Item=Result<I,E>> {
         Ok(ret)
     }
 }
-
-use std::collections::HashMap;
 
 pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static str, &mut Vec<u8>)], flags: u32) 
                         -> Result<(), ShaderCompileError> {

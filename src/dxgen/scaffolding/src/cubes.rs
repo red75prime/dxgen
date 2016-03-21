@@ -9,7 +9,6 @@ use utils::*;
 use cgmath::*;
 use dx_safe::structwrappers::*;
 use window::*;
-use crossbeam;
 use create_device::*;
 
 use camera::*;
@@ -21,8 +20,6 @@ use tonemapper::{Tonemapper, TonemapperResources};
 use plshadow::PLShadow;
 
 use std::io::prelude::*;
-use std::fs::File;
-use std::str;
 use std::slice;
 use std::sync::Arc;
 use cubestate::{State, StateUpdateAgent};
@@ -949,7 +946,6 @@ pub fn on_init(wnd: &Window,
 // ----------------- on_render -------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------
 pub fn on_render(data: &mut AppData) {
-    use std::thread::sleep_ms;
     if cfg!(debug_assertions) {
         trace!("on_render")
     };
@@ -1013,7 +1009,6 @@ pub fn on_render(data: &mut AppData) {
         // TODO: Use STATUS_OCCLUDED to reduce frame rate
         _ => (),
     }
-    //sleep_ms(100);
     ::perf_present_end();
     ::perf_start("state_update");
     if let Some(mut future_state) = maybe_future_state {

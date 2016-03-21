@@ -118,7 +118,7 @@ impl State {
 
 use std::thread;
 use std::sync::Arc;
-use std::sync::mpsc::{sync_channel, channel, Receiver, SyncSender, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 fn state_update_agent(thread_cnt: u32, rx: Receiver<(Arc<State>, f32)>, tx: Sender<State>) {
     loop {
