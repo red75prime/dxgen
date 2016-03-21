@@ -4,11 +4,6 @@ use create_device;
 use utils;
 use dx_safe::*;
 use dx_safe::structwrappers::*;
-use std::ptr;
-use std::io;
-use std::io::prelude::*;
-use std::fs::File;
-use std::str;
 use dxsems::VertexFormat;
 use std::marker::PhantomData;
 
@@ -17,38 +12,30 @@ use std::marker::PhantomData;
 pub struct PLShadow<T: VertexFormat> {
     pso: D3D12PipelineState,
     root_sig: D3D12RootSignature,
-    dheap: DescriptorHeap,
     luid: Luid,
-    phd: PhantomData<T>,
+    _phd: PhantomData<T>,
 }
 
 impl<T: VertexFormat> PLShadow<T> {
     pub fn new(dev: &D3D12Device) -> HResult<PLShadow<T>> {
-        let dheap = DescriptorHeap::new(&dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0)
-                        .expect("Cannot create descriptor heap");
-
-        let mut f = File::open("plshadow.hlsl").expect("Cannot open 'plshadow.hlsl' shader file.");
-        let mut content = vec![];
-        f.read_to_end(&mut content).expect("Cannot read 'plshadow.hlsl' shader file.");
-        let shader = str::from_utf8(&content[..])
-                         .expect("'plshadow.hlsl' file content is not a valid UTF-8");
-
-        trace!("Vertex shader compilation");
-        let vshader_bc = create_device::d3d_compile_from_str(shader, "plshadow.hlsl::VSMain", "VSMain", "vs_5_0", 0)
-                             .map_err(|err| error!("Vertex shader compilation error: {}", err))
-                             .unwrap();
-        trace!("Geometry shader compilation");
-        let gshader_bc = create_device::d3d_compile_from_str(shader, "plshadow.hlsl::GSMain", "GSMain", "gs_5_0", 0)
-                             .map_err(|err| error!("Geometry shader compilation error: {}", err))
-                             .unwrap();
-        trace!("Pixel shader compilation");
-        let pshader_bc = create_device::d3d_compile_from_str(shader, "plshadow.hlsl::PSMain", "PSMain", "ps_5_0", 0)
-                             .map_err(|err| error!("Pixel shader compilation error: {}", err))
-                             .unwrap();
-        trace!("Root signature compilation");
-        let rsig_bc = create_device::d3d_compile_from_str(shader, "plshadow.hlsl::RSD", "RSD", "rootsig_1_0", 0)
-                          .map_err(|err| error!("Root signature compilation error: {}", err))
-                          .unwrap();
+        let mut vshader_bc = vec![];
+        let mut gshader_bc = vec![];
+        let mut pshader_bc = vec![];
+        let mut rsig_bc = vec![];
+        trace!("Compiling 'plshadow.hlsl'...");
+        match create_device::compile_shaders("plshadow.hlsl",&mut[
+                    ("VSMain", "vs_5_0", &mut vshader_bc),
+                    ("GSMain", "gs_5_0", &mut gshader_bc),
+                    ("PSMain", "ps_5_0", &mut pshader_bc),
+                    ("RSD", "rootsig_1_0", &mut rsig_bc),
+                ], D3DCOMPILE_OPTIMIZATION_LEVEL3) {
+            Err(err) => {
+                error!("Error compiling 'plshadow.hlsl': {}", err);
+                return Err(E_FAIL);
+            },
+            Ok(_) => {},
+        };
+        trace!("Done");
 
         trace!("Root signature creation");
         let root_sig = try!(dev.create_root_signature(0, &rsig_bc[..]));
@@ -83,9 +70,8 @@ impl<T: VertexFormat> PLShadow<T> {
         Ok(PLShadow::<T> {
             pso: pso,
             root_sig: root_sig,
-            dheap: dheap,
             luid: Luid(dev.get_adapter_luid()),
-            phd: PhantomData,
+            _phd: PhantomData,
         })
     }
 

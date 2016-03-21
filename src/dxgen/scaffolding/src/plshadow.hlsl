@@ -42,7 +42,7 @@ struct PS_IN {
 [maxvertexcount(18)]
 void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) {
   // Ok. We have triangle in light-centric coordinates. 
-  // Let's go now to replicate it onto appropriate cube sides.
+  // Let's replicate them onto appropriate cube sides.
   PS_IN outval;
   {
     // x, y  +z
