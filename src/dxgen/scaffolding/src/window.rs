@@ -8,12 +8,15 @@ use libc;
 use utils::*;
 use std::mem;
 use std::cell::RefCell;
+use std::rc::Rc;
+use std::marker::PhantomData;
 
 use user32::{TranslateMessage, DispatchMessageW, PeekMessageW};
 // use kernel32::{Sleep};
 
 pub struct Window {
     hwnd: HWND,
+    _nosync_nosend: PhantomData<Rc<u32>>,
 }
 
 pub struct PollEventIterator<'a> {
@@ -80,12 +83,13 @@ impl Window {
 
 impl Clone for Window {
     fn clone(&self) -> Self {
-        Window { hwnd: self.hwnd }
+        Window { hwnd: self.hwnd, _nosync_nosend: self._nosync_nosend }
     }
 }
 impl Copy for Window {}
-impl !Send for Window {}
-impl !Sync for Window {}
+//Doesn't work in stable Rust 1.7.0
+//impl !Send for Window {}
+//impl !Sync for Window {}
 
 type ResizeFn = Box<FnMut(u32, u32, u32) -> ()>;
 
@@ -133,7 +137,7 @@ unsafe extern "system" fn wnd_callback(hwnd: HWND,
 pub fn create_window(title: &str, width: i32, height: i32) -> Window {
     if let Some(wnd) = WINDOW.with(|rc| {
         match *rc.borrow() {
-            Some(ref td) => Some(Window { hwnd: td.hwnd }),
+            Some(ref td) => Some(Window { hwnd: td.hwnd, _nosync_nosend: PhantomData }),
             _ => None,
         }
     }) {
@@ -184,5 +188,5 @@ pub fn create_window(title: &str, width: i32, height: i32) -> Window {
             inject_msg: None,
         });
     });
-    Window { hwnd: hwnd }
+    Window { hwnd: hwnd, _nosync_nosend: PhantomData }
 }
