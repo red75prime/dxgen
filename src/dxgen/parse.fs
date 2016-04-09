@@ -105,6 +105,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     seq {
        yield "-x"
        yield "c++"
+       yield "-Xclang"
        yield "--target="+target
        yield "-fms-extensions"
        yield "-fms-compatibility"
