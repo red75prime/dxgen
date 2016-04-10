@@ -1,5 +1,7 @@
 ﻿module libclang
 
+// Enumerations updated for clang 3.9.0 
+
 open System
 open System.Runtime.InteropServices
 
@@ -14,6 +16,8 @@ type TranslationUnitFlags =
     | CXXChainedPCH = 0x20
     | SkipFunctionBodies = 0x40
     | IncludeBriefCommentsInCodeCompletion = 0x80
+    | CreatePreambleOnFirstParse = 0x100
+    | KeepGoing = 0x200
 
 type CursorKind =
     | UnexposedDecl = 1
@@ -123,7 +127,9 @@ type CursorKind =
     | SizeOfPackExpr = 143
     | LambdaExpr = 144
     | ObjCBoolLiteralExpr = 145
-    | LastExpr = 145
+    | ObjCSelfExpr = 146
+    | OMPArraySectionExpr = 147
+    | LastExpr = 147
     | FirstStmt = 200
     | UnexposedStmt = 200
     | LabelStmt = 201
@@ -157,7 +163,40 @@ type CursorKind =
     | MsAsmStmt = 229
     | NullStmt = 230
     | DeclStmt = 231
-    | LastStmt = 231
+    | OMPParallelDirective = 232
+    | OMPSimdDirective              = 233
+    | OMPForDirective               = 234
+    | OMPSectionsDirective          = 235
+    | OMPSectionDirective           = 236
+    | OMPSingleDirective            = 237
+    | OMPParallelForDirective       = 238
+    | OMPParallelSectionsDirective  = 239
+    | OMPTaskDirective              = 240
+    | OMPMasterDirective            = 241
+    | OMPCriticalDirective          = 242
+    | OMPTaskyieldDirective         = 243
+    | OMPBarrierDirective           = 244
+    | OMPTaskwaitDirective          = 245
+    | OMPFlushDirective             = 246
+    | SEHLeaveStmt                  = 247
+    | OMPOrderedDirective           = 248
+    | OMPAtomicDirective            = 249
+    | OMPForSimdDirective           = 250
+    | OMPParallelForSimdDirective   = 251
+    | OMPTargetDirective            = 252
+    | OMPTeamsDirective             = 253
+    | OMPTaskgroupDirective         = 254
+    | OMPCancellationPointDirective = 255
+    | OMPCancelDirective            = 256
+    | OMPTargetDataDirective        = 257
+    | OMPTaskLoopDirective          = 258
+    | OMPTaskLoopSimdDirective      = 259
+    | OMPDistributeDirective        = 260
+    | OMPTargetEnterDataDirective   = 261
+    | OMPTargetExitDataDirective    = 262
+    | OMPTargetParallelDirective    = 263
+    | OMPTargetParallelForDirective = 264
+    | LastStmt = 264
     | TranslationUnit = 300
     | FirstAttr = 400
     | UnexposedAttr = 400
@@ -168,7 +207,19 @@ type CursorKind =
     | CxxOverrideAttr = 405
     | AnnotateAttr = 406
     | AsmLabelAttr = 407
-    | LastAttr = 407
+    | PackedAttr                    = 408
+    | PureAttr                      = 409
+    | ConstAttr                     = 410
+    | NoDuplicateAttr               = 411
+    | CUDAConstantAttr              = 412
+    | CUDADeviceAttr                = 413
+    | CUDAGlobalAttr                = 414
+    | CUDAHostAttr                  = 415
+    | CUDASharedAttr                = 416
+    | VisibilityAttr                = 417
+    | DLLExport                     = 418
+    | DLLImport                     = 419
+    | LastAttr = 419
     | PreprocessingDirective = 500
     | MacroDefinition = 501
     | MacroExpansion = 502
@@ -176,6 +227,12 @@ type CursorKind =
     | InclusionDirective = 503
     | FirstPreprocessing = 500
     | LastPreprocessing = 503
+    | ModuleImportDecl              = 600
+    | TypeAliasTemplateDecl         = 601
+    | FirstExtraDecl                = 600
+    | LastExtraDecl                 = 601
+    | OverloadCandidate             = 700
+
 
 type TypeKind =
     | Invalid = 0
@@ -228,11 +285,19 @@ type TypeKind =
     | VariableArray = 115
     | DependentSizedArray = 116
     | MemberPointer = 117
+    | Auto = 118
 
 type ChildVisitResult =
     | Break = 0
     | Continue = 1
     | Recurse = 2
+
+type CXErrorCode = 
+    | Success = 0
+    | Failure = 1
+    | Crashed = 2
+    | InvalidArguments = 3
+    | ASTReadError = 4
 
 #nowarn "9"
 [<StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)>]
@@ -289,7 +354,7 @@ type Token =
     end
 
 [<StructLayout(LayoutKind.Sequential)>]
-type String =
+type CXString =
     struct
         val data: IntPtr
         val private_flags: uint32
@@ -321,9 +386,9 @@ type CallingConv=
 type CursorVisitor = delegate of Cursor * Cursor * ClientData -> ChildVisitResult
 
 [<DllImport("libclang", EntryPoint = "clang_disposeString", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern void disposeString(String str)
+extern void disposeString(CXString str)
 
-let toString (str: String) =
+let toString (str: CXString) =
     let result = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(str.data)
     disposeString(str)
     if result=null then "" else result
@@ -371,10 +436,10 @@ extern Type getEnumDeclIntegerType(Cursor cursor)
 extern Type getTypedefDeclUnderlyingType(Cursor cursor)
 
 [<DllImport("libclang", EntryPoint = "clang_getCursorSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern String getCursorSpelling(Cursor cursor)
+extern CXString getCursorSpelling(Cursor cursor)
 
 [<DllImport("libclang", EntryPoint = "clang_getCursorDisplayName", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern String getCursorDisplayName(Cursor cursor)
+extern CXString getCursorDisplayName(Cursor cursor)
 
 [<DllImport("libclang", EntryPoint = "clang_getCursorExtent", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern SourceRange getCursorExtent(Cursor cursor)
@@ -386,7 +451,7 @@ extern SourceLocation getRangeStart(SourceRange range)
 extern void getExpansionLocation(SourceLocation source, File& file, uint32& line, uint32& column, uint32& offset)
 
 [<DllImport("libclang", EntryPoint = "clang_getFileName", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern String getFileName(File file)
+extern CXString getFileName(File file)
 
 let getFileNameFS file=
   getFileName file |> toString
@@ -398,7 +463,7 @@ extern int64 getEnumConstantDeclValue(Cursor cursor)
 extern uint64 getEnumConstantDeclUnsignedValue(Cursor cursor)
 
 [<DllImport("libclang", EntryPoint = "clang_getTypeSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern String getTypeSpelling(Type ty)
+extern CXString getTypeSpelling(Type ty)
 
 [<DllImport("libclang", EntryPoint = "clang_getTypeDeclaration", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern Cursor getTypeDeclaration(Type ty)
@@ -428,7 +493,7 @@ extern void tokenize(TranslationUnit translationUnit, SourceRange range, Token* 
 extern void disposeTokens(TranslationUnit translationUnit, Token* tokens, uint32 tokenCount)
 
 [<DllImport("libclang", EntryPoint = "clang_getTokenSpelling", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
-extern String getTokenSpelling(TranslationUnit translationUnit, Token token)
+extern CXString getTokenSpelling(TranslationUnit translationUnit, Token token)
 
 [<DllImport("libclang", EntryPoint = "clang_Type_getSizeOf", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern int64 getSizeOfType(Type ty)
@@ -479,9 +544,9 @@ let tokenizeFS cursor=
 
 
 let visitChildrenFS<'t> (cursor:Cursor) (visitor: Cursor -> Cursor -> 't -> ChildVisitResult) (data:'t) =
-  let handle=GCHandle.Alloc data
+  let handle=GCHandle.Alloc (box data)
   try
-    let vis1=fun cursor parent param -> visitor cursor parent ((GCHandle.FromIntPtr param).Target :?> 't)
+    let vis1=fun cursor parent param -> visitor cursor parent (unbox<'t>((GCHandle.FromIntPtr param).Target))
     visitChildren(cursor,new CursorVisitor(vis1),GCHandle.ToIntPtr handle)
   finally
     handle.Free()

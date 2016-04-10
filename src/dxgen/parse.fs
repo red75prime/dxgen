@@ -105,13 +105,12 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     seq {
        yield "-x"
        yield "c++"
-       yield "-Xclang"
        yield "--target="+target
        yield "-fms-extensions"
        yield "-fms-compatibility"
        yield "-Wno-ignored-attributes"
        yield "-Wno-microsoft"
-       yield! includePaths |> Seq.map (fun p -> "-I"+p)
+       yield! includePaths |> Seq.map (fun p -> "-I\""+p+"\"")
     } |> Array.ofSeq
   let index = createIndex(0, 1)
 
@@ -248,7 +247,9 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
         if basename.StartsWith("struct ") then
           bas := basename.Substring(7)
         else 
-          raise <| new System.Exception("Base specifier is not struct")
+            printfn "Warning: expected C++ base specifier in the form 'struct XXX', found '%s'" basename
+            bas := basename
+            //raise <| new System.Exception("Base specifier is not struct: "+basename)
       if ckind=CursorKind.FieldDecl then
           let ctype=getCursorType cursor
           let nm=getCursorDisplayNameFS cursor
@@ -345,8 +346,8 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
         if cursorKind=CursorKind.StructDecl then
           let structName=cursor |> getCursorDisplayNameFS
           // Incomplete pattern matches warning is ok
-          let (Struct(ses, bas) as strct, itIsClass) = parseStruct cursor structName
-          if itIsClass then
+          let (Struct(ses, bas) as strct, itIsAClass) = parseStruct cursor structName
+          if itIsAClass then
             // Transform class into struct and vtable
             let vtblName = structName+"Vtbl"
 

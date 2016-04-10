@@ -3,9 +3,9 @@ modules:
     - name: d3d12_dxgi
       output-path: ../../dx_dxgi/src/
       include-path: 
-        - ./Include/10.0.10586.0/um/
-        - ./Include/10.0.10586.0/shared/
-        - ./Include/10.0.10586.0/ucrt/
+        - .\Include\10.0.10586.0\um\
+        - .\Include\10.0.10586.0\shared\
+        - .\Include\10.0.10586.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - d3d12.h
@@ -20,9 +20,9 @@ modules:
     - name: d3d12shader
       output-path: ../../dx_dxgi/src/
       include-path: 
-        - ./Include/10.0.10586.0/um/
-        - ./Include/10.0.10586.0/shared/
-        - ./Include/10.0.10586.0/ucrt/
+        - .\Include\10.0.10586.0\um\
+        - .\Include\10.0.10586.0\shared\
+        - .\Include\10.0.10586.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - d3d12shader.h
