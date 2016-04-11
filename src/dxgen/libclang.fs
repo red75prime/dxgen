@@ -198,7 +198,6 @@ type CursorKind =
     | OMPTargetParallelForDirective = 264
     | LastStmt = 264
     | TranslationUnit = 300
-    | FirstAttr = 400
     | UnexposedAttr = 400
     | IbActionAttr = 401
     | IbOutletAttr = 402
@@ -219,6 +218,7 @@ type CursorKind =
     | VisibilityAttr                = 417
     | DLLExport                     = 418
     | DLLImport                     = 419
+    | FirstAttr = 400
     | LastAttr = 419
     | PreprocessingDirective = 500
     | MacroDefinition = 501
@@ -525,9 +525,11 @@ extern uint32 isPureVirtual(Cursor c)
 let isPureVirtualFS c=
   isPureVirtual c <> 0u
 
-
 [<DllImport("libclang", EntryPoint = "clang_getFieldDeclBitWidth", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern int32 getFieldDeclBitWidth(Cursor c)
+
+[<DllImport("libclang", EntryPoint = "clang_Type_getOffsetOf", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern int64 getOffsetOfInBits(Type t, String s)
 
 
 let tokenizeFS cursor=

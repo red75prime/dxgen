@@ -80,6 +80,12 @@ let annotations_by_module =
       structs = Map.empty;
       dependencies = [];
     });
+    ("d3d12shader",
+      {interfaces = d3d12shader;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
   ] |> Map.ofList
         
 [<EntryPoint>]

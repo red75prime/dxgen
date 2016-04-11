@@ -105,6 +105,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     seq {
        yield "-x"
        yield "c++"
+       yield "-std=c++11"
        yield "--target="+target
        yield "-fms-extensions"
        yield "-fms-compatibility"
@@ -237,17 +238,17 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
     let fields=ref []
     let bas = ref ""
-    let itIsClass = ref false
+    let itIsAClass = ref false
     let parseFieldDecl cursor _ _=
       let ckind=getCursorKind cursor
-      //printfn "    %A %s" ckind (getCursorDisplayNameFS cursor)
+      //printfn "    %s: %A %s" structName ckind (getCursorDisplayNameFS cursor)
       if ckind=CursorKind.CxxBaseSpecifier then
-        itIsClass := true // crude. TODO: something
+        itIsAClass := true // crude. TODO: something
         let basename = getCursorDisplayNameFS cursor
         if basename.StartsWith("struct ") then
           bas := basename.Substring(7)
         else 
-            printfn "Warning: expected C++ base specifier in the form 'struct XXX', found '%s'" basename
+            //printfn "Warning: expected C++ base specifier in the form 'struct XXX', found '%s'" basename
             bas := basename
             //raise <| new System.Exception("Base specifier is not struct: "+basename)
       if ckind=CursorKind.FieldDecl then
@@ -264,6 +265,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
           fields := CStructElem(nm, ty, bw) :: !fields
       else if ckind=CursorKind.CxxMethod then
+          itIsAClass := true
           let nm=getCursorSpellingFS cursor
           if isPureVirtualFS cursor then
             let ctype=getCursorType cursor
@@ -278,13 +280,14 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             printfn "Skipping non pure virtual %s::%s" structName nm
       else if ckind=CursorKind.UnionDecl then
         fields := CStructElem("", parseUnion cursor, None) :: !fields
-      else if ckind=CursorKind.FirstAttr then
-        let tokens = tokenizeFS cursor
-        let what = getCursorSpellingFS cursor
-        printf "%s" what
+      else if ckind=CursorKind.UnexposedAttr then
+        //let tokens = tokenizeFS cursor
+        //let what = getCursorSpellingFS cursor
+        //printfn "      Attribute: %s %A" what tokens
+        ()
       ChildVisitResult.Continue
     visitChildrenFS cursor parseFieldDecl () |> ignore
-    (Struct(List.rev !fields, !bas), !itIsClass)
+    (Struct(List.rev !fields, !bas), !itIsAClass)
   
   let parseMacro (cursor:Cursor) locInfo =
     // incomplete pattern matches warning is ok
