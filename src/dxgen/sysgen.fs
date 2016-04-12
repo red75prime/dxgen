@@ -174,20 +174,20 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       ;"IUnknown"] 
 // ----------------- Create structs ----------------------------------
   let outputStructDef apl name ses uncopyable=
-    if uncopyable then
-      apl "#[repr(C)] #[derive(Copy)]"
-    else
-      apl "#[repr(C)] #[derive(Clone, Copy, Debug)]"
-    apl <| sprintf "pub struct %s {" name
+//    if uncopyable then
+//      apl "#[repr(C)] #[derive(Copy)]"
+//    else
+//      apl "#[repr(C)] #[derive(Clone, Copy, Debug)]"
+    apl <| sprintf "STRUCT!{struct %s {" name
     for (fname,fty) in ses |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |_-> raise <| new System.Exception("Bitfields aren't supported")) do
-      apl <| System.String.Format("    pub {0}: {1},", fname, tyToRustGlobal fty)
-    apl "}"
+      apl <| System.String.Format("    {0}: {1},", fname, tyToRustGlobal fty)
+    apl "}}"
     apl ""
-    if uncopyable then
-      apl <| sprintf "impl Clone for %s {" name
-      apl "    fn clone(&self) -> Self { *self }"
-      apl "}"
-      apl ""
+//    if uncopyable then
+//      apl <| sprintf "impl Clone for %s {" name
+//      apl "    fn clone(&self) -> Self { *self }"
+//      apl "}"
+//      apl ""
 
   let createStructs()=
     for (name,bas,sfields,(fname,_,_,_)) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields,bas),loc)) -> Some(name,bas,sfields,loc) |_ -> None) do
