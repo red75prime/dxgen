@@ -143,7 +143,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
 // http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
 // http://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
-//! Mappings for the contents of %s.h" (f.Substring(0,f.Length-3))
+//! Mappings for the content of %s.h" (f.Substring(0,f.Length-3))
         sb.AppendLine(text) |> ignore
         sb.AppendLine() |> ignore
         file2sb := Map.add f sb !file2sb
