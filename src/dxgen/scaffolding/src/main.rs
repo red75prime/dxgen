@@ -13,6 +13,7 @@ extern crate dx_safe;
 //extern crate dxgi_sys;
 extern crate kernel32;
 extern crate user32;
+extern crate d3dcompiler as d3dcompiler_sys;
 //extern crate d3d12_sys;
 extern crate rand;
 extern crate time;
