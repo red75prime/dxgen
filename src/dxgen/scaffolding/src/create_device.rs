@@ -133,46 +133,7 @@ pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC
     }
 }
 
-#[link(name="d3dcompiler")]
-extern "system" {
-    fn D3DCompileFromFile(file_name: LPCWSTR,
-                          defines: *const D3D_SHADER_MACRO,
-                          include: *mut ID3DInclude,
-                          entry: LPCSTR,
-                          target: LPCSTR,
-                          flags1: UINT,
-                          flags2: UINT,
-                          code: *mut *mut ID3D10Blob,
-                          errs: *mut *mut ID3D10Blob)
-                          -> HRESULT;
-
-    fn D3DCompile2(pSrcData: LPCVOID,
-                   SrcDataSize: SIZE_T,
-                   pSourceName: LPCSTR,
-                   pDefines: *const D3D_SHADER_MACRO,
-                   pInclude: *mut ID3DInclude,
-                   pEntrypoint: LPCSTR,
-                   pTarget: LPCSTR,
-                   Flags1: UINT,
-                   Flags2: UINT,
-                   SecondaryDataFlags: UINT,
-                   pSecondaryData: LPCVOID,
-                   SecondaryDataSize: SIZE_T,
-                   ppCode: *mut *mut ID3DBlob,
-                   ppErrorMsgs: *mut *mut ID3DBlob)
-                   -> HRESULT;
-    fn D3DGetBlobPart(pSrcData: LPCVOID,
-                      SrcDataSize: SIZE_T,
-                      Part: D3D_BLOB_PART,
-                      Flags: UINT,
-                      ppBlob: *mut *mut ID3DBlob)
-                      -> HRESULT;
-    fn D3DReflect(pSrcData: LPCVOID,
-                  SrcDataSize: SIZE_T,
-                  pInterface: REFGUID,
-                  ppReflector: *mut *mut c_void)
-                  -> HRESULT;
-}
+use d3dcompiler_sys::*;
 
 pub fn d3d_compile_from_str(shader_text: &str, shader_name: &str,
                             entry: &str,

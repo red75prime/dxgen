@@ -5,6 +5,7 @@ dependencies = [
  "cgmath 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "d3d12-sys 0.0.1 (git+https://github.com/retep998/winapi-rs/)",
+ "d3dcompiler-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dx_safe 0.3.1",
  "dxgi-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dxguid-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -51,6 +52,15 @@ source = "git+https://github.com/retep998/winapi-rs/#0c87ea529d0993422b4ca26689a
 dependencies = [
  "winapi 0.2.6 (git+https://github.com/retep998/winapi-rs/)",
  "winapi-build 0.1.1 (git+https://github.com/retep998/winapi-rs/)",
+]
+
+[[package]]
+name = "d3dcompiler-sys"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "winapi 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
