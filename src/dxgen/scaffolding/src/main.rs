@@ -9,7 +9,7 @@ extern crate libc;
 extern crate winapi;
 extern crate dx_safe;
 //extern crate dxguid_sys;
-//extern crate dxgi_sys;
+extern crate dxgi as dxgi_sys;
 extern crate kernel32;
 extern crate user32;
 extern crate d3dcompiler as d3dcompiler_sys;

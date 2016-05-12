@@ -40,9 +40,9 @@ d3dcompiler-sys = "0.2"
 #git = "https://github.com/retep998/winapi-rs/"
 #branch = "master"
 
-[dependencies.d3d12-sys]
-git = "https://github.com/retep998/winapi-rs/"
-branch = "master"
+#[dependencies.d3d12-sys]
+#git = "https://github.com/retep998/winapi-rs/"
+#branch = "master"
 
 #[dependencies.dxguid-sys]
 #git = "https://github.com/retep998/winapi-rs/"

@@ -24,12 +24,7 @@ extern "system" {
                                        -> HRESULT;
 }
 
-#[link(name="dxgi")]
-extern "system" {
-    pub fn CreateDXGIFactory2(Flags: UINT, riid: REFGUID, ppFactory: *mut *mut c_void) -> HRESULT;
-    pub fn DXGIGetDebugInterface1(Flags: UINT, riid: REFGUID, pDebug: *mut *mut c_void) -> HRESULT;
-}
-
+use dxgi_sys::*;
 
 pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>,
                            min_feat_level: D3D_FEATURE_LEVEL)
