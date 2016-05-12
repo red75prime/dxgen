@@ -322,6 +322,7 @@ struct FrameResources {
     c_buffer_size: u32,
     // TODO: replace 'static
     constants_mapped: &'static mut Constants,
+    _shadow_map: D3D12Resource,
     hdr_render_target: D3D12Resource,
     hdr_rtv_heap: DescriptorHeap,
     _depth_stencil: D3D12Resource,
@@ -354,7 +355,7 @@ impl FrameResources {
         trace!("Create tm_fence");
         let tm_fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
 
-        let srv_heap = try!(DescriptorHeap::new(dev, 3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+        let srv_heap = try!(DescriptorHeap::new(dev, 4, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
 
         let i_buffer_size = mem::size_of::<InstanceData>() * parameters.object_count as usize;
         trace!("Create ir_buffer");
@@ -412,7 +413,7 @@ impl FrameResources {
         core.dump_info_queue_tagged("After create_constant_buffer_view"); 
 
         trace!("Create depth stencil descriptor heap");
-        let dsd_heap = try!(DescriptorHeap::new(dev, 1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false, 0));
+        let dsd_heap = try!(DescriptorHeap::new(dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false, 0));
 
         let ds_format = DXGI_FORMAT_D32_FLOAT;
         // utils::create_depth_stencil() functions handles creation of depth-stencil resource
@@ -423,6 +424,28 @@ impl FrameResources {
                                                       h as u32,
                                                       ds_format,
                                                       dsd_heap.cpu_handle(0)));
+
+        // create shadow resource.
+        let shadow_desc = resource_desc_tex2darray_nomip(w as u64, h, 6, ds_format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+        debug!("Create depth stencil shadow resource");
+        let shadow_map = dev.create_committed_resource(&heap_properties_default(),
+                                                        D3D12_HEAP_FLAG_NONE,
+                                                        &shadow_desc,
+                                                        D3D12_RESOURCE_STATE_DEPTH_WRITE,
+                                                        Some(&depth_stencil_clear_value_depth_f32(1.0)))
+                             .map_err(|hr| {
+                                 error!("create_commited_resource failed with 0x{:x}", hr);
+                                 hr
+                             })?;
+
+        let shadow_desc = depth_stencil_view_desc_tex2darray_default(ds_format, 6);
+        debug!("Shadow depth stencil view");
+        dev.create_depth_stencil_view(Some(&shadow_map), Some(&shadow_desc), dsd_heap.cpu_handle(1));
+        debug!("Shadow shader resource view");
+        let shadow_srv_desc = srv_tex2darray_default(ds_format, 6);
+        dev.create_shader_resource_view(Some(&shadow_map), Some(&shadow_srv_desc), srv_heap.cpu_handle(3));
+
+
         trace!("Create HDR render target");
         let (hdr_render_target, hdr_rtv_heap, tonemapper_resources) =
             try!(create_hdr_render_target(dev, &cr.tonemapper, w, h, parameters));
@@ -456,6 +479,7 @@ impl FrameResources {
             c_buffer: c_buffer,
             c_buffer_size: c_buffer_size as u32,
             constants_mapped: cpu_c_ptr,
+            _shadow_map: shadow_map,
             hdr_render_target: hdr_render_target,
             hdr_rtv_heap: hdr_rtv_heap,
             _depth_stencil: depth_stencil,
@@ -506,9 +530,21 @@ impl FrameResources {
 
         core.dev.create_shader_resource_view(Some(&cr.tex_resource), Some(&cr.tex_desc), self.srv_heap.cpu_handle(0));
 
+        let glist = &self.glist;
+        glist.resource_barrier(
+            &[*ResourceBarrier::transition(&self.hdr_render_target,
+               D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET),
+              *ResourceBarrier::transition(&self.ir_buffer,
+               D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST)]);
+        glist.copy_resource(&self.ir_buffer, &self.i_buffer);
+        glist.resource_barrier(
+            &[*ResourceBarrier::transition(&self.ir_buffer,
+               D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)]);
+
+
+
         let hdr_rtvh = self.hdr_rtv_heap.cpu_handle(0);
         let dsvh = self.dsd_heap.cpu_handle(0);
-        let glist = &self.glist;
         core.dump_info_queue_tagged("Before set_descriptor_heaps"); 
         glist.set_descriptor_heaps(&[self.srv_heap.get()]);
         core.dump_info_queue_tagged("After set_descriptor_heaps"); 
@@ -529,15 +565,7 @@ impl FrameResources {
         glist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         glist.ia_set_vertex_buffers(0, Some(&[cr.vertex_buffer_view]));
         glist.ia_set_index_buffer(Some(&cr.index_buffer_view));
-        glist.resource_barrier(
-            &[*ResourceBarrier::transition(&self.hdr_render_target,
-               D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET),
-              *ResourceBarrier::transition(&self.ir_buffer,
-               D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST)]);
-        glist.copy_resource(&self.ir_buffer, &self.i_buffer);
-        glist.resource_barrier(
-            &[*ResourceBarrier::transition(&self.ir_buffer,
-               D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)]);
+
         glist.clear_render_target_view(hdr_rtvh, &CLEAR_COLOR, &[]);
         glist.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
         glist.draw_indexed_instanced(cr.index_count, st.cubes.len() as u32, 0, 0, 0);

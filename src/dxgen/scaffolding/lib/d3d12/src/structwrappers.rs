@@ -608,6 +608,19 @@ pub fn depth_stencil_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_DEPTH
     ret
 }
 
+pub fn depth_stencil_view_desc_tex2darray_default(format: DXGI_FORMAT, size: u32) -> D3D12_DEPTH_STENCIL_VIEW_DESC {
+    let mut ret = D3D12_DEPTH_STENCIL_VIEW_DESC {
+        Format: format,
+        ViewDimension: D3D12_DSV_DIMENSION_TEXTURE2DARRAY,
+        Flags: D3D12_DSV_FLAG_NONE,
+        u: unsafe { mem::uninitialized() },
+    };
+    unsafe {
+        *ret.Texture2DArray_mut() = D3D12_TEX2D_ARRAY_DSV { MipSlice: 0, FirstArraySlice: 0, ArraySize: size };
+    };
+    ret
+}
+
 pub fn render_target_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_RENDER_TARGET_VIEW_DESC {
     let mut ret = D3D12_RENDER_TARGET_VIEW_DESC {
         Format: format,
@@ -623,14 +636,14 @@ pub fn render_target_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_RENDE
     ret
 }
 
-pub fn depth_stencil_clear_value_depth_f32() -> D3D12_CLEAR_VALUE {
+pub fn depth_stencil_clear_value_depth_f32(clear_depth: f32) -> D3D12_CLEAR_VALUE {
     let mut ret = D3D12_CLEAR_VALUE {
         Format: DXGI_FORMAT_D32_FLOAT,
         u: unsafe { mem::uninitialized() },
     };
     unsafe {
         *ret.DepthStencil_mut() = D3D12_DEPTH_STENCIL_VALUE {
-            Depth: 1.0,
+            Depth: clear_depth,
             Stencil: 0,
         };
     };
