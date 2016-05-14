@@ -22,6 +22,7 @@ user32-sys = "0.1"
 kernel32-sys = "0.2"
 dxguid-sys = "0.2"
 d3dcompiler-sys = "0.2"
+#d3d12-sys = "0.2"
 
 #[dependencies.winapi]
 ##version = "0.2.5"
@@ -40,9 +41,9 @@ d3dcompiler-sys = "0.2"
 #git = "https://github.com/retep998/winapi-rs/"
 #branch = "master"
 
-#[dependencies.d3d12-sys]
-#git = "https://github.com/retep998/winapi-rs/"
-#branch = "master"
+[dependencies.d3d12-sys]
+git = "https://github.com/red75prime/winapi-rs/"
+branch = "d3d12_sys_26"
 
 #[dependencies.dxguid-sys]
 #git = "https://github.com/retep998/winapi-rs/"
