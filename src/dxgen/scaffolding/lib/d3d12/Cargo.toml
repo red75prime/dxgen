@@ -8,7 +8,7 @@ name = "dx_safe"
 
 [dependencies]
 libc = "0.2"
-winapi = "0.2.6"
+winapi = "0.2"
 winapi-build = "0.1"
 dxguid-sys = "0.2"
 

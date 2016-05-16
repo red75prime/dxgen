@@ -3,33 +3,9 @@
 use winapi::*;
 use dx_safe::*;
 use std::ptr;
-
-#[link(name="d3d12")]
-extern "system" {
-    pub fn D3D12CreateDevice(pAdapter: *mut IUnknown,
-                             MinimumFeatureLevel: D3D_FEATURE_LEVEL,
-                             riid: REFGUID,
-                             ppDevice: *mut *mut c_void)
-                             -> HRESULT;
-    pub fn D3D12CreateRootSignatureDeserializer(pSrcData: LPCVOID,
-                                                SrcDataSizeInBytes: SIZE_T,
-                                                pRootSignatureDeserializerInterface: REFGUID,
-                                                ppRootSignatureDeserializer: *mut *mut c_void)
-                                                -> HRESULT;
-    pub fn D3D12GetDebugInterface(riid: REFGUID, ppvDebug: *mut *mut c_void) -> HRESULT;
-    pub fn D3D12SerializeRootSignature(pRootSignature: *const D3D12_ROOT_SIGNATURE_DESC,
-                                       Version: D3D_ROOT_SIGNATURE_VERSION,
-                                       ppBlob: *mut *mut ID3DBlob,
-                                       ppErrorBlob: *mut *mut ID3DBlob)
-                                       -> HRESULT;
-}
-
-#[link(name="dxgi")]
-extern "system" {
-    pub fn CreateDXGIFactory2(Flags: UINT, riid: REFGUID, ppFactory: *mut *mut c_void) -> HRESULT;
-    pub fn DXGIGetDebugInterface1(Flags: UINT, riid: REFGUID, pDebug: *mut *mut c_void) -> HRESULT;
-}
-
+use d3d12_sys::*;
+use dxgi_sys::*;
+use d3dcompiler_sys::*;
 
 pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>,
                            min_feat_level: D3D_FEATURE_LEVEL)
@@ -132,8 +108,6 @@ pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC
         Err(hr)
     }
 }
-
-use d3dcompiler_sys::*;
 
 pub fn d3d_compile_from_str(shader_text: &str, shader_name: &str,
                             entry: &str,
