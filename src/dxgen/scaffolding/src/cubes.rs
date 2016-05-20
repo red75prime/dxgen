@@ -88,6 +88,7 @@ pub struct CubeParms {
 }
 
 static CLEAR_COLOR: [f32; 4] = [0.005, 0.005, 0.01, 1.0];
+const SHADOW_MAP_SIZE: u32 = 1024;
 
 pub fn create_hdr_render_target
     (dev: &D3D12Device, tonemapper: &Tonemapper,
@@ -322,7 +323,7 @@ struct FrameResources {
     c_buffer_size: u32,
     // TODO: replace 'static
     constants_mapped: &'static mut Constants,
-    _shadow_map: D3D12Resource,
+    shadow_map: D3D12Resource,
     hdr_render_target: D3D12Resource,
     hdr_rtv_heap: DescriptorHeap,
     _depth_stencil: D3D12Resource,
@@ -426,7 +427,7 @@ impl FrameResources {
                                                       dsd_heap.cpu_handle(0)));
 
         // create shadow resource.
-        let shadow_desc = resource_desc_tex2darray_nomip(w as u64, h, 6, ds_format, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+        let shadow_desc = resource_desc_tex2darray_nomip(SHADOW_MAP_SIZE as u64, SHADOW_MAP_SIZE, 6, DXGI_FORMAT_R32_TYPELESS, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
         debug!("Create depth stencil shadow resource");
         let shadow_map = dev.create_committed_resource(&heap_properties_default(),
                                                         D3D12_HEAP_FLAG_NONE,
@@ -438,13 +439,12 @@ impl FrameResources {
                                  hr
                              })?;
 
-        let shadow_desc = depth_stencil_view_desc_tex2darray_default(ds_format, 6);
+        let shadow_desc = depth_stencil_view_desc_tex2darray_default(DXGI_FORMAT_D32_FLOAT, 6);
         debug!("Shadow depth stencil view");
         dev.create_depth_stencil_view(Some(&shadow_map), Some(&shadow_desc), dsd_heap.cpu_handle(1));
         debug!("Shadow shader resource view");
-        let shadow_srv_desc = srv_tex2darray_default(ds_format, 6);
+        let shadow_srv_desc = srv_tex2darray_default(DXGI_FORMAT_R32_FLOAT, 6);
         dev.create_shader_resource_view(Some(&shadow_map), Some(&shadow_srv_desc), srv_heap.cpu_handle(3));
-
 
         trace!("Create HDR render target");
         let (hdr_render_target, hdr_rtv_heap, tonemapper_resources) =
@@ -479,7 +479,7 @@ impl FrameResources {
             c_buffer: c_buffer,
             c_buffer_size: c_buffer_size as u32,
             constants_mapped: cpu_c_ptr,
-            _shadow_map: shadow_map,
+            shadow_map: shadow_map,
             hdr_render_target: hdr_render_target,
             hdr_rtv_heap: hdr_rtv_heap,
             _depth_stencil: depth_stencil,
@@ -507,7 +507,9 @@ impl FrameResources {
             light_pos: st.light_pos.clone().into(),
         };
 
+	// Fill instance data buffer by iterating over memory mapped instance data buffer and cubes data
         for (inst_ref, cs) in self.instance_data_mapped.iter_mut().zip(st.cubes[..].iter()) {
+	    // inst_ref contains reference to instance data item, cs refers to corresponding cube data
             unsafe { // 
                 // memory at inst_ref is write-only. ptr::write ensures that it is not read.
                 // There should be no performance inprovement compared to "*inst_ref =", but somehow there is small speedup.
@@ -522,10 +524,11 @@ impl FrameResources {
             //};
         };
         ::perf_fillbuf_end();
+
         ::perf_start("listfill");
         try!(self.calloc.reset());
         core.dump_info_queue_tagged("Before glist.reset"); 
-        try!(self.glist.reset(&self.calloc, Some(&cr.pipeline_state)));
+        try!(self.glist.reset(&self.calloc, None));
         core.dump_info_queue_tagged("After glist.reset"); 
 
         core.dev.create_shader_resource_view(Some(&cr.tex_resource), Some(&cr.tex_desc), self.srv_heap.cpu_handle(0));
@@ -536,19 +539,56 @@ impl FrameResources {
                D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET),
               *ResourceBarrier::transition(&self.ir_buffer,
                D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST)]);
+	// Copy instance data buffer i_buffer located in UPLOAD heap 
+	// into instance data buffer ir_buffer located in DEFAULT heap
         glist.copy_resource(&self.ir_buffer, &self.i_buffer);
         glist.resource_barrier(
             &[*ResourceBarrier::transition(&self.ir_buffer,
                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)]);
 
+        // ----------------  SHADOW PASS START ------------------------------------
+        //cr.plshadow.fill_command_list(core, &glist, &self.dsd_heap, );
+        glist.set_graphics_root_signature(&cr.plshadow.root_sig);
+        core.dump_info_queue_tagged("plshadow after set_graphics_root_signature"); 
+        glist.set_pipeline_state(&cr.plshadow.pso);
+        let shadow_desc_cpu_handle = self.dsd_heap.cpu_handle(1);
+        glist.om_set_render_targets_arr(&[], Some(&shadow_desc_cpu_handle));
+        glist.set_graphics_root_constant_buffer_view(0, self.c_buffer.get_gpu_virtual_address());
+        glist.set_graphics_root_shader_resource_view(1, self.i_buffer.get_gpu_virtual_address());
+        glist.clear_depth_stencil_view(shadow_desc_cpu_handle, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
+        glist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        glist.ia_set_vertex_buffers(0, Some(&[cr.vertex_buffer_view]));
+        glist.ia_set_index_buffer(Some(&cr.index_buffer_view));
+        let viewport = D3D12_VIEWPORT {
+            TopLeftX: 0.,
+            TopLeftY: 0.,
+            MinDepth: 0.,
+            Width: SHADOW_MAP_SIZE as f32,
+            Height: SHADOW_MAP_SIZE as f32,
+            MaxDepth: 1.0,
+        };
+        let sci_rect = D3D12_RECT {
+            left: 0,
+            top: 0,
+            right: SHADOW_MAP_SIZE as i32,
+            bottom: SHADOW_MAP_SIZE as i32,
+        };
+        glist.rs_set_viewports(&[viewport]);
+        glist.rs_set_scissor_rects(&[sci_rect]);
 
+        glist.draw_indexed_instanced(cr.index_count, st.cubes.len() as u32, 0, 0, 0);
+        glist.resource_barrier(
+            &[*ResourceBarrier::transition(&self.shadow_map,
+                D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
+        
+        // ---------------- SHADOW PASS END ---------------------------------------
 
         let hdr_rtvh = self.hdr_rtv_heap.cpu_handle(0);
         let dsvh = self.dsd_heap.cpu_handle(0);
         core.dump_info_queue_tagged("Before set_descriptor_heaps"); 
         glist.set_descriptor_heaps(&[self.srv_heap.get()]);
         core.dump_info_queue_tagged("After set_descriptor_heaps"); 
-        //glist.set_pipeline_state(&cr.pipeline_state);
+        glist.set_pipeline_state(&cr.pipeline_state);
         glist.set_graphics_root_signature(&cr.root_signature);
         core.dump_info_queue_tagged("After set_graphics_root_signature"); 
         glist.set_graphics_root_descriptor_table(0, self.srv_heap.gpu_handle(0));
@@ -572,12 +612,14 @@ impl FrameResources {
         glist.resource_barrier(
             &[*ResourceBarrier::transition(&self.hdr_render_target,
                 D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON),
+              *ResourceBarrier::transition(&self.shadow_map,
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE),
               *ResourceBarrier::transition(&self.ir_buffer,
                D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON)]);
         if cfg!(debug_assertions) { trace!("cubes glist.close") };
         try!(glist.close());
-        core.dump_info_queue();
         ::perf_end("listfill");
+        core.dump_info_queue();
         ::perf_exec_start();
         core.graphics_queue.execute_command_lists(&[glist]);
         ::perf_exec_end();

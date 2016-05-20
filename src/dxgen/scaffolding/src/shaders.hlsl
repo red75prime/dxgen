@@ -5,7 +5,7 @@
 // Totally mind-boggling.
 // The program keeps going despite the error messages.
 #define RSD "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
-            "DescriptorTable(SRV(t0), SRV(t1), CBV(b0), visibility=SHADER_VISIBILITY_ALL)," \
+            "DescriptorTable(SRV(t0), SRV(t1), CBV(b0), SRV(t2), visibility=SHADER_VISIBILITY_ALL)," \
             "StaticSampler(s0)"
 
 cbuffer cb0 : register(b0) {
@@ -60,19 +60,47 @@ VS_OUTPUT VSMain(VS_INPUT vtx, uint iidx : SV_InstanceID){
 }
 
 Texture2D   testTex : register(t0);
+Texture2DArray shadowMap : register(t2);
 SamplerState  testSamp : register(s0);
+
+static const float fr = 200;
+static const float nr = 0.1;
+static const float k1 = fr/(fr-nr);
+static const float k2 = -fr*nr/(fr-nr);
+
+float sampleCubemap(Texture2DArray shadow, float3 v) {
+  float3 va = abs(v);
+  float3 cfc;
+  if (va.z>=va.x && va.z>=va.y) {
+      // z - max
+      cfc = float3(v.x/va.z/2+0.5, v.y/va.z/2+0.5, v.z>0 ? 0 : 1);
+  } else if (va.x>=va.y && va.x>=va.z) {
+      // x - max
+      cfc = float3(v.z/va.x/2+0.5, v.y/va.x/2+0.5, v.x>0 ? 2 : 3);
+  } else {
+      // y - max
+      cfc = float3(v.x/va.y/2+0.5, v.z/va.y/2+0.5, v.y>0 ? 4 : 5);
+  }
+  float w = shadow.Sample(testSamp, cfc).r;
+
+  return w==1 ? 1000000000.0 : k2/(w-k1);
+}
 
 [RootSignature(RSD)]
 float4 PSMain(VS_OUTPUT pv) : SV_Target {
-  float4 texel=testTex.Sample(testSamp, pv.texc0.xy);
+  float4 texel = testTex.Sample(testSamp, pv.texc0.xy);
   float3 eye_off = eye_pos - pv.w_pos;
   float3 eye_n = normalize(eye_off);
   float3 light_off = light_pos - pv.w_pos;
+  float shadowDist = sampleCubemap(shadowMap, -light_off);
+  float4 ambientTerm = texel*float4(0.01,0.01,0.15,1);
+  if (shadowDist < length(light_off)) {
+    return ambientTerm;
+  }
   float light_invd = 10. / (1. + length(light_off)/10);
   float3 light_n = normalize(light_off);
   float3 light_r = reflect(-light_n, normalize(pv.norm));
   float sb=1.-clamp(1.-dot(light_r,eye_n),0,0.0001)/0.0001;
   float l=clamp(dot(light_n,pv.norm),0,1);
-  return texel*l*0.6*light_invd+sb*float4(10,10,300,1)/(0.1+(length(light_off)+length(eye_off))/1000)+texel*float4(0.01,0.01,0.15,1);
+  return texel*l*0.6*light_invd+sb*float4(10,10,300,1)/(0.1+(length(light_off)+length(eye_off))/1000)+ambientTerm;
 }
-
