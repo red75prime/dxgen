@@ -38,10 +38,7 @@ struct PS_IN {
   uint face : SV_RenderTargetArrayIndex;
 };
 
-static const float fr = 200;
-static const float nr = 0.1;
-static const float k1 = fr/(fr-nr);
-static const float k2 = -fr*nr/(fr-nr);
+#include "shadow_constants.hlsl"
 
 [RootSignature(RSD)]
 [maxvertexcount(18)]
@@ -50,62 +47,55 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
   // Let's replicate them onto appropriate cube sides.
   PS_IN outval;
   {
-    // x, y  +z
+    // y,z  +x
     outval.face = 0;
-//    outval.z = 0;
     for (uint i = 0; i < 3; i++) {
-      outval.pos = float4(input[i].pos.xy, input[i].pos.z*k1+k2, input[i].pos.z);
-//      outval.z = outval.pos.z/outval.pos.w;
+      outval.pos = float4(input[i].pos.yz, input[i].pos.x*k1+k2, input[i].pos.x); //input[i].pos.x, input[i].pos.x);
       outstream.Append(outval);
     }
     outstream.RestartStrip();
   }
   {
-    // x, y  -z
+    // y,z  -x
     outval.face = 1;
     for (uint i = 0; i < 3; i++) {
-      outval.pos = float4(input[i].pos.xy, -input[i].pos.z*k1+k2, -input[i].pos.z);
-//      outval.z = outval.pos.z/outval.pos.w;
-      outstream.Append(outval);
-    }
-    outstream.RestartStrip();
-  }
-  {
-    // z, y  +x
-    outval.face = 2;
-    for (uint i = 0; i < 3; i++) {
-      outval.pos = float4(input[i].pos.zy, input[i].pos.x*k1+k2, input[i].pos.x); //input[i].pos.x, input[i].pos.x);
-//      outval.z = outval.pos.z/outval.pos.w;
-      outstream.Append(outval);
-    }
-    outstream.RestartStrip();
-  }
-  {
-    // z, y  -x
-    outval.face = 3;
-    for (uint i = 0; i < 3; i++) {
-      outval.pos = float4(input[i].pos.zy, -input[i].pos.x*k1+k2, -input[i].pos.x);
-//      outval.z = outval.pos.z/outval.pos.w;
+      outval.pos = float4(input[i].pos.yz, -input[i].pos.x*k1+k2, -input[i].pos.x);
       outstream.Append(outval);
     }
     outstream.RestartStrip();
   }
   {
     // x, z  +y
-    outval.face = 4;
+    outval.face = 2;
     for (uint i = 0; i < 3; i++) {
       outval.pos = float4(input[i].pos.xz, input[i].pos.y*k1+k2, input[i].pos.y);
-//      outval.z = outval.pos.z/outval.pos.w;
       outstream.Append(outval);
     }
     outstream.RestartStrip();
   }
   {
     // x, z  -y
-    outval.face = 5;
+    outval.face = 3;
     for (uint i = 0; i < 3; i++) {
       outval.pos = float4(input[i].pos.xz, -input[i].pos.y*k1+k2, -input[i].pos.y);
-//      outval.z = outval.pos.z/outval.pos.w;
+      outstream.Append(outval);
+    }
+    outstream.RestartStrip();
+  }
+  {
+    // x, y  +z
+    outval.face = 4;
+    for (uint i = 0; i < 3; i++) {
+      outval.pos = float4(input[i].pos.xy, input[i].pos.z*k1+k2, input[i].pos.z);
+      outstream.Append(outval);
+    }
+    outstream.RestartStrip();
+  }
+  {
+    // x, y  -z
+    outval.face = 5;
+    for (uint i = 0; i < 3; i++) {
+      outval.pos = float4(input[i].pos.xy, -input[i].pos.z*k1+k2, -input[i].pos.z);
       outstream.Append(outval);
     }
     outstream.RestartStrip();

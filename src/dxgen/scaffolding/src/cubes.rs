@@ -443,7 +443,7 @@ impl FrameResources {
         debug!("Shadow depth stencil view");
         dev.create_depth_stencil_view(Some(&shadow_map), Some(&shadow_desc), dsd_heap.cpu_handle(1));
         debug!("Shadow shader resource view");
-        let shadow_srv_desc = srv_tex2darray_default(DXGI_FORMAT_R32_FLOAT, 6);
+        let shadow_srv_desc = srv_texcube_default(DXGI_FORMAT_R32_FLOAT); //srv_tex2darray_default(DXGI_FORMAT_R32_FLOAT, 6);
         dev.create_shader_resource_view(Some(&shadow_map), Some(&shadow_srv_desc), srv_heap.cpu_handle(3));
 
         trace!("Create HDR render target");

@@ -532,6 +532,32 @@ pub fn srv_tex2darray_default(format : DXGI_FORMAT, array_size: u32) -> D3D12_SH
     srv_tex2darray(format, shader_4component_mapping(0, 1, 2, 3), 0, 1, 0, array_size, 0, 0.0)
 }
 
+pub fn srv_texcube(format: DXGI_FORMAT,
+                                  four_comp_map: UINT,
+                                  most_det_mip: UINT,
+                                  mip_levels: UINT,
+                                  res_min_lod_clamp: f32)
+                                  -> D3D12_SHADER_RESOURCE_VIEW_DESC {
+    let mut ret = D3D12_SHADER_RESOURCE_VIEW_DESC {
+        Format: format,
+        ViewDimension: D3D12_SRV_DIMENSION_TEXTURECUBE,
+        Shader4ComponentMapping: four_comp_map,
+        u: unsafe { mem::uninitialized() },
+    };
+    unsafe {
+        *ret.TextureCube_mut() = D3D12_TEXCUBE_SRV {
+            MostDetailedMip: most_det_mip,
+            MipLevels: mip_levels,
+            ResourceMinLODClamp: res_min_lod_clamp,
+        };
+    };
+    ret
+}
+
+pub fn srv_texcube_default(format: DXGI_FORMAT) -> D3D12_SHADER_RESOURCE_VIEW_DESC {
+    srv_texcube(format, shader_4component_mapping(0, 1, 2, 3), 0, 1, 0.0)  
+}
+
 pub fn uav_tex2d_desc(format: DXGI_FORMAT,
                       mip_slice: UINT,
                       plane_slice: UINT)
