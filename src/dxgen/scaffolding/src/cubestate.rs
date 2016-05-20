@@ -4,7 +4,6 @@ use rand;
 use rand::Rng;
 use utils::v3;
 
-
 pub type V3 = Vector3<f32>;
 
 pub struct CubeState {

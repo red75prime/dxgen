@@ -138,9 +138,12 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
         sb
       |None ->
         let sb=new System.Text.StringBuilder()
-        let text=sprintf @"// Copyright © 2015; Dmitry Roschin
-// Licensed under the MIT License <LICENSE.md>
-//! Mappings for the contents of %s.h" (f.Substring(0,f.Length-3))
+        let text=sprintf @"// Copyright © 2016; Dmitry Roschin
+// Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
+// http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
+// http://opensource.org/licenses/MIT>, at your option. This file may not be
+// copied, modified, or distributed except according to those terms.
+//! Mappings for the content of %s.h" (f.Substring(0,f.Length-3))
         sb.AppendLine(text) |> ignore
         sb.AppendLine() |> ignore
         file2sb := Map.add f sb !file2sb
@@ -171,20 +174,20 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       ;"IUnknown"] 
 // ----------------- Create structs ----------------------------------
   let outputStructDef apl name ses uncopyable=
-    if uncopyable then
-      apl "#[repr(C)] #[derive(Copy)]"
-    else
-      apl "#[repr(C)] #[derive(Clone, Copy, Debug)]"
-    apl <| sprintf "pub struct %s {" name
+//    if uncopyable then
+//      apl "#[repr(C)] #[derive(Copy)]"
+//    else
+//      apl "#[repr(C)] #[derive(Clone, Copy, Debug)]"
+    apl <| sprintf "STRUCT!{struct %s {" name
     for (fname,fty) in ses |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |_-> raise <| new System.Exception("Bitfields aren't supported")) do
-      apl <| System.String.Format("    pub {0}: {1},", fname, tyToRustGlobal fty)
-    apl "}"
+      apl <| System.String.Format("    {0}: {1},", fname, tyToRustGlobal fty)
+    apl "}}"
     apl ""
-    if uncopyable then
-      apl <| sprintf "impl Clone for %s {" name
-      apl "    fn clone(&self) -> Self { *self }"
-      apl "}"
-      apl ""
+//    if uncopyable then
+//      apl <| sprintf "impl Clone for %s {" name
+//      apl "    fn clone(&self) -> Self { *self }"
+//      apl "}"
+//      apl ""
 
   let createStructs()=
     for (name,bas,sfields,(fname,_,_,_)) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields,bas),loc)) -> Some(name,bas,sfields,loc) |_ -> None) do

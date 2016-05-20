@@ -496,14 +496,24 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
                         (function 
                           |(pname, InOptionalArrayOfSize _,_)
                           |(pname, OutOptionalArrayOfSize _,_) -> 
-                            fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())"
+                            Choice1Of2 (fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())")
                           |(pname, InArrayOfSize _,_) |(pname, OutArrayOfSize _,_) |(pname, InComPtrArrayOfSize _,_) ->  
-                            fun m -> "Some("+(Map.find pname m)+".len())"
+                            Choice2Of2 (fun m -> (Map.find pname m)+".len()")
                           |_ -> raise <| new System.Exception("Unreachable")
                         )
           let init=
             fun m -> 
-              " same_length(&["+System.String.Join(",",plist |> List.map(fun f -> f m))+"]).expect(\"Arrays must have equal sizes\")"
+                match plist with
+                |[Choice1Of2 f] -> (f m)+".unwrap_or(0)"
+                |[Choice2Of2 f] -> f m
+                |_ -> 
+                    " same_length(&["+
+                        System.String.Join(",",
+                            plist |> List.map
+                                (function 
+                                    |Choice1Of2 f -> f m 
+                                    |Choice2Of2 f -> "Some("+(f m)+")")
+                        )+"]).expect(\"Arrays must have equal sizes\")"
           match pty with
           |Ptr((Primitive _) as uty) |Ptr((TypedefRef _) as uty) ->
             addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "let *"+safeParmName+" = "+(init m)+" as "+(tyToRust uty))
@@ -582,16 +592,23 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
                         (function 
                           |(pname, InOptionalArrayOfSize _,_)
                           |(pname, OutOptionalArrayOfSize _,_) -> 
-                            fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())"
+                            Choice1Of2 (fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())")
                           |(pname, InArrayOfSize _,_)
                           |(pname, InComPtrArrayOfSize _,_) ->  
-                            fun m -> "Some("+(Map.find pname m)+".len())"
+                            Choice2Of2 (fun m -> (Map.find pname m)+".len()")
                           |_ -> 
                             raise <| new System.Exception("Unreachable")
                         )
           let init=
             fun m -> 
-              " same_length(&["+System.String.Join(",",plist |> List.map(fun f -> f m))+"].expect(\"Arrays must have equal sizes\")"
+                match plist with
+                |[Choice1Of2 f] -> (f m)+".unwrap_or(0)"
+                |[Choice2Of2 f] -> f m
+                |_ -> 
+                    let wrap = function 
+                        |Choice1Of2 f -> f m 
+                        |Choice2Of2 f -> "Some("+(f m)+")"
+                    " same_length(&["+System.String.Join(",",plist |> List.map wrap)+"].expect(\"Arrays must have equal sizes\")"
           match pty with
           |Ptr((Primitive _) as uty) |Ptr((TypedefRef _) as uty) ->
             addSafeParmInit safeParmName (convertTypeToRustNoArray pty pannot) (fun m -> "let *"+safeParmName+" = "+(init m)+" as "+(tyToRust uty))
@@ -1070,31 +1087,38 @@ let safeInterfaceGen (header:string) allInterfaces noEnumConversion (types:Map<s
                 |IOSend -> "unsafe impl Send for "+iname+" {}\r\n" + s
                 |IOSync -> "unsafe impl Sync for "+iname+" {}\r\n" + s
             ) "" 
-        apl <| sprintf "\
-pub struct %s(*mut I%s);
-%s
-impl HasIID for %s {
-  fn iid() -> REFGUID { &IID_I%s }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { %s(pp_vtbl as *mut _ as *mut I%s) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-
-impl Drop for %s {
+        let (derive, implDropClone) = 
+            if bas="" then
+                // If interface doesn't have base class, then it means it's not COM-compliant
+                ("#[derive(Clone)]\r\n", "")
+            else
+                ("", "\
+impl Drop for "+iname+" {
   fn drop(&mut self) {
     release_com_ptr(self)
   }
 }
 
-impl Clone for %s {
+impl Clone for "+iname+" {
   fn clone(&self) -> Self {
     clone_com_ptr(self)
   }
 }
 
-impl %s {
-%s
-}
-"          iname iname implSend iname iname iname iname iname iname iname (generateMethods ("I"+iname) noEnumConversion methods1 |> indentBy "  ")
+"                   )
+        apl <| derive 
+        apl <| "pub struct "+iname+"(*mut I"+iname+");"
+        apl <| implSend
+        apl <| "impl HasIID for "+iname+" {"
+        apl <| "  fn iid() -> REFGUID { &IID_I"+iname+" }"
+        apl <| "  fn new(pp_vtbl : *mut IUnknown) -> Self { "+iname+"(pp_vtbl as *mut _ as *mut I"+iname+") }"
+        apl <| "  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}"
+        apl <| "}"
+        apl <| implDropClone
+        apl <| ""
+        apl <| "impl "+iname+" {"
+        apl <|   (generateMethods ("I"+iname) noEnumConversion methods1 |> indentBy "  ")
+        apl <| "}"
 
     (sb.ToString(), iamap, !dependencies)
   |None -> 

@@ -96,6 +96,29 @@ pub fn resource_desc_tex2d_nomip(width: u64,
     }
 }
 
+pub fn resource_desc_tex2darray_nomip(width: u64,
+                                 height: u32,
+				 array_size: u16,
+                                 format: DXGI_FORMAT,
+                                 flags: D3D12_RESOURCE_FLAGS)
+                                 -> D3D12_RESOURCE_DESC {
+    D3D12_RESOURCE_DESC {
+        Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+        Alignment: 0,
+        Width: width,
+        Height: height,
+        DepthOrArraySize: array_size,
+        MipLevels: 1,
+        Format: format,
+        SampleDesc: DXGI_SAMPLE_DESC {
+            Count: 1,
+            Quality: 0,
+        },
+        Layout: D3D12_TEXTURE_LAYOUT_UNKNOWN,
+        Flags: flags,
+    }
+}
+
 pub fn heap_properties_upload() -> D3D12_HEAP_PROPERTIES {
     D3D12_HEAP_PROPERTIES {
         Type: D3D12_HEAP_TYPE_UPLOAD,
@@ -477,6 +500,38 @@ pub fn srv_tex2d_default_slice_mip(format: DXGI_FORMAT,
                                0.0)
 }
 
+pub fn srv_tex2darray(format: DXGI_FORMAT,
+                                  four_comp_map: UINT,
+                                  most_det_mip: UINT,
+                                  mip_levels: UINT,
+                                  first_array_slice: UINT,
+                                  array_size: UINT,
+                                  plane_slice: UINT,
+                                  res_min_lod_clamp: f32)
+                                  -> D3D12_SHADER_RESOURCE_VIEW_DESC {
+    let mut ret = D3D12_SHADER_RESOURCE_VIEW_DESC {
+        Format: format,
+        ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2DARRAY,
+        Shader4ComponentMapping: four_comp_map,
+        u: unsafe { mem::uninitialized() },
+    };
+    unsafe {
+        *ret.Texture2DArray_mut() = D3D12_TEX2D_ARRAY_SRV {
+            MostDetailedMip: most_det_mip,
+            MipLevels: mip_levels,
+            FirstArraySlice: first_array_slice,
+            ArraySize: array_size,
+            PlaneSlice: plane_slice,
+            ResourceMinLODClamp: res_min_lod_clamp,
+        };
+    };
+    ret
+}
+
+pub fn srv_tex2darray_default(format : DXGI_FORMAT, array_size: u32) -> D3D12_SHADER_RESOURCE_VIEW_DESC {
+    srv_tex2darray(format, shader_4component_mapping(0, 1, 2, 3), 0, 1, 0, array_size, 0, 0.0)
+}
+
 pub fn uav_tex2d_desc(format: DXGI_FORMAT,
                       mip_slice: UINT,
                       plane_slice: UINT)
@@ -553,6 +608,19 @@ pub fn depth_stencil_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_DEPTH
     ret
 }
 
+pub fn depth_stencil_view_desc_tex2darray_default(format: DXGI_FORMAT, size: u32) -> D3D12_DEPTH_STENCIL_VIEW_DESC {
+    let mut ret = D3D12_DEPTH_STENCIL_VIEW_DESC {
+        Format: format,
+        ViewDimension: D3D12_DSV_DIMENSION_TEXTURE2DARRAY,
+        Flags: D3D12_DSV_FLAG_NONE,
+        u: unsafe { mem::uninitialized() },
+    };
+    unsafe {
+        *ret.Texture2DArray_mut() = D3D12_TEX2D_ARRAY_DSV { MipSlice: 0, FirstArraySlice: 0, ArraySize: size };
+    };
+    ret
+}
+
 pub fn render_target_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_RENDER_TARGET_VIEW_DESC {
     let mut ret = D3D12_RENDER_TARGET_VIEW_DESC {
         Format: format,
@@ -568,14 +636,14 @@ pub fn render_target_view_desc_tex2d_default(format: DXGI_FORMAT) -> D3D12_RENDE
     ret
 }
 
-pub fn depth_stencil_clear_value_depth_f32() -> D3D12_CLEAR_VALUE {
+pub fn depth_stencil_clear_value_depth_f32(clear_depth: f32) -> D3D12_CLEAR_VALUE {
     let mut ret = D3D12_CLEAR_VALUE {
         Format: DXGI_FORMAT_D32_FLOAT,
         u: unsafe { mem::uninitialized() },
     };
     unsafe {
         *ret.DepthStencil_mut() = D3D12_DEPTH_STENCIL_VALUE {
-            Depth: 1.0,
+            Depth: clear_depth,
             Stencil: 0,
         };
     };

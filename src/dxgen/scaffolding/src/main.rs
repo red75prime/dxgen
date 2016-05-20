@@ -1,5 +1,6 @@
 //#![feature(optin_builtin_traits)]
 //#![feature(clone_from_slice)]
+#![feature(question_mark)]
 
 //#[macro_use] extern crate gfx;
 #[macro_use] extern crate lazy_static;
@@ -36,6 +37,7 @@ mod camera;
 mod downsampler;
 mod tonemapper;
 mod plshadow;
+mod collision;
 mod cubestate;
 
 

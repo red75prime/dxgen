@@ -9,6 +9,7 @@ pub struct GPUCPUTimestamp {
   pub gpu_timestamp : UINT64,
 }
 
+
 pub struct D3D12CommandAllocator(*mut ID3D12CommandAllocator);
 unsafe impl Sync for D3D12CommandAllocator {}
 unsafe impl Send for D3D12CommandAllocator {}
@@ -18,7 +19,6 @@ impl HasIID for D3D12CommandAllocator {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12CommandAllocator(pp_vtbl as *mut _ as *mut ID3D12CommandAllocator) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12CommandAllocator {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -30,6 +30,8 @@ impl Clone for D3D12CommandAllocator {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12CommandAllocator {
   //  Method GetPrivateData
@@ -87,7 +89,6 @@ impl HasIID for D3D12CommandList {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12CommandList(pp_vtbl as *mut _ as *mut ID3D12CommandList) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12CommandList {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -99,6 +100,8 @@ impl Clone for D3D12CommandList {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12CommandList {
   //  Method GetPrivateData
@@ -156,7 +159,6 @@ impl HasIID for D3D12CommandQueue {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12CommandQueue(pp_vtbl as *mut _ as *mut ID3D12CommandQueue) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12CommandQueue {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -168,6 +170,8 @@ impl Clone for D3D12CommandQueue {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12CommandQueue {
   //  Method GetPrivateData
@@ -229,7 +233,7 @@ impl D3D12CommandQueue {
   #[allow(non_snake_case)]
   pub fn execute_command_lists<T: HasIID>(&self, command_lists: &[&T]) -> () {
     let mut lv1: Vec<*mut IUnknown> = command_lists.iter().map(|o|o.iptr()).collect();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandQueue)).ExecuteCommandLists( same_length(&[Some(command_lists.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandQueue)).ExecuteCommandLists(command_lists.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     ()
   }
   
@@ -288,7 +292,6 @@ impl HasIID for D3D12CommandSignature {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12CommandSignature(pp_vtbl as *mut _ as *mut ID3D12CommandSignature) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12CommandSignature {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -300,6 +303,8 @@ impl Clone for D3D12CommandSignature {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12CommandSignature {
   //  Method GetPrivateData
@@ -349,7 +354,6 @@ impl HasIID for D3D12DescriptorHeap {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12DescriptorHeap(pp_vtbl as *mut _ as *mut ID3D12DescriptorHeap) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12DescriptorHeap {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -361,6 +365,8 @@ impl Clone for D3D12DescriptorHeap {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12DescriptorHeap {
   //  Method GetPrivateData
@@ -436,7 +442,6 @@ impl HasIID for D3D12DeviceChild {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12DeviceChild(pp_vtbl as *mut _ as *mut ID3D12DeviceChild) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12DeviceChild {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -448,6 +453,8 @@ impl Clone for D3D12DeviceChild {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12DeviceChild {
   //  Method GetPrivateData
@@ -496,7 +503,6 @@ impl HasIID for D3D12Device {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Device(pp_vtbl as *mut _ as *mut ID3D12Device) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12Device {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -508,6 +514,8 @@ impl Clone for D3D12Device {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12Device {
   //  Method GetPrivateData
@@ -752,7 +760,7 @@ impl D3D12Device {
   #[allow(non_snake_case)]
   pub fn get_resource_allocation_info(&self, visibleMask: UINT, resource_descs: &[D3D12_RESOURCE_DESC]) -> D3D12_RESOURCE_ALLOCATION_INFO {
     let mut lv1: D3D12_RESOURCE_ALLOCATION_INFO = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).GetResourceAllocationInfo(visibleMask,  same_length(&[Some(resource_descs.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(resource_descs), &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).GetResourceAllocationInfo(visibleMask, resource_descs.len() as UINT, slice_as_ptr(resource_descs), &mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
@@ -835,7 +843,7 @@ impl D3D12Device {
   #[allow(non_snake_case)]
   pub fn make_resident<T: HasIID>(&self, objects: &[&T]) -> HResult<HRESULT> {
     let mut lv1: Vec<*mut IUnknown> = objects.iter().map(|o|o.iptr()).collect();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).MakeResident( same_length(&[Some(objects.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).MakeResident(objects.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     hr2ret(_hr,_hr)
   }
   
@@ -844,7 +852,7 @@ impl D3D12Device {
   #[allow(non_snake_case)]
   pub fn evict<T: HasIID>(&self, objects: &[&T]) -> HResult<HRESULT> {
     let mut lv1: Vec<*mut IUnknown> = objects.iter().map(|o|o.iptr()).collect();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).Evict( same_length(&[Some(objects.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).Evict(objects.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     hr2ret(_hr,_hr)
   }
   
@@ -931,7 +939,6 @@ impl HasIID for D3D12Fence {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Fence(pp_vtbl as *mut _ as *mut ID3D12Fence) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12Fence {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -943,6 +950,8 @@ impl Clone for D3D12Fence {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12Fence {
   //  Method GetPrivateData
@@ -1020,7 +1029,6 @@ impl HasIID for D3D12GraphicsCommandList {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12GraphicsCommandList(pp_vtbl as *mut _ as *mut ID3D12GraphicsCommandList) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12GraphicsCommandList {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1032,6 +1040,8 @@ impl Clone for D3D12GraphicsCommandList {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12GraphicsCommandList {
   //  Method GetPrivateData
@@ -1192,7 +1202,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn rs_set_viewports(&self, viewports: &[D3D12_VIEWPORT]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).RSSetViewports( same_length(&[Some(viewports.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(viewports)) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).RSSetViewports(viewports.len() as UINT, slice_as_ptr(viewports)) };
     ()
   }
   
@@ -1201,7 +1211,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn rs_set_scissor_rects(&self, rects: &[D3D12_RECT]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).RSSetScissorRects( same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(rects)) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).RSSetScissorRects(rects.len() as UINT, slice_as_ptr(rects)) };
     ()
   }
   
@@ -1237,7 +1247,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn resource_barrier(&self, barriers: &[D3D12_RESOURCE_BARRIER]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ResourceBarrier( same_length(&[Some(barriers.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(barriers)) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ResourceBarrier(barriers.len() as UINT, slice_as_ptr(barriers)) };
     ()
   }
   
@@ -1255,7 +1265,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn set_descriptor_heaps<T: HasIID>(&self, descriptor_heaps: &[&T]) -> () {
     let mut lv1: Vec<*mut IUnknown> = descriptor_heaps.iter().map(|o|o.iptr()).collect();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetDescriptorHeaps( same_length(&[Some(descriptor_heaps.len())]).expect("Arrays must have equal sizes") as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetDescriptorHeaps(descriptor_heaps.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     ()
   }
   
@@ -1399,7 +1409,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn ia_set_vertex_buffers(&self, start_slot: UINT, views: Option<&[D3D12_VERTEX_BUFFER_VIEW]>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).IASetVertexBuffers(start_slot,  same_length(&[views.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_ptr(&views) as *const _) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).IASetVertexBuffers(start_slot, views.as_ref().map(|a|a.len()).unwrap_or(0) as UINT, opt_arr_as_ptr(&views) as *const _) };
     ()
   }
   
@@ -1408,7 +1418,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn so_set_targets(&self, start_slot: UINT, views: Option<&[D3D12_STREAM_OUTPUT_BUFFER_VIEW]>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SOSetTargets(start_slot,  same_length(&[views.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_ptr(&views) as *const _) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SOSetTargets(start_slot, views.as_ref().map(|a|a.len()).unwrap_or(0) as UINT, opt_arr_as_ptr(&views) as *const _) };
     ()
   }
   
@@ -1425,7 +1435,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn om_set_render_targets_arr(&self, render_target_descriptors: &[D3D12_CPU_DESCRIPTOR_HANDLE], depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).OMSetRenderTargets( same_length(&[Some(render_target_descriptors.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(render_target_descriptors), FALSE, depth_stencil_descriptor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).OMSetRenderTargets(render_target_descriptors.len() as UINT, slice_as_ptr(render_target_descriptors), FALSE, depth_stencil_descriptor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     ()
   }
   
@@ -1434,7 +1444,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn clear_depth_stencil_view(&self, depth_stencil_view: D3D12_CPU_DESCRIPTOR_HANDLE, clear_flags: D3D12_CLEAR_FLAGS, depth: FLOAT, stencil: UINT8, rects: &[D3D12_RECT]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearDepthStencilView(depth_stencil_view, clear_flags, depth, stencil,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(rects)) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearDepthStencilView(depth_stencil_view, clear_flags, depth, stencil, rects.len() as UINT, slice_as_ptr(rects)) };
     ()
   }
   
@@ -1443,7 +1453,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn clear_render_target_view(&self, render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE, color_r_g_b_a: &[FLOAT;4], rects: &[D3D12_RECT]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearRenderTargetView(render_target_view, color_r_g_b_a,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(rects)) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearRenderTargetView(render_target_view, color_r_g_b_a, rects.len() as UINT, slice_as_ptr(rects)) };
     ()
   }
   
@@ -1452,7 +1462,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn clear_unordered_access_view_uint<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[UINT;4], rects: &[D3D12_RECT]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearUnorderedAccessViewUint(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(rects)) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearUnorderedAccessViewUint(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values, rects.len() as UINT, slice_as_ptr(rects)) };
     ()
   }
   
@@ -1461,7 +1471,7 @@ impl D3D12GraphicsCommandList {
   #[allow(non_snake_case)]
   pub fn clear_unordered_access_view_float<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[FLOAT;4], rects: &[D3D12_RECT]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearUnorderedAccessViewFloat(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values,  same_length(&[Some(rects.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(rects)) };
+    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearUnorderedAccessViewFloat(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values, rects.len() as UINT, slice_as_ptr(rects)) };
     ()
   }
   
@@ -1529,7 +1539,6 @@ impl HasIID for D3D12Heap {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Heap(pp_vtbl as *mut _ as *mut ID3D12Heap) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12Heap {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1541,6 +1550,8 @@ impl Clone for D3D12Heap {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12Heap {
   //  Method GetPrivateData
@@ -1598,7 +1609,6 @@ impl HasIID for D3D12Object {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Object(pp_vtbl as *mut _ as *mut ID3D12Object) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12Object {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1610,6 +1620,8 @@ impl Clone for D3D12Object {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12Object {
   //  Method GetPrivateData
@@ -1649,7 +1661,6 @@ impl HasIID for D3D12Pageable {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Pageable(pp_vtbl as *mut _ as *mut ID3D12Pageable) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12Pageable {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1661,6 +1672,8 @@ impl Clone for D3D12Pageable {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12Pageable {
   //  Method GetPrivateData
@@ -1710,7 +1723,6 @@ impl HasIID for D3D12PipelineState {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12PipelineState(pp_vtbl as *mut _ as *mut ID3D12PipelineState) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12PipelineState {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1722,6 +1734,8 @@ impl Clone for D3D12PipelineState {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12PipelineState {
   //  Method GetPrivateData
@@ -1770,7 +1784,6 @@ impl HasIID for D3D12QueryHeap {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12QueryHeap(pp_vtbl as *mut _ as *mut ID3D12QueryHeap) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12QueryHeap {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1782,6 +1795,8 @@ impl Clone for D3D12QueryHeap {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12QueryHeap {
   //  Method GetPrivateData
@@ -1832,7 +1847,6 @@ impl HasIID for D3D12Resource {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Resource(pp_vtbl as *mut _ as *mut ID3D12Resource) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12Resource {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1844,6 +1858,8 @@ impl Clone for D3D12Resource {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12Resource {
   //  Method GetPrivateData
@@ -1946,7 +1962,6 @@ impl HasIID for D3D12RootSignatureDeserializer {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12RootSignatureDeserializer(pp_vtbl as *mut _ as *mut ID3D12RootSignatureDeserializer) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12RootSignatureDeserializer {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1958,6 +1973,8 @@ impl Clone for D3D12RootSignatureDeserializer {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12RootSignatureDeserializer {
   //  Method GetRootSignatureDesc
@@ -1980,7 +1997,6 @@ impl HasIID for D3D12RootSignature {
   fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12RootSignature(pp_vtbl as *mut _ as *mut ID3D12RootSignature) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for D3D12RootSignature {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1992,6 +2008,8 @@ impl Clone for D3D12RootSignature {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl D3D12RootSignature {
   //  Method GetPrivateData
@@ -2032,4 +2050,3 @@ impl D3D12RootSignature {
   
   
 }
-

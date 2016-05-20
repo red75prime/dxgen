@@ -10,8 +10,8 @@ use std::marker::PhantomData;
 // Point Light Shadow
 // The name isn't quite correct. This module just fills depth cubemap.
 pub struct PLShadow<T: VertexFormat> {
-    pso: D3D12PipelineState,
-    root_sig: D3D12RootSignature,
+    pub pso: D3D12PipelineState,
+    pub root_sig: D3D12RootSignature,
     luid: Luid,
     _phd: PhantomData<T>,
 }
@@ -75,7 +75,4 @@ impl<T: VertexFormat> PLShadow<T> {
         })
     }
 
-    pub fn fill_cubemap(core: &DXCore, cubemap: &D3D12Resource) -> HResult<()> {
-        Ok(())
-    }
 }

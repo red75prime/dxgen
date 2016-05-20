@@ -105,12 +105,13 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     seq {
        yield "-x"
        yield "c++"
+       yield "-std=c++11"
        yield "--target="+target
        yield "-fms-extensions"
        yield "-fms-compatibility"
        yield "-Wno-ignored-attributes"
        yield "-Wno-microsoft"
-       yield! includePaths |> Seq.map (fun p -> "-I"+p)
+       yield! includePaths |> Seq.map (fun p -> "-I\""+p+"\"")
     } |> Array.ofSeq
   let index = createIndex(0, 1)
 
@@ -237,17 +238,19 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
     let fields=ref []
     let bas = ref ""
-    let itIsClass = ref false
+    let itIsAClass = ref false
     let parseFieldDecl cursor _ _=
       let ckind=getCursorKind cursor
-      //printfn "    %A %s" ckind (getCursorDisplayNameFS cursor)
+      //printfn "    %s: %A %s" structName ckind (getCursorDisplayNameFS cursor)
       if ckind=CursorKind.CxxBaseSpecifier then
-        itIsClass := true // crude. TODO: something
+        itIsAClass := true // crude. TODO: something
         let basename = getCursorDisplayNameFS cursor
         if basename.StartsWith("struct ") then
           bas := basename.Substring(7)
         else 
-          raise <| new System.Exception("Base specifier is not struct")
+            //printfn "Warning: expected C++ base specifier in the form 'struct XXX', found '%s'" basename
+            bas := basename
+            //raise <| new System.Exception("Base specifier is not struct: "+basename)
       if ckind=CursorKind.FieldDecl then
           let ctype=getCursorType cursor
           let nm=getCursorDisplayNameFS cursor
@@ -262,6 +265,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
           fields := CStructElem(nm, ty, bw) :: !fields
       else if ckind=CursorKind.CxxMethod then
+          itIsAClass := true
           let nm=getCursorSpellingFS cursor
           if isPureVirtualFS cursor then
             let ctype=getCursorType cursor
@@ -276,13 +280,14 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             printfn "Skipping non pure virtual %s::%s" structName nm
       else if ckind=CursorKind.UnionDecl then
         fields := CStructElem("", parseUnion cursor, None) :: !fields
-      else if ckind=CursorKind.FirstAttr then
-        let tokens = tokenizeFS cursor
-        let what = getCursorSpellingFS cursor
-        printf "%s" what
+      else if ckind=CursorKind.UnexposedAttr then
+        //let tokens = tokenizeFS cursor
+        //let what = getCursorSpellingFS cursor
+        //printfn "      Attribute: %s %A" what tokens
+        ()
       ChildVisitResult.Continue
     visitChildrenFS cursor parseFieldDecl () |> ignore
-    (Struct(List.rev !fields, !bas), !itIsClass)
+    (Struct(List.rev !fields, !bas), !itIsAClass)
   
   let parseMacro (cursor:Cursor) locInfo =
     // incomplete pattern matches warning is ok
@@ -344,8 +349,8 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
         if cursorKind=CursorKind.StructDecl then
           let structName=cursor |> getCursorDisplayNameFS
           // Incomplete pattern matches warning is ok
-          let (Struct(ses, bas) as strct, itIsClass) = parseStruct cursor structName
-          if itIsClass then
+          let (Struct(ses, bas) as strct, itIsAClass) = parseStruct cursor structName
+          if itIsAClass then
             // Transform class into struct and vtable
             let vtblName = structName+"Vtbl"
 

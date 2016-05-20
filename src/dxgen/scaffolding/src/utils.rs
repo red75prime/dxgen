@@ -187,7 +187,7 @@ pub fn create_depth_stencil(dev: &D3D12Device,
                                                     D3D12_HEAP_FLAG_NONE,
                                                     &ds_desc,
                                                     D3D12_RESOURCE_STATE_DEPTH_WRITE,
-                                                    Some(&depth_stencil_clear_value_depth_f32()))
+                                                    Some(&depth_stencil_clear_value_depth_f32(1.0)))
                          .map_err(|hr| {
                              error!("create_commited_resource failed with 0x{:x}", hr);
                              hr
