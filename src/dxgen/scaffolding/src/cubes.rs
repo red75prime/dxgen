@@ -87,8 +87,8 @@ pub struct CubeParms {
     pub rt_format: DXGI_FORMAT,
 }
 
-static CLEAR_COLOR: [f32; 4] = [0.005, 0.005, 0.01, 1.0];
-const SHADOW_MAP_SIZE: u32 = 1024;
+static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.02, 1.0];
+const SHADOW_MAP_SIZE: u32 = 2048;
 
 pub fn create_hdr_render_target
     (dev: &D3D12Device, tonemapper: &Tonemapper,
@@ -356,14 +356,14 @@ impl FrameResources {
         trace!("Create tm_fence");
         let tm_fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
 
-        let srv_heap = try!(DescriptorHeap::new(dev, 4, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+        let srv_heap = try!(DescriptorHeap::new(dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
 
         let i_buffer_size = mem::size_of::<InstanceData>() * parameters.object_count as usize;
         trace!("Create ir_buffer");
         let ir_buffer = try!(dev.create_committed_resource(&heap_properties_default(),
                                                           D3D12_HEAP_FLAG_NONE,
                                                           &resource_desc_buffer(i_buffer_size as u64),
-                                                          D3D12_RESOURCE_STATE_COMMON,
+                                                          D3D12_RESOURCE_STATE_GENERIC_READ,
                                                           None));
         try!(ir_buffer.set_name("Instance data buffer".into()));
 
@@ -404,14 +404,14 @@ impl FrameResources {
             &mut *(ptr as *mut Constants)
         };
 
-        trace!("Create instance buffer resource view");
-        let inst_desc = srv_buffer(object_cnt as u32, mem::size_of::<InstanceData>() as u32);
-        dev.create_shader_resource_view(Some(&ir_buffer), Some(&inst_desc), srv_heap.cpu_handle(1));
+//        trace!("Create instance buffer resource view");
+//        let inst_desc = srv_buffer(object_cnt as u32, mem::size_of::<InstanceData>() as u32);
+//        dev.create_shader_resource_view(Some(&ir_buffer), Some(&inst_desc), srv_heap.cpu_handle(1));
         let gpu_cbuf_ptr = c_buffer.get_gpu_virtual_address();
         debug!("c_buffer GPU VA:0x{:x}", c_buffer.get_gpu_virtual_address());
-        core.dump_info_queue_tagged("Before create_constant_buffer_view"); 
-        dev.create_constant_buffer_view(Some(&cbv_desc(gpu_cbuf_ptr, c_buffer_size)), srv_heap.cpu_handle(2));
-        core.dump_info_queue_tagged("After create_constant_buffer_view"); 
+//        core.dump_info_queue_tagged("Before create_constant_buffer_view"); 
+//        dev.create_constant_buffer_view(Some(&cbv_desc(gpu_cbuf_ptr, c_buffer_size)), srv_heap.cpu_handle(2));
+//        core.dump_info_queue_tagged("After create_constant_buffer_view"); 
 
         trace!("Create depth stencil descriptor heap");
         let dsd_heap = try!(DescriptorHeap::new(dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false, 0));
@@ -444,7 +444,7 @@ impl FrameResources {
         dev.create_depth_stencil_view(Some(&shadow_map), Some(&shadow_desc), dsd_heap.cpu_handle(1));
         debug!("Shadow shader resource view");
         let shadow_srv_desc = srv_texcube_default(DXGI_FORMAT_R32_FLOAT); //srv_tex2darray_default(DXGI_FORMAT_R32_FLOAT, 6);
-        dev.create_shader_resource_view(Some(&shadow_map), Some(&shadow_srv_desc), srv_heap.cpu_handle(3));
+        dev.create_shader_resource_view(Some(&shadow_map), Some(&shadow_srv_desc), srv_heap.cpu_handle(1));
 
         trace!("Create HDR render target");
         let (hdr_render_target, hdr_rtv_heap, tonemapper_resources) =
@@ -538,13 +538,13 @@ impl FrameResources {
             &[*ResourceBarrier::transition(&self.hdr_render_target,
                D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET),
               *ResourceBarrier::transition(&self.ir_buffer,
-               D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST)]);
+               D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST)]);
 	// Copy instance data buffer i_buffer located in UPLOAD heap 
 	// into instance data buffer ir_buffer located in DEFAULT heap
         glist.copy_resource(&self.ir_buffer, &self.i_buffer);
         glist.resource_barrier(
             &[*ResourceBarrier::transition(&self.ir_buffer,
-               D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE)]);
+               D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ)]);
 
         // ----------------  SHADOW PASS START ------------------------------------
         //cr.plshadow.fill_command_list(core, &glist, &self.dsd_heap, );
@@ -591,7 +591,9 @@ impl FrameResources {
         glist.set_pipeline_state(&cr.pipeline_state);
         glist.set_graphics_root_signature(&cr.root_signature);
         core.dump_info_queue_tagged("After set_graphics_root_signature"); 
-        glist.set_graphics_root_descriptor_table(0, self.srv_heap.gpu_handle(0));
+        glist.set_graphics_root_shader_resource_view(0, self.ir_buffer.get_gpu_virtual_address());
+        glist.set_graphics_root_constant_buffer_view(1, self.c_buffer.get_gpu_virtual_address());
+        glist.set_graphics_root_descriptor_table(2, self.srv_heap.gpu_handle(0));
         core.dump_info_queue_tagged("After set_graphics_root_descriptor_table"); 
         //glist.set_graphics_root_constant_buffer_view(0, gpu_cbuf_ptr);
         // When working over RDP after window resizing debug layer complains 
@@ -613,9 +615,7 @@ impl FrameResources {
             &[*ResourceBarrier::transition(&self.hdr_render_target,
                 D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON),
               *ResourceBarrier::transition(&self.shadow_map,
-                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE),
-              *ResourceBarrier::transition(&self.ir_buffer,
-               D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON)]);
+                D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE)]);
         if cfg!(debug_assertions) { trace!("cubes glist.close") };
         try!(glist.close());
         ::perf_end("listfill");

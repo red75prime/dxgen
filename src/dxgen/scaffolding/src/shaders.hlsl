@@ -1,5 +1,7 @@
 #define RSD "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
-            "DescriptorTable(SRV(t0), SRV(t1), CBV(b0), SRV(t2), visibility=SHADER_VISIBILITY_ALL)," \
+            "SRV(t1)," \
+            "CBV(b0)," \
+            "DescriptorTable(SRV(t0), SRV(t2))," \
             "StaticSampler(s0)," \
             "StaticSampler(s1, filter=FILTER_MIN_MAG_MIP_POINT)"
 
@@ -99,7 +101,7 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   float3 light_off = light_pos - pv.w_pos;
   //float shadowDist = sampleCubemap(shadowMap, -light_off);
   float shadowDist = k2/(shadowMapCube.Sample(pointSamp, -light_off).r-k1);
-  float4 ambientTerm = texel*float4(0.01,0.01,0.15,1);
+  float4 ambientTerm = float4(texel.rgb*(float3(0.01,0.01,0.02)+float3(0.05,0.07,0.05)/(1+length(light_off)/10)),1);
   if (shadowDist < mlen(light_off)) {
     return ambientTerm;
   }
