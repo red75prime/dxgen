@@ -1,4 +1,4 @@
-#define RSD "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT),CBV(b0),SRV(t0)"
+#define RSD "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | ALLOW_STREAM_OUTPUT),CBV(b0),SRV(t0)"
 
 cbuffer cb0 : register(b0) {
   float4x4 view;

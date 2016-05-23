@@ -39,7 +39,7 @@ mod tonemapper;
 mod plshadow;
 mod collision;
 mod cubestate;
-
+mod light;
 
 use winapi::*;
 use dx_safe::*;
@@ -91,6 +91,9 @@ fn main() {
       // Note, that 2 in arg[2..] is a number of bytes, not characters. 
       if let Ok(n) = (&arg[2..]).parse::<u32>() {
         parms.object_count = n;
+      } else {
+        println!("Object count in -o should be integer: '{}'", arg);
+        ::std::process::exit(1);
       }
     } else if arg.starts_with("-t") {
       // Command line parameter -t<N> sets number of threads and graphics command lists
@@ -104,7 +107,8 @@ fn main() {
         parms.speed_mult = s;
       }
     } else {
-        panic!("Unrecognized option: {}", arg);
+        println!("Unrecognized option: {}", arg);
+        ::std::process::exit(2);
     }
   }
 

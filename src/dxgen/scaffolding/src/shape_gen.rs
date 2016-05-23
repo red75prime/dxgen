@@ -48,7 +48,6 @@ pub fn cube_indexed<V: GenVertex>(sz: f32) -> (Vec<V>, Vec<u32>) {
     (v3(0.,1.,0.), v3(0.,0.,1.)),
     (v3(0.,-1.,0.), v3(0.,0.,1.)),
   ];
-    // TODO: pass by value, when cgmath allows it
     for &(n, up) in facevecs.iter() {
         let rt = Vector3::cross(up, n);
         let p1 = n.sub_v(up).sub_v(rt).mul_s(sz);
