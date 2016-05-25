@@ -50,7 +50,7 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
     // y,z  +x
     outval.face = 0;
     for (uint i = 0; i < 3; i++) {
-      outval.pos = float4(input[i].pos.yz, input[i].pos.x*k1+k2, input[i].pos.x); //input[i].pos.x, input[i].pos.x);
+      outval.pos = float4(-input[i].pos.z, input[i].pos.y, input[i].pos.x*k1+k2, input[i].pos.x); //input[i].pos.x, input[i].pos.x);
       outstream.Append(outval);
     }
     outstream.RestartStrip();
@@ -59,7 +59,7 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
     // y,z  -x
     outval.face = 1;
     for (uint i = 0; i < 3; i++) {
-      outval.pos = float4(input[i].pos.yz, -input[i].pos.x*k1+k2, -input[i].pos.x);
+      outval.pos = float4(input[i].pos.z, input[i].pos.y, -input[i].pos.x*k1+k2, -input[i].pos.x);
       outstream.Append(outval);
     }
     outstream.RestartStrip();
@@ -68,7 +68,7 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
     // x, z  +y
     outval.face = 2;
     for (uint i = 0; i < 3; i++) {
-      outval.pos = float4(input[i].pos.xz, input[i].pos.y*k1+k2, input[i].pos.y);
+      outval.pos = float4(input[i].pos.x, -input[i].pos.z, input[i].pos.y*k1+k2, input[i].pos.y);
       outstream.Append(outval);
     }
     outstream.RestartStrip();
@@ -86,7 +86,7 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
     // x, y  +z
     outval.face = 4;
     for (uint i = 0; i < 3; i++) {
-      outval.pos = float4(input[i].pos.xy, input[i].pos.z*k1+k2, input[i].pos.z);
+      outval.pos = float4(input[i].pos.x, input[i].pos.y, input[i].pos.z*k1+k2, input[i].pos.z);
       outstream.Append(outval);
     }
     outstream.RestartStrip();
@@ -95,7 +95,7 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
     // x, y  -z
     outval.face = 5;
     for (uint i = 0; i < 3; i++) {
-      outval.pos = float4(input[i].pos.xy, -input[i].pos.z*k1+k2, -input[i].pos.z);
+      outval.pos = float4(-input[i].pos.x, input[i].pos.y, -input[i].pos.z*k1+k2, -input[i].pos.z);
       outstream.Append(outval);
     }
     outstream.RestartStrip();
