@@ -28,7 +28,7 @@ struct VS_OUTPUT
 VS_OUTPUT VSMain(uint vtx: SV_VertexID) {
   VS_OUTPUT ret;
   // Instancing isn't used for now. Number of instances is 1.
-  ret.pos = float4(coords[indices[vtx].crd] + light_pos, 1);
+  ret.pos = float4(coords[indices[vtx].crd]/10 + light_pos, 1);
   ret.pos = mul(ret.pos, view);
   ret.pos = mul(ret.pos, proj);
 
