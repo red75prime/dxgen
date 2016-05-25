@@ -158,3 +158,6 @@ $RECYCLE.BIN/
 
 # Mac desktop service store files
 .DS_Store
+
+# Enable obj files in scaffolding source
+!src/dxgen/scaffolding/src/*.obj

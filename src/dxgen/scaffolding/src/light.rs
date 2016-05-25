@@ -117,6 +117,8 @@ fn sphere<P: AsRef<Path>>(path: P) -> (Vec<V3>, Vec<V3>, Vec<ShaderIndices>) {
 #[test]
 fn sphere_test() {
   let path = ::std::env::current_exe().unwrap().parent().unwrap().join("../../src/sphere.obj");
-  let (pos,_,_) = sphere(&path);
+  let (pos,nrm,idx) = sphere(&path);
   assert_eq!(pos.len(), 362);
+  assert_eq!(nrm.len(), 362);
+  assert_eq!(idx.len(), 2160);
 }
