@@ -40,13 +40,44 @@ struct PS_IN {
 
 #include "shadow_constants.hlsl"
 
+// index of cube face vector points to
+int cube_face(float3 v) {
+  float3 va = abs(v);
+  if (va.x>=va.y && va.x>=va.z) {
+      // x - max
+      return v.x>0 ? 0 : 1;
+  } else if (va.y>=va.x && va.y>=va.z) {
+      // y - max
+      return v.y>0 ? 2 : 3;
+  } else {
+      // z - max
+      return v.z>0 ? 4 : 5;
+  }
+}
+
 [RootSignature(RSD)]
 [maxvertexcount(18)]
 void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) {
   // Ok. We have triangle in light-centric coordinates. 
   // Let's replicate them onto appropriate cube sides.
+  int3 faces = int3(cube_face(input[0].pos.xyz),cube_face(input[1].pos.xyz),cube_face(input[2].pos.xyz));
+  int oneface = 6;
+  if (all(faces == int3(0, 0, 0))) {
+    oneface = 0;
+  } else if (all(faces == int3(1, 1, 1))) {
+    oneface = 1;
+  } else if (all(faces == int3(2, 2, 2))) {
+    oneface = 2;
+  } else if (all(faces == int3(3, 3, 3))) {
+    oneface = 3;
+  } else if (all(faces == int3(4, 4, 4))) {
+    oneface = 4;
+  } else if (all(faces == int3(5, 5, 5))) {
+    oneface = 5;
+  };
+
   PS_IN outval;
-  {
+  if (oneface == 0 || oneface == 6) {
     // y,z  +x
     outval.face = 0;
     for (uint i = 0; i < 3; i++) {
@@ -55,7 +86,7 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
     }
     outstream.RestartStrip();
   }
-  {
+  if (oneface == 1 || oneface == 6) {
     // y,z  -x
     outval.face = 1;
     for (uint i = 0; i < 3; i++) {
@@ -64,7 +95,7 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
     }
     outstream.RestartStrip();
   }
-  {
+  if (oneface == 2 || oneface == 6) {
     // x, z  +y
     outval.face = 2;
     for (uint i = 0; i < 3; i++) {
@@ -73,7 +104,7 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
     }
     outstream.RestartStrip();
   }
-  {
+  if (oneface == 3 || oneface == 6) {
     // x, z  -y
     outval.face = 3;
     for (uint i = 0; i < 3; i++) {
@@ -82,7 +113,7 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
     }
     outstream.RestartStrip();
   }
-  {
+  if (oneface == 4 || oneface == 6) {
     // x, y  +z
     outval.face = 4;
     for (uint i = 0; i < 3; i++) {
@@ -91,7 +122,7 @@ void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) 
     }
     outstream.RestartStrip();
   }
-  {
+  if (oneface == 5 || oneface == 6) {
     // x, y  -z
     outval.face = 5;
     for (uint i = 0; i < 3; i++) {
