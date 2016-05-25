@@ -22,10 +22,12 @@ pub struct LightSource {
 impl LightSource {
     pub fn new(dev: &D3D12Device, rt_format: DXGI_FORMAT) -> HResult<LightSource> {
         let mut vshader_bc = vec![];
+        let mut pshader_bc = vec![];
         let mut rsig_bc = vec![];
         trace!("Compiling 'light.hlsl'...");
         match create_device::compile_shaders("light.hlsl",&mut[
                     ("VSMain", "vs_5_0", &mut vshader_bc),
+                    ("PSMain", "ps_5_0", &mut pshader_bc),
                     ("RSD", "rootsig_1_0", &mut rsig_bc),
                 ], D3DCOMPILE_OPTIMIZATION_LEVEL3) {
             Err(err) => {
@@ -43,12 +45,9 @@ impl LightSource {
         let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
             pRootSignature: root_sig.iptr() as *mut _,
             VS: ShaderBytecode::from_vec(&vshader_bc).get(),
+            PS: ShaderBytecode::from_vec(&pshader_bc).get(),
             RasterizerState: D3D12_RASTERIZER_DESC {
                 ..rasterizer_desc_default()
-            },
-            InputLayout: D3D12_INPUT_LAYOUT_DESC {
-                pInputElementDescs: ::std::ptr::null(),
-                NumElements: 0,
             },
             PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
             NumRenderTargets: 1, 
@@ -72,14 +71,73 @@ impl LightSource {
 pub struct LightSourceResources {
     crd_buffer: D3D12Resource, // vertex coordinates
     nrm_buffer: D3D12Resource, // vertex normals
-    tcr_buffer: D3D12Resource, // vertex texture coordinates
+//    tcr_buffer: D3D12Resource, // vertex texture coordinates
     idx_buffer: D3D12Resource, // indices into buffers
-    ins_buffer: D3D12Resource, // instance data
+    idx_cnt: usize,
 }
 
 impl LightSourceResources {
-    pub fn new(core: &DXCore) -> LightSourceResources {
-        panic!("Not implemented");
+    pub fn new(dev: &D3D12Device) -> HResult<LightSourceResources> {
+        trace!("LightSourceResources new");
+        trace!("Load 'sphere.obj'");
+        let (crd, nrm, idx) = sphere("sphere.obj");
+        
+        // TODO: I need typed D3D12Resource
+        let buf_size = ::std::mem::size_of::<[f32;3]>() * crd.len();
+        trace!("Create coordinates buffer");
+        let crd_buffer = try!(dev.create_committed_resource(
+                                  &heap_properties_upload(),
+                                  D3D12_HEAP_FLAG_NONE,
+                                  &resource_desc_buffer(buf_size as u64),
+                                  D3D12_RESOURCE_STATE_GENERIC_READ, // Must be GENERIC_READ for upload heap
+                                  None));
+        try!(crd_buffer.set_name("Light source coordinates buffer".into()));
+        try!(utils::upload_into_buffer(&crd_buffer, &crd[..]));
+
+        let buf_size = ::std::mem::size_of::<[f32;3]>() * nrm.len();
+        trace!("Create normals buffer");
+        let nrm_buffer = try!(dev.create_committed_resource(
+                                  &heap_properties_upload(),
+                                  D3D12_HEAP_FLAG_NONE,
+                                  &resource_desc_buffer(buf_size as u64),
+                                  D3D12_RESOURCE_STATE_GENERIC_READ, // Must be GENERIC_READ for upload heap
+                                  None));
+        try!(nrm_buffer.set_name("Light source normals buffer".into()));
+        try!(utils::upload_into_buffer(&nrm_buffer, &nrm[..]));
+        
+        let idx_cnt = idx.len();
+        let buf_size = ::std::mem::size_of::<ShaderIndices>() * idx_cnt;
+        trace!("Create indices buffer");
+        let idx_buffer = try!(dev.create_committed_resource(
+                                  &heap_properties_upload(),
+                                  D3D12_HEAP_FLAG_NONE,
+                                  &resource_desc_buffer(buf_size as u64),
+                                  D3D12_RESOURCE_STATE_GENERIC_READ, // Must be GENERIC_READ for upload heap
+                                  None));
+        try!(idx_buffer.set_name("Light source index buffer".into()));
+        try!(utils::upload_into_buffer(&idx_buffer, &idx[..]));
+
+        Ok(LightSourceResources {
+          crd_buffer: crd_buffer,
+          nrm_buffer: nrm_buffer,
+          idx_buffer: idx_buffer,
+          idx_cnt: idx_cnt,
+        })
+    }
+
+    // Precondition: render targets, viewports, scissor rects should be set for glist
+    pub fn populate_command_list(&self, glist: &D3D12GraphicsCommandList, light: &LightSource, cbuf: &D3D12Resource) {
+        glist.set_pipeline_state(&light.pso);
+        glist.set_graphics_root_signature(&light.root_sig);
+        glist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        glist.ia_set_vertex_buffers(0, None);
+        glist.ia_set_index_buffer(None);
+        glist.set_graphics_root_constant_buffer_view(0, cbuf.get_gpu_virtual_address());
+        glist.set_graphics_root_shader_resource_view(1, self.idx_buffer.get_gpu_virtual_address());
+        glist.set_graphics_root_shader_resource_view(2, self.crd_buffer.get_gpu_virtual_address());
+        glist.set_graphics_root_shader_resource_view(3, self.nrm_buffer.get_gpu_virtual_address());
+
+        glist.draw_instanced(self.idx_cnt as u32, 1, 0, 0);
     }
 }
 
@@ -91,6 +149,14 @@ struct ShaderIndices {
     crd: u32,
     nrm: u32,
     tex: u32,
+}
+
+#[derive(Clone, Copy, Debug)]
+#[repr(C)]
+struct ConstantData {
+    view: [[f32; 4]; 4],
+    proj: [[f32; 4]; 4],
+    light_pos: [f32; 3],
 }
 
 fn sphere<P: AsRef<Path>>(path: P) -> (Vec<V3>, Vec<V3>, Vec<ShaderIndices>) {

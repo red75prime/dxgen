@@ -5,12 +5,7 @@
             "StaticSampler(s0)," \
             "StaticSampler(s1, filter=FILTER_MIN_MAG_MIP_POINT)"
 
-cbuffer cb0 : register(b0) {
-  float4x4 view;
-  float4x4 proj;
-  float3 eye_pos;
-  float3 light_pos;
-}
+#include "view_constants.hlsl"
 
 struct InstanceData {
   float4x4 world;

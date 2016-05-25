@@ -23,6 +23,7 @@ use std::io::prelude::*;
 use std::slice;
 use std::sync::Arc;
 use cubestate::{State, StateUpdateAgent};
+use light::{LightSource, LightSourceResources};
 
 // dx_vertex! macro implement dxsems::VertexFormat trait for given structure
 // VertexFormat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
@@ -150,6 +151,8 @@ struct CommonResources {
     plshadow: PLShadow<Vertex>,
     thread_cnt: u32,
     avg_brightness_smoothed: f32,
+    light: LightSource,
+    light_res: LightSourceResources,
 }
 
 impl CommonResources {
@@ -280,6 +283,9 @@ impl CommonResources {
         trace!("Create plshadow");
         let plshadow = try!(PLShadow::<Vertex>::new(dev));
 
+        let light = try!(LightSource::new(dev, parameters.rt_format));
+
+        let light_res = try!(LightSourceResources::new(dev));
 
         Ok(CommonResources {
             pipeline_state: pipeline_state,
@@ -302,6 +308,8 @@ impl CommonResources {
             plshadow: plshadow,
             thread_cnt: parameters.thread_count,
             avg_brightness_smoothed: 0.1,
+            light: light,
+            light_res: light_res,
         })
     }
 }
@@ -611,6 +619,9 @@ impl FrameResources {
         glist.clear_render_target_view(hdr_rtvh, &CLEAR_COLOR, &[]);
         glist.clear_depth_stencil_view(dsvh, D3D12_CLEAR_FLAG_DEPTH, 1.0, 0, &[]);
         glist.draw_indexed_instanced(cr.index_count, st.cubes.len() as u32, 0, 0, 0);
+        
+        cr.light_res.populate_command_list(glist, &cr.light, &self.c_buffer);
+
         glist.resource_barrier(
             &[*ResourceBarrier::transition(&self.hdr_render_target,
                 D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON),
