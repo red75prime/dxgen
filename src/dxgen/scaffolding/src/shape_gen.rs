@@ -22,10 +22,10 @@ pub fn cube<V: GenVertex>(sz: f32) -> (D3D_PRIMITIVE_TOPOLOGY, Vec<V>) {
   ];
     for &(n, up) in facevecs.iter() {
         let rt = Vector3::cross(up, n);
-        let p1 = n.sub_v(up).sub_v(rt).mul_s(sz);
-        let p2 = n.add_v(up).sub_v(rt).mul_s(sz);
-        let p3 = n.add_v(up).add_v(rt).mul_s(sz);
-        let p4 = n.sub_v(up).add_v(rt).mul_s(sz);
+        let p1 = (n - up - rt) * sz;
+        let p2 = (n + up - rt) * sz;
+        let p3 = (n + up + rt) * sz;
+        let p4 = (n - up + rt) * sz;
         ret.push(V::new_vertex(p1).set_normal(n).set_uv(0., 0.));
         ret.push(V::new_vertex(p2).set_normal(n).set_uv(0., 1.));
         ret.push(V::new_vertex(p3).set_normal(n).set_uv(1., 1.));
@@ -50,10 +50,10 @@ pub fn cube_indexed<V: GenVertex>(sz: f32) -> (Vec<V>, Vec<u32>) {
   ];
     for &(n, up) in facevecs.iter() {
         let rt = Vector3::cross(up, n);
-        let p1 = n.sub_v(up).sub_v(rt).mul_s(sz);
-        let p2 = n.add_v(up).sub_v(rt).mul_s(sz);
-        let p3 = n.add_v(up).add_v(rt).mul_s(sz);
-        let p4 = n.sub_v(up).add_v(rt).mul_s(sz);
+        let p1 = (n - up - rt) * sz;
+        let p2 = (n + up - rt) * sz;
+        let p3 = (n + up + rt) * sz;
+        let p4 = (n - up + rt) * sz;
         let base = ret.len() as u32;
         ret.push(V::new_vertex(p1).set_normal(n).set_uv(0., 0.));
         ret.push(V::new_vertex(p2).set_normal(n).set_uv(0., 1.));

@@ -30,19 +30,19 @@ impl Camera {
     }
 
     pub fn rotx(&mut self, ang: f32) {
-        let rotm = Basis3::from_axis_angle(self.up, Angle::from(deg(ang)));
+        let rotm = Basis3::from_axis_angle(self.up, deg(ang).into());
         self.rot = rotm.concat(&self.rot);
         self.update_axes(); //TODO: optimize, when it becomes not early optimization.
     }
 
     pub fn roty(&mut self, ang: f32) {
-        let rotm = Basis3::from_axis_angle(self.right, Angle::from(deg(ang)));
+        let rotm = Basis3::from_axis_angle(self.right, deg(ang).into());
         self.rot = rotm.concat(&self.rot);
         self.update_axes();
     }
 
     pub fn rotz(&mut self, ang: f32) {
-        let rotm = Basis3::from_axis_angle(self.fwd, Angle::from(deg(ang)));
+        let rotm = Basis3::from_axis_angle(self.fwd, deg(ang).into());
         self.rot = rotm.concat(&self.rot);
         self.update_axes();
     }
