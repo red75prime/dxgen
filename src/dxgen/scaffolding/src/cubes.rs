@@ -499,7 +499,7 @@ impl FrameResources {
     }
     // rtvh - render target view descriptor handle
     fn render(&mut self, core: &DXCore, rt: &D3D12Resource, rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, 
-                cr: &mut CommonResources, st: &State, camera: &Camera)
+                cr: &mut CommonResources, st: &State, camera: &Camera, pause: bool)
                 -> HResult<()> {
         ::perf_wait_start();
         try!(self.fence.wait_for_gpu());
@@ -515,21 +515,24 @@ impl FrameResources {
             light_pos: st.light_pos.clone().into(),
         };
 
-	// Fill instance data buffer by iterating over memory mapped instance data buffer and cubes data
-        for (inst_ref, cs) in self.instance_data_mapped.iter_mut().zip(st.cubes[..].iter()) {
-	    // inst_ref contains reference to instance data item, cs refers to corresponding cube data
-            unsafe { // 
-                // memory at inst_ref is write-only. ptr::write ensures that it is not read.
-                // There should be no performance inprovement compared to "*inst_ref =", but somehow there is small speedup.
-                ptr::write(inst_ref as *mut _, InstanceData {
-                    world: rotshift3_to_4x4(&cs.rot, &cs.pos),
-                    n_world: rot3_to_3x3(&cs.rot),
-                });
-            };
-            //*inst_ref = InstanceData {
-            //    world: rotshift3_to_4x4(&cs.rot, &cs.pos),
-            //    n_world: rot3_to_3x3(&cs.rot),
-            //};
+        //don't update cube positions, when animation is paused
+        if !pause {
+          	// Fill instance data buffer by iterating over memory mapped instance data buffer and cubes data
+            for (inst_ref, cs) in self.instance_data_mapped.iter_mut().zip(st.cubes[..].iter()) {
+    	          // inst_ref contains reference to instance data item, cs refers to corresponding cube data
+                unsafe { // 
+                    // memory at inst_ref is write-only. ptr::write ensures that it is not read.
+                    // There should be no performance inprovement compared to "*inst_ref =", but somehow there is small speedup.
+                    ptr::write(inst_ref as *mut _, InstanceData {
+                        world: rotshift3_to_4x4(&cs.rot, &cs.pos),
+                        n_world: rot3_to_3x3(&cs.rot),
+                    });
+                }
+                //*inst_ref = InstanceData {
+                //    world: rotshift3_to_4x4(&cs.rot, &cs.pos),
+                //    n_world: rot3_to_3x3(&cs.rot),
+                //};
+            }
         };
         ::perf_fillbuf_end();
 
@@ -709,8 +712,8 @@ impl AppData {
 
     // renders and presents scene
     // TODO: remove x,y
-    pub fn on_render(&mut self) {
-        on_render(self)
+    pub fn on_render(&mut self, pause: bool) {
+        on_render(self, pause)
     }
 
     pub fn is_minimized(&self) -> bool {
@@ -1026,12 +1029,12 @@ pub fn on_init(wnd: &Window,
 // -----------------------------------------------------------------------------------------------------
 // ----------------- on_render -------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------
-pub fn on_render(data: &mut AppData) {
+pub fn on_render(data: &mut AppData, pause: bool) {
     if cfg!(debug_assertions) {
         trace!("on_render")
     };
     let maybe_future_state = 
-        if data.parameters.concurrent_state_update {
+        if data.parameters.concurrent_state_update && !pause {
             ::perf_start("state_update_start");
             let ret = Some(data.su_agent.start_update(data.state.clone(), data.update_step));
             ::perf_end("state_update_start");
@@ -1051,7 +1054,8 @@ pub fn on_render(data: &mut AppData) {
         data.swap_chain.rtv_cpu_handle(fi), 
         &mut data.common_resources, 
         &data.state,
-        &data.camera
+        &data.camera,
+        pause
     ).dump(&data.core).unwrap();
 
     ::perf_present_start();
@@ -1095,7 +1099,9 @@ pub fn on_render(data: &mut AppData) {
     if let Some(mut future_state) = maybe_future_state {
         data.state = Arc::new(future_state.get());
     } else {
-        data.state = Arc::new(data.state.update(data.update_step, data.common_resources.thread_cnt));
+        if !pause {
+          data.state = Arc::new(data.state.update(data.update_step, data.common_resources.thread_cnt));
+        }
     }
     ::perf_end("state_update");
     data.core.dump_info_queue();

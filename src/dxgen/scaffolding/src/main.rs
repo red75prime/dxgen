@@ -178,6 +178,7 @@ const VK_Q: i32 = b'Q' as i32;
 const VK_W: i32 = b'W' as i32;
 const VK_E: i32 = b'E' as i32;
 const VK_R: i32 = b'R' as i32;
+const VK_P: i32 = b'P' as i32;
 
 fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &CubeParms) {
     // Setup window. Currently window module supports only one window per thread.
@@ -223,6 +224,7 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
     let (mut wdown, mut sdown, mut adown, mut ddown, mut qdown, mut edown, mut rdown, mut fdown, mut shdown, mut ctdown) = (false, false, false, false, false, false, false, false, false, false);
     // and state of left mouse button
     let mut mouse_down = false;
+    let mut pause = false;
     // Profiling stuff
     let mut start = time::precise_time_s();
     let mut prev_frame_time = time::precise_time_s();
@@ -278,6 +280,7 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
             VK_E => edown = false,
             VK_R => rdown = false,
             VK_F => fdown = false,
+            VK_P => pause = !pause,
             VK_SHIFT => shdown = false,
             VK_CONTROL => ctdown = false,
             _ => {},
@@ -297,7 +300,7 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
         let do_not_render = data.borrow().is_minimized();
         if do_not_render {
         // MSDN suggest to use MsgWaitForMultipleObjects here, but 10ms sleep shouldn't create problems
-        std::thread::sleep(Duration::from_millis(10));
+            std::thread::sleep(Duration::from_millis(10));
         } else {
         {
             let cur_frame_time = time::precise_time_s();
@@ -310,7 +313,7 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
             // Process WASD keys
             let camera = data.camera();
             
-            camera.restore_up((45.*frame_dt) as f32);
+            //camera.restore_up((45.*frame_dt) as f32);
 
             let step=if shdown {1.0} else if ctdown {0.01} else {0.1};
 
@@ -345,7 +348,7 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
         // Error handling isn't implemented yet. on_render panics, if it needs to.
         // TODO: process error
         ::perf_start("total");
-        data.borrow_mut().on_render();
+        data.borrow_mut().on_render(pause);
         ::perf_end("total");
         // register rendered frame in performance collector
         ::perf_frame();
