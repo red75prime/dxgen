@@ -41,6 +41,11 @@ mod collision;
 mod cubestate;
 mod light;
 
+#[cfg(feature = "openal")] mod sound;
+
+#[cfg(not(feature = "openal"))] mod nosound;
+#[cfg(not(feature = "openal"))] use nosound as sound;
+
 use winapi::*;
 use dx_safe::*;
 use create_device::*;
@@ -60,6 +65,9 @@ const FRAME_COUNT : u32 = 3;
 fn main() {
   // Initialize logger
   env_logger::init().unwrap();
+
+  println!("sound::init()");
+  sound::init();
 
   // Set default values of cubes module parameters
   let mut parms = CubeParms {

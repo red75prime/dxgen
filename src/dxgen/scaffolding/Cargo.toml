@@ -2,6 +2,11 @@
 name = "d3d12_integration_test"
 version = "0.3.0"
 authors = ["red75prime <red75prim@gmail.com>"]
+build = "build.rs"
+
+[features]
+default = []
+openal = ["openal-rs"]
 
 [dependencies]
 libc = "0.2"
@@ -23,6 +28,7 @@ kernel32-sys = "0.2"
 dxguid-sys = "0.2"
 d3dcompiler-sys = "0.2"
 d3d12-sys = "0.2"
+openal-rs = { version = "0.1", optional = true }
 
 #[dependencies.winapi]
 ##version = "0.2.5"
