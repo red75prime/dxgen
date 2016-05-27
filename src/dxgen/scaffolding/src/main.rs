@@ -1,6 +1,6 @@
 //#![feature(optin_builtin_traits)]
 //#![feature(clone_from_slice)]
-#![feature(question_mark)]
+//#![feature(question_mark)]
 
 //#[macro_use] extern crate gfx;
 #[macro_use] extern crate lazy_static;
@@ -37,7 +37,7 @@ mod camera;
 mod downsampler;
 mod tonemapper;
 mod plshadow;
-mod collision;
+//mod collision;
 mod cubestate;
 mod light;
 
@@ -199,15 +199,15 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
     if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_12_0) {
         let format = DXGI_FORMAT_R8G8B8A8_UNORM;
         let mut fsup = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
-        Format: format,
-        Support1: D3D12_FORMAT_SUPPORT1_NONE,
-        Support2: D3D12_FORMAT_SUPPORT2_NONE,
+            Format: format,
+            Support1: D3D12_FORMAT_SUPPORT1_NONE,
+            Support2: D3D12_FORMAT_SUPPORT2_NONE,
         };
         if let Ok(_) = dev.check_feature_support_format_support(&mut fsup) {
-        // We could have few threads running, so take a lock to prevent line interleaving
-        let _ = mutex.lock();
-        println!("{}", descr);
-        println!("Format support for {:?} is {:x}, {:x}", format, fsup.Support1.0, fsup.Support2.0);
+            // We could have few threads running, so take a lock to prevent line interleaving
+            let _ = mutex.lock();
+            println!("{}", descr);
+            println!("Format support for {:?} is {:x}, {:x}", format, fsup.Support1.0, fsup.Support2.0);
         }
     }
     }

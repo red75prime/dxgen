@@ -437,7 +437,7 @@ impl FrameResources {
         // create shadow resource.
         let shadow_desc = resource_desc_tex2darray_nomip(SHADOW_MAP_SIZE as u64, SHADOW_MAP_SIZE, 6, DXGI_FORMAT_R32_TYPELESS, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
         debug!("Create depth stencil shadow resource");
-        let shadow_map = dev.create_committed_resource(&heap_properties_default(),
+        let shadow_map = try!(dev.create_committed_resource(&heap_properties_default(),
                                                         D3D12_HEAP_FLAG_NONE,
                                                         &shadow_desc,
                                                         D3D12_RESOURCE_STATE_DEPTH_WRITE,
@@ -445,7 +445,7 @@ impl FrameResources {
                              .map_err(|hr| {
                                  error!("create_commited_resource failed with 0x{:x}", hr);
                                  hr
-                             })?;
+                             }));
 
         let shadow_desc = depth_stencil_view_desc_tex2darray_default(DXGI_FORMAT_D32_FLOAT, 6);
         debug!("Shadow depth stencil view");
@@ -860,10 +860,10 @@ fn clamp(x: f32, l:f32, h:f32) -> u32 {
 }
 
 pub fn on_init(wnd: &Window,
-                              adapter: Option<&DXGIAdapter1>,
-                              frame_count: u32,
-                              parameters: &CubeParms)
-                              -> HResult<AppData> {
+               adapter: Option<&DXGIAdapter1>,
+               frame_count: u32,
+               parameters: &CubeParms)
+               -> HResult<AppData> {
     let hwnd = wnd.get_hwnd();
     let (w, h) = wnd.size();
 
@@ -873,7 +873,7 @@ pub fn on_init(wnd: &Window,
         match core::create_core(adapter, D3D_FEATURE_LEVEL_11_0, parameters.debug_layer) {
             Ok(core) => core,
             Err(desc) => {
-                error!("{}", desc);
+                error!("core::create_core error: {}", desc);
                 return Err(E_FAIL);
             },
         };

@@ -151,14 +151,6 @@ struct ShaderIndices {
     tex: u32,
 }
 
-#[derive(Clone, Copy, Debug)]
-#[repr(C)]
-struct ConstantData {
-    view: [[f32; 4]; 4],
-    proj: [[f32; 4]; 4],
-    light_pos: [f32; 3],
-}
-
 fn sphere<P: AsRef<Path>>(path: P) -> (Vec<V3>, Vec<V3>, Vec<ShaderIndices>) {
     let scene = obj::load::<SimplePolygon>(path.as_ref()).expect("3d model load failed");
     if let Some(obj) = scene.object_iter().next() {

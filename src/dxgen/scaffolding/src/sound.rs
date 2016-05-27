@@ -5,6 +5,9 @@ use self::openal::al;
 use self::openal::alc;
 
 pub fn init() {
-  println!("Init sound");
-  let device = alc::Device::open(None).expect("Could not open device");
+  if let Some(device) = alc::Device::open(None) {
+    println!("Init sound");
+  } else {
+    println!("Init sound failure");
+  }
 }
