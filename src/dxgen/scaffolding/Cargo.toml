@@ -18,7 +18,7 @@ dx_safe = { version = "0.3", path = "lib/d3d12" }
 rand = "0.3"
 cgmath = "0.9"
 time = "0.1"
-crossbeam = "0.1"
+crossbeam = "0.2"
 obj = "0.4"
 itertools = "0.4.6"
 winapi = "0.2"
