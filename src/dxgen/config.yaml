@@ -29,6 +29,18 @@ modules:
       no-winapi-gen: false
       no-enum-conversion: false
 
+    - name: d2d1
+      output-path: ../../d2d1/src
+      include-path: 
+        - .\Include\10.0.10586.0\um\
+        - .\Include\10.0.10586.0\shared\
+        - .\Include\10.0.10586.0\ucrt\
+      precompiled-header: ./PCH/Common_PCH.h
+      headers:
+          - d2d1.h
+      no-winapi-gen: false
+      no-enum-conversion: false
+      
 # modules:
 #    - name: dwrite
 #      output-path: ../../dx_dxgi/src/

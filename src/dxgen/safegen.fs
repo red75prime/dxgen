@@ -819,6 +819,21 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
         |_ ->
           addError (sprintf "%s parameter: OutReturnComPtr shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
+      |OutReturnOptionalComPtr ->
+        match refs with 
+        |[] ->
+          match pty with
+          |Ptr(Ptr(StructRef s)) ->
+            // s should be a name of COM-interface. TODO: Check that it is
+            let rtName=s.Substring(1,s.Length-1) // Corresponding rust wrapper have name without leading 'I'
+            let rty=ROption(RType rtName)
+            let lv=newLocalVar true (RMutPtr(RType s)) (fun m -> "ptr::null_mut()")
+            addNativeParm pname None ("&mut "+lv+" as *mut *mut _")
+            addReturnExpression ("if "+lv+"==ptr::null_mut() {None} else {Some("+rtName+"::new("+lv+" as *mut _))}") rty
+          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+        |_ ->
+          addError (sprintf "%s parameter: OutReturnOptionalComPtr shouldn't have references. But references are %A" pname refs)
+// -----------------------------------------------------------------------------------------------------------------------------------------
       |OutReturnCombine(sname, field) ->
         match refs with 
         |[] ->
@@ -915,7 +930,10 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             (ex, t)
           |mrv ->
             mrv2tuple mrv
-        |_ -> raise <| new System.Exception("Unexpected return type")
+        |Ptr(StructRef retInterface) when mannot = MAReturnsNonRefcountedInterface ->
+            //TODO: make correct
+            ("_hr", RMutPtr(RType retInterface))
+        |_ -> raise <| new System.Exception("Unexpected return type in "+clname+"::"+mname)
 
       let transformedNativeParms = 
         !nativeParms |> Map.map (fun k (_,f) -> (k, f np2sp))

@@ -100,6 +100,7 @@ type ParamAnnotation=
   |InOptional
   |InComPtr
   |OutReturnComPtr
+  |OutReturnOptionalComPtr // Can return NULL
   |InOptionalComPtr
   |OutOptional
   |OutReturnBarePointer
@@ -155,6 +156,7 @@ let getReturnDesc parmAnnot=
   |OutReturnInterface _ -> [parmAnnot]
   |OutReturnKnownInterface _ -> [parmAnnot]
   |OutReturnComPtr -> [parmAnnot]
+  |OutReturnOptionalComPtr -> [parmAnnot]
   |InIUnknown -> []
   |InOptionalArrayOfSize _ -> []
   |InArrayOfSize _ -> []
@@ -175,6 +177,7 @@ type MethodAnnotation=
   |MADontImplement
   |MAMangle of string // The method is overloaded.
                       // I need to give another name to it.
+  |MAReturnsNonRefcountedInterface
 
 type EnumAnnotation=
   |EAFlags
