@@ -2076,6 +2076,76 @@ impl D2D1Geometry {
   
 }
 
+pub struct D2D1GradientStopCollection(*mut ID2D1GradientStopCollection);
+
+impl HasIID for D2D1GradientStopCollection {
+  fn iid() -> REFGUID { &IID_ID2D1GradientStopCollection }
+  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1GradientStopCollection(pp_vtbl as *mut _ as *mut ID2D1GradientStopCollection) }
+  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
+}
+impl Drop for D2D1GradientStopCollection {
+  fn drop(&mut self) {
+    release_com_ptr(self)
+  }
+}
+
+impl Clone for D2D1GradientStopCollection {
+  fn clone(&self) -> Self {
+    clone_com_ptr(self)
+  }
+}
+
+
+
+impl D2D1GradientStopCollection {
+  //  Method GetFactory
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
+  //  Method GetGradientStopCount
+  
+  #[allow(non_snake_case)]
+  pub fn get_gradient_stop_count(&self) -> UINT32 {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1GradientStopCollection)).GetGradientStopCount() };
+    _hr
+  }
+  
+  //  Method GetGradientStops
+  
+  #[allow(non_snake_case)]
+  pub fn get_gradient_stops(&self, gradientStops: &mut [D2D1_GRADIENT_STOP]) -> () {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1GradientStopCollection)).GetGradientStops(slice_as_mut_ptr(gradientStops), gradientStops.len() as UINT32) };
+    ()
+  }
+  
+  //  Method GetColorInterpolationGamma
+  
+  #[allow(non_snake_case)]
+  pub fn get_color_interpolation_gamma(&self) -> D2D1_GAMMA {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1GradientStopCollection)).GetColorInterpolationGamma() };
+    _hr
+  }
+  
+  //  Method GetExtendMode
+  
+  #[allow(non_snake_case)]
+  pub fn get_extend_mode(&self) -> D2D1_EXTEND_MODE {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1GradientStopCollection)).GetExtendMode() };
+    _hr
+  }
+  
+  
+}
+
 pub struct D2D1HwndRenderTarget(*mut ID2D1HwndRenderTarget);
 
 impl HasIID for D2D1HwndRenderTarget {
