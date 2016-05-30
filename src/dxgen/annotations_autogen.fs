@@ -3953,7 +3953,6 @@ let d2d1 =
       ("arc",ANone);
     ],MANone);
   ]);
-  // TODO: Annotate and allow wrapper generation
   ("ID2D1GeometryVtbl", IAAutogen (Set.ofList []), "ID2D1ResourceVtbl", [
     ("GetBounds",[
       ("This",AThis);
@@ -3986,65 +3985,65 @@ let d2d1 =
     ],MANone);
     ("CompareWithGeometry",[
       ("This",AThis);
-      ("inputGeometry",ANone);
-      ("inputGeometryTransform",ANone);
+      ("inputGeometry",InComPtr);
+      ("inputGeometryTransform",InOptional);
       ("flatteningTolerance",ANone);
-      ("relation",ANone);
+      ("relation",OutReturn);
     ],MANone);
     ("Simplify",[
       ("This",AThis);
       ("simplificationOption",ANone);
-      ("worldTransform",ANone);
+      ("worldTransform",InOptional);
       ("flatteningTolerance",ANone);
-      ("geometrySink",ANone);
+      ("geometrySink",InComPtr);
     ],MANone);
     ("Tessellate",[
       ("This",AThis);
-      ("worldTransform",ANone);
+      ("worldTransform",InOptional);
       ("flatteningTolerance",ANone);
-      ("tessellationSink",ANone);
+      ("tessellationSink",InComPtr);
     ],MANone);
     ("CombineWithGeometry",[
       ("This",AThis);
-      ("inputGeometry",ANone);
+      ("inputGeometry",InComPtr);
       ("combineMode",ANone);
-      ("inputGeometryTransform",ANone);
+      ("inputGeometryTransform",InOptional);
       ("flatteningTolerance",ANone);
-      ("geometrySink",ANone);
+      ("geometrySink",InComPtr);
     ],MANone);
     ("Outline",[
       ("This",AThis);
-      ("worldTransform",ANone);
+      ("worldTransform",InOptional);
       ("flatteningTolerance",ANone);
-      ("geometrySink",ANone);
+      ("geometrySink",InComPtr);
     ],MANone);
     ("ComputeArea",[
       ("This",AThis);
-      ("worldTransform",ANone);
+      ("worldTransform",InOptional);
       ("flatteningTolerance",ANone);
-      ("area",ANone);
+      ("area",OutReturn);
     ],MANone);
     ("ComputeLength",[
       ("This",AThis);
-      ("worldTransform",ANone);
+      ("worldTransform",InOptional);
       ("flatteningTolerance",ANone);
-      ("length",ANone);
+      ("length",OutReturn);
     ],MANone);
     ("ComputePointAtLength",[
       ("This",AThis);
       ("length",ANone);
-      ("worldTransform",ANone);
+      ("worldTransform",InOptional);
       ("flatteningTolerance",ANone);
-      ("point",ANone);
-      ("unitTangentVector",ANone);
+      ("point",OutReturn);
+      ("unitTangentVector",OutReturn);
     ],MANone);
     ("Widen",[
       ("This",AThis);
       ("strokeWidth",ANone);
-      ("strokeStyle",ANone);
-      ("worldTransform",ANone);
+      ("strokeStyle",InOptionalComPtr);
+      ("worldTransform",InOptional);
       ("flatteningTolerance",ANone);
-      ("geometrySink",ANone);
+      ("geometrySink",InComPtr);
     ],MANone);
   ]);
   // TODO: annotate and enable

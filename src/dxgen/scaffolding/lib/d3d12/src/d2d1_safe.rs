@@ -1326,81 +1326,82 @@ impl D2D1EllipseGeometry {
   //  Method CompareWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
-    hr2ret(_hr,_hr)
+  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
+    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method Simplify
   
   #[allow(non_snake_case)]
-  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Tessellate
   
   #[allow(non_snake_case)]
-  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CombineWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Outline
   
   #[allow(non_snake_case)]
-  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ComputeArea
   
   #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
-    hr2ret(_hr,_hr)
+  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputeLength
   
   #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
-    hr2ret(_hr,_hr)
+  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputePointAtLength
   
   #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
-    hr2ret(_hr,_hr)
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
+    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method Widen
   
   #[allow(non_snake_case)]
-  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
@@ -1682,81 +1683,82 @@ impl D2D1GeometryGroup {
   //  Method CompareWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
-    hr2ret(_hr,_hr)
+  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
+    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method Simplify
   
   #[allow(non_snake_case)]
-  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Tessellate
   
   #[allow(non_snake_case)]
-  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CombineWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Outline
   
   #[allow(non_snake_case)]
-  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ComputeArea
   
   #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
-    hr2ret(_hr,_hr)
+  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputeLength
   
   #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
-    hr2ret(_hr,_hr)
+  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputePointAtLength
   
   #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
-    hr2ret(_hr,_hr)
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
+    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method Widen
   
   #[allow(non_snake_case)]
-  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
@@ -1779,13 +1781,13 @@ impl D2D1GeometryGroup {
   }
   
   
-    #[allow(non_snake_case)]
-    pub fn get_source_geometries(&self) -> Vec<D2D1Geometry> {
-      let cnt = self.get_source_geometry_count() as usize;
-      let mut lv1: Vec<*mut ID2D1Geometry> = vec![ptr::null_mut(); cnt];
-      let _hr = unsafe { (*(self.0 as *mut ID2D1GeometryGroup)).GetSourceGeometries(lv1[..].as_mut_ptr(), cnt as u32) };
-      lv1.iter().map(|&ptr|D2D1Geometry::new(ptr as *mut _)).collect()
-    }  
+  #[allow(non_snake_case)]
+  pub fn get_source_geometries(&self) -> Vec<D2D1Geometry> {
+    let cnt = self.get_source_geometry_count() as usize;
+    let mut lv1: Vec<*mut ID2D1Geometry> = vec![ptr::null_mut(); cnt];
+    let _hr = unsafe { (*(self.0 as *mut ID2D1GeometryGroup)).GetSourceGeometries(lv1[..].as_mut_ptr(), cnt as u32) };
+    lv1.iter().map(|&ptr|D2D1Geometry::new(ptr as *mut _)).collect()
+  }  
   
 }
 
@@ -1992,81 +1994,82 @@ impl D2D1Geometry {
   //  Method CompareWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
-    hr2ret(_hr,_hr)
+  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
+    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method Simplify
   
   #[allow(non_snake_case)]
-  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Tessellate
   
   #[allow(non_snake_case)]
-  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CombineWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Outline
   
   #[allow(non_snake_case)]
-  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ComputeArea
   
   #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
-    hr2ret(_hr,_hr)
+  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputeLength
   
   #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
-    hr2ret(_hr,_hr)
+  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputePointAtLength
   
   #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
-    hr2ret(_hr,_hr)
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
+    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method Widen
   
   #[allow(non_snake_case)]
-  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
@@ -2818,81 +2821,82 @@ impl D2D1PathGeometry {
   //  Method CompareWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
-    hr2ret(_hr,_hr)
+  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
+    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method Simplify
   
   #[allow(non_snake_case)]
-  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Tessellate
   
   #[allow(non_snake_case)]
-  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CombineWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Outline
   
   #[allow(non_snake_case)]
-  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ComputeArea
   
   #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
-    hr2ret(_hr,_hr)
+  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputeLength
   
   #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
-    hr2ret(_hr,_hr)
+  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputePointAtLength
   
   #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
-    hr2ret(_hr,_hr)
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
+    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method Widen
   
   #[allow(non_snake_case)]
-  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
@@ -3142,81 +3146,82 @@ impl D2D1RectangleGeometry {
   //  Method CompareWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
-    hr2ret(_hr,_hr)
+  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
+    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method Simplify
   
   #[allow(non_snake_case)]
-  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Tessellate
   
   #[allow(non_snake_case)]
-  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CombineWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Outline
   
   #[allow(non_snake_case)]
-  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ComputeArea
   
   #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
-    hr2ret(_hr,_hr)
+  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputeLength
   
   #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
-    hr2ret(_hr,_hr)
+  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputePointAtLength
   
   #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
-    hr2ret(_hr,_hr)
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
+    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method Widen
   
   #[allow(non_snake_case)]
-  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
@@ -3763,81 +3768,82 @@ impl D2D1RoundedRectangleGeometry {
   //  Method CompareWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
-    hr2ret(_hr,_hr)
+  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
+    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method Simplify
   
   #[allow(non_snake_case)]
-  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Tessellate
   
   #[allow(non_snake_case)]
-  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CombineWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Outline
   
   #[allow(non_snake_case)]
-  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ComputeArea
   
   #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
-    hr2ret(_hr,_hr)
+  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputeLength
   
   #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
-    hr2ret(_hr,_hr)
+  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputePointAtLength
   
   #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
-    hr2ret(_hr,_hr)
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
+    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method Widen
   
   #[allow(non_snake_case)]
-  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
@@ -4257,81 +4263,82 @@ impl D2D1TransformedGeometry {
   //  Method CompareWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
-    hr2ret(_hr,_hr)
+  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
+    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method Simplify
   
   #[allow(non_snake_case)]
-  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Tessellate
   
   #[allow(non_snake_case)]
-  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CombineWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Outline
   
   #[allow(non_snake_case)]
-  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ComputeArea
   
   #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
-    hr2ret(_hr,_hr)
+  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputeLength
   
   #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
-    hr2ret(_hr,_hr)
+  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method ComputePointAtLength
   
   #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
-    hr2ret(_hr,_hr)
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
+    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method Widen
   
   #[allow(non_snake_case)]
-  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
