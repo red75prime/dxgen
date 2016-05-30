@@ -142,10 +142,11 @@ let sanityCheck vtbls annotations=
         printfn "Error. Base interface of annotated is %s, but that of native is %s" bname bas
         None
       else 
-        if interfaceAnnotation=IAManual then
+        match interfaceAnnotation with
+        |IAManual -> 
           // Don't bother matching interfaces marked for manual implementation
           Some(iname, bas, interfaceAnnotation, [])
-        else
+        |IAAutogen _ ->
           // check if interface iname matches, by checking all methods
           let mergedMethods=
             isListsMatch (fun (CStructElem(mname,_,_)) -> mname) (sprintf "Native methods of %s" iname) structElems 
@@ -930,7 +931,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             (ex, t)
           |mrv ->
             mrv2tuple mrv
-        |Ptr(StructRef retInterface) when mannot = MAReturnsNonRefcountedInterface ->
+        |Ptr(StructRef retInterface) when mannot = MAReturnsInterface ->
             let rustInterfaceName = retInterface.Substring(1)
             (rustInterfaceName+"::new(_hr as *mut _)", RType rustInterfaceName)
         |_ -> raise <| new System.Exception("Unexpected return type in "+clname+"::"+mname)
@@ -977,9 +978,12 @@ let bprintfn sb t=
 
 // Removes TypeSelector annotation, generates specialized methods
 let preGenerateMethod clname noEnumConversion (implclass, (mname, mannot, parms, rty : CTypeDesc) as methoddesc)=
-  if mannot=MAIUnknown || mannot=MADontImplement then
+  match mannot with
+  |MAIUnknown | MADontImplement -> 
     ""
-  else
+  |MACustom impl -> 
+    impl
+  |MANone |MAMangle _ |MAReturnsInterface |MAUnsafe ->
     let rustName = 
       match mannot with
       |MAMangle name ->

@@ -1,6 +1,7 @@
 ﻿module annotations_autogen
 open annotations
 open cdesc  
+open custom_impls
 
 let d3dcommon = 
   [
@@ -3925,9 +3926,9 @@ let d2d1 =
     // TODO: add OutReturnComPtrArrayOfSize
     ("GetSourceGeometries",[
       ("This",AThis);
-      ("geometries",ANone);
+      ("geometries",OutReturnComPtr);
       ("geometriesCount",ANone);
-    ],MADontImplement);
+    ], MACustom id2d1geometrygroup_getsourcegeometries); // Handmade implementation
   ]);
   ("ID2D1GeometrySinkVtbl",IAAutogen(Set.ofList []), "ID2D1SimplifiedGeometrySinkVtbl", [
     ("AddLine",[
@@ -3953,7 +3954,7 @@ let d2d1 =
     ],MANone);
   ]);
   // TODO: Annotate and allow wrapper generation
-  ("ID2D1GeometryVtbl",IAManual, "ID2D1ResourceVtbl", [
+  ("ID2D1GeometryVtbl", IAAutogen (Set.ofList []), "ID2D1ResourceVtbl", [
     ("GetBounds",[
       ("This",AThis);
       ("worldTransform",InOptional);
@@ -4461,7 +4462,7 @@ let d2d1 =
   ("ID2D1ResourceVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("GetFactory",[
       ("This",AThis);
-      ("factory",ANone);
+      ("factory",OutReturnComPtr);
     ],MANone);
   ]);
   ("ID2D1RoundedRectangleGeometryVtbl",IAAutogen(Set.ofList []), "ID2D1GeometryVtbl", [
@@ -4580,11 +4581,11 @@ let d3d12shader=[
     ("GetConstantBufferByIndex",[
       ("This",AThis);
       ("BufferIndex",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetConstantBufferByName",[
       ("This",AThis);
       ("Name",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetResourceBindingDesc",[
       ("This",AThis);
       ("ResourceIndex",ANone);
@@ -4593,7 +4594,7 @@ let d3d12shader=[
     ("GetVariableByName",[
       ("This",AThis);
       ("Name",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetResourceBindingDescByName",[
       ("This",AThis);
       ("Name",ANone);
@@ -4602,7 +4603,7 @@ let d3d12shader=[
     ("GetFunctionParameter",[
       ("This",AThis);
       ("ParameterIndex",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
   ]);
   ("ID3D12LibraryReflectionVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("QueryInterface",[],MAIUnknown);
@@ -4615,7 +4616,7 @@ let d3d12shader=[
     ("GetFunctionByIndex",[
       ("This",AThis);
       ("FunctionIndex",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
   ]);
   ("ID3D12ShaderReflectionConstantBufferVtbl",IAAutogen(Set.ofList []), "", [
     ("GetDesc",[
@@ -4625,11 +4626,11 @@ let d3d12shader=[
     ("GetVariableByIndex",[
       ("This",AThis);
       ("Index",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetVariableByName",[
       ("This",AThis);
       ("Name",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
   ]);
   ("ID3D12ShaderReflectionTypeVtbl",IAAutogen(Set.ofList []), "", [
     ("GetDesc",[
@@ -4639,11 +4640,11 @@ let d3d12shader=[
     ("GetMemberTypeByIndex",[
       ("This",AThis);
       ("Index",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetMemberTypeByName",[
       ("This",AThis);
       ("Name",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetMemberTypeName",[
       ("This",AThis);
       ("Index",ANone);
@@ -4654,17 +4655,17 @@ let d3d12shader=[
     ],MANone);
     ("GetSubType",[
       ("This",AThis);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetBaseClass",[
       ("This",AThis);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetNumInterfaces",[
       ("This",AThis);
     ],MANone);
     ("GetInterfaceByIndex",[
       ("This",AThis);
       ("uIndex",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("IsOfType",[
       ("This",AThis);
       ("pType",ANone);
@@ -4681,10 +4682,10 @@ let d3d12shader=[
     ],MANone);
     ("GetType",[
       ("This",AThis);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetBuffer",[
       ("This",AThis);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetInterfaceSlot",[
       ("This",AThis);
       ("uArrayIndex",ANone);
@@ -4701,11 +4702,11 @@ let d3d12shader=[
     ("GetConstantBufferByIndex",[
       ("This",AThis);
       ("Index",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetConstantBufferByName",[
       ("This",AThis);
       ("Name",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetResourceBindingDesc",[
       ("This",AThis);
       ("ResourceIndex",ANone);
@@ -4729,7 +4730,7 @@ let d3d12shader=[
     ("GetVariableByName",[
       ("This",AThis);
       ("Name",ANone);
-    ],MAReturnsNonRefcountedInterface);
+    ],MAReturnsInterface);
     ("GetResourceBindingDescByName",[
       ("This",AThis);
       ("Name",ANone);

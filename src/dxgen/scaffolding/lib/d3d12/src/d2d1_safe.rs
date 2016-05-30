@@ -27,7 +27,14 @@ impl Clone for D2D1BitmapBrush {
 
 impl D2D1BitmapBrush {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method SetOpacity
   
   #[allow(non_snake_case)]
@@ -162,7 +169,14 @@ impl Clone for D2D1BitmapRenderTarget {
 
 impl D2D1BitmapRenderTarget {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method CreateBitmap
   //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
   //  Method CreateBitmapFromWicBitmap
@@ -591,7 +605,14 @@ impl Clone for D2D1Bitmap {
 
 impl D2D1Bitmap {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method GetSize
   
   #[allow(non_snake_case)]
@@ -682,7 +703,14 @@ impl Clone for D2D1Brush {
 
 impl D2D1Brush {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method SetOpacity
   
   #[allow(non_snake_case)]
@@ -745,7 +773,14 @@ impl Clone for D2D1DCRenderTarget {
 
 impl D2D1DCRenderTarget {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method CreateBitmap
   //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
   //  Method CreateBitmapFromWicBitmap
@@ -1174,7 +1209,14 @@ impl Clone for D2D1DrawingStateBlock {
 
 impl D2D1DrawingStateBlock {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method GetDescription
   
   #[allow(non_snake_case)]
@@ -1237,7 +1279,131 @@ impl Clone for D2D1EllipseGeometry {
 
 impl D2D1EllipseGeometry {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
+  //  Method GetBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method GetWidenedBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method StrokeContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method FillContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method CompareWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Simplify
+  
+  #[allow(non_snake_case)]
+  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Tessellate
+  
+  #[allow(non_snake_case)]
+  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method CombineWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Outline
+  
+  #[allow(non_snake_case)]
+  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeArea
+  
+  #[allow(non_snake_case)]
+  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputePointAtLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Widen
+  
+  #[allow(non_snake_case)]
+  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
   //  Method GetEllipse
   
   #[allow(non_snake_case)]
@@ -1469,7 +1635,131 @@ impl Clone for D2D1GeometryGroup {
 
 impl D2D1GeometryGroup {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
+  //  Method GetBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method GetWidenedBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method StrokeContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method FillContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method CompareWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Simplify
+  
+  #[allow(non_snake_case)]
+  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Tessellate
+  
+  #[allow(non_snake_case)]
+  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method CombineWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Outline
+  
+  #[allow(non_snake_case)]
+  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeArea
+  
+  #[allow(non_snake_case)]
+  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputePointAtLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Widen
+  
+  #[allow(non_snake_case)]
+  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
   //  Method GetFillMode
   
   #[allow(non_snake_case)]
@@ -1488,6 +1778,14 @@ impl D2D1GeometryGroup {
     _hr
   }
   
+  
+    #[allow(non_snake_case)]
+    pub fn get_source_geometries(&self) -> Vec<D2D1Geometry> {
+      let cnt = self.get_source_geometry_count() as usize;
+      let mut lv1: Vec<*mut ID2D1Geometry> = vec![ptr::null_mut(); cnt];
+      let _hr = unsafe { (*(self.0 as *mut ID2D1GeometryGroup)).GetSourceGeometries(lv1[..].as_mut_ptr(), cnt as u32) };
+      lv1.iter().map(|&ptr|D2D1Geometry::new(ptr as *mut _)).collect()
+    }  
   
 }
 
@@ -1624,6 +1922,157 @@ impl D2D1GeometrySink {
   
 }
 
+pub struct D2D1Geometry(*mut ID2D1Geometry);
+
+impl HasIID for D2D1Geometry {
+  fn iid() -> REFGUID { &IID_ID2D1Geometry }
+  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Geometry(pp_vtbl as *mut _ as *mut ID2D1Geometry) }
+  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
+}
+impl Drop for D2D1Geometry {
+  fn drop(&mut self) {
+    release_com_ptr(self)
+  }
+}
+
+impl Clone for D2D1Geometry {
+  fn clone(&self) -> Self {
+    clone_com_ptr(self)
+  }
+}
+
+
+
+impl D2D1Geometry {
+  //  Method GetFactory
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
+  //  Method GetBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method GetWidenedBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method StrokeContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method FillContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method CompareWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Simplify
+  
+  #[allow(non_snake_case)]
+  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Tessellate
+  
+  #[allow(non_snake_case)]
+  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method CombineWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Outline
+  
+  #[allow(non_snake_case)]
+  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeArea
+  
+  #[allow(non_snake_case)]
+  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputePointAtLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Widen
+  
+  #[allow(non_snake_case)]
+  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  
+}
+
 pub struct D2D1HwndRenderTarget(*mut ID2D1HwndRenderTarget);
 
 impl HasIID for D2D1HwndRenderTarget {
@@ -1647,7 +2096,14 @@ impl Clone for D2D1HwndRenderTarget {
 
 impl D2D1HwndRenderTarget {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method CreateBitmap
   //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
   //  Method CreateBitmapFromWicBitmap
@@ -2094,7 +2550,14 @@ impl Clone for D2D1Image {
 
 impl D2D1Image {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   
 }
 
@@ -2121,7 +2584,14 @@ impl Clone for D2D1Layer {
 
 impl D2D1Layer {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method GetSize
   
   #[allow(non_snake_case)]
@@ -2157,7 +2627,14 @@ impl Clone for D2D1LinearGradientBrush {
 
 impl D2D1LinearGradientBrush {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method SetOpacity
   
   #[allow(non_snake_case)]
@@ -2258,7 +2735,14 @@ impl Clone for D2D1Mesh {
 
 impl D2D1Mesh {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method Open
   //  Error: tessellationSink parameter: ANone annotation cannot be used with double indirection
   
@@ -2287,7 +2771,131 @@ impl Clone for D2D1PathGeometry {
 
 impl D2D1PathGeometry {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
+  //  Method GetBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method GetWidenedBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method StrokeContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method FillContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method CompareWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Simplify
+  
+  #[allow(non_snake_case)]
+  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Tessellate
+  
+  #[allow(non_snake_case)]
+  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method CombineWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Outline
+  
+  #[allow(non_snake_case)]
+  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeArea
+  
+  #[allow(non_snake_case)]
+  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputePointAtLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Widen
+  
+  #[allow(non_snake_case)]
+  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
   //  Method Open
   //  Error: geometrySink parameter: ANone annotation cannot be used with double indirection
   //  Method Stream
@@ -2343,7 +2951,14 @@ impl Clone for D2D1RadialGradientBrush {
 
 impl D2D1RadialGradientBrush {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method SetOpacity
   
   #[allow(non_snake_case)]
@@ -2480,7 +3095,131 @@ impl Clone for D2D1RectangleGeometry {
 
 impl D2D1RectangleGeometry {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
+  //  Method GetBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method GetWidenedBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method StrokeContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method FillContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method CompareWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Simplify
+  
+  #[allow(non_snake_case)]
+  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Tessellate
+  
+  #[allow(non_snake_case)]
+  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method CombineWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Outline
+  
+  #[allow(non_snake_case)]
+  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeArea
+  
+  #[allow(non_snake_case)]
+  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputePointAtLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Widen
+  
+  #[allow(non_snake_case)]
+  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
   //  Method GetRect
   
   #[allow(non_snake_case)]
@@ -2516,7 +3255,14 @@ impl Clone for D2D1RenderTarget {
 
 impl D2D1RenderTarget {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method CreateBitmap
   //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
   //  Method CreateBitmapFromWicBitmap
@@ -2936,7 +3682,14 @@ impl Clone for D2D1Resource {
 
 impl D2D1Resource {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   
 }
 
@@ -2963,7 +3716,131 @@ impl Clone for D2D1RoundedRectangleGeometry {
 
 impl D2D1RoundedRectangleGeometry {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
+  //  Method GetBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method GetWidenedBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method StrokeContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method FillContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method CompareWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Simplify
+  
+  #[allow(non_snake_case)]
+  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Tessellate
+  
+  #[allow(non_snake_case)]
+  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method CombineWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Outline
+  
+  #[allow(non_snake_case)]
+  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeArea
+  
+  #[allow(non_snake_case)]
+  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputePointAtLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Widen
+  
+  #[allow(non_snake_case)]
+  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
   //  Method GetRoundedRect
   
   #[allow(non_snake_case)]
@@ -3087,7 +3964,14 @@ impl Clone for D2D1SolidColorBrush {
 
 impl D2D1SolidColorBrush {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method SetOpacity
   
   #[allow(non_snake_case)]
@@ -3168,7 +4052,14 @@ impl Clone for D2D1StrokeStyle {
 
 impl D2D1StrokeStyle {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
   //  Method GetStartCap
   
   #[allow(non_snake_case)]
@@ -3319,7 +4210,131 @@ impl Clone for D2D1TransformedGeometry {
 
 impl D2D1TransformedGeometry {
   //  Method GetFactory
-  //  Error: factory parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
+  //  Method GetBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method GetWidenedBounds
+  
+  #[allow(non_snake_case)]
+  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method StrokeContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method FillContainsPoint
+  
+  #[allow(non_snake_case)]
+  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method CompareWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn compare_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, relation: &mut D2D1_GEOMETRY_RELATION) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry, inputGeometryTransform, flatteningTolerance, relation) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Simplify
+  
+  #[allow(non_snake_case)]
+  pub fn simplify(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Tessellate
+  
+  #[allow(non_snake_case)]
+  pub fn tessellate(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, tessellationSink: &mut ID2D1TessellationSink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform, flatteningTolerance, tessellationSink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method CombineWithGeometry
+  
+  #[allow(non_snake_case)]
+  pub fn combine_with_geometry(&self, inputGeometry: &mut ID2D1Geometry, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry, combineMode, inputGeometryTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Outline
+  
+  #[allow(non_snake_case)]
+  pub fn outline(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeArea
+  
+  #[allow(non_snake_case)]
+  pub fn compute_area(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, area: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform, flatteningTolerance, area) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputeLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_length(&self, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, length: &mut FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform, flatteningTolerance, length) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ComputePointAtLength
+  
+  #[allow(non_snake_case)]
+  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, point: &mut D2D1_POINT_2F, unitTangentVector: &mut D2D1_POINT_2F) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform, flatteningTolerance, point, unitTangentVector) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Widen
+  
+  #[allow(non_snake_case)]
+  pub fn widen(&self, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle, worldTransform: &D2D1_MATRIX_3X2_F, flatteningTolerance: FLOAT, geometrySink: &mut ID2D1SimplifiedGeometrySink) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle, worldTransform, flatteningTolerance, geometrySink) };
+    hr2ret(_hr,_hr)
+  }
+  
   //  Method GetSourceGeometry
   //  Error: sourceGeometry parameter: ANone annotation cannot be used with double indirection
   //  Method GetTransform

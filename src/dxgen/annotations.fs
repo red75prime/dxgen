@@ -177,7 +177,8 @@ type MethodAnnotation=
   |MADontImplement
   |MAMangle of string // The method is overloaded.
                       // I need to give another name to it.
-  |MAReturnsNonRefcountedInterface
+  |MAReturnsInterface
+  |MACustom of string // custom implementation
 
 type EnumAnnotation=
   |EAFlags
