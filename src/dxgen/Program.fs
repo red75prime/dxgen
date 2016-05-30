@@ -112,7 +112,9 @@ let main argv =
                 let header = FileInfo(codeModule.PrecompileHeader)
                 if header.Exists then Some(header) else None
 
-            for header in codeModule.Headers do
+            for headerInfo in codeModule.Headers do
+                let header = headerInfo.Name
+
                 let headerPath = 
                   codeModule.IncludePaths 
                     |> Seq.map (fun incPath -> FileInfo(Path.Combine(sdkLocation, incPath, header)))
@@ -144,13 +146,13 @@ let main argv =
                     for KeyValue(f,t) in wapi do
                       use sw=new System.IO.StreamWriter(@".\winapi\"+f)
                       sw.Write(t)
-                  let (rtext, interfaces, deps)=safegen.safeInterfaceGen headerName (!allInterfaces) (codeModule.NoEnumConversion) types annotations
+                  let (rtext, interfaces, deps)=safegen.safeInterfaceGen headerName (headerInfo.Uses) (!allInterfaces) (codeModule.NoEnumConversion) types annotations
                   allInterfaces := interfaces
                   let moduleName = headerName+"_safe"
                   System.IO.Directory.CreateDirectory(@".\safe") |> ignore //TODO: use Path
                   use swsi=new System.IO.StreamWriter(@".\safe\"+moduleName+".rs")
-                  for modl in annotations.dependencies do
-                    swsi.WriteLine("use "+modl+"_safe::*;")
+//                  for modl in annotations.dependencies do
+//                    swsi.WriteLine("use "+modl+"_safe::*;")
                   swsi.Write(rtext)
                   modules := moduleName :: !modules
                   printfn "Processing header %s" headerPath.FullName
