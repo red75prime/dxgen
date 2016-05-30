@@ -179,7 +179,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
 //    else
 //      apl "#[repr(C)] #[derive(Clone, Copy, Debug)]"
     apl <| sprintf "STRUCT!{struct %s {" name
-    for (fname,fty) in ses |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |_-> raise <| new System.Exception("Bitfields aren't supported")) do
+    for (fname,fty) in ses |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |CStructElem(fname,fty,Some(bw))-> Some(fname, Unimplemented("BitfieldsArentSupported("+(bw.ToString())+")"))) do
       apl <| System.String.Format("    {0}: {1},", fname, tyToRustGlobal fty)
     apl "}}"
     apl ""

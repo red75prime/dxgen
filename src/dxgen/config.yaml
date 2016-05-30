@@ -50,7 +50,7 @@ modules:
             uses:
               - dwrite_safe
       no-winapi-gen: false
-      no-enum-conversion: false
+      no-enum-conversion: true
       
     - name: dwrite
       output-path: ../../d2d1/src
@@ -62,6 +62,6 @@ modules:
       headers:
           - name: dwrite.h
       no-winapi-gen: false
-      no-enum-conversion: false
+      no-enum-conversion: true
       
 

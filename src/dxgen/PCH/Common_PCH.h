@@ -3,3 +3,4 @@
 #include <windows.h>
 #undef GetMessage
 #undef GetGlyphIndices
+#undef DrawText

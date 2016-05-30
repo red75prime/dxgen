@@ -11,7 +11,6 @@ impl HasIID for DXGIAdapter1 {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIAdapter1(pp_vtbl as *mut _ as *mut IDXGIAdapter1) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIAdapter1 {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -23,6 +22,8 @@ impl Clone for DXGIAdapter1 {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIAdapter1 {
   //  Method SetPrivateData
@@ -98,7 +99,6 @@ impl HasIID for DXGIAdapter {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIAdapter(pp_vtbl as *mut _ as *mut IDXGIAdapter) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIAdapter {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -110,6 +110,8 @@ impl Clone for DXGIAdapter {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIAdapter {
   //  Method SetPrivateData
@@ -176,7 +178,6 @@ impl HasIID for DXGIDevice1 {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIDevice1(pp_vtbl as *mut _ as *mut IDXGIDevice1) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIDevice1 {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -188,6 +189,8 @@ impl Clone for DXGIDevice1 {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIDevice1 {
   //  Method SetPrivateData
@@ -281,7 +284,6 @@ impl HasIID for DXGIDeviceSubObject {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIDeviceSubObject(pp_vtbl as *mut _ as *mut IDXGIDeviceSubObject) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIDeviceSubObject {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -293,6 +295,8 @@ impl Clone for DXGIDeviceSubObject {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIDeviceSubObject {
   //  Method SetPrivateData
@@ -332,7 +336,6 @@ impl HasIID for DXGIDevice {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIDevice(pp_vtbl as *mut _ as *mut IDXGIDevice) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIDevice {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -344,6 +347,8 @@ impl Clone for DXGIDevice {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIDevice {
   //  Method SetPrivateData
@@ -419,7 +424,6 @@ impl HasIID for DXGIFactory1 {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIFactory1(pp_vtbl as *mut _ as *mut IDXGIFactory1) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIFactory1 {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -431,6 +435,8 @@ impl Clone for DXGIFactory1 {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIFactory1 {
   //  Method SetPrivateData
@@ -533,7 +539,6 @@ impl HasIID for DXGIFactory {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIFactory(pp_vtbl as *mut _ as *mut IDXGIFactory) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIFactory {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -545,6 +550,8 @@ impl Clone for DXGIFactory {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIFactory {
   //  Method SetPrivateData
@@ -629,7 +636,6 @@ impl HasIID for DXGIKeyedMutex {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIKeyedMutex(pp_vtbl as *mut _ as *mut IDXGIKeyedMutex) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIKeyedMutex {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -641,6 +647,8 @@ impl Clone for DXGIKeyedMutex {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIKeyedMutex {
   //  Method SetPrivateData
@@ -698,7 +706,6 @@ impl HasIID for DXGIObject {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIObject(pp_vtbl as *mut _ as *mut IDXGIObject) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIObject {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -710,6 +717,8 @@ impl Clone for DXGIObject {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIObject {
   //  Method SetPrivateData
@@ -749,7 +758,6 @@ impl HasIID for DXGIOutput {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIOutput(pp_vtbl as *mut _ as *mut IDXGIOutput) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIOutput {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -761,6 +769,8 @@ impl Clone for DXGIOutput {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIOutput {
   //  Method SetPrivateData
@@ -908,7 +918,6 @@ impl HasIID for DXGIResource {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIResource(pp_vtbl as *mut _ as *mut IDXGIResource) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGIResource {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -920,6 +929,8 @@ impl Clone for DXGIResource {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGIResource {
   //  Method SetPrivateData
@@ -995,7 +1006,6 @@ impl HasIID for DXGISurface1 {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGISurface1(pp_vtbl as *mut _ as *mut IDXGISurface1) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGISurface1 {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1007,6 +1017,8 @@ impl Clone for DXGISurface1 {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGISurface1 {
   //  Method SetPrivateData
@@ -1091,7 +1103,6 @@ impl HasIID for DXGISurface {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGISurface(pp_vtbl as *mut _ as *mut IDXGISurface) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGISurface {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1103,6 +1114,8 @@ impl Clone for DXGISurface {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGISurface {
   //  Method SetPrivateData
@@ -1169,7 +1182,6 @@ impl HasIID for DXGISwapChain {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DXGISwapChain(pp_vtbl as *mut _ as *mut IDXGISwapChain) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DXGISwapChain {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1181,6 +1193,8 @@ impl Clone for DXGISwapChain {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DXGISwapChain {
   //  Method SetPrivateData
@@ -1302,4 +1316,3 @@ impl DXGISwapChain {
   
   
 }
-

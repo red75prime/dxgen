@@ -4323,7 +4323,7 @@ let d2d1 =
       ("interpolationMode",ANone);
       ("sourceRectangle",ANone);
     ],MANone);
-    ("DrawTextA",[
+    ("DrawText",[
       ("This",AThis);
       ("string",ANone);
       ("stringLength",ANone);

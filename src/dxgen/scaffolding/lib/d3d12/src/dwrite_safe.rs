@@ -10,7 +10,6 @@ impl HasIID for DWriteBitmapRenderTarget {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteBitmapRenderTarget(pp_vtbl as *mut _ as *mut IDWriteBitmapRenderTarget) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteBitmapRenderTarget {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -22,6 +21,8 @@ impl Clone for DWriteBitmapRenderTarget {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteBitmapRenderTarget {
   //  Method DrawGlyphRun
@@ -106,7 +107,6 @@ impl HasIID for DWriteFactory {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFactory(pp_vtbl as *mut _ as *mut IDWriteFactory) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteFactory {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -118,6 +118,8 @@ impl Clone for DWriteFactory {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteFactory {
   //  Method GetSystemFontCollection
@@ -180,7 +182,7 @@ impl DWriteFactory {
   pub fn create_font_face<T: HasIID>(&self, fontFaceType: DWRITE_FONT_FACE_TYPE, fontFiles: &[&T], faceIndex: UINT32, fontFaceSimulationFlags: DWRITE_FONT_SIMULATIONS) -> HResult<DWriteFontFace> {
     let mut lv1: Vec<*mut IUnknown> = fontFiles.iter().map(|o|o.iptr()).collect();
     let mut lv2: *mut IDWriteFontFace = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateFontFace(fontFaceType,  same_length(&[Some(fontFiles.len())]).expect("Arrays must have equal sizes") as UINT32, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, faceIndex, fontFaceSimulationFlags, &mut lv2 as *mut *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateFontFace(fontFaceType, fontFiles.len() as UINT32, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, faceIndex, fontFaceSimulationFlags, &mut lv2 as *mut *mut _) };
     hr2ret(_hr,DWriteFontFace::new(lv2 as *mut _))
   }
   
@@ -261,7 +263,7 @@ impl DWriteFactory {
   #[allow(non_snake_case)]
   pub fn create_text_layout<T: HasIID>(&self, string: &[WCHAR], textFormat: &T, maxWidth: FLOAT, maxHeight: FLOAT) -> HResult<DWriteTextLayout> {
     let mut lv1: *mut IDWriteTextLayout = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateTextLayout(slice_as_ptr(string),  same_length(&[Some(string.len())]).expect("Arrays must have equal sizes") as UINT32, textFormat.iptr() as *mut _ as *mut _ , maxWidth, maxHeight, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateTextLayout(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , maxWidth, maxHeight, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteTextLayout::new(lv1 as *mut _))
   }
   
@@ -270,7 +272,7 @@ impl DWriteFactory {
   #[allow(non_snake_case)]
   pub fn create_gdi_compatible_text_layout<T: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutWidth: FLOAT, layoutHeight: FLOAT, pixelsPerDip: FLOAT, transform: Option<&DWRITE_MATRIX>, useGdiNatural: BOOL) -> HResult<DWriteTextLayout> {
     let mut lv1: *mut IDWriteTextLayout = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateGdiCompatibleTextLayout(slice_as_ptr(string),  same_length(&[Some(string.len())]).expect("Arrays must have equal sizes") as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutWidth, layoutHeight, pixelsPerDip, transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), useGdiNatural, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateGdiCompatibleTextLayout(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutWidth, layoutHeight, pixelsPerDip, transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), useGdiNatural, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteTextLayout::new(lv1 as *mut _))
   }
   
@@ -320,7 +322,6 @@ impl HasIID for DWriteFontCollection {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontCollection(pp_vtbl as *mut _ as *mut IDWriteFontCollection) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteFontCollection {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -332,6 +333,8 @@ impl Clone for DWriteFontCollection {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteFontCollection {
   //  Method GetFontFamilyCount
@@ -381,7 +384,6 @@ impl HasIID for DWriteFontFace {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontFace(pp_vtbl as *mut _ as *mut IDWriteFontFace) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteFontFace {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -393,6 +395,8 @@ impl Clone for DWriteFontFace {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteFontFace {
   //  Method GetType
@@ -454,7 +458,7 @@ impl DWriteFontFace {
   #[allow(non_snake_case)]
   pub fn get_design_glyph_metrics(&self, glyphIndices: &[UINT16], isSideways: BOOL) -> HResult<DWRITE_GLYPH_METRICS> {
     let mut lv1: DWRITE_GLYPH_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetDesignGlyphMetrics(slice_as_ptr(glyphIndices),  same_length(&[Some(glyphIndices.len())]).expect("Arrays must have equal sizes") as UINT32, &mut lv1 as *mut _ as *mut _, isSideways) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetDesignGlyphMetrics(slice_as_ptr(glyphIndices), glyphIndices.len() as UINT32, &mut lv1 as *mut _ as *mut _, isSideways) };
     hr2ret(_hr,lv1)
   }
   
@@ -513,7 +517,6 @@ impl HasIID for DWriteFontFamily {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontFamily(pp_vtbl as *mut _ as *mut IDWriteFontFamily) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteFontFamily {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -525,6 +528,8 @@ impl Clone for DWriteFontFamily {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteFontFamily {
   //  Method GetFontCollection
@@ -591,7 +596,6 @@ impl HasIID for DWriteFontFileEnumerator {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontFileEnumerator(pp_vtbl as *mut _ as *mut IDWriteFontFileEnumerator) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteFontFileEnumerator {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -603,6 +607,8 @@ impl Clone for DWriteFontFileEnumerator {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteFontFileEnumerator {
   //  Method MoveNext
@@ -633,7 +639,6 @@ impl HasIID for DWriteFontFileStream {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontFileStream(pp_vtbl as *mut _ as *mut IDWriteFontFileStream) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteFontFileStream {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -646,6 +651,8 @@ impl Clone for DWriteFontFileStream {
   }
 }
 
+
+
 impl DWriteFontFileStream {
   
 }
@@ -657,7 +664,6 @@ impl HasIID for DWriteFontFile {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontFile(pp_vtbl as *mut _ as *mut IDWriteFontFile) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteFontFile {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -670,6 +676,8 @@ impl Clone for DWriteFontFile {
   }
 }
 
+
+
 impl DWriteFontFile {
   
 }
@@ -681,7 +689,6 @@ impl HasIID for DWriteFontList {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontList(pp_vtbl as *mut _ as *mut IDWriteFontList) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteFontList {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -693,6 +700,8 @@ impl Clone for DWriteFontList {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteFontList {
   //  Method GetFontCollection
@@ -732,7 +741,6 @@ impl HasIID for DWriteFont {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFont(pp_vtbl as *mut _ as *mut IDWriteFont) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteFont {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -744,6 +752,8 @@ impl Clone for DWriteFont {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteFont {
   //  Method GetFontFamily
@@ -856,7 +866,6 @@ impl HasIID for DWriteGdiInterop {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteGdiInterop(pp_vtbl as *mut _ as *mut IDWriteGdiInterop) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteGdiInterop {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -868,6 +877,8 @@ impl Clone for DWriteGdiInterop {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteGdiInterop {
   //  Method CreateFontFromLOGFONT
@@ -926,7 +937,6 @@ impl HasIID for DWriteGlyphRunAnalysis {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteGlyphRunAnalysis(pp_vtbl as *mut _ as *mut IDWriteGlyphRunAnalysis) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteGlyphRunAnalysis {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -938,6 +948,8 @@ impl Clone for DWriteGlyphRunAnalysis {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteGlyphRunAnalysis {
   //  Method GetAlphaTextureBounds
@@ -954,7 +966,7 @@ impl DWriteGlyphRunAnalysis {
   #[allow(non_snake_case)]
   pub fn create_alpha_texture(&self, textureType: DWRITE_TEXTURE_TYPE, textureBounds: &RECT, alphaValues: &mut [BYTE]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteGlyphRunAnalysis)).CreateAlphaTexture(textureType, textureBounds, slice_as_mut_ptr(alphaValues),  same_length(&[Some(alphaValues.len())]).expect("Arrays must have equal sizes") as UINT32) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteGlyphRunAnalysis)).CreateAlphaTexture(textureType, textureBounds, slice_as_mut_ptr(alphaValues), alphaValues.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
@@ -979,7 +991,6 @@ impl HasIID for DWriteInlineObject {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteInlineObject(pp_vtbl as *mut _ as *mut IDWriteInlineObject) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteInlineObject {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -991,6 +1002,8 @@ impl Clone for DWriteInlineObject {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteInlineObject {
   //  Method Draw
@@ -1041,7 +1054,6 @@ impl HasIID for DWriteLocalFontFileLoader {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteLocalFontFileLoader(pp_vtbl as *mut _ as *mut IDWriteLocalFontFileLoader) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteLocalFontFileLoader {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1053,6 +1065,8 @@ impl Clone for DWriteLocalFontFileLoader {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteLocalFontFileLoader {
   //  Method GetFilePathLengthFromKey
@@ -1069,7 +1083,7 @@ impl DWriteLocalFontFileLoader {
   #[allow(non_snake_case)]
   pub fn get_file_path_from_key<T>(&self, fontFileReferenceKey: &T, filePath: &mut [WCHAR]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalFontFileLoader)).GetFilePathFromKey(fontFileReferenceKey as *const _ as *const _, mem::size_of_val(fontFileReferenceKey) as UINT32, slice_as_mut_ptr(filePath),  same_length(&[Some(filePath.len())]).expect("Arrays must have equal sizes") as UINT32) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalFontFileLoader)).GetFilePathFromKey(fontFileReferenceKey as *const _ as *const _, mem::size_of_val(fontFileReferenceKey) as UINT32, slice_as_mut_ptr(filePath), filePath.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
@@ -1092,7 +1106,6 @@ impl HasIID for DWriteLocalizedStrings {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteLocalizedStrings(pp_vtbl as *mut _ as *mut IDWriteLocalizedStrings) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteLocalizedStrings {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1104,6 +1117,8 @@ impl Clone for DWriteLocalizedStrings {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteLocalizedStrings {
   //  Method GetCount
@@ -1139,7 +1154,7 @@ impl DWriteLocalizedStrings {
   #[allow(non_snake_case)]
   pub fn get_locale_name(&self, index: UINT32, localeName: &mut [WCHAR]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).GetLocaleName(index, slice_as_mut_ptr(localeName),  same_length(&[Some(localeName.len())]).expect("Arrays must have equal sizes") as UINT32) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).GetLocaleName(index, slice_as_mut_ptr(localeName), localeName.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
@@ -1157,7 +1172,7 @@ impl DWriteLocalizedStrings {
   #[allow(non_snake_case)]
   pub fn get_string(&self, index: UINT32, stringBuffer: &mut [WCHAR]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).GetString(index, slice_as_mut_ptr(stringBuffer),  same_length(&[Some(stringBuffer.len())]).expect("Arrays must have equal sizes") as UINT32) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).GetString(index, slice_as_mut_ptr(stringBuffer), stringBuffer.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
@@ -1171,7 +1186,6 @@ impl HasIID for DWriteNumberSubstitution {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteNumberSubstitution(pp_vtbl as *mut _ as *mut IDWriteNumberSubstitution) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteNumberSubstitution {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1184,6 +1198,8 @@ impl Clone for DWriteNumberSubstitution {
   }
 }
 
+
+
 impl DWriteNumberSubstitution {
   
 }
@@ -1195,7 +1211,6 @@ impl HasIID for DWritePixelSnapping {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWritePixelSnapping(pp_vtbl as *mut _ as *mut IDWritePixelSnapping) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWritePixelSnapping {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1207,6 +1222,8 @@ impl Clone for DWritePixelSnapping {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWritePixelSnapping {
   //  Method IsPixelSnappingDisabled
@@ -1246,7 +1263,6 @@ impl HasIID for DWriteRenderingParams {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteRenderingParams(pp_vtbl as *mut _ as *mut IDWriteRenderingParams) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteRenderingParams {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1258,6 +1274,8 @@ impl Clone for DWriteRenderingParams {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteRenderingParams {
   //  Method GetGamma
@@ -1315,7 +1333,6 @@ impl HasIID for DWriteTextAnalyzer {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteTextAnalyzer(pp_vtbl as *mut _ as *mut IDWriteTextAnalyzer) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteTextAnalyzer {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1327,6 +1344,8 @@ impl Clone for DWriteTextAnalyzer {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteTextAnalyzer {
   //  Method AnalyzeScript
@@ -1381,7 +1400,6 @@ impl HasIID for DWriteTextFormat {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteTextFormat(pp_vtbl as *mut _ as *mut IDWriteTextFormat) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteTextFormat {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1393,6 +1411,8 @@ impl Clone for DWriteTextFormat {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteTextFormat {
   //  Method SetTextAlignment
@@ -1564,7 +1584,7 @@ impl DWriteTextFormat {
   #[allow(non_snake_case)]
   pub fn get_font_family_name(&self, fontFamilyName: &mut [WCHAR]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontFamilyName(slice_as_mut_ptr(fontFamilyName),  same_length(&[Some(fontFamilyName.len())]).expect("Arrays must have equal sizes") as UINT32) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontFamilyName(slice_as_mut_ptr(fontFamilyName), fontFamilyName.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
@@ -1618,7 +1638,7 @@ impl DWriteTextFormat {
   #[allow(non_snake_case)]
   pub fn get_locale_name(&self, localeName: &mut [WCHAR]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetLocaleName(slice_as_mut_ptr(localeName),  same_length(&[Some(localeName.len())]).expect("Arrays must have equal sizes") as UINT32) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetLocaleName(slice_as_mut_ptr(localeName), localeName.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
@@ -1632,7 +1652,6 @@ impl HasIID for DWriteTextLayout {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteTextLayout(pp_vtbl as *mut _ as *mut IDWriteTextLayout) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteTextLayout {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -1644,6 +1663,8 @@ impl Clone for DWriteTextLayout {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteTextLayout {
   //  Method SetTextAlignment
@@ -1815,7 +1836,7 @@ impl DWriteTextLayout {
   #[allow(non_snake_case)]
   pub fn get_font_family_name(&self, fontFamilyName: &mut [WCHAR]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontFamilyName(slice_as_mut_ptr(fontFamilyName),  same_length(&[Some(fontFamilyName.len())]).expect("Arrays must have equal sizes") as UINT32) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontFamilyName(slice_as_mut_ptr(fontFamilyName), fontFamilyName.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
@@ -1869,7 +1890,7 @@ impl DWriteTextLayout {
   #[allow(non_snake_case)]
   pub fn get_locale_name(&self, localeName: &mut [WCHAR]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetLocaleName(slice_as_mut_ptr(localeName),  same_length(&[Some(localeName.len())]).expect("Arrays must have equal sizes") as UINT32) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetLocaleName(slice_as_mut_ptr(localeName), localeName.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
@@ -2042,7 +2063,7 @@ impl DWriteTextLayout {
   #[allow(non_snake_case)]
   pub fn get_font_family_name_tl(&self, currentPosition: UINT32, fontFamilyName: &mut [WCHAR]) -> HResult<DWRITE_TEXT_RANGE> {
     let mut lv1: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetFontFamilyName(currentPosition, slice_as_mut_ptr(fontFamilyName),  same_length(&[Some(fontFamilyName.len())]).expect("Arrays must have equal sizes") as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetFontFamilyName(currentPosition, slice_as_mut_ptr(fontFamilyName), fontFamilyName.len() as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
@@ -2150,7 +2171,7 @@ impl DWriteTextLayout {
   #[allow(non_snake_case)]
   pub fn get_locale_name_tl(&self, currentPosition: UINT32, localeName: &mut [WCHAR]) -> HResult<DWRITE_TEXT_RANGE> {
     let mut lv1: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetLocaleName(currentPosition, slice_as_mut_ptr(localeName),  same_length(&[Some(localeName.len())]).expect("Arrays must have equal sizes") as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetLocaleName(currentPosition, slice_as_mut_ptr(localeName), localeName.len() as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
@@ -2168,7 +2189,7 @@ impl DWriteTextLayout {
   #[allow(non_snake_case)]
   pub fn get_line_metrics(&self, lineMetrics: Option<&mut [DWRITE_LINE_METRICS]>) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetLineMetrics(opt_arr_as_mut_ptr(&lineMetrics) as *mut _,  same_length(&[lineMetrics.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetLineMetrics(opt_arr_as_mut_ptr(&lineMetrics) as *mut _, lineMetrics.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
@@ -2195,7 +2216,7 @@ impl DWriteTextLayout {
   #[allow(non_snake_case)]
   pub fn get_cluster_metrics(&self, clusterMetrics: Option<&mut [DWRITE_CLUSTER_METRICS]>) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetClusterMetrics(opt_arr_as_mut_ptr(&clusterMetrics) as *mut _,  same_length(&[clusterMetrics.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetClusterMetrics(opt_arr_as_mut_ptr(&clusterMetrics) as *mut _, clusterMetrics.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
@@ -2235,7 +2256,7 @@ impl DWriteTextLayout {
   #[allow(non_snake_case)]
   pub fn hit_test_text_range(&self, textPosition: UINT32, textLength: UINT32, originX: FLOAT, originY: FLOAT, hitTestMetrics: Option<&mut [DWRITE_HIT_TEST_METRICS]>) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).HitTestTextRange(textPosition, textLength, originX, originY, opt_arr_as_mut_ptr(&hitTestMetrics) as *mut _,  same_length(&[hitTestMetrics.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).HitTestTextRange(textPosition, textLength, originX, originY, opt_arr_as_mut_ptr(&hitTestMetrics) as *mut _, hitTestMetrics.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
@@ -2249,7 +2270,6 @@ impl HasIID for DWriteTextRenderer {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteTextRenderer(pp_vtbl as *mut _ as *mut IDWriteTextRenderer) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteTextRenderer {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -2261,6 +2281,8 @@ impl Clone for DWriteTextRenderer {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteTextRenderer {
   //  Method IsPixelSnappingDisabled
@@ -2336,7 +2358,6 @@ impl HasIID for DWriteTypography {
   fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteTypography(pp_vtbl as *mut _ as *mut IDWriteTypography) }
   fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-
 impl Drop for DWriteTypography {
   fn drop(&mut self) {
     release_com_ptr(self)
@@ -2348,6 +2369,8 @@ impl Clone for DWriteTypography {
     clone_com_ptr(self)
   }
 }
+
+
 
 impl DWriteTypography {
   //  Method AddFontFeature
@@ -2379,4 +2402,3 @@ impl DWriteTypography {
   
   
 }
-
