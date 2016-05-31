@@ -99,6 +99,7 @@ type ParamAnnotation=
   |InByteArrayOfSize of string*uint32 // name of array lenght parameter
   |InOptional
   |InComPtr
+  |InInterface of string // parameter name of iid
   |OutReturnComPtr
   |OutReturnOptionalComPtr // Can return NULL
   |InOptionalComPtr
@@ -134,6 +135,7 @@ let getReferencedParameters parameterAnnotation=
   |InOutArrayOfSize p -> [p]
   |InByteArrayOfSize (p,_) -> [p]
   |TypeSelector (p,_) -> [p]
+  |InInterface p -> [p]
   |_ -> []
 
 let getReturnDesc parmAnnot=
@@ -164,6 +166,7 @@ let getReturnDesc parmAnnot=
   |InByteArrayOfSize _ -> []
   |InOptional -> []
   |InComPtr -> []
+  |InInterface _ -> []
   |InOptionalComPtr -> []
   |OutOptional -> []
   |TypeSelector _ -> []

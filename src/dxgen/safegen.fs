@@ -470,7 +470,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           |_ -> 
             addSafeParm safeParmName (convertTypeToRustNoArray pty pannot)
             addNativeParm pname (Some(safeParmName)) safeParmName
-        |[(rname, OutReturnInterface _, _)] |[(rname, OutReturnKnownInterface _, _)] ->
+        |[(rname, OutReturnInterface _, _)] |[(rname, OutReturnKnownInterface _, _)] |[(rname, InInterface _, _)] ->
           () // processed in referenced paramerer
         |[(rname, InOutOfSize _, _)] |[(rname, OutOfSize _, _)] |[(rname, InOfSize _, _)] ->
           // this parameter conveys the size of another parameter
@@ -863,6 +863,21 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
         |_ ->
           addError (sprintf "%s parameter: OutReturnInterface shouldn't have references. But references are %A" pname refs)
+// -----------------------------------------------------------------------------------------------------------------------------------------
+      |InInterface rname ->
+        match refs with 
+        |[] ->
+          match pty with
+          |Ptr(uty) ->
+            // TODO: check pty. 
+            let gt=newGenType "HasIID"
+            let rty=RGeneric(gt, "HasIID")
+            addSafeParm safeParmName (RBorrow(rty))
+            addNativeParm pname (Some(safeParmName)) (pname+".iptr() as *mut _ as *mut c_void")
+            addNativeParm rname None (gt+"::iid()")
+          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+        |_ ->
+          addError (sprintf "%s parameter: InInterface shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |OutReturnKnownInterface(rname,iname) ->
         match refs with 
