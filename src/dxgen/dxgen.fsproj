@@ -78,6 +78,7 @@
     <Compile Include="annotations.fs" />
     <Compile Include="custom_impls.fs" />
     <Compile Include="annotations_d2d1.fs" />
+    <Compile Include="annotations_dwrite.fs" />
     <Compile Include="annotations_autogen.fs" />
     <Compile Include="salParser.fs" />
     <Compile Include="rustdesc.fs" />

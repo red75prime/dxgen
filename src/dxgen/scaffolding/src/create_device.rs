@@ -7,6 +7,7 @@ use d3d12_sys::*;
 use dxgi_sys::*;
 use d3dcompiler_sys::*;
 use d2d1_sys::*;
+use dwrite_sys::*;
 
 pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>,
                            min_feat_level: D3D_FEATURE_LEVEL)
@@ -55,6 +56,18 @@ pub fn create_d2d1_factory_single_threaded() -> HResult<D2D1Factory> {
     };
     if hr == 0 {
         Ok(D2D1Factory::new(p_fac))
+    } else {
+        Err(hr)
+    }
+}
+
+pub fn create_dwrite_factory_shared() -> HResult<DWriteFactory> {
+    let mut p_fac: *mut IUnknown = ptr::null_mut();
+    let hr = unsafe {
+        DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, DWriteFactory::iid(), &mut p_fac as *mut *mut _ as *mut *mut _)
+    };
+    if hr == 0 {
+        Ok(DWriteFactory::new(p_fac))
     } else {
         Err(hr)
     }

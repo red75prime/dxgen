@@ -7,6 +7,7 @@ dependencies = [
  "d2d1-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "d3d12-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "d3dcompiler-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "dwrite-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "dx_safe 0.3.2",
  "dxgi-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "dxguid-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
@@ -67,6 +68,15 @@ dependencies = [
 
 [[package]]
 name = "d3dcompiler-sys"
+version = "0.2.0"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#903e70a22d4f36faed16690adf5a2965b77512dd"
+dependencies = [
+ "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+]
+
+[[package]]
+name = "dwrite-sys"
 version = "0.2.0"
 source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#903e70a22d4f36faed16690adf5a2965b77512dd"
 dependencies = [
@@ -250,7 +260,7 @@ dependencies = [
  "aho-corasick 0.5.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "memchr 0.1.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex-syntax 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "thread_local 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thread_local 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "utf8-ranges 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -275,7 +285,7 @@ dependencies = [
 
 [[package]]
 name = "thread_local"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "thread-id 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",

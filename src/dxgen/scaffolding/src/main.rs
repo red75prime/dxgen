@@ -22,6 +22,7 @@ extern crate crossbeam;
 extern crate obj;
 extern crate itertools;
 extern crate d2d1 as d2d1_sys;
+extern crate dwrite as dwrite_sys;
 
 #[macro_use] mod macros;
 mod create_device;

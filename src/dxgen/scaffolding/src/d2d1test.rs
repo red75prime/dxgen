@@ -26,15 +26,27 @@ pub fn main() {
     presentOptions: D2D1_PRESENT_OPTIONS_NONE,
   };
   let rt = factory.create_hwnd_render_target(&rtprop, &rthwndprop).expect("Cannot create D2D1HWNDRenderTarget");
-  for mmsg in wnd.poll_events() {
-    if let Some(msg) = mmsg {
-      if msg.message == WM_PAINT {
+  let bbrush = rt.create_solid_color_brush(&D3DCOLORVALUE{r: 0., g: 0., b: 0., a: 1.0}, None).unwrap();
+  let dwfactory = create_device::create_dwrite_factory_shared();
+  for msg in wnd.events() { // blocking window event iterator
+    match msg.message {
+      WM_PAINT => {
         rt.begin_draw();
         rt.clear(&D3DCOLORVALUE{r: 0.5, g: 0.9, b: 0.5, a: 1.0});
+        rt.fill_rectangle(&D2D1_RECT_F{left: 5., top: 5., right: 30., bottom: 40.}, &bbrush);
         rt.end_draw(None, None).unwrap();
-      }
-    } else {
-      ::std::thread::yield_now();
+        unsafe{ ::user32::ValidateRect(wnd.get_hwnd(), ::std::ptr::null()) };
+      },
+      WM_SIZE => {
+          // Normally this message goes to wndproc, in window.rs I repost it into message queue to prevent reentrancy problems
+          let w = LOWORD(msg.lParam as u32) as u32;
+          let h = HIWORD(msg.lParam as u32) as u32;
+          rt.resize(&D2D1_SIZE_U{width: w, height: h}).unwrap();
+          unsafe{ ::user32::InvalidateRect(wnd.get_hwnd(), ::std::ptr::null(), 0) };
+      },
+      _ => {
+        // do nothing
+      },
     }
   }
 }
