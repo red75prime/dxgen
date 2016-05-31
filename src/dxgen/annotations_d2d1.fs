@@ -527,43 +527,42 @@ let d2d1 =
       ("gradientStopCollection",InComPtr);
       ("radialGradientBrush",OutReturnComPtr);
     ],MANone);
-    // Continue here
     ("CreateCompatibleRenderTarget",[
       ("This",AThis);
-      ("desiredSize",ANone);
-      ("desiredPixelSize",ANone);
-      ("desiredFormat",ANone);
+      ("desiredSize",InOptional);
+      ("desiredPixelSize",InOptional);
+      ("desiredFormat",InOptional);
       ("options",ANone);
-      ("bitmapRenderTarget",ANone);
+      ("bitmapRenderTarget",OutReturnComPtr);
     ],MANone);
     ("CreateLayer",[
       ("This",AThis);
-      ("size",ANone);
-      ("layer",ANone);
+      ("size",InOptional);
+      ("layer",OutReturnComPtr);
     ],MANone);
     ("CreateMesh",[
       ("This",AThis);
-      ("mesh",ANone);
+      ("mesh",OutReturnComPtr);
     ],MANone);
     ("DrawLine",[
       ("This",AThis);
       ("point0",ANone);
       ("point1",ANone);
-      ("brush",ANone);
+      ("brush",InComPtr);
       ("strokeWidth",ANone);
-      ("strokeStyle",ANone);
+      ("strokeStyle",InOptionalComPtr);
     ],MANone);
     ("DrawRectangle",[
       ("This",AThis);
       ("rect",ANone);
-      ("brush",ANone);
+      ("brush",InComPtr);
       ("strokeWidth",ANone);
-      ("strokeStyle",ANone);
+      ("strokeStyle",InOptionalComPtr);
     ],MANone);
     ("FillRectangle",[
       ("This",AThis);
       ("rect",ANone);
-      ("brush",ANone);
+      ("brush",InComPtr);
     ],MANone);
     ("DrawRoundedRectangle",[
       ("This",AThis);
@@ -625,11 +624,11 @@ let d2d1 =
     ],MANone);
     ("DrawText",[
       ("This",AThis);
-      ("string",ANone);
+      ("string", InArrayOfSize "stringLength");
       ("stringLength",ANone);
-      ("textFormat",ANone);
+      ("textFormat",InComPtr);
       ("layoutRect",ANone);
-      ("defaultForegroundBrush",ANone);
+      ("defaultForegroundBrush",InComPtr);
       ("options",ANone);
       ("measuringMode",ANone);
     ],MANone);
@@ -697,8 +696,8 @@ let d2d1 =
     ],MANone);
     ("Flush",[
       ("This",AThis);
-      ("tag1",ANone);
-      ("tag2",ANone);
+      ("tag1",OutOptional);
+      ("tag2",OutOptional);
     ],MANone);
     ("SaveDrawingState",[
       ("This",AThis);
@@ -725,8 +724,8 @@ let d2d1 =
     ],MANone);
     ("EndDraw",[
       ("This",AThis);
-      ("tag1",ANone);
-      ("tag2",ANone);
+      ("tag1",OutOptional);
+      ("tag2",OutOptional);
     ],MANone);
     ("GetPixelFormat",[
       ("This",AThis);

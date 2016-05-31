@@ -250,35 +250,56 @@ impl D2D1BitmapRenderTarget {
   }
   
   //  Method CreateCompatibleRenderTarget
-  //  Error: bitmapRenderTarget parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_compatible_render_target(&self, desiredSize: Option<&D2D1_SIZE_F>, desiredPixelSize: Option<&D2D1_SIZE_U>, desiredFormat: Option<&D2D1_PIXEL_FORMAT>, options: D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS) -> HResult<D2D1BitmapRenderTarget> {
+    let mut lv1: *mut ID2D1BitmapRenderTarget = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateCompatibleRenderTarget(desiredSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredPixelSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredFormat.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), options, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1BitmapRenderTarget::new(lv1 as *mut _))
+  }
+  
   //  Method CreateLayer
-  //  Error: layer parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_layer(&self, size: Option<&D2D1_SIZE_F>) -> HResult<D2D1Layer> {
+    let mut lv1: *mut ID2D1Layer = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLayer(size.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Layer::new(lv1 as *mut _))
+  }
+  
   //  Method CreateMesh
-  //  Error: mesh parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_mesh(&self) -> HResult<D2D1Mesh> {
+    let mut lv1: *mut ID2D1Mesh = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateMesh(&mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Mesh::new(lv1 as *mut _))
+  }
+  
   //  Method DrawLine
   
   #[allow(non_snake_case)]
-  pub fn draw_line(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  pub fn draw_line<T: HasIID>(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   
   //  Method DrawRectangle
   
   #[allow(non_snake_case)]
-  pub fn draw_rectangle(&self, rect: &D2D1_RECT_F, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  pub fn draw_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   
   //  Method FillRectangle
   
   #[allow(non_snake_case)]
-  pub fn fill_rectangle(&self, rect: &D2D1_RECT_F, brush: &mut ID2D1Brush) -> () {
+  pub fn fill_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush.iptr() as *mut _ as *mut _ ) };
     ()
   }
   
@@ -366,9 +387,9 @@ impl D2D1BitmapRenderTarget {
   //  Method DrawText
   
   #[allow(non_snake_case)]
-  pub fn draw_text(&self, string: &WCHAR, stringLength: UINT32, textFormat: &mut IDWriteTextFormat, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &mut ID2D1Brush, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
+  pub fn draw_text<T: HasIID, T1: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &T1, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(string, stringLength, textFormat, layoutRect, defaultForegroundBrush, options, measuringMode) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutRect, defaultForegroundBrush.iptr() as *mut _ as *mut _ , options, measuringMode) };
     ()
   }
   
@@ -494,9 +515,9 @@ impl D2D1BitmapRenderTarget {
   //  Method Flush
   
   #[allow(non_snake_case)]
-  pub fn flush(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> HResult<HRESULT> {
+  pub fn flush(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(tag1, tag2) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
     hr2ret(_hr,_hr)
   }
   
@@ -557,9 +578,9 @@ impl D2D1BitmapRenderTarget {
   //  Method EndDraw
   
   #[allow(non_snake_case)]
-  pub fn end_draw(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> HResult<HRESULT> {
+  pub fn end_draw(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(tag1, tag2) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
     hr2ret(_hr,_hr)
   }
   
@@ -910,35 +931,56 @@ impl D2D1DCRenderTarget {
   }
   
   //  Method CreateCompatibleRenderTarget
-  //  Error: bitmapRenderTarget parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_compatible_render_target(&self, desiredSize: Option<&D2D1_SIZE_F>, desiredPixelSize: Option<&D2D1_SIZE_U>, desiredFormat: Option<&D2D1_PIXEL_FORMAT>, options: D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS) -> HResult<D2D1BitmapRenderTarget> {
+    let mut lv1: *mut ID2D1BitmapRenderTarget = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateCompatibleRenderTarget(desiredSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredPixelSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredFormat.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), options, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1BitmapRenderTarget::new(lv1 as *mut _))
+  }
+  
   //  Method CreateLayer
-  //  Error: layer parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_layer(&self, size: Option<&D2D1_SIZE_F>) -> HResult<D2D1Layer> {
+    let mut lv1: *mut ID2D1Layer = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLayer(size.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Layer::new(lv1 as *mut _))
+  }
+  
   //  Method CreateMesh
-  //  Error: mesh parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_mesh(&self) -> HResult<D2D1Mesh> {
+    let mut lv1: *mut ID2D1Mesh = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateMesh(&mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Mesh::new(lv1 as *mut _))
+  }
+  
   //  Method DrawLine
   
   #[allow(non_snake_case)]
-  pub fn draw_line(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  pub fn draw_line<T: HasIID>(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   
   //  Method DrawRectangle
   
   #[allow(non_snake_case)]
-  pub fn draw_rectangle(&self, rect: &D2D1_RECT_F, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  pub fn draw_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   
   //  Method FillRectangle
   
   #[allow(non_snake_case)]
-  pub fn fill_rectangle(&self, rect: &D2D1_RECT_F, brush: &mut ID2D1Brush) -> () {
+  pub fn fill_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush.iptr() as *mut _ as *mut _ ) };
     ()
   }
   
@@ -1026,9 +1068,9 @@ impl D2D1DCRenderTarget {
   //  Method DrawText
   
   #[allow(non_snake_case)]
-  pub fn draw_text(&self, string: &WCHAR, stringLength: UINT32, textFormat: &mut IDWriteTextFormat, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &mut ID2D1Brush, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
+  pub fn draw_text<T: HasIID, T1: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &T1, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(string, stringLength, textFormat, layoutRect, defaultForegroundBrush, options, measuringMode) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutRect, defaultForegroundBrush.iptr() as *mut _ as *mut _ , options, measuringMode) };
     ()
   }
   
@@ -1154,9 +1196,9 @@ impl D2D1DCRenderTarget {
   //  Method Flush
   
   #[allow(non_snake_case)]
-  pub fn flush(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> HResult<HRESULT> {
+  pub fn flush(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(tag1, tag2) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
     hr2ret(_hr,_hr)
   }
   
@@ -1217,9 +1259,9 @@ impl D2D1DCRenderTarget {
   //  Method EndDraw
   
   #[allow(non_snake_case)]
-  pub fn end_draw(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> HResult<HRESULT> {
+  pub fn end_draw(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(tag1, tag2) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
     hr2ret(_hr,_hr)
   }
   
@@ -2362,35 +2404,56 @@ impl D2D1HwndRenderTarget {
   }
   
   //  Method CreateCompatibleRenderTarget
-  //  Error: bitmapRenderTarget parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_compatible_render_target(&self, desiredSize: Option<&D2D1_SIZE_F>, desiredPixelSize: Option<&D2D1_SIZE_U>, desiredFormat: Option<&D2D1_PIXEL_FORMAT>, options: D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS) -> HResult<D2D1BitmapRenderTarget> {
+    let mut lv1: *mut ID2D1BitmapRenderTarget = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateCompatibleRenderTarget(desiredSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredPixelSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredFormat.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), options, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1BitmapRenderTarget::new(lv1 as *mut _))
+  }
+  
   //  Method CreateLayer
-  //  Error: layer parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_layer(&self, size: Option<&D2D1_SIZE_F>) -> HResult<D2D1Layer> {
+    let mut lv1: *mut ID2D1Layer = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLayer(size.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Layer::new(lv1 as *mut _))
+  }
+  
   //  Method CreateMesh
-  //  Error: mesh parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_mesh(&self) -> HResult<D2D1Mesh> {
+    let mut lv1: *mut ID2D1Mesh = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateMesh(&mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Mesh::new(lv1 as *mut _))
+  }
+  
   //  Method DrawLine
   
   #[allow(non_snake_case)]
-  pub fn draw_line(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  pub fn draw_line<T: HasIID>(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   
   //  Method DrawRectangle
   
   #[allow(non_snake_case)]
-  pub fn draw_rectangle(&self, rect: &D2D1_RECT_F, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  pub fn draw_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   
   //  Method FillRectangle
   
   #[allow(non_snake_case)]
-  pub fn fill_rectangle(&self, rect: &D2D1_RECT_F, brush: &mut ID2D1Brush) -> () {
+  pub fn fill_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush.iptr() as *mut _ as *mut _ ) };
     ()
   }
   
@@ -2478,9 +2541,9 @@ impl D2D1HwndRenderTarget {
   //  Method DrawText
   
   #[allow(non_snake_case)]
-  pub fn draw_text(&self, string: &WCHAR, stringLength: UINT32, textFormat: &mut IDWriteTextFormat, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &mut ID2D1Brush, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
+  pub fn draw_text<T: HasIID, T1: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &T1, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(string, stringLength, textFormat, layoutRect, defaultForegroundBrush, options, measuringMode) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutRect, defaultForegroundBrush.iptr() as *mut _ as *mut _ , options, measuringMode) };
     ()
   }
   
@@ -2606,9 +2669,9 @@ impl D2D1HwndRenderTarget {
   //  Method Flush
   
   #[allow(non_snake_case)]
-  pub fn flush(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> HResult<HRESULT> {
+  pub fn flush(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(tag1, tag2) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
     hr2ret(_hr,_hr)
   }
   
@@ -2669,9 +2732,9 @@ impl D2D1HwndRenderTarget {
   //  Method EndDraw
   
   #[allow(non_snake_case)]
-  pub fn end_draw(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> HResult<HRESULT> {
+  pub fn end_draw(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(tag1, tag2) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
     hr2ret(_hr,_hr)
   }
   
@@ -3607,35 +3670,56 @@ impl D2D1RenderTarget {
   }
   
   //  Method CreateCompatibleRenderTarget
-  //  Error: bitmapRenderTarget parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_compatible_render_target(&self, desiredSize: Option<&D2D1_SIZE_F>, desiredPixelSize: Option<&D2D1_SIZE_U>, desiredFormat: Option<&D2D1_PIXEL_FORMAT>, options: D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS) -> HResult<D2D1BitmapRenderTarget> {
+    let mut lv1: *mut ID2D1BitmapRenderTarget = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateCompatibleRenderTarget(desiredSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredPixelSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredFormat.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), options, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1BitmapRenderTarget::new(lv1 as *mut _))
+  }
+  
   //  Method CreateLayer
-  //  Error: layer parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_layer(&self, size: Option<&D2D1_SIZE_F>) -> HResult<D2D1Layer> {
+    let mut lv1: *mut ID2D1Layer = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLayer(size.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Layer::new(lv1 as *mut _))
+  }
+  
   //  Method CreateMesh
-  //  Error: mesh parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_mesh(&self) -> HResult<D2D1Mesh> {
+    let mut lv1: *mut ID2D1Mesh = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateMesh(&mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Mesh::new(lv1 as *mut _))
+  }
+  
   //  Method DrawLine
   
   #[allow(non_snake_case)]
-  pub fn draw_line(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  pub fn draw_line<T: HasIID>(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   
   //  Method DrawRectangle
   
   #[allow(non_snake_case)]
-  pub fn draw_rectangle(&self, rect: &D2D1_RECT_F, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  pub fn draw_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   
   //  Method FillRectangle
   
   #[allow(non_snake_case)]
-  pub fn fill_rectangle(&self, rect: &D2D1_RECT_F, brush: &mut ID2D1Brush) -> () {
+  pub fn fill_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush.iptr() as *mut _ as *mut _ ) };
     ()
   }
   
@@ -3723,9 +3807,9 @@ impl D2D1RenderTarget {
   //  Method DrawText
   
   #[allow(non_snake_case)]
-  pub fn draw_text(&self, string: &WCHAR, stringLength: UINT32, textFormat: &mut IDWriteTextFormat, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &mut ID2D1Brush, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
+  pub fn draw_text<T: HasIID, T1: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &T1, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(string, stringLength, textFormat, layoutRect, defaultForegroundBrush, options, measuringMode) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutRect, defaultForegroundBrush.iptr() as *mut _ as *mut _ , options, measuringMode) };
     ()
   }
   
@@ -3851,9 +3935,9 @@ impl D2D1RenderTarget {
   //  Method Flush
   
   #[allow(non_snake_case)]
-  pub fn flush(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> HResult<HRESULT> {
+  pub fn flush(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(tag1, tag2) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
     hr2ret(_hr,_hr)
   }
   
@@ -3914,9 +3998,9 @@ impl D2D1RenderTarget {
   //  Method EndDraw
   
   #[allow(non_snake_case)]
-  pub fn end_draw(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> HResult<HRESULT> {
+  pub fn end_draw(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(tag1, tag2) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
     hr2ret(_hr,_hr)
   }
   

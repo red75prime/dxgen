@@ -6,6 +6,7 @@ use std::ptr;
 use d3d12_sys::*;
 use dxgi_sys::*;
 use d3dcompiler_sys::*;
+use d2d1_sys::*;
 
 pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>,
                            min_feat_level: D3D_FEATURE_LEVEL)
@@ -42,6 +43,18 @@ pub fn create_dxgi_factory2<T: HasIID>(debug: bool) -> HResult<T> {
     };
     if hr == 0 {
         Ok(T::new(p_fac))
+    } else {
+        Err(hr)
+    }
+}
+
+pub fn create_d2d1_factory_single_threaded() -> HResult<D2D1Factory> {
+    let mut p_fac: *mut IUnknown = ptr::null_mut();
+    let hr = unsafe {
+        D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, D2D1Factory::iid(), ptr::null(), &mut p_fac as *mut *mut _ as *mut *mut _)
+    };
+    if hr == 0 {
+        Ok(D2D1Factory::new(p_fac))
     } else {
         Err(hr)
     }
