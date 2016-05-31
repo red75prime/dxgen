@@ -178,21 +178,77 @@ impl D2D1BitmapRenderTarget {
   }
   
   //  Method CreateBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub unsafe fn create_bitmap<T>(&self, size: D2D1_SIZE_U, srcData: &[T], pitch: UINT32, bitmapProperties: &D2D1_BITMAP_PROPERTIES) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr= { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmap(size, srcData.as_ptr() as *const _, pitch, bitmapProperties, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateBitmapFromWicBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_bitmap_from_wic_bitmap<T: HasIID>(&self, wicBitmapSource: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapFromWicBitmap(wicBitmapSource.iptr() as *mut _ as *mut _ , bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateSharedBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_shared_bitmap<T: HasIID>(&self, data: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSharedBitmap(T::iid(), data.iptr() as *mut _ as *mut c_void, bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateBitmapBrush
-  //  Error: bitmapBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_bitmap_brush<T: HasIID>(&self, bitmap: &T, bitmapBrushProperties: Option<&D2D1_BITMAP_BRUSH_PROPERTIES>, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1BitmapBrush> {
+    let mut lv1: *mut ID2D1BitmapBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapBrush(bitmap.iptr() as *mut _ as *mut _ , bitmapBrushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1BitmapBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateSolidColorBrush
-  //  Error: solidColorBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_solid_color_brush(&self, color: &D2D1_COLOR_F, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1SolidColorBrush> {
+    let mut lv1: *mut ID2D1SolidColorBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSolidColorBrush(color, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1SolidColorBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateGradientStopCollection
-  //  Error: gradientStopCollection parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_gradient_stop_collection(&self, gradientStops: &[D2D1_GRADIENT_STOP], colorInterpolationGamma: D2D1_GAMMA, extendMode: D2D1_EXTEND_MODE) -> HResult<D2D1GradientStopCollection> {
+    let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateGradientStopCollection(slice_as_ptr(gradientStops), gradientStops.len() as UINT32, colorInterpolationGamma, extendMode, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1GradientStopCollection::new(lv1 as *mut _))
+  }
+  
   //  Method CreateLinearGradientBrush
-  //  Error: linearGradientBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_linear_gradient_brush<T: HasIID>(&self, linearGradientBrushProperties: &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1LinearGradientBrush> {
+    let mut lv1: *mut ID2D1LinearGradientBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLinearGradientBrush(linearGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1LinearGradientBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateRadialGradientBrush
-  //  Error: radialGradientBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_radial_gradient_brush<T: HasIID>(&self, radialGradientBrushProperties: &D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1RadialGradientBrush> {
+    let mut lv1: *mut ID2D1RadialGradientBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateRadialGradientBrush(radialGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1RadialGradientBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateCompatibleRenderTarget
   //  Error: bitmapRenderTarget parameter: ANone annotation cannot be used with double indirection
   //  Method CreateLayer
@@ -782,21 +838,77 @@ impl D2D1DCRenderTarget {
   }
   
   //  Method CreateBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub unsafe fn create_bitmap<T>(&self, size: D2D1_SIZE_U, srcData: &[T], pitch: UINT32, bitmapProperties: &D2D1_BITMAP_PROPERTIES) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr= { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmap(size, srcData.as_ptr() as *const _, pitch, bitmapProperties, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateBitmapFromWicBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_bitmap_from_wic_bitmap<T: HasIID>(&self, wicBitmapSource: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapFromWicBitmap(wicBitmapSource.iptr() as *mut _ as *mut _ , bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateSharedBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_shared_bitmap<T: HasIID>(&self, data: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSharedBitmap(T::iid(), data.iptr() as *mut _ as *mut c_void, bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateBitmapBrush
-  //  Error: bitmapBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_bitmap_brush<T: HasIID>(&self, bitmap: &T, bitmapBrushProperties: Option<&D2D1_BITMAP_BRUSH_PROPERTIES>, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1BitmapBrush> {
+    let mut lv1: *mut ID2D1BitmapBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapBrush(bitmap.iptr() as *mut _ as *mut _ , bitmapBrushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1BitmapBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateSolidColorBrush
-  //  Error: solidColorBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_solid_color_brush(&self, color: &D2D1_COLOR_F, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1SolidColorBrush> {
+    let mut lv1: *mut ID2D1SolidColorBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSolidColorBrush(color, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1SolidColorBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateGradientStopCollection
-  //  Error: gradientStopCollection parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_gradient_stop_collection(&self, gradientStops: &[D2D1_GRADIENT_STOP], colorInterpolationGamma: D2D1_GAMMA, extendMode: D2D1_EXTEND_MODE) -> HResult<D2D1GradientStopCollection> {
+    let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateGradientStopCollection(slice_as_ptr(gradientStops), gradientStops.len() as UINT32, colorInterpolationGamma, extendMode, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1GradientStopCollection::new(lv1 as *mut _))
+  }
+  
   //  Method CreateLinearGradientBrush
-  //  Error: linearGradientBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_linear_gradient_brush<T: HasIID>(&self, linearGradientBrushProperties: &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1LinearGradientBrush> {
+    let mut lv1: *mut ID2D1LinearGradientBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLinearGradientBrush(linearGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1LinearGradientBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateRadialGradientBrush
-  //  Error: radialGradientBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_radial_gradient_brush<T: HasIID>(&self, radialGradientBrushProperties: &D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1RadialGradientBrush> {
+    let mut lv1: *mut ID2D1RadialGradientBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateRadialGradientBrush(radialGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1RadialGradientBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateCompatibleRenderTarget
   //  Error: bitmapRenderTarget parameter: ANone annotation cannot be used with double indirection
   //  Method CreateLayer
@@ -2178,21 +2290,77 @@ impl D2D1HwndRenderTarget {
   }
   
   //  Method CreateBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub unsafe fn create_bitmap<T>(&self, size: D2D1_SIZE_U, srcData: &[T], pitch: UINT32, bitmapProperties: &D2D1_BITMAP_PROPERTIES) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr= { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmap(size, srcData.as_ptr() as *const _, pitch, bitmapProperties, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateBitmapFromWicBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_bitmap_from_wic_bitmap<T: HasIID>(&self, wicBitmapSource: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapFromWicBitmap(wicBitmapSource.iptr() as *mut _ as *mut _ , bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateSharedBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_shared_bitmap<T: HasIID>(&self, data: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSharedBitmap(T::iid(), data.iptr() as *mut _ as *mut c_void, bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateBitmapBrush
-  //  Error: bitmapBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_bitmap_brush<T: HasIID>(&self, bitmap: &T, bitmapBrushProperties: Option<&D2D1_BITMAP_BRUSH_PROPERTIES>, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1BitmapBrush> {
+    let mut lv1: *mut ID2D1BitmapBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapBrush(bitmap.iptr() as *mut _ as *mut _ , bitmapBrushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1BitmapBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateSolidColorBrush
-  //  Error: solidColorBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_solid_color_brush(&self, color: &D2D1_COLOR_F, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1SolidColorBrush> {
+    let mut lv1: *mut ID2D1SolidColorBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSolidColorBrush(color, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1SolidColorBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateGradientStopCollection
-  //  Error: gradientStopCollection parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_gradient_stop_collection(&self, gradientStops: &[D2D1_GRADIENT_STOP], colorInterpolationGamma: D2D1_GAMMA, extendMode: D2D1_EXTEND_MODE) -> HResult<D2D1GradientStopCollection> {
+    let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateGradientStopCollection(slice_as_ptr(gradientStops), gradientStops.len() as UINT32, colorInterpolationGamma, extendMode, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1GradientStopCollection::new(lv1 as *mut _))
+  }
+  
   //  Method CreateLinearGradientBrush
-  //  Error: linearGradientBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_linear_gradient_brush<T: HasIID>(&self, linearGradientBrushProperties: &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1LinearGradientBrush> {
+    let mut lv1: *mut ID2D1LinearGradientBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLinearGradientBrush(linearGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1LinearGradientBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateRadialGradientBrush
-  //  Error: radialGradientBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_radial_gradient_brush<T: HasIID>(&self, radialGradientBrushProperties: &D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1RadialGradientBrush> {
+    let mut lv1: *mut ID2D1RadialGradientBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateRadialGradientBrush(radialGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1RadialGradientBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateCompatibleRenderTarget
   //  Error: bitmapRenderTarget parameter: ANone annotation cannot be used with double indirection
   //  Method CreateLayer
@@ -2781,7 +2949,14 @@ impl D2D1LinearGradientBrush {
   }
   
   //  Method GetGradientStopCollection
-  //  Error: gradientStopCollection parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_gradient_stop_collection(&self) -> D2D1GradientStopCollection {
+    let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1LinearGradientBrush)).GetGradientStopCollection(&mut lv1 as *mut *mut _) };
+    D2D1GradientStopCollection::new(lv1 as *mut _)
+  }
+  
   
 }
 
@@ -2817,7 +2992,14 @@ impl D2D1Mesh {
   }
   
   //  Method Open
-  //  Error: tessellationSink parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn open(&self) -> HResult<D2D1TessellationSink> {
+    let mut lv1: *mut ID2D1TessellationSink = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1Mesh)).Open(&mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1TessellationSink::new(lv1 as *mut _))
+  }
+  
   
 }
 
@@ -2971,32 +3153,39 @@ impl D2D1PathGeometry {
   }
   
   //  Method Open
-  //  Error: geometrySink parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn open(&self) -> HResult<D2D1GeometrySink> {
+    let mut lv1: *mut ID2D1GeometrySink = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).Open(&mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1GeometrySink::new(lv1 as *mut _))
+  }
+  
   //  Method Stream
   
   #[allow(non_snake_case)]
-  pub fn stream(&self, geometrySink: &mut ID2D1GeometrySink) -> HResult<HRESULT> {
+  pub fn stream<T: HasIID>(&self, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).Stream(geometrySink) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).Stream(geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetSegmentCount
   
   #[allow(non_snake_case)]
-  pub fn get_segment_count(&self, count: &mut UINT32) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).GetSegmentCount(count) };
-    hr2ret(_hr,_hr)
+  pub fn get_segment_count(&self) -> HResult<UINT32> {
+    let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).GetSegmentCount(&mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   //  Method GetFigureCount
   
   #[allow(non_snake_case)]
-  pub fn get_figure_count(&self, count: &mut UINT32) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).GetFigureCount(count) };
-    hr2ret(_hr,_hr)
+  pub fn get_figure_count(&self) -> HResult<UINT32> {
+    let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).GetFigureCount(&mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
   }
   
   
@@ -3142,7 +3331,14 @@ impl D2D1RadialGradientBrush {
   }
   
   //  Method GetGradientStopCollection
-  //  Error: gradientStopCollection parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn get_gradient_stop_collection(&self) -> D2D1GradientStopCollection {
+    let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RadialGradientBrush)).GetGradientStopCollection(&mut lv1 as *mut *mut _) };
+    D2D1GradientStopCollection::new(lv1 as *mut _)
+  }
+  
   
 }
 
@@ -3298,10 +3494,10 @@ impl D2D1RectangleGeometry {
   //  Method GetRect
   
   #[allow(non_snake_case)]
-  pub fn get_rect(&self, rect: &mut D2D1_RECT_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RectangleGeometry)).GetRect(rect) };
-    ()
+  pub fn get_rect(&self) -> D2D1_RECT_F {
+    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RectangleGeometry)).GetRect(&mut lv1 as *mut _ as *mut _) };
+    lv1
   }
   
   
@@ -3339,21 +3535,77 @@ impl D2D1RenderTarget {
   }
   
   //  Method CreateBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub unsafe fn create_bitmap<T>(&self, size: D2D1_SIZE_U, srcData: &[T], pitch: UINT32, bitmapProperties: &D2D1_BITMAP_PROPERTIES) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr= { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmap(size, srcData.as_ptr() as *const _, pitch, bitmapProperties, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateBitmapFromWicBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_bitmap_from_wic_bitmap<T: HasIID>(&self, wicBitmapSource: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapFromWicBitmap(wicBitmapSource.iptr() as *mut _ as *mut _ , bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateSharedBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_shared_bitmap<T: HasIID>(&self, data: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSharedBitmap(T::iid(), data.iptr() as *mut _ as *mut c_void, bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
   //  Method CreateBitmapBrush
-  //  Error: bitmapBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_bitmap_brush<T: HasIID>(&self, bitmap: &T, bitmapBrushProperties: Option<&D2D1_BITMAP_BRUSH_PROPERTIES>, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1BitmapBrush> {
+    let mut lv1: *mut ID2D1BitmapBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapBrush(bitmap.iptr() as *mut _ as *mut _ , bitmapBrushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1BitmapBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateSolidColorBrush
-  //  Error: solidColorBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_solid_color_brush(&self, color: &D2D1_COLOR_F, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1SolidColorBrush> {
+    let mut lv1: *mut ID2D1SolidColorBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSolidColorBrush(color, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1SolidColorBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateGradientStopCollection
-  //  Error: gradientStopCollection parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_gradient_stop_collection(&self, gradientStops: &[D2D1_GRADIENT_STOP], colorInterpolationGamma: D2D1_GAMMA, extendMode: D2D1_EXTEND_MODE) -> HResult<D2D1GradientStopCollection> {
+    let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateGradientStopCollection(slice_as_ptr(gradientStops), gradientStops.len() as UINT32, colorInterpolationGamma, extendMode, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1GradientStopCollection::new(lv1 as *mut _))
+  }
+  
   //  Method CreateLinearGradientBrush
-  //  Error: linearGradientBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_linear_gradient_brush<T: HasIID>(&self, linearGradientBrushProperties: &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1LinearGradientBrush> {
+    let mut lv1: *mut ID2D1LinearGradientBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLinearGradientBrush(linearGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1LinearGradientBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateRadialGradientBrush
-  //  Error: radialGradientBrush parameter: ANone annotation cannot be used with double indirection
+  
+  #[allow(non_snake_case)]
+  pub fn create_radial_gradient_brush<T: HasIID>(&self, radialGradientBrushProperties: &D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1RadialGradientBrush> {
+    let mut lv1: *mut ID2D1RadialGradientBrush = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateRadialGradientBrush(radialGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1RadialGradientBrush::new(lv1 as *mut _))
+  }
+  
   //  Method CreateCompatibleRenderTarget
   //  Error: bitmapRenderTarget parameter: ANone annotation cannot be used with double indirection
   //  Method CreateLayer

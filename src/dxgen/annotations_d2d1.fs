@@ -346,7 +346,6 @@ let d2d1 =
       ("geometrySink",InComPtr);
     ],MANone);
   ]);
-  // TODO: annotate and enable
   ("ID2D1GradientStopCollectionVtbl", IAAutogen(Set.ofList []), "ID2D1ResourceVtbl", [
     ("GetGradientStopCount",[
       ("This",AThis);
@@ -402,31 +401,31 @@ let d2d1 =
     ],MANone);
     ("GetGradientStopCollection",[
       ("This",AThis);
-      ("gradientStopCollection",ANone);
+      ("gradientStopCollection",OutReturnComPtr);
     ],MANone);
   ]);
   ("ID2D1MeshVtbl",IAAutogen(Set.ofList []), "ID2D1ResourceVtbl", [
     ("Open",[
       ("This",AThis);
-      ("tessellationSink",ANone);
+      ("tessellationSink",OutReturnComPtr);
     ],MANone);
   ]);
   ("ID2D1PathGeometryVtbl",IAAutogen(Set.ofList []), "ID2D1GeometryVtbl", [
     ("Open",[
       ("This",AThis);
-      ("geometrySink",ANone);
+      ("geometrySink",OutReturnComPtr);
     ],MANone);
     ("Stream",[
       ("This",AThis);
-      ("geometrySink",ANone);
+      ("geometrySink",InComPtr);
     ],MANone);
     ("GetSegmentCount",[
       ("This",AThis);
-      ("count",ANone);
+      ("count",OutReturn);
     ],MANone);
     ("GetFigureCount",[
       ("This",AThis);
-      ("count",ANone);
+      ("count",OutReturn);
     ],MANone);
   ]);
   ("ID2D1RadialGradientBrushVtbl",IAAutogen(Set.ofList []), "ID2D1BrushVtbl", [
@@ -462,13 +461,13 @@ let d2d1 =
     ],MANone);
     ("GetGradientStopCollection",[
       ("This",AThis);
-      ("gradientStopCollection",ANone);
+      ("gradientStopCollection",OutReturnComPtr);
     ],MANone);
   ]);
   ("ID2D1RectangleGeometryVtbl",IAAutogen(Set.ofList []), "ID2D1GeometryVtbl", [
     ("GetRect",[
       ("This",AThis);
-      ("rect",ANone);
+      ("rect",OutReturn);
     ],MANone);
   ]);
   ("ID2D1RenderTargetVtbl",IAAutogen(Set.ofList []), "ID2D1ResourceVtbl", [
@@ -478,56 +477,57 @@ let d2d1 =
       ("srcData",ANone);
       ("pitch",ANone);
       ("bitmapProperties",ANone);
-      ("bitmap",ANone);
-    ],MANone);
+      ("bitmap",OutReturnComPtr);
+    ],MAUnsafe);
     ("CreateBitmapFromWicBitmap",[
       ("This",AThis);
-      ("wicBitmapSource",ANone);
-      ("bitmapProperties",ANone);
-      ("bitmap",ANone);
+      ("wicBitmapSource",InComPtr);
+      ("bitmapProperties",InOptional);
+      ("bitmap",OutReturnComPtr);
     ],MANone);
     ("CreateSharedBitmap",[
       ("This",AThis);
       ("riid",ANone);
-      ("data",ANone);
-      ("bitmapProperties",ANone);
-      ("bitmap",ANone);
+      ("data",InInterface "riid");
+      ("bitmapProperties",InOptional);
+      ("bitmap",OutReturnComPtr);
     ],MANone);
     ("CreateBitmapBrush",[
       ("This",AThis);
-      ("bitmap",ANone);
-      ("bitmapBrushProperties",ANone);
-      ("brushProperties",ANone);
-      ("bitmapBrush",ANone);
+      ("bitmap",InComPtr);
+      ("bitmapBrushProperties",InOptional);
+      ("brushProperties",InOptional);
+      ("bitmapBrush",OutReturnComPtr);
     ],MANone);
     ("CreateSolidColorBrush",[
       ("This",AThis);
       ("color",ANone);
-      ("brushProperties",ANone);
-      ("solidColorBrush",ANone);
+      ("brushProperties",InOptional);
+      ("solidColorBrush",OutReturnComPtr);
     ],MANone);
     ("CreateGradientStopCollection",[
       ("This",AThis);
-      ("gradientStops",ANone);
+      ("gradientStops",InArrayOfSize "gradientStopsCount");
       ("gradientStopsCount",ANone);
       ("colorInterpolationGamma",ANone);
       ("extendMode",ANone);
-      ("gradientStopCollection",ANone);
+      ("gradientStopCollection",OutReturnComPtr);
     ],MANone);
     ("CreateLinearGradientBrush",[
       ("This",AThis);
       ("linearGradientBrushProperties",ANone);
-      ("brushProperties",ANone);
-      ("gradientStopCollection",ANone);
-      ("linearGradientBrush",ANone);
+      ("brushProperties",InOptional);
+      ("gradientStopCollection",InComPtr);
+      ("linearGradientBrush",OutReturnComPtr);
     ],MANone);
     ("CreateRadialGradientBrush",[
       ("This",AThis);
       ("radialGradientBrushProperties",ANone);
-      ("brushProperties",ANone);
-      ("gradientStopCollection",ANone);
-      ("radialGradientBrush",ANone);
+      ("brushProperties",InOptional);
+      ("gradientStopCollection",InComPtr);
+      ("radialGradientBrush",OutReturnComPtr);
     ],MANone);
+    // Continue here
     ("CreateCompatibleRenderTarget",[
       ("This",AThis);
       ("desiredSize",ANone);
