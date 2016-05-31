@@ -452,7 +452,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
               addNativeParm pname (Some(safeParmName)) (safeParmName) 
             else
               addNativeParm pname (Some(safeParmName)) (safeParmName+".0") 
-          |TypedefRef "LPCWSTR" ->
+          |TypedefRef "LPCWSTR" |Ptr(Const(TypedefRef "WCHAR")) ->
             let locVar=getNextLocVar()
             addLocalVar locVar false (RType "Vec<u16>") (fun m -> "str_to_vec_u16("+safeParmName+")")
             addSafeParm safeParmName (RType "Cow<str>")

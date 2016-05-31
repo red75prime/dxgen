@@ -161,10 +161,11 @@ impl DWriteFactory {
   //  Method CreateFontFileReference
   
   #[allow(non_snake_case)]
-  pub fn create_font_file_reference(&self, filePath: &WCHAR, lastWriteTime: Option<&FILETIME>) -> HResult<DWriteFontFile> {
-    let mut lv1: *mut IDWriteFontFile = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateFontFileReference(filePath, lastWriteTime.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DWriteFontFile::new(lv1 as *mut _))
+  pub fn create_font_file_reference(&self, filePath: Cow<str>, lastWriteTime: Option<&FILETIME>) -> HResult<DWriteFontFile> {
+    let lv1: Vec<u16> = str_to_vec_u16(filePath);
+    let mut lv2: *mut IDWriteFontFile = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateFontFileReference(lv1.as_ptr() as LPCWSTR, lastWriteTime.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv2 as *mut *mut _) };
+    hr2ret(_hr,DWriteFontFile::new(lv2 as *mut _))
   }
   
   //  Method CreateCustomFontFileReference
@@ -234,10 +235,12 @@ impl DWriteFactory {
   //  Method CreateTextFormat
   
   #[allow(non_snake_case)]
-  pub fn create_text_format<T: HasIID>(&self, fontFamilyName: &WCHAR, fontCollection: &T, fontWeight: DWRITE_FONT_WEIGHT, fontStyle: DWRITE_FONT_STYLE, fontStretch: DWRITE_FONT_STRETCH, fontSize: FLOAT, localeName: &WCHAR) -> HResult<DWriteTextFormat> {
-    let mut lv1: *mut IDWriteTextFormat = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateTextFormat(fontFamilyName, fontCollection.iptr() as *mut _ as *mut _ , fontWeight, fontStyle, fontStretch, fontSize, localeName, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DWriteTextFormat::new(lv1 as *mut _))
+  pub fn create_text_format(&self, fontFamilyName: Cow<str>, fontCollection: Option<&DWriteFontCollection>, fontWeight: DWRITE_FONT_WEIGHT, fontStyle: DWRITE_FONT_STYLE, fontStretch: DWRITE_FONT_STRETCH, fontSize: FLOAT, localeName: Cow<str>) -> HResult<DWriteTextFormat> {
+    let lv1: Vec<u16> = str_to_vec_u16(fontFamilyName);
+    let lv2: Vec<u16> = str_to_vec_u16(localeName);
+    let mut lv3: *mut IDWriteTextFormat = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateTextFormat(lv1.as_ptr() as LPCWSTR, fontCollection.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, fontWeight, fontStyle, fontStretch, fontSize, lv2.as_ptr() as LPCWSTR, &mut lv3 as *mut *mut _) };
+    hr2ret(_hr,DWriteTextFormat::new(lv3 as *mut _))
   }
   
   //  Method CreateTypography
@@ -297,10 +300,11 @@ impl DWriteFactory {
   //  Method CreateNumberSubstitution
   
   #[allow(non_snake_case)]
-  pub fn create_number_substitution(&self, substitutionMethod: DWRITE_NUMBER_SUBSTITUTION_METHOD, localeName: &WCHAR, ignoreUserOverride: BOOL) -> HResult<DWriteNumberSubstitution> {
-    let mut lv1: *mut IDWriteNumberSubstitution = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateNumberSubstitution(substitutionMethod, localeName, ignoreUserOverride, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DWriteNumberSubstitution::new(lv1 as *mut _))
+  pub fn create_number_substitution(&self, substitutionMethod: DWRITE_NUMBER_SUBSTITUTION_METHOD, localeName: Cow<str>, ignoreUserOverride: BOOL) -> HResult<DWriteNumberSubstitution> {
+    let lv1: Vec<u16> = str_to_vec_u16(localeName);
+    let mut lv2: *mut IDWriteNumberSubstitution = ptr::null_mut();
+    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateNumberSubstitution(substitutionMethod, lv1.as_ptr() as LPCWSTR, ignoreUserOverride, &mut lv2 as *mut *mut _) };
+    hr2ret(_hr,DWriteNumberSubstitution::new(lv2 as *mut _))
   }
   
   //  Method CreateGlyphRunAnalysis
@@ -358,11 +362,12 @@ impl DWriteFontCollection {
   //  Method FindFamilyName
   
   #[allow(non_snake_case)]
-  pub fn find_family_name(&self, familyName: &WCHAR) -> HResult<(UINT32, BOOL)> {
-    let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontCollection)).FindFamilyName(familyName, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
-    hr2ret(_hr,(lv1, lv2))
+  pub fn find_family_name(&self, familyName: Cow<str>) -> HResult<(UINT32, BOOL)> {
+    let lv1: Vec<u16> = str_to_vec_u16(familyName);
+    let mut lv2: UINT32 = unsafe {mem::uninitialized::<_>()};
+    let mut lv3: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut IDWriteFontCollection)).FindFamilyName(lv1.as_ptr() as LPCWSTR, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
+    hr2ret(_hr,(lv2, lv3))
   }
   
   //  Method GetFontFromFontFace
@@ -1133,11 +1138,12 @@ impl DWriteLocalizedStrings {
   //  Method FindLocaleName
   
   #[allow(non_snake_case)]
-  pub fn find_locale_name(&self, localeName: &WCHAR) -> HResult<(UINT32, BOOL)> {
-    let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).FindLocaleName(localeName, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
-    hr2ret(_hr,(lv1, lv2))
+  pub fn find_locale_name(&self, localeName: Cow<str>) -> HResult<(UINT32, BOOL)> {
+    let lv1: Vec<u16> = str_to_vec_u16(localeName);
+    let mut lv2: UINT32 = unsafe {mem::uninitialized::<_>()};
+    let mut lv3: BOOL = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).FindLocaleName(lv1.as_ptr() as LPCWSTR, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
+    hr2ret(_hr,(lv2, lv3))
   }
   
   //  Method GetLocaleNameLength
@@ -1924,9 +1930,9 @@ impl DWriteTextLayout {
   //  Method SetFontFamilyName
   
   #[allow(non_snake_case)]
-  pub fn set_font_family_name(&self, fontFamilyName: &WCHAR, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetFontFamilyName(fontFamilyName, textRange) };
+  pub fn set_font_family_name(&self, fontFamilyName: Cow<str>, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+    let lv1: Vec<u16> = str_to_vec_u16(fontFamilyName);
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetFontFamilyName(lv1.as_ptr() as LPCWSTR, textRange) };
     hr2ret(_hr,_hr)
   }
   
@@ -2014,9 +2020,9 @@ impl DWriteTextLayout {
   //  Method SetLocaleName
   
   #[allow(non_snake_case)]
-  pub fn set_locale_name(&self, localeName: &WCHAR, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetLocaleName(localeName, textRange) };
+  pub fn set_locale_name(&self, localeName: Cow<str>, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+    let lv1: Vec<u16> = str_to_vec_u16(localeName);
+    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetLocaleName(lv1.as_ptr() as LPCWSTR, textRange) };
     hr2ret(_hr,_hr)
   }
   

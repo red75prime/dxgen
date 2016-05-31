@@ -115,7 +115,7 @@ let dwrite = [
     ("CreateTextFormat",[
       ("This",AThis);
       ("fontFamilyName",ANone);
-      ("fontCollection",InComPtr);
+      ("fontCollection",InOptionalComPtr);
       ("fontWeight",ANone);
       ("fontStyle",ANone);
       ("fontStretch",ANone);
