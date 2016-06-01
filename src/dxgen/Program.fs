@@ -116,9 +116,15 @@ let main argv =
                 let header = headerInfo.Name
 
                 let headerPath = 
-                  codeModule.IncludePaths 
-                    |> Seq.map (fun incPath -> FileInfo(Path.Combine(sdkLocation, incPath, header)))
-                    |> Seq.find (fun fi -> fi.Exists)
+                  try 
+                      codeModule.IncludePaths 
+                        |> Seq.map (fun incPath -> FileInfo(Path.Combine(sdkLocation, incPath, header)))
+                        |> Seq.find (fun fi -> fi.Exists)
+                  with
+                  | :? System.Collections.Generic.KeyNotFoundException as e -> 
+                    printfn "Header file '%s' wasn't found" header
+                    raise e
+                  |e -> raise e
                 
                 let includePaths=
                   codeModule.IncludePaths |> Seq.map (fun incPath -> Path.Combine(sdkLocation, incPath))

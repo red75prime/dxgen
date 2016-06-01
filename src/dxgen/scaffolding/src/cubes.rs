@@ -346,7 +346,7 @@ impl FrameResources {
     fn new(core: &DXCore, cr: &CommonResources,
                w: u32,
                h: u32,
-               format: DXGI_FORMAT,
+               _format: DXGI_FORMAT,
                parameters: &CubeParms)
                -> HResult<FrameResources> {
         let dev = &core.dev;
@@ -415,7 +415,7 @@ impl FrameResources {
 //        trace!("Create instance buffer resource view");
 //        let inst_desc = srv_buffer(object_cnt as u32, mem::size_of::<InstanceData>() as u32);
 //        dev.create_shader_resource_view(Some(&ir_buffer), Some(&inst_desc), srv_heap.cpu_handle(1));
-        let gpu_cbuf_ptr = c_buffer.get_gpu_virtual_address();
+//        let gpu_cbuf_ptr = c_buffer.get_gpu_virtual_address();
         debug!("c_buffer GPU VA:0x{:x}", c_buffer.get_gpu_virtual_address());
 //        core.dump_info_queue_tagged("Before create_constant_buffer_view"); 
 //        dev.create_constant_buffer_view(Some(&cbv_desc(gpu_cbuf_ptr, c_buffer_size)), srv_heap.cpu_handle(2));
@@ -498,7 +498,7 @@ impl FrameResources {
         })
     }
     // rtvh - render target view descriptor handle
-    fn render(&mut self, core: &DXCore, rt: &D3D12Resource, rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, 
+    fn render(&mut self, core: &DXCore, rt: &D3D12Resource, _rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, 
                 cr: &mut CommonResources, st: &State, camera: &Camera, pause: bool)
                 -> HResult<()> {
         ::perf_wait_start();

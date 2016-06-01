@@ -5,7 +5,7 @@ dependencies = [
  "cgmath 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.2.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "d2d1-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
- "d3d12-sys 0.0.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "d3d12-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "d3dcompiler-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "dwrite-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "dx_safe 0.3.2",
@@ -21,8 +21,8 @@ dependencies = [
  "openal-rs 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
- "user32-sys 0.1.2 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "user32-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
 [[package]]
@@ -51,36 +51,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "d2d1-sys"
 version = "0.0.1"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#c4e8ffcc204bfd7683834922a8f8ec5d9559f5d4"
 dependencies = [
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
 [[package]]
 name = "d3d12-sys"
-version = "0.0.1"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
+version = "0.2.0"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#c4e8ffcc204bfd7683834922a8f8ec5d9559f5d4"
 dependencies = [
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
 [[package]]
 name = "d3dcompiler-sys"
 version = "0.2.0"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#c4e8ffcc204bfd7683834922a8f8ec5d9559f5d4"
 dependencies = [
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
 [[package]]
 name = "dwrite-sys"
 version = "0.2.0"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#c4e8ffcc204bfd7683834922a8f8ec5d9559f5d4"
 dependencies = [
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
@@ -90,25 +90,24 @@ version = "0.3.2"
 dependencies = [
  "dxguid-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "libc 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "uuid-sys 0.1.2 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
 [[package]]
 name = "dxgi-sys"
 version = "0.2.0"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#c4e8ffcc204bfd7683834922a8f8ec5d9559f5d4"
 dependencies = [
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
 [[package]]
 name = "dxguid-sys"
 version = "0.2.0"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#c4e8ffcc204bfd7683834922a8f8ec5d9559f5d4"
 dependencies = [
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
 [[package]]
@@ -128,9 +127,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "kernel32-sys"
 version = "0.2.2"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#c4e8ffcc204bfd7683834922a8f8ec5d9559f5d4"
 dependencies = [
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
@@ -304,10 +303,10 @@ dependencies = [
 
 [[package]]
 name = "user32-sys"
-version = "0.1.2"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
+version = "0.2.0"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#c4e8ffcc204bfd7683834922a8f8ec5d9559f5d4"
 dependencies = [
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
+ "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
@@ -317,18 +316,9 @@ version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "uuid-sys"
-version = "0.1.2"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
-dependencies = [
- "winapi 0.2.6 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
- "winapi-build 0.1.1 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
-]
-
-[[package]]
 name = "winapi"
-version = "0.2.6"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
+version = "0.2.7"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#c4e8ffcc204bfd7683834922a8f8ec5d9559f5d4"
 
 [[package]]
 name = "winapi"
@@ -338,7 +328,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "winapi-build"
 version = "0.1.1"
-source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#18b20726a023a52c96e38c9d3c53329003cf45a1"
+source = "git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs#c4e8ffcc204bfd7683834922a8f8ec5d9559f5d4"
 
 [[package]]
 name = "winapi-build"
