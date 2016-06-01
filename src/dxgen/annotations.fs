@@ -186,6 +186,7 @@ type MethodAnnotation=
 type EnumAnnotation=
   |EAFlags
   |EAEnum
+  |EAEnumHex
 
 [<System.FlagsAttribute>]
 type StructFlags=

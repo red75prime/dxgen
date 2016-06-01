@@ -43,6 +43,7 @@ mod plshadow;
 mod cubestate;
 mod light;
 mod d2d1test;
+mod drawtext;
 
 #[cfg(feature = "openal")] mod sound;
 

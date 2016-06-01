@@ -154,10 +154,10 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
     for (name,uty,vals,(fname,_,_,_)) in enums |> Seq.choose (function |KeyValue(name,(Enum(uty, vals),loc)) -> Some(name,uty,vals,loc) |_ -> None) do
       let f=rsfilename fname
       let apl=apl f
-      let annot=match Map.tryFind name (annotations.enums) with |Some(v) ->v |None -> EAFlags
+      let annot=match Map.tryFind name (annotations.enums) with |Some(v) ->v |None -> EAEnum
       let convhex=fun (v:uint64) -> "0x" + v.ToString("X")
       let convdec=fun (v:uint64) -> v.ToString()
-      let (macro,convf)=if annot=EAEnum then ("ENUM!", convdec)  else ("FLAGS!", convhex)
+      let (macro,convf)=match annot with |EAEnum->("ENUM!", convdec) |EAEnumHex -> ("ENUM!", convhex) |EAFlags -> ("FLAGS!", convhex)
       apl (macro+"{ enum "+name+" {")
       for (cname,v) in vals do
         if cname.Contains("_FORCE_DWORD") then

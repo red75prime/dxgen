@@ -735,6 +735,8 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
         match refs with
         |[] ->
           match pty with
+          |Ptr(Const(Ptr(TypedefRef s)))
+          |Ptr(Ptr(TypedefRef s))
           |Ptr(Const(Ptr(StructRef s)))
           |Ptr(Ptr(StructRef s)) ->
             //let riname=s.Substring(1,s.Length-1)

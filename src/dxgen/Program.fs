@@ -32,6 +32,12 @@ let annotations_by_module =
       structs = d3d12structs;
       dependencies = [];
     });
+    ("d3d11on12",
+      {interfaces = d3d11on12;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
     ("d3d12sdklayers",
       {interfaces = d3d12sdklayers;
       enums = d3d12enums;
@@ -77,6 +83,12 @@ let annotations_by_module =
     ("d2d1",
       {interfaces = d2d1;
       enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("d2d1_1",
+      {interfaces = d2d1_1;
+      enums = [("D2D1_PROPERTY", EAEnumHex); ("D2D1_SUBPROPERTY", EAEnumHex);] |> Map.ofList;
       structs = Map.empty;
       dependencies = [];
     });

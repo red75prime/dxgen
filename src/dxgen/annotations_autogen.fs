@@ -2579,9 +2579,13 @@ let d3d12structs=
       ]);  
     ] |> Seq.map (fun (a,b,c) -> (a,(b,c))) |> Map.ofSeq
 
+let d3d11on12 = annotations_d3d11on12.d3d11on12
+
 let dwrite = annotations_dwrite.dwrite
 
 let d2d1 = annotations_d2d1.d2d1
+
+let d2d1_1 = annotations_d2d1.d2d1_1
 
 let d3d12shader=[
   ("ID3D12FunctionParameterReflectionVtbl",IAAutogen(Set.ofList []), "", [

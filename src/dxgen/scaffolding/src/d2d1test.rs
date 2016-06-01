@@ -1,6 +1,6 @@
 use winapi::*;
 use dx_safe::*;
-use window;
+use window::{self, Window};
 use create_device;
 
 pub fn main() {
@@ -15,7 +15,7 @@ pub fn main() {
   let dwfactory = create_device::create_dwrite_factory_shared().expect("Cannot create DWriteFactory");
   let text_format = dwfactory.create_text_format("Lucida Sans Unicode".into(), None, DWRITE_FONT_WEIGHT_NORMAL,
                                 DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 16., "en-GB".into()).expect("Cannot create DWriteTextFormat");
-  let hello_vec = ::utils::str_to_vec_u16("DWrite and D2D1\nBarebone functionality\nおはようございます");                                
+  let hello_vec = ::utils::str_to_vec_u16("DWrite and D2D1\nBarebone functionality\n你好，世界");                                
   for msg in wnd.events() { // blocking window event iterator
     match msg.message {
       WM_PAINT => {
@@ -24,7 +24,7 @@ pub fn main() {
         rt.fill_rectangle(&rectf(5., 5., 30., 40.), &dgbrush);
         rt.draw_text(&hello_vec[..], &text_format, &rectf(35., 5., 300., 100.), &bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         rt.end_draw(None, None).unwrap();
-        unsafe{ ::user32::ValidateRect(wnd.get_hwnd(), ::std::ptr::null()) };
+        validate_window(&wnd);
       },
       WM_SIZE => {
           // Normally this message goes to wndproc, in window.rs I repost it into message queue to prevent reentrancy problems
@@ -38,6 +38,10 @@ pub fn main() {
       },
     }
   }
+}
+
+fn validate_window(wnd: &Window) {
+  unsafe{ ::user32::ValidateRect(wnd.get_hwnd(), ::std::ptr::null()) };  
 }
 
 fn rectf(left: f32, top: f32, right: f32, bottom: f32) -> D2D1_RECT_F {

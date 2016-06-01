@@ -14,6 +14,7 @@ pub mod dxgi1_4_safe;
 pub mod structwrappers;
 //pub mod d3d12shader_safe;
 pub mod d2d1_safe;
+pub mod d3d11on12_safe;
 
 pub use dwrite_safe::*;
 pub use iid::*;
@@ -27,6 +28,7 @@ pub use dxgi1_4_safe::*;
 //pub use d3d12shader_safe::*;
 pub use d2d1_safe::*;
 pub use dxguid::*;
+pub use d3d11on12_safe::*;
 
 // some tweaks
 pub type D3DBlob = D3D10Blob;

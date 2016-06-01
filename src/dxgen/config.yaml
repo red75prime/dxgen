@@ -1,42 +1,16 @@
 ﻿---
 modules:
-    - name: d3d12_dxgi
-      output-path: ../../dx_dxgi/src/
+    - name: d3d11on12
+      output-path: ../../d3d11on12/src
       include-path: 
         - .\Include\10.0.10586.0\um\
         - .\Include\10.0.10586.0\shared\
         - .\Include\10.0.10586.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
-          - name: d3d12.h
-          - name: d3d12sdklayers.h
-          - name: d3dcommon.h
-          - name: dxgi.h
-          - name: dxgi1_2.h
-            uses:
-              - dxgi_safe
-          - name: dxgi1_3.h
-            uses:
-              - dxgi_safe
-              - dxgi1_2_safe
-          - name: dxgi1_4.h
-            uses:
-              - dxgi_safe
-              - dxgi1_2_safe
-              - dxgi1_3_safe
-      no-winapi-gen: true
-      no-enum-conversion: false
-    - name: d3d12shader
-      output-path: ../../dx_dxgi/src/
-      include-path: 
-        - .\Include\10.0.10586.0\um\
-        - .\Include\10.0.10586.0\shared\
-        - .\Include\10.0.10586.0\ucrt\
-      precompiled-header: ./PCH/Common_PCH.h
-      headers:
-          - name: d3d12shader.h
+          - name: d3d11on12.h
       no-winapi-gen: false
-      no-enum-conversion: false
+      no-enum-conversion: true
 
     - name: d2d1
       output-path: ../../d2d1/src
@@ -49,11 +23,15 @@ modules:
           - name: d2d1.h
             uses:
               - dwrite_safe
+          - name: d2d1_1.h
+            uses:
+              - d2d1_safe
+              - dwrite_safe
       no-winapi-gen: false
       no-enum-conversion: true
       
     - name: dwrite
-      output-path: ../../d2d1/src
+      output-path: ../../dwrite/src
       include-path: 
         - .\Include\10.0.10586.0\um\
         - .\Include\10.0.10586.0\shared\
@@ -61,7 +39,47 @@ modules:
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - name: dwrite.h
+          - name: dwrite_1.h
+            uses:
+              - dwrite_safe
       no-winapi-gen: false
       no-enum-conversion: true
-      
 
+    - name: d3d12shader
+      output-path: ../../dx_dxgi/src/
+      include-path: 
+        - .\Include\10.0.10586.0\um\
+        - .\Include\10.0.10586.0\shared\
+        - .\Include\10.0.10586.0\ucrt\
+      precompiled-header: ./PCH/Common_PCH.h
+      headers:
+          - name: d3d12shader.h
+      no-winapi-gen: false
+      no-enum-conversion: false
+
+#    - name: d3d12_dxgi
+#      output-path: ../../dx_dxgi/src/
+#      include-path: 
+#        - .\Include\10.0.10586.0\um\
+#        - .\Include\10.0.10586.0\shared\
+#        - .\Include\10.0.10586.0\ucrt\
+#      precompiled-header: ./PCH/Common_PCH.h
+#      headers:
+#          - name: d3d12.h
+#          - name: d3d12sdklayers.h
+#          - name: d3dcommon.h
+#          - name: dxgi.h
+#          - name: dxgi1_2.h
+#            uses:
+#              - dxgi_safe
+#          - name: dxgi1_3.h
+#            uses:
+#              - dxgi_safe
+#              - dxgi1_2_safe
+#          - name: dxgi1_4.h
+#            uses:
+#              - dxgi_safe
+#              - dxgi1_2_safe
+#              - dxgi1_3_safe
+#      no-winapi-gen: true
+#      no-enum-conversion: false
