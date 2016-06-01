@@ -37,6 +37,7 @@ pub fn main() {
   };
   let rt = factory.create_hwnd_render_target(&rtprop, &rthwndprop).expect("Cannot create D2D1HWNDRenderTarget");
   let bbrush = rt.create_solid_color_brush(&D3DCOLORVALUE{r: 0., g: 0., b: 0., a: 1.0}, None).unwrap();
+  let dgbrush = rt.create_solid_color_brush(&D3DCOLORVALUE{r: 0., g: 0.2, b: 0., a: 1.0}, None).unwrap();
   let dwfactory = create_device::create_dwrite_factory_shared().expect("Cannot create DWriteFactory");
   let text_format = dwfactory.create_text_format("Segoe Script".into(), None, DWRITE_FONT_WEIGHT_NORMAL,
                                 DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 16., "en-GB".into()).expect("Cannot create DWriteTextFormat");
@@ -46,7 +47,7 @@ pub fn main() {
       WM_PAINT => {
         rt.begin_draw();
         rt.clear(&D3DCOLORVALUE{r: 0.5, g: 0.9, b: 0.5, a: 1.0});
-        rt.fill_rectangle(&rectf(5., 5., 30., 40.), &bbrush);
+        rt.fill_rectangle(&rectf(5., 5., 30., 40.), &dgbrush);
         rt.draw_text(&hello_vec[..], &text_format, &rectf(35., 5., 300., 100.), &bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         rt.end_draw(None, None).unwrap();
         unsafe{ ::user32::ValidateRect(wnd.get_hwnd(), ::std::ptr::null()) };
