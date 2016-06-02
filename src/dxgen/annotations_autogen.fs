@@ -3,6 +3,8 @@ open annotations
 open cdesc  
 open custom_impls
 
+let wincodec = annotations_wincodec.wincodec
+
 let d3dcommon = 
   [
     ("ID3D10BlobVtbl",IAAutogen(Set.ofList []),"IUnknownVtbl",[

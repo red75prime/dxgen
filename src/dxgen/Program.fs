@@ -92,8 +92,62 @@ let annotations_by_module =
       structs = Map.empty;
       dependencies = [];
     });
+    ("d2d1_2",
+      {interfaces = annotations_d2d1.d2d1_2;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("d2d1_3",
+      {interfaces = annotations_d2d1.d2d1_3;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
     ("d3d12shader",
       {interfaces = d3d12shader;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("wincodec",
+      {interfaces = wincodec;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("objidl",
+      {interfaces = annotations_objidl.objidl;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("objidlbase",
+      {interfaces = annotations_objidlbase.objidlbase;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("ocidl",
+      {interfaces = annotations_ocidl.ocidl;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("urlmon",
+      {interfaces = annotations_urlmon.urlmon;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("DocumentTarget",
+      {interfaces = annotations_DocumentTarget.documentTarget;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("d2d1effectauthor",
+      {interfaces = a_d2d1effectauthor.annot;
       enums = Map.empty;
       structs = Map.empty;
       dependencies = [];

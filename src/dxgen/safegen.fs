@@ -31,7 +31,7 @@ let emptyAnnotationsGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<stri
   apl("let d3d12annotations=[")
   let vtbls=structs |> List.ofSeq |> List.collect (fun (KeyValue(name,(ty,_))) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl)))
   for (name, (mths, bas)) in vtbls do
-    apl(sprintf "  (\"%s\",IAAutogen(Set.ofList []), \"%s\", [" name (if bas="" then "" else bas+"Vtbl"))
+    apl(sprintf "  (\"%s\",IAManual, \"%s\", [" name (if bas="" then "" else bas+"Vtbl"))
     for (mname,args,ty) in mths |> List.choose (function |CStructElem(mname, Ptr(Function(CFuncDesc(args,ty,_))), _)-> Some(mname,args,ty)  |_ -> None) do
       if Set.contains mname iUnknownFuncs then
         apl(sprintf "    (\"%s\",[],MAIUnknown);" mname)
