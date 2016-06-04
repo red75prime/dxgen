@@ -2,10 +2,11 @@ use winapi::*;
 use dx_safe::*;
 use window::{self, Window};
 use create_device;
+use utils::d2d::*;
 
 pub fn main() {
   let wnd = window::create_window("d2d1 test", 200, 120);
-  let factory = create_device::create_d2d1_factory_single_threaded().expect("Cannot create D2D1Factory");
+  let factory = create_device::create_d2d1_factory_single_threaded::<D2D1Factory3>().expect("Cannot create D2D1Factory");
   let rtprop = rt_properties_default();
   let (ww, wh) = wnd.size();
   let rthwndprop = hwnd_rt_properties_default(wnd.get_hwnd(), ww, wh); 
@@ -20,7 +21,7 @@ pub fn main() {
     match msg.message {
       WM_PAINT => {
         rt.begin_draw();
-        rt.clear(&D3DCOLORVALUE{r: 0.5, g: 0.9, b: 0.5, a: 1.0});
+        rt.clear(&color3(0.5, 0.9, 0.5));
         rt.fill_rectangle(&rectf(5., 5., 30., 40.), &dgbrush);
         rt.draw_text(&hello_vec[..], &text_format, &rectf(35., 5., 300., 100.), &bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         rt.end_draw(None, None).unwrap();
@@ -42,19 +43,6 @@ pub fn main() {
 
 fn validate_window(wnd: &Window) {
   unsafe{ ::user32::ValidateRect(wnd.get_hwnd(), ::std::ptr::null()) };  
-}
-
-fn rectf(left: f32, top: f32, right: f32, bottom: f32) -> D2D1_RECT_F {
-  D2D1_RECT_F {
-    left: left,
-    right: right,
-    top: top,
-    bottom: bottom,
-  }
-}
-
-fn color3(r: f32, g: f32, b: f32) -> D3DCOLORVALUE {
-  D3DCOLORVALUE { r: r, g: g, b: b, a: 1.0 }
 }
 
 fn rt_properties_default() -> D2D1_RENDER_TARGET_PROPERTIES {

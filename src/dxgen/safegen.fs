@@ -50,7 +50,7 @@ let emptyAnnotationsGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<stri
 
   apl "/*"
   for (name, _) in vtbls do
-    apl ("print_guid("+name+")")
+    apl ("print_uuid<"+(name.Substring(0, name.Length-4))+">();")
   apl "*/"
   sb.ToString()
 
@@ -216,6 +216,8 @@ let derefCType pty=
 let rec convertTypeToRustNoArray ty pannot=
   match ty with
   |Array(Const(uty), sz) ->
+    RArray((convertTypeToRustNoArray uty pannot),sz)
+  |Array(uty, sz) ->
     RArray((convertTypeToRustNoArray uty pannot),sz)
   |TypedefRef typename |StructRef typename |EnumRef typename->
     if isOptional pannot then
@@ -725,7 +727,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             |_ ->
               addSafeParm safeParmName (ROption(RMutBorrow(RSlice(ruty))))
               addNativeParm pname (Some(safeParmName)) ("opt_arr_as_mut_ptr(&"+safeParmName+") as *mut _") // TODO: Use FFI option optimization
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: Should have no refs. But they are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -745,7 +747,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             addSafeParm safeParmName (RBorrow(RSlice(RBorrow(RGeneric(gt,"HasIID")))))
             let lv=newLocalVar true (RVec(RMutPtr(RType "IUnknown"))) (fun _ -> safeParmName+".iter().map(|o|o.iptr()).collect()")
             addNativeParm pname (Some(safeParmName)) (lv+".as_mut_ptr() as *mut *mut _ as *mut *mut _")
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: Should have no refs. But they are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -754,6 +756,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
         match refs with 
         |[] ->
           match pty with
+          |Ptr(TypedefRef ciname)
           |Ptr(StructRef ciname) ->
             // Let's strip 'I' part
             //let iname=ciname.Substring(1,ciname.Length-1)
@@ -762,7 +765,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             let rty=RBorrow(RGeneric(gt,"HasIID"))
             addSafeParm safeParmName rty
             addNativeParm pname (Some(safeParmName)) (safeParmName+".iptr() as *mut _ as *mut _ ")
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: InComPtr shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -771,13 +774,14 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
         match refs with 
         |[] ->
           match pty with
+          |Ptr(TypedefRef ciname) 
           |Ptr(StructRef ciname) ->
             // Let's strip 'I' part
             let iname=ciname.Substring(1,ciname.Length-1)
             let rty=ROption(RBorrow(RType iname))
             addSafeParm safeParmName rty
             addNativeParm pname (Some(safeParmName)) (safeParmName+".map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _")
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: InOptionalComPtr shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -790,7 +794,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             let lv=newLocalVar true rty (fun m -> "unsafe {mem::uninitialized::<_>()}")
             addNativeParm pname None ("&mut "+lv+" as *mut _ as *mut _")
             addReturnExpression lv rty
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: OutReturn shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -803,7 +807,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             let lv=newLocalVar true rty (fun m -> "unsafe {mem::uninitialized::<_>()}")
             addNativeParm pname None ("&mut "+lv+" as *mut _ as *mut _")
             addReturnExpression lv rty
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: OutReturnBarePointer shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -818,7 +822,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             let lv=newLocalVar true (RMutPtr(RType s)) (fun m -> "ptr::null_mut()")
             addNativeParm pname None ("&mut "+lv+" as *mut *mut _")
             addReturnExpression (rtName+"::new("+lv+" as *mut _)") rty
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: OutReturnComPtr shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -833,7 +837,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             let lv=newLocalVar true (RMutPtr(RType s)) (fun m -> "ptr::null_mut()")
             addNativeParm pname None ("&mut "+lv+" as *mut *mut _")
             addReturnExpression ("if "+lv+"==ptr::null_mut() {None} else {Some("+rtName+"::new("+lv+" as *mut _))}") rty
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: OutReturnOptionalComPtr shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -846,7 +850,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             // local variable is added elsewhere
             let lv = Map.find sname !sname2lv
             addNativeParm pname None ("&mut ("+lv+"."+field+") as *mut _ as *mut _")
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: OutReturnCombine shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -862,7 +866,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             addNativeParm pname None ("&mut "+lv+" as *mut *mut _ as *mut *mut c_void")
             addNativeParm rname None (gt+"::iid()")
             addReturnExpression (gt+"::new("+lv+")") rty
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: OutReturnInterface shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -877,7 +881,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             addSafeParm safeParmName (RBorrow(rty))
             addNativeParm pname (Some(safeParmName)) (pname+".iptr() as *mut _ as *mut c_void")
             addNativeParm rname None (gt+"::iid()")
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: InInterface shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -892,7 +896,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             addNativeParm pname None ("&mut "+lv+" as *mut *mut _ as *mut *mut c_void")
             addNativeParm rname None (iname+"::iid()")
             addReturnExpression (iname+"::new("+lv+")") rty
-          |_ -> addError (sprintf "%s parameter: Unexpected type" pname)
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: OutReturnKnownInterface shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------

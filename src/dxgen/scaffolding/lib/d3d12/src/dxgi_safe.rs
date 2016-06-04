@@ -1078,7 +1078,7 @@ impl DXGISurface1 {
   //  Method GetDC
   
   #[allow(non_snake_case)]
-  pub fn get_d_c(&self, discard: BOOL) -> HResult<HDC> {
+  pub fn get_dc(&self, discard: BOOL) -> HResult<HDC> {
     let mut lv1: HDC = unsafe {mem::uninitialized::<_>()};
     let _hr=unsafe { (*(self.0 as *mut IDXGISurface1)).GetDC(discard, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
@@ -1087,7 +1087,7 @@ impl DXGISurface1 {
   //  Method ReleaseDC
   
   #[allow(non_snake_case)]
-  pub fn release_d_c(&self, dirty_rect: Option<&mut RECT>) -> HResult<HRESULT> {
+  pub fn release_dc(&self, dirty_rect: Option<&mut RECT>) -> HResult<HRESULT> {
   
     let _hr=unsafe { (*(self.0 as *mut IDXGISurface1)).ReleaseDC(opt_as_mut_ptr(&dirty_rect)) };
     hr2ret(_hr,_hr)

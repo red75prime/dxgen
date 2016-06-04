@@ -729,7 +729,7 @@ let dxgi1_4 =
         ("dwCookie",ANone);
       ],MANone);
     ]);
-    ("IDXGIFactory4Vtbl",IAAutogen(Set.ofList []), "IDXGIFactory3Vtbl", [
+    ("IDXGIFactory4Vtbl",IAAutogen(Set.ofList [IOSend]), "IDXGIFactory3Vtbl", [
       ("EnumAdapterByLuid",[
         ("This",AThis);
         ("AdapterLuid",ANone);

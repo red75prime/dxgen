@@ -1083,9 +1083,9 @@ let d2d1_1 = [
     ],MANone);
     ("CreateBitmapFromDxgiSurface",[
       ("This",AThis);
-      ("surface",ANone);
+      ("surface",InComPtr);
       ("bitmapProperties",ANone);
-      ("bitmap",ANone);
+      ("bitmap",OutReturnComPtr);
     ],MANone);
     ("CreateEffect",[
       ("This",AThis);
@@ -1152,7 +1152,7 @@ let d2d1_1 = [
     ],MANone);
     ("SetTarget",[
       ("This",AThis);
-      ("image",ANone);
+      ("image",InComPtr);
     ],MANone);
     ("GetTarget",[
       ("This",AThis);
@@ -1187,7 +1187,7 @@ let d2d1_1 = [
       ("glyphRunDescription",ANone);
       ("foregroundBrush",ANone);
       ("measuringMode",ANone);
-    ],MANone);
+    ],MAMangle "DrawGlyphRunDC");
     ("DrawImage",[
       ("This",AThis);
       ("image",ANone);
@@ -1209,12 +1209,12 @@ let d2d1_1 = [
       ("interpolationMode",ANone);
       ("sourceRectangle",ANone);
       ("perspectiveTransform",ANone);
-    ],MANone);
+    ],MAMangle "DrawBitmapDC");
     ("PushLayer",[
       ("This",AThis);
       ("layerParameters",ANone);
       ("layer",ANone);
-    ],MANone);
+    ],MAMangle "PushLayerDC"); // Overloaded method
     ("InvalidateEffectInputRectangle",[
       ("This",AThis);
       ("effect",ANone);
@@ -1246,13 +1246,13 @@ let d2d1_1 = [
       ("brush",ANone);
       ("destinationRectangle",ANone);
       ("sourceRectangle",ANone);
-    ],MANone);
+    ],MAMangle "FillOpacityMaskDC");
   ]);
   ("ID2D1DeviceVtbl",IAAutogen(Set.ofList []), "ID2D1ResourceVtbl", [
     ("CreateDeviceContext",[
       ("This",AThis);
       ("options",ANone);
-      ("deviceContext",ANone);
+      ("deviceContext",OutReturnComPtr);
     ],MANone);
     ("CreatePrintControl",[
       ("This",AThis);
@@ -1277,11 +1277,11 @@ let d2d1_1 = [
     ("GetDescription",[
       ("This",AThis);
       ("stateDescription",ANone);
-    ],MANone);
+    ],MAMangle "GetDescription1");
     ("SetDescription",[
       ("This",AThis);
       ("stateDescription",ANone);
-    ],MANone);
+    ],MAMangle "SetDescription1");
   ]);
   ("ID2D1EffectVtbl",IAAutogen(Set.ofList []), "ID2D1PropertiesVtbl", [
     ("SetInput",[
@@ -1310,8 +1310,8 @@ let d2d1_1 = [
   ("ID2D1Factory1Vtbl",IAAutogen(Set.ofList []), "ID2D1FactoryVtbl", [
     ("CreateDevice",[
       ("This",AThis);
-      ("dxgiDevice",ANone);
-      ("d2dDevice",ANone);
+      ("dxgiDevice",InComPtr);
+      ("d2dDevice",OutReturnComPtr);
     ],MANone);
     ("CreateStrokeStyle",[
       ("This",AThis);
@@ -1552,7 +1552,7 @@ let d2d1_2=[
       ("primitiveBlend",ANone);
     ],MANone);
   ]);
-  ("ID2D1Device1Vtbl",IAManual, "ID2D1DeviceVtbl", [
+  ("ID2D1Device1Vtbl",IAAutogen(Set.empty), "ID2D1DeviceVtbl", [
     ("GetRenderingPriority",[
       ("This",AThis);
     ],MANone);
@@ -1563,10 +1563,10 @@ let d2d1_2=[
     ("CreateDeviceContext",[
       ("This",AThis);
       ("options",ANone);
-      ("deviceContext1",ANone);
-    ],MANone);
+      ("deviceContext1",OutReturnComPtr);
+    ],MAMangle "CreateDeviceContext1");
   ]);
-  ("ID2D1DeviceContext1Vtbl",IAManual, "ID2D1DeviceContextVtbl", [
+  ("ID2D1DeviceContext1Vtbl",IAAutogen(Set.empty), "ID2D1DeviceContextVtbl", [
     ("CreateFilledGeometryRealization",[
       ("This",AThis);
       ("geometry",ANone);
@@ -1587,12 +1587,12 @@ let d2d1_2=[
       ("brush",ANone);
     ],MANone);
   ]);
-  ("ID2D1Factory2Vtbl",IAManual, "ID2D1Factory1Vtbl", [
+  ("ID2D1Factory2Vtbl",IAAutogen(Set.empty), "ID2D1Factory1Vtbl", [
     ("CreateDevice",[
       ("This",AThis);
-      ("dxgiDevice",ANone);
-      ("d2dDevice1",ANone);
-    ],MANone);
+      ("dxgiDevice",InComPtr);
+      ("d2dDevice1",OutReturnComPtr);
+    ],MAMangle "CreateDevice2");
   ]);
   ("ID2D1GeometryRealizationVtbl",IAManual, "ID2D1ResourceVtbl", [
   ]);
@@ -1617,12 +1617,12 @@ let d2d1_3 = [
       ("sourceRectangle",ANone);
     ],MANone);
   ]);
-  ("ID2D1Device2Vtbl",IAManual, "ID2D1Device1Vtbl", [
+  ("ID2D1Device2Vtbl",IAAutogen(Set.empty), "ID2D1Device1Vtbl", [
     ("CreateDeviceContext",[
       ("This",AThis);
       ("options",ANone);
-      ("deviceContext2",ANone);
-    ],MANone);
+      ("deviceContext2",OutReturnComPtr);
+    ],MAMangle "CreateDeviceContext2");
     ("FlushDeviceContexts",[
       ("This",AThis);
       ("bitmap",ANone);
@@ -1632,7 +1632,7 @@ let d2d1_3 = [
       ("dxgiDevice",ANone);
     ],MANone);
   ]);
-  ("ID2D1DeviceContext2Vtbl",IAManual, "ID2D1DeviceContext1Vtbl", [
+  ("ID2D1DeviceContext2Vtbl",IAAutogen(Set.empty), "ID2D1DeviceContext1Vtbl", [
     ("CreateInk",[
       ("This",AThis);
       ("startPoint",ANone);
@@ -1693,7 +1693,7 @@ let d2d1_3 = [
       ("gdiMetafile",ANone);
       ("destinationRectangle",ANone);
       ("sourceRectangle",ANone);
-    ],MANone);
+    ],MAMangle "DrawGdiMetafile2");
     ("CreateTransformedImageSource",[
       ("This",AThis);
       ("imageSource",ANone);
@@ -1701,12 +1701,12 @@ let d2d1_3 = [
       ("transformedImageSource",ANone);
     ],MANone);
   ]);
-  ("ID2D1Factory3Vtbl",IAManual, "ID2D1Factory2Vtbl", [
+  ("ID2D1Factory3Vtbl",IAAutogen(Set.empty), "ID2D1Factory2Vtbl", [
     ("CreateDevice",[
       ("This",AThis);
-      ("dxgiDevice",ANone);
-      ("d2dDevice2",ANone);
-    ],MANone);
+      ("dxgiDevice",InComPtr);
+      ("d2dDevice2",OutReturnComPtr);
+    ],MAMangle "CreateDevice3");
   ]);
   ("ID2D1GdiMetafile1Vtbl",IAManual, "ID2D1GdiMetafileVtbl", [
     ("GetDpi",[

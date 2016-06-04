@@ -14,7 +14,7 @@ extern crate dxgi as dxgi_sys;
 extern crate kernel32;
 extern crate user32;
 extern crate d3dcompiler as d3dcompiler_sys;
-extern crate d3d12 as d3d12_sys;
+//extern crate d3d12 as d3d12_sys; // Moved into winapi in my fork, but expected in winapi 0.3
 extern crate rand;
 extern crate time;
 extern crate cgmath;
@@ -159,13 +159,14 @@ fn main() {
     for (id,a) in adapters.into_iter().enumerate() {
       let mutex = mutex.clone();
       let parms = &parms;
+      let dxgi_factory = factory.clone();
       scope.spawn(move||{
         // Spawn a thread for each adapter
-        main_prime(id, a, mutex, parms)
+        main_prime(id, dxgi_factory, a, mutex, parms)
       });
     };
     // d2d1 test window
-    scope.spawn(||d2d1test::main())
+    //scope.spawn(||d2d1test::main())
   });
 }
 
@@ -194,7 +195,7 @@ const VK_E: i32 = b'E' as i32;
 const VK_R: i32 = b'R' as i32;
 const VK_P: i32 = b'P' as i32;
 
-fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &CubeParms) {
+fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &CubeParms) {
     // Setup window. Currently window module supports only one window per thread.
     let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
     let title=format!("D3D12 Hello, rusty world! ({})", descr);
@@ -220,7 +221,7 @@ fn main_prime(id: usize, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &C
 
     // Initialization of cubes module data required to render all stuff
     let data=
-    match cubes::AppData::on_init(&wnd, Some(&adapter), FRAME_COUNT, parms) { 
+    match cubes::AppData::on_init(&wnd, &dxgi_factory, Some(&adapter), FRAME_COUNT, parms) { 
         Ok(appdata) => {
             Rc::new(RefCell::new(appdata))
         },

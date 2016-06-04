@@ -24,6 +24,7 @@ use std::slice;
 use std::sync::Arc;
 use cubestate::{State, StateUpdateAgent};
 use light::{LightSource, LightSourceResources};
+use drawtext::{DrawText, DrawTextResources};
 
 // dx_vertex! macro implement dxsems::VertexFormat trait for given structure
 // VertexFormat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
@@ -153,10 +154,12 @@ struct CommonResources {
     avg_brightness_smoothed: f32,
     light: LightSource,
     light_res: LightSourceResources,
+    draw_text: DrawText,
 }
 
 impl CommonResources {
-    fn new(dev: &D3D12Device, tex_w: u32, tex_h: u32, parameters: &CubeParms) -> HResult<CommonResources> {
+    fn new(core: &DXCore, tex_w: u32, tex_h: u32, parameters: &CubeParms) -> HResult<CommonResources> {
+        alias!(dev, &core.dev);
         let mut vshader_bc = vec![];
         let mut pshader_bc = vec![];
         let mut root_signature_bc = vec![];
@@ -174,7 +177,7 @@ impl CommonResources {
         };
 
         trace!("Root signature creation");
-        let root_signature = try!(dev.create_root_signature(0, &root_signature_bc[..]));
+        let root_signature = try!(dev!().create_root_signature(0, &root_signature_bc[..]));
 
         // Here was initialization of root signature, but I replaced it with root signature embedded into shader source.
         // There also were comments about resource bindings. Please, refer to https://github.com/red75prime/dxgen/blob/17cb52dcb4ca8fdd1dbe0e3993d6da47c195a2e2/src/dxgen/scaffolding/src/cubes.rs#L370
@@ -184,7 +187,7 @@ impl CommonResources {
         // Shaders are part of GPS too. D3D12Device::create_graphics_pipeline_state() performs compilation of provided shader bytecode.
         // MSDN suggests to create GPS on separate thread, as this is CPU intensive operation.
         trace!("Graphics pipeline state");
-        let pipeline_state = try!(create_static_sampler_gps::<Vertex>(dev,
+        let pipeline_state = try!(create_static_sampler_gps::<Vertex>(dev!(),
                                                                       &vshader_bc[..],
                                                                       &pshader_bc[..],
                                                                       &root_signature,
@@ -211,7 +214,7 @@ impl CommonResources {
         // GENERIC_READ here is GPU side. It means that all shaders can read the resource and
         // resource can be source of copy operation.
         trace!("Create vertex buffer");
-        let vertex_buffer = try!(dev.create_committed_resource(&heap_prop,
+        let vertex_buffer = try!(dev!().create_committed_resource(&heap_prop,
                                                                D3D12_HEAP_FLAG_NONE,
                                                                &res_desc,
                                                                D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -234,7 +237,7 @@ impl CommonResources {
         let ibuf_size = mem::size_of_val(&idx[..]);
         let idesc = resource_desc_buffer(ibuf_size as u64);
         trace!("Create index buffer");
-        let index_buffer = try!(dev.create_committed_resource(&heap_prop,
+        let index_buffer = try!(dev!().create_committed_resource(&heap_prop,
                                                               D3D12_HEAP_FLAG_NONE,
                                                               &idesc,
                                                               D3D12_RESOURCE_STATE_GENERIC_READ,
@@ -265,7 +268,7 @@ impl CommonResources {
         // I set initial state of the resource to COPY_DEST,
         // to prepare it for data transfer thru intermediate resource placed in upload heap
         trace!("Create texture resource");
-        let tex_resource = try!(dev.create_committed_resource(&heap_properties_default(),
+        let tex_resource = try!(dev!().create_committed_resource(&heap_properties_default(),
                                                                    D3D12_HEAP_FLAG_NONE,
                                                                    &tex_desc,
                                                                    D3D12_RESOURCE_STATE_COMMON,
@@ -275,17 +278,19 @@ impl CommonResources {
 
         // ------------------- Texture resource init end  -----------------------------
         trace!("Downsampler::new");
-        let downsampler = Downsampler::new(dev);
+        let downsampler = Downsampler::new(dev!());
 
         trace!("Create tonemapper");
-        let tonemapper = Tonemapper::new(dev);
+        let tonemapper = Tonemapper::new(dev!());
 
         trace!("Create plshadow");
-        let plshadow = try!(PLShadow::<Vertex>::new(dev));
+        let plshadow = try!(PLShadow::<Vertex>::new(dev!()));
 
-        let light = try!(LightSource::new(dev, parameters.rt_format));
+        let light = try!(LightSource::new(dev!(), parameters.rt_format));
 
-        let light_res = try!(LightSourceResources::new(dev));
+        let light_res = try!(LightSourceResources::new(dev!()));
+        
+        let draw_text = try!(DrawText::new(core));
 
         Ok(CommonResources {
             pipeline_state: pipeline_state,
@@ -310,6 +315,7 @@ impl CommonResources {
             avg_brightness_smoothed: 0.1,
             light: light,
             light_res: light_res,
+            draw_text: draw_text,
         })
     }
 }
@@ -339,6 +345,7 @@ struct FrameResources {
     srv_heap: DescriptorHeap,
     tonemapper_resources: TonemapperResources,
     object_cnt: u32,
+    dtr: DrawTextResources,
 }
 
 impl FrameResources {
@@ -346,7 +353,8 @@ impl FrameResources {
     fn new(core: &DXCore, cr: &CommonResources,
                w: u32,
                h: u32,
-               _format: DXGI_FORMAT,
+               rt: &D3D12Resource,
+               format: DXGI_FORMAT,
                parameters: &CubeParms)
                -> HResult<FrameResources> {
         let dev = &core.dev;
@@ -472,6 +480,7 @@ impl FrameResources {
             left: 0,
             top: 0,
         };
+        let dtr = try!(DrawTextResources::new(core, &cr.draw_text, rt, format));
 
         trace!("Create FrameResources done");
         Ok(FrameResources {
@@ -495,6 +504,7 @@ impl FrameResources {
             tonemapper_resources: tonemapper_resources,
             object_cnt: object_cnt as u32,
             srv_heap: srv_heap,
+            dtr: dtr,
         })
     }
     // rtvh - render target view descriptor handle
@@ -649,7 +659,7 @@ impl FrameResources {
                 cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.002
             };
         ::perf_end("tonemap");
-
+        try!(self.dtr.render(core, &cr.draw_text, rt));
 
         Ok(())
     }
@@ -697,11 +707,12 @@ impl AppData {
     //   frame_count - count of backbuffers in swapchain
     //   parameters - object's count and thread's count
     pub fn on_init(wnd: &Window,
-                                  adapter: Option<&DXGIAdapter1>,
-                                  frame_count: u32,
-                                  parameters: &CubeParms)
-                                  -> HResult<AppData> {
-        on_init(wnd, adapter, frame_count, parameters)
+                   dxgi_factory: &DXGIFactory4,
+                   adapter: Option<&DXGIAdapter1>,
+                   frame_count: u32,
+                   parameters: &CubeParms)
+                   -> HResult<AppData> {
+        on_init(wnd, dxgi_factory, adapter, frame_count, parameters)
     }
 
     // Allows rendering module to change backbuffers'/depth-stencil buffer's size when window size is changed
@@ -860,6 +871,7 @@ fn clamp(x: f32, l:f32, h:f32) -> u32 {
 }
 
 pub fn on_init(wnd: &Window,
+               dxgi_factory: &DXGIFactory4,
                adapter: Option<&DXGIAdapter1>,
                frame_count: u32,
                parameters: &CubeParms)
@@ -869,14 +881,7 @@ pub fn on_init(wnd: &Window,
 
     // core::create_core creates structure that contains D3D12Device, command queues and so on
     // which are required for creation of all other objects
-    let core = 
-        match core::create_core(adapter, D3D_FEATURE_LEVEL_11_0, parameters.debug_layer) {
-            Ok(core) => core,
-            Err(desc) => {
-                error!("core::create_core error: {}", desc);
-                return Err(E_FAIL);
-            },
-        };
+    let core = try!(core::create_core(dxgi_factory, adapter, D3D_FEATURE_LEVEL_11_0, parameters.debug_layer));
 
     // Get adapter the device was created on
     let adapter_luid = core.dev.get_adapter_luid();
@@ -932,7 +937,7 @@ pub fn on_init(wnd: &Window,
 
     let (tex_w, tex_h) = (256u32, 256u32);
 
-    let common_resources = try!(CommonResources::new(&core.dev, tex_w, tex_h, parameters).dump(&core));
+    let common_resources = try!(CommonResources::new(&core, tex_w, tex_h, parameters).dump(&core));
 
 
     // Create pattern to set as texture data
@@ -995,8 +1000,8 @@ pub fn on_init(wnd: &Window,
     wait_for_graphics_queue(&core, &fence, &fence_event);
 
     let mut frame_resources = vec![];
-    for _ in 0 .. frame_count {
-        frame_resources.push(try!(FrameResources::new(&core, &common_resources, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, parameters).dump(&core)));
+    for i in 0 .. frame_count {
+        frame_resources.push(try!(FrameResources::new(&core, &common_resources, w, h, swap_chain.render_target(i), DXGI_FORMAT_R8G8B8A8_UNORM, parameters).dump(&core)));
     };
 
 
@@ -1131,14 +1136,15 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
     wait_for_compute_queue(&data.core, &data.fence, &data.fence_event);
     wait_for_copy_queue(&data.core, &data.fence, &data.fence_event);
 
+    data.frame_resources.truncate(0);
+
     data.swap_chain.resize(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM).expect("swap_chain.resize failed");
 
     data.camera().aspect = (w as f32) / (h as f32);
 
-    data.frame_resources.truncate(0);
-    for _ in 0 .. data.frame_count {
+    for i in 0 .. data.frame_count {
         data.frame_resources.push(
-            FrameResources::new(&data.core, &data.common_resources, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, &data.parameters).unwrap());
+            FrameResources::new(&data.core, &data.common_resources, w, h, data.swap_chain.render_target(i), DXGI_FORMAT_R8G8B8A8_UNORM, &data.parameters).unwrap());
     }
 
     // on_render(data, 1, 1);

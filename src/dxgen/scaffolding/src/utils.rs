@@ -325,3 +325,20 @@ impl Fence {
         Ok(())
     }
 }
+
+pub mod d2d {
+    use winapi::*;
+    
+    pub fn rectf(left: f32, top: f32, right: f32, bottom: f32) -> D2D1_RECT_F {
+    D2D1_RECT_F {
+        left: left,
+        right: right,
+        top: top,
+        bottom: bottom,
+    }
+    }
+
+    pub fn color3(r: f32, g: f32, b: f32) -> D3DCOLORVALUE {
+    D3DCOLORVALUE { r: r, g: g, b: b, a: 1.0 }
+    }    
+}

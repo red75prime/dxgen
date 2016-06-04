@@ -1331,7 +1331,7 @@ impl D2D1DCRenderTarget {
   //  Method BindDC
   
   #[allow(non_snake_case)]
-  pub fn bind_d_c(&self, hDC: HDC, sub_rect: &RECT) -> HResult<HRESULT> {
+  pub fn bind_dc(&self, hDC: HDC, sub_rect: &RECT) -> HResult<HRESULT> {
   
     let _hr=unsafe { (*(self.0 as *mut ID2D1DCRenderTarget)).BindDC(hDC, sub_rect) };
     hr2ret(_hr,_hr)
@@ -1749,7 +1749,7 @@ impl D2D1GdiInteropRenderTarget {
   //  Method GetDC
   
   #[allow(non_snake_case)]
-  pub fn get_d_c(&self, mode: D2D1_DC_INITIALIZE_MODE) -> HResult<HDC> {
+  pub fn get_dc(&self, mode: D2D1_DC_INITIALIZE_MODE) -> HResult<HDC> {
     let mut lv1: HDC = unsafe {mem::uninitialized::<_>()};
     let _hr=unsafe { (*(self.0 as *mut ID2D1GdiInteropRenderTarget)).GetDC(mode, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
@@ -1758,7 +1758,7 @@ impl D2D1GdiInteropRenderTarget {
   //  Method ReleaseDC
   
   #[allow(non_snake_case)]
-  pub fn release_d_c(&self, update: Option<&RECT>) -> HResult<HRESULT> {
+  pub fn release_dc(&self, update: Option<&RECT>) -> HResult<HRESULT> {
   
     let _hr=unsafe { (*(self.0 as *mut ID2D1GdiInteropRenderTarget)).ReleaseDC(update.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     hr2ret(_hr,_hr)

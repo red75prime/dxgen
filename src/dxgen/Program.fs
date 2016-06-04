@@ -152,6 +152,12 @@ let annotations_by_module =
       structs = Map.empty;
       dependencies = [];
     });
+    ("d3d11",
+      {interfaces = annotations_d3d11.d3d11;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
   ] |> Map.ofList
         
 [<EntryPoint>]

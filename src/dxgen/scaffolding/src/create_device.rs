@@ -3,11 +3,34 @@
 use winapi::*;
 use dx_safe::*;
 use std::ptr;
-use d3d12_sys::*;
+//use d3d12_sys::*;
 use dxgi_sys::*;
 use d3dcompiler_sys::*;
 use d2d1_sys::*;
 use dwrite_sys::*;
+
+pub fn d3d11on12_create_device(dev12: &D3D12Device, flags: D3D11_CREATE_DEVICE_FLAG, cqueue: &D3D12CommandQueue) -> HResult<(D3D11Device, D3D11DeviceContext)> {
+    let mut dev11: *mut IUnknown = ptr::null_mut();
+    let mut devcontext11: *mut IUnknown = ptr::null_mut();
+    let mut cqptr = cqueue.iptr();
+    let hr = unsafe { D3D11On12CreateDevice(
+                dev12.iptr() as *mut _,
+		        flags.0, // D3D11_CREATE_DEVICE_FLAG
+                ptr::null(), // feature levels array (optional)
+		        0, // length of above array
+		        &mut cqptr as *mut *mut _ as *mut *mut _, // queues array 
+		        1, // length of above array
+		        0, // Node mask
+		        &mut dev11 as *mut *mut _ as *mut *mut _,
+		        &mut devcontext11 as *mut *mut _ as *mut *mut _,
+		        ptr::null_mut() // out feature level (optional)
+            )};
+    if SUCCEEDED(hr) {
+        Ok((D3D11Device::new(dev11), D3D11DeviceContext::new(devcontext11)))
+    } else {
+        Err(hr)
+    }
+}
 
 pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>,
                            min_feat_level: D3D_FEATURE_LEVEL)
@@ -28,11 +51,6 @@ pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>,
 
 pub fn create_dxgi_factory2<T: HasIID>(debug: bool) -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
-    if cfg!(debug_assertions) {
-        debug!("cfg!(debug_assertions) is true");
-    } else {
-        debug!("cfg!(debug_assertions) is false");
-    };
     let hr = unsafe {
         CreateDXGIFactory2(if debug {
                                DXGI_CREATE_FACTORY_DEBUG
@@ -49,17 +67,44 @@ pub fn create_dxgi_factory2<T: HasIID>(debug: bool) -> HResult<T> {
     }
 }
 
-pub fn create_d2d1_factory_single_threaded() -> HResult<D2D1Factory> {
+pub fn create_dxgi_factory1<T: HasIID>(debug: bool) -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
     let hr = unsafe {
-        D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, D2D1Factory::iid(), ptr::null(), &mut p_fac as *mut *mut _ as *mut *mut _)
+        CreateDXGIFactory1(T::iid(), &mut p_fac as *mut *mut _ as *mut *mut _)
     };
     if hr == 0 {
-        Ok(D2D1Factory::new(p_fac))
+        Ok(T::new(p_fac))
     } else {
         Err(hr)
     }
 }
+
+pub fn create_d2d1_factory_single_threaded<T: HasIID>() -> HResult<T> {
+    let mut p_fac: *mut IUnknown = ptr::null_mut();
+    let opts = D2D1_FACTORY_OPTIONS { debugLevel: D2D1_DEBUG_LEVEL_INFORMATION };
+    let hr = unsafe {
+        D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, T::iid(), &opts as *const _, &mut p_fac as *mut *mut _ as *mut *mut _)
+    };
+    if hr == 0 {
+        Ok(T::new(p_fac))
+    } else {
+        Err(hr)
+    }
+}
+
+pub fn create_d2d1_factory_multi_threaded<T: HasIID>() -> HResult<T> {
+    let mut p_fac: *mut IUnknown = ptr::null_mut();
+    let opts = D2D1_FACTORY_OPTIONS { debugLevel: D2D1_DEBUG_LEVEL_INFORMATION };
+    let hr = unsafe {
+        D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, T::iid(), &opts as *const _, &mut p_fac as *mut *mut _ as *mut *mut _)
+    };
+    if hr == 0 {
+        Ok(T::new(p_fac))
+    } else {
+        Err(hr)
+    }
+}
+
 
 pub fn create_dwrite_factory_shared() -> HResult<DWriteFactory> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();

@@ -90,6 +90,7 @@
     <Compile Include="annotations_urlmon.fs" />
     <Compile Include="annotations_DocumentTarget.fs" />
     <Compile Include="a_d2d1effectauthor.fs" />
+    <Compile Include="annotations_d3d11.fs" />
     <Compile Include="annotations_autogen.fs" />
     <Compile Include="salParser.fs" />
     <Compile Include="rustdesc.fs" />

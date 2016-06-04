@@ -48,9 +48,9 @@ branch = "D2D1_IIDs"
 git = "https://github.com/red75prime/winapi-rs/"
 branch = "D2D1_IIDs"
 
-[dependencies.d3d12-sys]
-git = "https://github.com/red75prime/winapi-rs/"
-branch = "D2D1_IIDs"
+#[dependencies.d3d12-sys]
+#git = "https://github.com/red75prime/winapi-rs/"
+#branch = "D2D1_IIDs"
 
 [dependencies.dxguid-sys]
 git = "https://github.com/red75prime/winapi-rs/"
