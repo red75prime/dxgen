@@ -19,6 +19,7 @@ pub mod d2d1_1_safe;
 pub mod d2d1_2_safe;
 pub mod d2d1_3_safe;
 pub mod d3d11on12_safe;
+pub mod helpers;
 
 pub use dwrite_safe::*;
 pub use iid::*;

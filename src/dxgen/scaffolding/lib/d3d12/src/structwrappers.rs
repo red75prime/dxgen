@@ -20,6 +20,16 @@ impl PartialEq<Luid> for Luid {
     }
 }
 
+pub fn root_signature_desc_empty(flags: D3D12_ROOT_SIGNATURE_FLAGS) -> D3D12_ROOT_SIGNATURE_DESC {
+    D3D12_ROOT_SIGNATURE_DESC {
+        NumParameters: 0,
+        pParameters: ptr::null(),
+        NumStaticSamplers: 0,
+        pStaticSamplers: ptr::null(),
+        Flags: flags,
+    }
+}
+
 pub fn resource_desc_buffer(size_in_bytes: u64) -> D3D12_RESOURCE_DESC {
     D3D12_RESOURCE_DESC {
         Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,

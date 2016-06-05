@@ -153,9 +153,18 @@ fn main() {
     return;
   }
 
+
   // I used this mutex to sync console output.
   let mutex=Arc::new(Mutex::new(()));
   crossbeam::scope(|scope| {
+
+    // d2d1 test window
+    scope.spawn(|| {
+      if let Err(err) = d2d1test::main() {
+        error!("d2d1test::main() error 0x{:x}", err);
+      }
+    });
+
     for (id,a) in adapters.into_iter().enumerate() {
       let mutex = mutex.clone();
       let parms = &parms;
@@ -165,8 +174,6 @@ fn main() {
         main_prime(id, dxgi_factory, a, mutex, parms)
       });
     };
-    // d2d1 test window
-    //scope.spawn(||d2d1test::main())
   });
 }
 

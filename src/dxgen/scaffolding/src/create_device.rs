@@ -42,8 +42,24 @@ pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>,
                           &IID_ID3D12Device,
                           &mut p_dev as *mut *mut _ as *mut *mut c_void)
     };
-    if hr == 0 {
+    if SUCCEEDED(hr) {
         Ok(D3D12Device::new(p_dev))
+    } else {
+        Err(hr)
+    }
+}
+
+pub fn d3d12_test_create_device(adapter: Option<&DXGIAdapter1>,
+                           min_feat_level: D3D_FEATURE_LEVEL)
+                           -> HResult<()> {
+    let hr = unsafe {
+        D3D12CreateDevice(adapter.map(|p| p.iptr()).unwrap_or(ptr::null_mut()),
+                          min_feat_level,
+                          &IID_ID3D12Device,
+                          ptr::null_mut())
+    };
+    if SUCCEEDED(hr) {
+        Ok(())
     } else {
         Err(hr)
     }
@@ -60,7 +76,7 @@ pub fn create_dxgi_factory2<T: HasIID>(debug: bool) -> HResult<T> {
                            T::iid(),
                            &mut p_fac as *mut *mut _ as *mut *mut _)
     };
-    if hr == 0 {
+    if SUCCEEDED(hr) {
         Ok(T::new(p_fac))
     } else {
         Err(hr)
@@ -72,7 +88,7 @@ pub fn create_dxgi_factory1<T: HasIID>(debug: bool) -> HResult<T> {
     let hr = unsafe {
         CreateDXGIFactory1(T::iid(), &mut p_fac as *mut *mut _ as *mut *mut _)
     };
-    if hr == 0 {
+    if SUCCEEDED(hr) {
         Ok(T::new(p_fac))
     } else {
         Err(hr)
@@ -85,7 +101,7 @@ pub fn create_d2d1_factory_single_threaded<T: HasIID>() -> HResult<T> {
     let hr = unsafe {
         D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, T::iid(), &opts as *const _, &mut p_fac as *mut *mut _ as *mut *mut _)
     };
-    if hr == 0 {
+    if SUCCEEDED(hr) {
         Ok(T::new(p_fac))
     } else {
         Err(hr)
@@ -98,7 +114,7 @@ pub fn create_d2d1_factory_multi_threaded<T: HasIID>() -> HResult<T> {
     let hr = unsafe {
         D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, T::iid(), &opts as *const _, &mut p_fac as *mut *mut _ as *mut *mut _)
     };
-    if hr == 0 {
+    if SUCCEEDED(hr) {
         Ok(T::new(p_fac))
     } else {
         Err(hr)
@@ -111,7 +127,7 @@ pub fn create_dwrite_factory_shared() -> HResult<DWriteFactory> {
     let hr = unsafe {
         DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, DWriteFactory::iid(), &mut p_fac as *mut *mut _ as *mut *mut _)
     };
-    if hr == 0 {
+    if SUCCEEDED(hr) {
         Ok(DWriteFactory::new(p_fac))
     } else {
         Err(hr)
@@ -123,7 +139,7 @@ pub fn get_debug_interface() -> HResult<D3D12Debug> {
     let hr = unsafe {
         D3D12GetDebugInterface(&IID_ID3D12Debug, &mut p_fac as *mut *mut _ as *mut *mut _)
     };
-    if hr == 0 {
+    if SUCCEEDED(hr) {
         Ok(D3D12Debug::new(p_fac))
     } else {
         Err(hr)
@@ -170,7 +186,7 @@ pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC
                                     &mut p_blob as *mut *mut _ as *mut *mut _,
                                     &mut p_err as *mut *mut _ as *mut *mut _)
     };
-    if hr == 0 {
+    if SUCCEEDED(hr) {
         Ok(D3D10Blob::new(p_blob))
     } else {
         if p_err != ptr::null_mut() {

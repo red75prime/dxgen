@@ -109,6 +109,7 @@ impl DrawTextResources {
     }
     
     pub fn render(&self, core: &DXCore, dt: &DrawText, rt: &D3D12Resource) -> HResult<()> {
+        return Ok(());
         trace!("DrawTextResources.render");
         trace!("calloc.reset()");
         try!(self.calloc.reset());

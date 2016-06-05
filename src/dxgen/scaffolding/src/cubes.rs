@@ -4,7 +4,7 @@ use std::ptr;
 use winapi::*;
 use dx_safe::*;
 use core;
-use core::{DXCore, DXSwapChain, Event};
+use core::{DXCore, DXSwapChain, Event, DumpOnError};
 use utils::*;
 use cgmath::*;
 use dx_safe::structwrappers::*;
@@ -845,23 +845,6 @@ pub fn create_static_sampler_gps<T: VertexFormat>(dev: &D3D12Device,
     // DirectX 12 offload resource management to the programmer.
     // So I need to keep root_sign around, as DX12 runtime doesn't AddRef it.
     Ok(ps)
-}
-
-trait DumpOnError {
-    fn dump(self, core: &DXCore) -> Self;
-}
-
-impl<T> DumpOnError for HResult<T> {
-    fn dump(self, core: &DXCore) -> Self {
-        match self {
-            Ok(_) => (),
-            Err(_) => {
-                core.dump_info_queue();
-                ()
-            },
-        };
-        self
-    }
 }
 
 fn clamp(x: f32, l:f32, h:f32) -> u32 {

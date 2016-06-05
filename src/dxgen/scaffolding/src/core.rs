@@ -8,6 +8,35 @@ use std::ptr;
 use kernel32;
 use std::mem;
 
+pub trait DumpOnError {
+    fn dump(self, core: &DXCore) -> Self;
+    fn dump_iq(self, core: &D3D12InfoQueue) -> Self;
+}
+
+impl<T> DumpOnError for HResult<T> {
+    fn dump(self, core: &DXCore) -> Self {
+        match self {
+            Ok(_) => (),
+            Err(_) => {
+                core.dump_info_queue();
+                ()
+            },
+        };
+        self
+    }
+
+    fn dump_iq(self, iq: &D3D12InfoQueue) -> Self {
+        match self {
+            Ok(_) => (),
+            Err(_) => {
+                dump_info_queue(iq);
+                ()
+            },
+        };
+        self
+    }
+}
+
 pub trait Handle: Sized {
     fn handle(&self) -> HANDLE;
 }
