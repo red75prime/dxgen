@@ -7,6 +7,7 @@ use dx_safe::structwrappers::*;
 use utils::d2d::*;
 
 pub struct DrawText {
+    dev11: D3D11Device,
     devcontext11: D3D11DeviceContext,
     dev11on12: D3D11On12Device,
     devd2d: D2D1Device2,
@@ -25,7 +26,7 @@ impl DrawText {
         trace!("Call dev11.query_interface::<D3D11On12Device>()");
         let dev11on12 = try!(dev11.query_interface::<D3D11On12Device>());
         trace!("Call create_d2d1_factory_single_threaded");
-        let factoryd2d = try!(create::create_d2d1_factory_multi_threaded::<D2D1Factory3>());
+        let factoryd2d = try!(create::create_d2d1_factory_single_threaded::<D2D1Factory3>());
         trace!("Call dev11on12.query_interface::<DXGIDevice>");
         let devdxgi = try!(dev11on12.query_interface::<DXGIDevice>());
         core.dump_info_queue();
@@ -36,6 +37,7 @@ impl DrawText {
         trace!("Call create_dwrite_factory_shared");
         let factorydw = try!(create::create_dwrite_factory_shared());
         Ok(DrawText {
+            dev11: dev11,
             devcontext11: devcontext11,
             dev11on12: dev11on12,
             devd2d: devd2d,
@@ -47,6 +49,7 @@ impl DrawText {
 }
 
 pub struct DrawTextResources {
+    d11context: D3D11DeviceContext,
     d11back: D3D11Resource,
     d2drt: D2D1Bitmap1,
     glist: D3D12GraphicsCommandList,
@@ -54,6 +57,12 @@ pub struct DrawTextResources {
     tbrush: D2D1SolidColorBrush,
     tformat: DWriteTextFormat,
     
+}
+
+impl Drop for DrawTextResources {
+    fn drop(&mut self) {
+        self.d11context.clear_state();
+    }
 }
 
 impl DrawTextResources {
@@ -99,6 +108,7 @@ impl DrawTextResources {
                                 DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 16., "en-GB".into()));
         
         Ok(DrawTextResources {
+            d11context: dt.devcontext11.clone(),
             d11back: d11back,
             d2drt: d2drt,
             calloc: calloc,
@@ -109,7 +119,7 @@ impl DrawTextResources {
     }
     
     pub fn render(&self, core: &DXCore, dt: &DrawText, rt: &D3D12Resource) -> HResult<()> {
-        return Ok(());
+        //return Ok(());
         trace!("DrawTextResources.render");
         trace!("calloc.reset()");
         try!(self.calloc.reset());
@@ -123,21 +133,23 @@ impl DrawTextResources {
         core.graphics_queue.execute_command_lists(&[glist]);
         
         core.dump_info_queue();
-        trace!("acquire {:?}", self.d2drt);
-        dt.dev11on12.acquire_wrapped_resources(&[&self.d2drt]);
+        trace!("acquire");
+        dt.dev11on12.acquire_wrapped_resources(&[&self.d11back]);
         trace!("set_target");
-        dt.devctxd2d.set_target(&self.d2drt);
+        dt.devctxd2d.set_target(Some(&try!(self.d2drt.query_interface())));
         trace!("begin_draw");
         dt.devctxd2d.begin_draw();
         
-        let hello_vec = ::utils::str_to_vec_u16("DWrite and D2D1\nBarebone functionality\n你好，世界");
+        let hello_vec = ::utils::str_to_vec_u16("DWrite and D3D12\nIt works at last\n你好，世界");
         trace!("draw_text");
         dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35., 5., 300., 100.), &self.tbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         
         trace!("end_draw");
         try!(dt.devctxd2d.end_draw(None, None));
+        trace!("set_target");
+        dt.devctxd2d.set_target(None);
         trace!("release_wrapped_resources");
-        dt.dev11on12.release_wrapped_resources(&[&self.d2drt]);
+        dt.dev11on12.release_wrapped_resources(&[&self.d11back]);
         trace!("flush");
         dt.devcontext11.flush();                                        
         

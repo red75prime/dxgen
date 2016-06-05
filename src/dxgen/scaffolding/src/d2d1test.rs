@@ -263,10 +263,12 @@ fn render(calloc: &D3D12CommandAllocator, clist: &D3D12GraphicsCommandList,
   
   d3d11on12dev.acquire_wrapped_resources(&[wrt]);
   
-  d2ddevctx.set_target(d2drt);
+  d2ddevctx.set_target(Some(&try!(d2drt.query_interface())));
   d2ddevctx.begin_draw();
   d2ddevctx.draw_text(text, text_format, &text_rect, text_brush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
   try!(d2ddevctx.end_draw(None, None));
+  d2ddevctx.set_target(None);
+  
   
   d3d11on12dev.release_wrapped_resources(&[wrt]);
   

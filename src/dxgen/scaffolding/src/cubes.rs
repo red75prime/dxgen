@@ -154,7 +154,7 @@ struct CommonResources {
     avg_brightness_smoothed: f32,
     light: LightSource,
     light_res: LightSourceResources,
-    draw_text: DrawText,
+    draw_text: Option<DrawText>, // Option to dump everything before resize
 }
 
 impl CommonResources {
@@ -315,7 +315,7 @@ impl CommonResources {
             avg_brightness_smoothed: 0.1,
             light: light,
             light_res: light_res,
-            draw_text: draw_text,
+            draw_text: Some(draw_text),
         })
     }
 }
@@ -480,7 +480,7 @@ impl FrameResources {
             left: 0,
             top: 0,
         };
-        let dtr = try!(DrawTextResources::new(core, &cr.draw_text, rt, format));
+        let dtr = try!(DrawTextResources::new(core, cr.draw_text.as_ref().unwrap(), rt, format));
 
         trace!("Create FrameResources done");
         Ok(FrameResources {
@@ -659,7 +659,7 @@ impl FrameResources {
                 cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.002
             };
         ::perf_end("tonemap");
-        try!(self.dtr.render(core, &cr.draw_text, rt));
+        try!(self.dtr.render(core, cr.draw_text.as_ref().unwrap(), rt));
 
         Ok(())
     }
@@ -905,7 +905,7 @@ pub fn on_init(wnd: &Window,
         BufferUsage: DXGI_USAGE_RENDER_TARGET_OUTPUT,
         BufferCount: frame_count,
         Scaling: DXGI_SCALING_NONE,
-        SwapEffect: DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL,
+        SwapEffect: DXGI_SWAP_EFFECT_FLIP_DISCARD,
         AlphaMode: DXGI_ALPHA_MODE_UNSPECIFIED,
         Flags: 0, // DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH.0,
     };
@@ -1120,9 +1120,11 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
     wait_for_copy_queue(&data.core, &data.fence, &data.fence_event);
 
     data.frame_resources.truncate(0);
+    data.common_resources.draw_text = None;
 
-    data.swap_chain.resize(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM).expect("swap_chain.resize failed");
+    data.swap_chain.resize(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM).dump(&data.core).expect("swap_chain.resize failed");
 
+    data.common_resources.draw_text = Some(DrawText::new(&data.core).expect("Cannot create DrawText"));
     data.camera().aspect = (w as f32) / (h as f32);
 
     for i in 0 .. data.frame_count {

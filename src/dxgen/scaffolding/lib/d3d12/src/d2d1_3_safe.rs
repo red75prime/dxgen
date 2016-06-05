@@ -706,9 +706,9 @@ impl D2D1DeviceContext2 {
   //  Method SetTarget
   
   #[allow(non_snake_case)]
-  pub fn set_target<T: HasIID>(&self, image: &T) -> () {
+  pub fn set_target(&self, image: Option<&D2D1Image>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).SetTarget(image.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).SetTarget(image.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   

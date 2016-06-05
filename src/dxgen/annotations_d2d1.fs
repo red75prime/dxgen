@@ -1152,7 +1152,7 @@ let d2d1_1 = [
     ],MANone);
     ("SetTarget",[
       ("This",AThis);
-      ("image",InComPtr);
+      ("image",InOptionalComPtr);
     ],MANone);
     ("GetTarget",[
       ("This",AThis);
