@@ -32,6 +32,12 @@ let annotations_by_module =
       structs = d3d12structs;
       dependencies = [];
     });
+    ("d3d11on12",
+      {interfaces = d3d11on12;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
     ("d3d12sdklayers",
       {interfaces = d3d12sdklayers;
       enums = d3d12enums;
@@ -80,8 +86,74 @@ let annotations_by_module =
       structs = Map.empty;
       dependencies = [];
     });
+    ("d2d1_1",
+      {interfaces = d2d1_1;
+      enums = [("D2D1_PROPERTY", EAEnumHex); ("D2D1_SUBPROPERTY", EAEnumHex);] |> Map.ofList;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("d2d1_2",
+      {interfaces = annotations_d2d1.d2d1_2;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("d2d1_3",
+      {interfaces = annotations_d2d1.d2d1_3;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
     ("d3d12shader",
       {interfaces = d3d12shader;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("wincodec",
+      {interfaces = wincodec;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("objidl",
+      {interfaces = annotations_objidl.objidl;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("objidlbase",
+      {interfaces = annotations_objidlbase.objidlbase;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("ocidl",
+      {interfaces = annotations_ocidl.ocidl;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("urlmon",
+      {interfaces = annotations_urlmon.urlmon;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("DocumentTarget",
+      {interfaces = annotations_DocumentTarget.documentTarget;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("d2d1effectauthor",
+      {interfaces = a_d2d1effectauthor.annot;
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+    });
+    ("d3d11",
+      {interfaces = annotations_d3d11.d3d11;
       enums = Map.empty;
       structs = Map.empty;
       dependencies = [];
@@ -112,11 +184,19 @@ let main argv =
                 let header = FileInfo(codeModule.PrecompileHeader)
                 if header.Exists then Some(header) else None
 
-            for header in codeModule.Headers do
+            for headerInfo in codeModule.Headers do
+                let header = headerInfo.Name
+
                 let headerPath = 
-                  codeModule.IncludePaths 
-                    |> Seq.map (fun incPath -> FileInfo(Path.Combine(sdkLocation, incPath, header)))
-                    |> Seq.find (fun fi -> fi.Exists)
+                  try 
+                      codeModule.IncludePaths 
+                        |> Seq.map (fun incPath -> FileInfo(Path.Combine(sdkLocation, incPath, header)))
+                        |> Seq.find (fun fi -> fi.Exists)
+                  with
+                  | :? System.Collections.Generic.KeyNotFoundException as e -> 
+                    printfn "Header file '%s' wasn't found" header
+                    raise e
+                  |e -> raise e
                 
                 let includePaths=
                   codeModule.IncludePaths |> Seq.map (fun incPath -> Path.Combine(sdkLocation, incPath))
@@ -144,13 +224,13 @@ let main argv =
                     for KeyValue(f,t) in wapi do
                       use sw=new System.IO.StreamWriter(@".\winapi\"+f)
                       sw.Write(t)
-                  let (rtext, interfaces, deps)=safegen.safeInterfaceGen headerName (!allInterfaces) (codeModule.NoEnumConversion) types annotations
+                  let (rtext, interfaces, deps)=safegen.safeInterfaceGen headerName (headerInfo.Uses) (!allInterfaces) (codeModule.NoEnumConversion) types annotations
                   allInterfaces := interfaces
                   let moduleName = headerName+"_safe"
                   System.IO.Directory.CreateDirectory(@".\safe") |> ignore //TODO: use Path
                   use swsi=new System.IO.StreamWriter(@".\safe\"+moduleName+".rs")
-                  for modl in annotations.dependencies do
-                    swsi.WriteLine("use "+modl+"_safe::*;")
+//                  for modl in annotations.dependencies do
+//                    swsi.WriteLine("use "+modl+"_safe::*;")
                   swsi.Write(rtext)
                   modules := moduleName :: !modules
                   printfn "Processing header %s" headerPath.FullName

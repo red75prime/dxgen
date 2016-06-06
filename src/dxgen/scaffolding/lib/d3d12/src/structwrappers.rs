@@ -1,5 +1,5 @@
 use winapi::*;
-use iid::{HResult, HasIID};
+use iid::{HResult, HasIID, TUnknown};
 use d3d12_safe::*;
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -17,6 +17,16 @@ pub struct Luid(pub LUID);
 impl PartialEq<Luid> for Luid {
     fn eq(&self, other: &Luid) -> bool {
         self.0.LowPart == other.0.LowPart && self.0.HighPart == other.0.HighPart
+    }
+}
+
+pub fn root_signature_desc_empty(flags: D3D12_ROOT_SIGNATURE_FLAGS) -> D3D12_ROOT_SIGNATURE_DESC {
+    D3D12_ROOT_SIGNATURE_DESC {
+        NumParameters: 0,
+        pParameters: ptr::null(),
+        NumStaticSamplers: 0,
+        pStaticSamplers: ptr::null(),
+        Flags: flags,
     }
 }
 

@@ -48,6 +48,7 @@
       <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="FSharp.Data.TypeProviders" />
     <Reference Include="FSharpx.Core">
       <HintPath>..\..\packages\FSharpx.Core.1.8.41\lib\40\FSharpx.Core.dll</HintPath>
       <Private>True</Private>
@@ -63,6 +64,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Data.Linq" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Numerics" />
     <Reference Include="System.Windows.Forms" />
@@ -76,6 +79,18 @@
     <Compile Include="utils.fs" />
     <Compile Include="cdesc.fs" />
     <Compile Include="annotations.fs" />
+    <Compile Include="custom_impls.fs" />
+    <Compile Include="annotations_d2d1.fs" />
+    <Compile Include="annotations_dwrite.fs" />
+    <Compile Include="annotations_d3d11on12.fs" />
+    <Compile Include="annotations_wincodec.fs" />
+    <Compile Include="annotations_objidl.fs" />
+    <Compile Include="annotations_objidlbase.fs" />
+    <Compile Include="annotations_ocidl.fs" />
+    <Compile Include="annotations_urlmon.fs" />
+    <Compile Include="annotations_DocumentTarget.fs" />
+    <Compile Include="a_d2d1effectauthor.fs" />
+    <Compile Include="annotations_d3d11.fs" />
     <Compile Include="annotations_autogen.fs" />
     <Compile Include="salParser.fs" />
     <Compile Include="rustdesc.fs" />
@@ -97,6 +112,29 @@
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <Tailcalls>false</Tailcalls>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>5</WarningLevel>
+    <DocumentationFile>bin\Debug\dxgen.XML</DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <Tailcalls>true</Tailcalls>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>3</WarningLevel>
+    <DocumentationFile>bin\Release\dxgen.XML</DocumentationFile>
+    <Prefer32Bit>false</Prefer32Bit>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '11.0'">

@@ -99,7 +99,9 @@ type ParamAnnotation=
   |InByteArrayOfSize of string*uint32 // name of array lenght parameter
   |InOptional
   |InComPtr
+  |InInterface of string // parameter name of iid
   |OutReturnComPtr
+  |OutReturnOptionalComPtr // Can return NULL
   |InOptionalComPtr
   |OutOptional
   |OutReturnBarePointer
@@ -133,6 +135,7 @@ let getReferencedParameters parameterAnnotation=
   |InOutArrayOfSize p -> [p]
   |InByteArrayOfSize (p,_) -> [p]
   |TypeSelector (p,_) -> [p]
+  |InInterface p -> [p]
   |_ -> []
 
 let getReturnDesc parmAnnot=
@@ -155,6 +158,7 @@ let getReturnDesc parmAnnot=
   |OutReturnInterface _ -> [parmAnnot]
   |OutReturnKnownInterface _ -> [parmAnnot]
   |OutReturnComPtr -> [parmAnnot]
+  |OutReturnOptionalComPtr -> [parmAnnot]
   |InIUnknown -> []
   |InOptionalArrayOfSize _ -> []
   |InArrayOfSize _ -> []
@@ -162,6 +166,7 @@ let getReturnDesc parmAnnot=
   |InByteArrayOfSize _ -> []
   |InOptional -> []
   |InComPtr -> []
+  |InInterface _ -> []
   |InOptionalComPtr -> []
   |OutOptional -> []
   |TypeSelector _ -> []
@@ -175,10 +180,13 @@ type MethodAnnotation=
   |MADontImplement
   |MAMangle of string // The method is overloaded.
                       // I need to give another name to it.
+  |MAReturnsInterface
+  |MACustom of string // custom implementation
 
 type EnumAnnotation=
   |EAFlags
   |EAEnum
+  |EAEnumHex
 
 [<System.FlagsAttribute>]
 type StructFlags=

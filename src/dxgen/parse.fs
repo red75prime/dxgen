@@ -179,14 +179,17 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       if (List.length !args <> nArgs) then
         raise <| System.Exception("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
       let crety = getResultType(fType)
-      let retyname =
+      let rec getretyname (crety:Type) =
         if crety.kind = TypeKind.Typedef then
           let cretydecl = getTypeDeclaration crety
           let urety = getTypedefDeclUnderlyingType(cretydecl)
-          let tspell = getTypeSpellingFS(urety)
-          tspell
+          if getTypeSpellingFS(urety).Contains("*") then
+            (getretyname urety)+" *"
+          else
+            getretyname urety
         else
           getTypeSpellingFS(crety)
+      let retyname = getretyname crety
           
       if (retyname.StartsWith("struct ") || retyname.Contains(" struct ")) && (retyname.Contains("*")=false) then
         // C returns those structs thru EAX:EDX, C++ thru reference

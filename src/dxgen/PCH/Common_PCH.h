@@ -3,3 +3,5 @@
 #include <windows.h>
 #undef GetMessage
 #undef GetGlyphIndices
+#undef DrawText
+#define D3D11_NO_HELPERS

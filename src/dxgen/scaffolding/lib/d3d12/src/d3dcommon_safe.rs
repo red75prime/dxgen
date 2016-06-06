@@ -2,46 +2,47 @@
 
 use utils::*;
 
-
-pub struct D3D10Blob(*mut ID3D10Blob);
-
-impl HasIID for D3D10Blob {
-  fn iid() -> REFGUID { &IID_ID3D10Blob }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D10Blob(pp_vtbl as *mut _ as *mut ID3D10Blob) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-
-impl Drop for D3D10Blob {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D3D10Blob {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-impl D3D10Blob {
+pub trait TD3D10Blob: TUnknown {
   //  Method GetBufferPointer
   
   #[allow(non_snake_case)]
-  pub fn get_buffer_pointer(&self) -> LPVOID {
+  fn get_buffer_pointer(&self) -> LPVOID {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D10Blob)).GetBufferPointer() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D10Blob)).GetBufferPointer() };
     _hr
   }
   
   //  Method GetBufferSize
   
   #[allow(non_snake_case)]
-  pub fn get_buffer_size(&self) -> SIZE_T {
+  fn get_buffer_size(&self) -> SIZE_T {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D10Blob)).GetBufferSize() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D10Blob)).GetBufferSize() };
     _hr
   }
   
   
+}
+
+impl TUnknown for D3D10Blob {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D10Blob(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D10Blob {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D10Blob {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D10Blob for D3D10Blob {}
+
+pub struct D3D10Blob(*mut ID3D10Blob);
+
+impl HasIID for D3D10Blob {
+  fn iid() -> REFGUID { &IID_ID3D10Blob }
 }
 

@@ -3,12 +3,21 @@
 open SharpYaml.Serialization
 
 [<CLIMutable>][<NoComparison>]
+type Header = {
+    [<YamlMember("name")>]
+    Name: string
+
+    [<YamlMember("uses")>]
+    Uses : string seq
+}
+
+[<CLIMutable>][<NoComparison>]
 type Module = {
     [<YamlMember("name")>]
     Name : string
 
     [<YamlMember("headers")>]
-    Headers : string seq
+    Headers : Header seq
 
     [<YamlMember("output-path")>]
     OutputPath : string

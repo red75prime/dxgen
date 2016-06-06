@@ -11,12 +11,55 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::marker::PhantomData;
 
-use user32::{TranslateMessage, DispatchMessageW, PeekMessageW};
+use user32::{TranslateMessage, DispatchMessageW, PeekMessageW, GetMessageW};
 // use kernel32::{Sleep};
 
 pub struct Window {
     hwnd: HWND,
     _nosync_nosend: PhantomData<Rc<u32>>,
+}
+
+pub struct BlockingEventIterator<'a> {
+    wnd: &'a Window,
+}
+
+impl<'a> Iterator for BlockingEventIterator<'a> {
+    type Item = MSG;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut maybe_injected_msg = None;
+        // Extract WM_SIZE message from thread-local data associated with this window
+        WINDOW.with(|rc| {
+            if let Some(ThreadLocalData {inject_msg: ref mut imsg, ..}) = *rc.borrow_mut() {
+                maybe_injected_msg = imsg.take();
+            }
+        });
+        if let Some(imsg) = maybe_injected_msg {
+            return Some(imsg);
+        }
+        let mut msg = unsafe { mem::uninitialized::<MSG>() };
+        loop {
+            let ret = unsafe { GetMessageW(&mut msg, ptr::null_mut(), 0, 0) };
+            if ret == 0 {
+                return None;
+            }
+            if msg.message == WM_QUIT {
+                return None;
+            } else if msg.message == WM_PAINT {
+                return Some(msg);
+            } else if msg.hwnd == self.wnd.hwnd {
+                unsafe { TranslateMessage(&mut msg) };
+                unsafe { DispatchMessageW(&mut msg) };
+                return Some(msg);
+            } else {
+                // Wrong window. Broadcast?
+                // skip this message and wait next
+            }
+        }
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, None)
+    }
 }
 
 pub struct PollEventIterator<'a> {
@@ -65,6 +108,9 @@ impl Window {
     }
     pub fn poll_events<'a>(&'a self) -> PollEventIterator<'a> {
         PollEventIterator { wnd: &self }
+    }
+    pub fn events<'a>(&'a self) -> BlockingEventIterator<'a> {
+        BlockingEventIterator { wnd: &self }
     }
     pub fn size(&self) -> (u32, u32) {
         let mut rect = RECT {

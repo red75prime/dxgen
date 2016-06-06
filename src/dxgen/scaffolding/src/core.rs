@@ -8,6 +8,35 @@ use std::ptr;
 use kernel32;
 use std::mem;
 
+pub trait DumpOnError {
+    fn dump(self, core: &DXCore) -> Self;
+    fn dump_iq(self, core: &D3D12InfoQueue) -> Self;
+}
+
+impl<T> DumpOnError for HResult<T> {
+    fn dump(self, core: &DXCore) -> Self {
+        match self {
+            Ok(_) => (),
+            Err(_) => {
+                core.dump_info_queue();
+                ()
+            },
+        };
+        self
+    }
+
+    fn dump_iq(self, iq: &D3D12InfoQueue) -> Self {
+        match self {
+            Ok(_) => (),
+            Err(_) => {
+                dump_info_queue(iq);
+                ()
+            },
+        };
+        self
+    }
+}
+
 pub trait Handle: Sized {
     fn handle(&self) -> HANDLE;
 }
@@ -106,33 +135,25 @@ pub fn dump_info_queue(iq: &D3D12InfoQueue) {
     iq.clear_stored_messages();
 }
 
-pub fn create_core(adapter: Option<&DXGIAdapter1>,
+pub fn create_core(dxgi_factory: &DXGIFactory4, adapter: Option<&DXGIAdapter1>,
                    feature_level: D3D_FEATURE_LEVEL,
                    enable_debug: bool)
-                   -> Result<DXCore, String> {
+                   -> Result<DXCore, HRESULT> {
     if enable_debug {
-        try!(get_debug_interface()
-                 .map_err(|hr| format!("get_debug_interface failed with 0x{:x}", hr)))
+        trace!("get_debug_interface");
+        try!(get_debug_interface())
             .enable_debug_layer();
     };
-    let dev = try!(d3d12_create_device(adapter, feature_level)
-                       .map_err(|hr| format!("d3d12_create_device failed with 0x{:x}", hr)));
+    let dev = try!(d3d12_create_device(adapter, feature_level));
 
     let info_queue = if enable_debug {
-        let info_queue: D3D12InfoQueue = try!(dev.query_interface()
-                                                 .map_err(|hr| {
-                                                     format!("dev.query_interface::\
-                                                              <D3D12InfoQueue> failed with 0x{:x}",
-                                                             hr)
-                                                 }));
-        Some(info_queue)
+        trace!("get D3D12InfoQueue");
+        Some(try!(dev.query_interface::<D3D12InfoQueue>()))
     } else {
         None
     };
 
-    let factory: DXGIFactory4 = try!(create_dxgi_factory2(enable_debug).map_err(|hr| {
-        format!("create_dxgi_factory2 failed with 0x{:x}", hr)
-    }));
+    let factory = dxgi_factory.clone();
 
     let gqd = D3D12_COMMAND_QUEUE_DESC {
         Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -141,28 +162,17 @@ pub fn create_core(adapter: Option<&DXGIAdapter1>,
         NodeMask: 0,
     };
 
-    let gr_q = try!(dev.create_command_queue(&gqd)
-                       .map_err(|hr| {
-                           format!("create_command_queue for graphics queue failed with 0x{:x}",
-                                   hr)
-                       }));
-    gr_q.set_name("Graphics command queue".into()).unwrap();
+    let gr_q = try!(dev.create_command_queue(&gqd));
+    try!(gr_q.set_name("Graphics command queue".into()));
 
     let cqd = D3D12_COMMAND_QUEUE_DESC { Type: D3D12_COMMAND_LIST_TYPE_COMPUTE, ..gqd };
-    let cm_q = try!(dev.create_command_queue(&cqd)
-                       .map_err(|hr| {
-                           format!("create_command_queue for compute queue failed with 0x{:x}",
-                                   hr)
-                       }));
-    cm_q.set_name("Compute command queue".into()).unwrap();
+    let cm_q = try!(dev.create_command_queue(&cqd));
+    try!(cm_q.set_name("Compute command queue".into()));
 
     let pqd = D3D12_COMMAND_QUEUE_DESC { Type: D3D12_COMMAND_LIST_TYPE_COPY, ..gqd };
 
-    let cp_q = try!(dev.create_command_queue(&pqd)
-                       .map_err(|hr| {
-                           format!("create_command_queue for copy queue failed with 0x{:x}", hr)
-                       }));
-    cp_q.set_name("Copy command queue".into()).unwrap();
+    let cp_q = try!(dev.create_command_queue(&pqd));
+    try!(cp_q.set_name("Copy command queue".into()));
 
     Ok(DXCore {
         dev: dev,
