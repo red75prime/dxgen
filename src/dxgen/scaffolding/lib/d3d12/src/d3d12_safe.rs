@@ -2,13 +2,43 @@
 
 use utils::*;
 
-
 #[derive(Default, Debug)]
 pub struct GPUCPUTimestamp {
   pub cpu_timestamp : UINT64,
   pub gpu_timestamp : UINT64,
 }
 
+pub trait TD3D12CommandAllocator: TD3D12Pageable {
+  //  Method Reset
+  
+  #[allow(non_snake_case)]
+  fn reset(&self) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12CommandAllocator)).Reset() };
+    hr2ret(_hr,_hr)
+  }
+  
+  
+}
+
+impl TUnknown for D3D12CommandAllocator {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12CommandAllocator(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12CommandAllocator {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12CommandAllocator {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12CommandAllocator {}
+impl TD3D12DeviceChild for D3D12CommandAllocator {}
+impl TD3D12Pageable for D3D12CommandAllocator {}
+impl TD3D12CommandAllocator for D3D12CommandAllocator {}
 
 pub struct D3D12CommandAllocator(*mut ID3D12CommandAllocator);
 unsafe impl Sync for D3D12CommandAllocator {}
@@ -16,1009 +46,1197 @@ unsafe impl Send for D3D12CommandAllocator {}
 
 impl HasIID for D3D12CommandAllocator {
   fn iid() -> REFGUID { &IID_ID3D12CommandAllocator }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12CommandAllocator(pp_vtbl as *mut _ as *mut ID3D12CommandAllocator) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12CommandAllocator {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D3D12CommandAllocator {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12CommandAllocator {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  //  Method Reset
-  
-  #[allow(non_snake_case)]
-  pub fn reset(&self) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandAllocator)).Reset() };
-    hr2ret(_hr,_hr)
-  }
-  
-  
-}
-
-pub struct D3D12CommandList(*mut ID3D12CommandList);
-
-impl HasIID for D3D12CommandList {
-  fn iid() -> REFGUID { &IID_ID3D12CommandList }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12CommandList(pp_vtbl as *mut _ as *mut ID3D12CommandList) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12CommandList {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D3D12CommandList {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12CommandList {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TD3D12CommandList: TD3D12DeviceChild {
   //  Method GetType
   
   #[allow(non_snake_case)]
-  pub fn get_type(&self) -> D3D12_COMMAND_LIST_TYPE {
+  fn get_type(&self) -> D3D12_COMMAND_LIST_TYPE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandList)).GetType() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12CommandList)).GetType() };
     _hr
   }
   
   
 }
 
-pub struct D3D12CommandQueue(*mut ID3D12CommandQueue);
-
-impl HasIID for D3D12CommandQueue {
-  fn iid() -> REFGUID { &IID_ID3D12CommandQueue }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12CommandQueue(pp_vtbl as *mut _ as *mut ID3D12CommandQueue) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12CommandQueue {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D3D12CommandList {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12CommandList(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D3D12CommandList {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12CommandList {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12CommandList {}
+impl TD3D12DeviceChild for D3D12CommandList {}
+impl TD3D12CommandList for D3D12CommandList {}
 
-impl Clone for D3D12CommandQueue {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D3D12CommandList(*mut ID3D12CommandList);
+
+impl HasIID for D3D12CommandList {
+  fn iid() -> REFGUID { &IID_ID3D12CommandList }
 }
 
-
-
-impl D3D12CommandQueue {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TD3D12CommandQueue: TD3D12Pageable {
   //  Method UpdateTileMappings
   
   #[allow(non_snake_case)]
-  pub fn update_tile_mappings<T: HasIID>(&self, resource: &T, resource_region_start_coordinates: Option<&[D3D12_TILED_RESOURCE_COORDINATE]>, resource_region_sizes: Option<&[D3D12_TILE_REGION_SIZE]>, heap: Option<&D3D12Heap>, range_flags: Option<&[D3D12_TILE_RANGE_FLAGS]>, heap_range_start_offsets: Option<&[UINT]>, range_tile_counts: Option<&[UINT]>, flags: D3D12_TILE_MAPPING_FLAGS) -> () {
+  fn update_tile_mappings<T: TD3D12Resource>(&self, resource: &T, resource_region_start_coordinates: Option<&[D3D12_TILED_RESOURCE_COORDINATE]>, resource_region_sizes: Option<&[D3D12_TILE_REGION_SIZE]>, heap: Option<&D3D12Heap>, range_flags: Option<&[D3D12_TILE_RANGE_FLAGS]>, heap_range_start_offsets: Option<&[UINT]>, range_tile_counts: Option<&[UINT]>, flags: D3D12_TILE_MAPPING_FLAGS) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandQueue)).UpdateTileMappings(resource.iptr() as *mut _ as *mut _ ,  same_length(&[resource_region_start_coordinates.as_ref().map(|a|a.len()),resource_region_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_ptr(&resource_region_start_coordinates) as *const _, opt_arr_as_ptr(&resource_region_sizes) as *const _, heap.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _,  same_length(&[range_flags.as_ref().map(|a|a.len()),heap_range_start_offsets.as_ref().map(|a|a.len()),range_tile_counts.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_ptr(&range_flags) as *const _, opt_arr_as_ptr(&heap_range_start_offsets) as *const _, opt_arr_as_ptr(&range_tile_counts) as *const _, flags) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12CommandQueue)).UpdateTileMappings(resource.iptr() as *mut _ as *mut _ ,  same_length(&[resource_region_start_coordinates.as_ref().map(|a|a.len()),resource_region_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_ptr(&resource_region_start_coordinates) as *const _, opt_arr_as_ptr(&resource_region_sizes) as *const _, heap.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _,  same_length(&[range_flags.as_ref().map(|a|a.len()),heap_range_start_offsets.as_ref().map(|a|a.len()),range_tile_counts.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, opt_arr_as_ptr(&range_flags) as *const _, opt_arr_as_ptr(&heap_range_start_offsets) as *const _, opt_arr_as_ptr(&range_tile_counts) as *const _, flags) };
     ()
   }
   
   //  Method CopyTileMappings
   
   #[allow(non_snake_case)]
-  pub fn copy_tile_mappings<T: HasIID, T1: HasIID>(&self, dst_resource: &T, dst_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, src_resource: &T1, src_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, region_size: &D3D12_TILE_REGION_SIZE, flags: D3D12_TILE_MAPPING_FLAGS) -> () {
+  fn copy_tile_mappings<T: TD3D12Resource, T1: TD3D12Resource>(&self, dst_resource: &T, dst_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, src_resource: &T1, src_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, region_size: &D3D12_TILE_REGION_SIZE, flags: D3D12_TILE_MAPPING_FLAGS) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandQueue)).CopyTileMappings(dst_resource.iptr() as *mut _ as *mut _ , dst_region_start_coordinate, src_resource.iptr() as *mut _ as *mut _ , src_region_start_coordinate, region_size, flags) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12CommandQueue)).CopyTileMappings(dst_resource.iptr() as *mut _ as *mut _ , dst_region_start_coordinate, src_resource.iptr() as *mut _ as *mut _ , src_region_start_coordinate, region_size, flags) };
     ()
   }
   
   //  Method ExecuteCommandLists
   
   #[allow(non_snake_case)]
-  pub fn execute_command_lists<T: HasIID>(&self, command_lists: &[&T]) -> () {
+  fn execute_command_lists<T: TD3D12CommandList>(&self, command_lists: &[&T]) -> () {
     let mut lv1: Vec<*mut IUnknown> = command_lists.iter().map(|o|o.iptr()).collect();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandQueue)).ExecuteCommandLists(command_lists.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12CommandQueue)).ExecuteCommandLists(command_lists.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     ()
   }
   
   //  Method Signal
   
   #[allow(non_snake_case)]
-  pub fn signal<T: HasIID>(&self, fence: &T, value: UINT64) -> HResult<HRESULT> {
+  fn signal<T: TD3D12Fence>(&self, fence: &T, value: UINT64) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandQueue)).Signal(fence.iptr() as *mut _ as *mut _ , value) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12CommandQueue)).Signal(fence.iptr() as *mut _ as *mut _ , value) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Wait
   
   #[allow(non_snake_case)]
-  pub fn wait<T: HasIID>(&self, fence: &T, value: UINT64) -> HResult<HRESULT> {
+  fn wait<T: TD3D12Fence>(&self, fence: &T, value: UINT64) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandQueue)).Wait(fence.iptr() as *mut _ as *mut _ , value) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12CommandQueue)).Wait(fence.iptr() as *mut _ as *mut _ , value) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetTimestampFrequency
   
   #[allow(non_snake_case)]
-  pub fn get_timestamp_frequency(&self) -> HResult<UINT64> {
+  fn get_timestamp_frequency(&self) -> HResult<UINT64> {
     let mut lv1: UINT64 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandQueue)).GetTimestampFrequency(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12CommandQueue)).GetTimestampFrequency(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetClockCalibration
   
   #[allow(non_snake_case)]
-  pub fn get_clock_calibration(&self) -> HResult<GPUCPUTimestamp> {
+  fn get_clock_calibration(&self) -> HResult<GPUCPUTimestamp> {
     let mut lv1: GPUCPUTimestamp = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandQueue)).GetClockCalibration(&mut (lv1.gpu_timestamp) as *mut _ as *mut _, &mut (lv1.cpu_timestamp) as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12CommandQueue)).GetClockCalibration(&mut (lv1.gpu_timestamp) as *mut _ as *mut _, &mut (lv1.cpu_timestamp) as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetDesc
   
   #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> D3D12_COMMAND_QUEUE_DESC {
+  fn get_desc(&self) -> D3D12_COMMAND_QUEUE_DESC {
     let mut lv1: D3D12_COMMAND_QUEUE_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandQueue)).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12CommandQueue)).GetDesc(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   
 }
 
+impl TUnknown for D3D12CommandQueue {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12CommandQueue(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12CommandQueue {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12CommandQueue {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12CommandQueue {}
+impl TD3D12DeviceChild for D3D12CommandQueue {}
+impl TD3D12Pageable for D3D12CommandQueue {}
+impl TD3D12CommandQueue for D3D12CommandQueue {}
+
+pub struct D3D12CommandQueue(*mut ID3D12CommandQueue);
+
+impl HasIID for D3D12CommandQueue {
+  fn iid() -> REFGUID { &IID_ID3D12CommandQueue }
+}
+
+pub trait TD3D12CommandSignature: TD3D12Pageable {
+  
+}
+
+impl TUnknown for D3D12CommandSignature {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12CommandSignature(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12CommandSignature {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12CommandSignature {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12CommandSignature {}
+impl TD3D12DeviceChild for D3D12CommandSignature {}
+impl TD3D12Pageable for D3D12CommandSignature {}
+impl TD3D12CommandSignature for D3D12CommandSignature {}
+
 pub struct D3D12CommandSignature(*mut ID3D12CommandSignature);
 
 impl HasIID for D3D12CommandSignature {
   fn iid() -> REFGUID { &IID_ID3D12CommandSignature }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12CommandSignature(pp_vtbl as *mut _ as *mut ID3D12CommandSignature) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12CommandSignature {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D3D12CommandSignature {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12CommandSignature {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  
-}
-
-pub struct D3D12DescriptorHeap(*mut ID3D12DescriptorHeap);
-unsafe impl Send for D3D12DescriptorHeap {}
-
-impl HasIID for D3D12DescriptorHeap {
-  fn iid() -> REFGUID { &IID_ID3D12DescriptorHeap }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12DescriptorHeap(pp_vtbl as *mut _ as *mut ID3D12DescriptorHeap) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12DescriptorHeap {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D3D12DescriptorHeap {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12DescriptorHeap {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TD3D12DescriptorHeap: TD3D12Pageable {
   //  Method GetDesc
   
   #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> D3D12_DESCRIPTOR_HEAP_DESC {
+  fn get_desc(&self) -> D3D12_DESCRIPTOR_HEAP_DESC {
     let mut lv1: D3D12_DESCRIPTOR_HEAP_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DescriptorHeap)).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12DescriptorHeap)).GetDesc(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetCPUDescriptorHandleForHeapStart
   
   #[allow(non_snake_case)]
-  pub fn get_cpu_descriptor_handle_for_heap_start(&self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
+  fn get_cpu_descriptor_handle_for_heap_start(&self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
     let mut lv1: D3D12_CPU_DESCRIPTOR_HANDLE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DescriptorHeap)).GetCPUDescriptorHandleForHeapStart(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12DescriptorHeap)).GetCPUDescriptorHandleForHeapStart(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetGPUDescriptorHandleForHeapStart
   
   #[allow(non_snake_case)]
-  pub fn get_gpu_descriptor_handle_for_heap_start(&self) -> D3D12_GPU_DESCRIPTOR_HANDLE {
+  fn get_gpu_descriptor_handle_for_heap_start(&self) -> D3D12_GPU_DESCRIPTOR_HANDLE {
     let mut lv1: D3D12_GPU_DESCRIPTOR_HANDLE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DescriptorHeap)).GetGPUDescriptorHandleForHeapStart(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12DescriptorHeap)).GetGPUDescriptorHandleForHeapStart(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   
 }
 
-pub struct D3D12DeviceChild(*mut ID3D12DeviceChild);
-
-impl HasIID for D3D12DeviceChild {
-  fn iid() -> REFGUID { &IID_ID3D12DeviceChild }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12DeviceChild(pp_vtbl as *mut _ as *mut ID3D12DeviceChild) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12DeviceChild {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D3D12DescriptorHeap {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12DescriptorHeap(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D3D12DescriptorHeap {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12DescriptorHeap {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12DescriptorHeap {}
+impl TD3D12DeviceChild for D3D12DescriptorHeap {}
+impl TD3D12Pageable for D3D12DescriptorHeap {}
+impl TD3D12DescriptorHeap for D3D12DescriptorHeap {}
 
-impl Clone for D3D12DeviceChild {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D3D12DescriptorHeap(*mut ID3D12DescriptorHeap);
+unsafe impl Send for D3D12DescriptorHeap {}
+
+impl HasIID for D3D12DescriptorHeap {
+  fn iid() -> REFGUID { &IID_ID3D12DescriptorHeap }
 }
 
-
-
-impl D3D12DeviceChild {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD3D12DeviceChild: TD3D12Object {
   //  Method GetDevice
   
   #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
+  fn get_device<T: TUnknown+HasIID>(&self) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,T::new(lv1))
   }
   
   
 }
 
-pub struct D3D12Device(*mut ID3D12Device);
-
-impl HasIID for D3D12Device {
-  fn iid() -> REFGUID { &IID_ID3D12Device }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Device(pp_vtbl as *mut _ as *mut ID3D12Device) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12Device {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D3D12DeviceChild {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12DeviceChild(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D3D12DeviceChild {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12DeviceChild {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12DeviceChild {}
+impl TD3D12DeviceChild for D3D12DeviceChild {}
 
-impl Clone for D3D12Device {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D3D12DeviceChild(*mut ID3D12DeviceChild);
+
+impl HasIID for D3D12DeviceChild {
+  fn iid() -> REFGUID { &IID_ID3D12DeviceChild }
 }
 
-
-
-impl D3D12Device {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD3D12Device: TD3D12Object {
   //  Method GetNodeCount
   
   #[allow(non_snake_case)]
-  pub fn get_node_count(&self) -> UINT {
+  fn get_node_count(&self) -> UINT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).GetNodeCount() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).GetNodeCount() };
     _hr
   }
   
   //  Method CreateCommandQueue
   
   #[allow(non_snake_case)]
-  pub fn create_command_queue(&self, desc: &D3D12_COMMAND_QUEUE_DESC) -> HResult<D3D12CommandQueue> {
+  fn create_command_queue(&self, desc: &D3D12_COMMAND_QUEUE_DESC) -> HResult<D3D12CommandQueue> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateCommandQueue(desc, D3D12CommandQueue::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateCommandQueue(desc, D3D12CommandQueue::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12CommandQueue::new(lv1))
   }
   
   //  Method CreateCommandAllocator
   
   #[allow(non_snake_case)]
-  pub fn create_command_allocator(&self, type_: D3D12_COMMAND_LIST_TYPE) -> HResult<D3D12CommandAllocator> {
+  fn create_command_allocator(&self, type_: D3D12_COMMAND_LIST_TYPE) -> HResult<D3D12CommandAllocator> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateCommandAllocator(type_, D3D12CommandAllocator::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateCommandAllocator(type_, D3D12CommandAllocator::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12CommandAllocator::new(lv1))
   }
   
   //  Method CreateGraphicsPipelineState
   
   #[allow(non_snake_case)]
-  pub fn create_graphics_pipeline_state(&self, desc: &D3D12_GRAPHICS_PIPELINE_STATE_DESC) -> HResult<D3D12PipelineState> {
+  fn create_graphics_pipeline_state(&self, desc: &D3D12_GRAPHICS_PIPELINE_STATE_DESC) -> HResult<D3D12PipelineState> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateGraphicsPipelineState(desc, D3D12PipelineState::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateGraphicsPipelineState(desc, D3D12PipelineState::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12PipelineState::new(lv1))
   }
   
   //  Method CreateComputePipelineState
   
   #[allow(non_snake_case)]
-  pub fn create_compute_pipeline_state(&self, desc: &D3D12_COMPUTE_PIPELINE_STATE_DESC) -> HResult<D3D12PipelineState> {
+  fn create_compute_pipeline_state(&self, desc: &D3D12_COMPUTE_PIPELINE_STATE_DESC) -> HResult<D3D12PipelineState> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateComputePipelineState(desc, D3D12PipelineState::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateComputePipelineState(desc, D3D12PipelineState::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12PipelineState::new(lv1))
   }
   
   //  Method CreateCommandList
   
   #[allow(non_snake_case)]
-  pub fn create_command_list<T: HasIID, T1: HasIID>(&self, nodeMask: UINT, type_: D3D12_COMMAND_LIST_TYPE, command_allocator: &T, initial_state: Option<&D3D12PipelineState>) -> HResult<T1> {
+  fn create_command_list<T: TD3D12CommandAllocator, T1: TUnknown+HasIID>(&self, nodeMask: UINT, type_: D3D12_COMMAND_LIST_TYPE, command_allocator: &T, initial_state: Option<&D3D12PipelineState>) -> HResult<T1> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateCommandList(nodeMask, type_, command_allocator.iptr() as *mut _ as *mut _ , initial_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, T1::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateCommandList(nodeMask, type_, command_allocator.iptr() as *mut _ as *mut _ , initial_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, T1::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,T1::new(lv1))
   }
   
   //  Method CheckFeatureSupport
   
   #[allow(non_snake_case)]
-  pub fn check_feature_support_options(&self, feature_support_data: &mut D3D12_FEATURE_DATA_D3D12_OPTIONS) -> HResult<HRESULT> {
+  fn check_feature_support_options(&self, feature_support_data: &mut D3D12_FEATURE_DATA_D3D12_OPTIONS) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(_hr,_hr)
   }
   
   
   #[allow(non_snake_case)]
-  pub fn check_feature_support_arch(&self, feature_support_data: &mut D3D12_FEATURE_DATA_ARCHITECTURE) -> HResult<HRESULT> {
+  fn check_feature_support_arch(&self, feature_support_data: &mut D3D12_FEATURE_DATA_ARCHITECTURE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(_hr,_hr)
   }
   
   
   #[allow(non_snake_case)]
-  pub fn check_feature_support_feature_levels(&self, feature_support_data: &mut D3D12_FEATURE_DATA_FEATURE_LEVELS) -> HResult<HRESULT> {
+  fn check_feature_support_feature_levels(&self, feature_support_data: &mut D3D12_FEATURE_DATA_FEATURE_LEVELS) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(_hr,_hr)
   }
   
   
   #[allow(non_snake_case)]
-  pub fn check_feature_support_format_support(&self, feature_support_data: &mut D3D12_FEATURE_DATA_FORMAT_SUPPORT) -> HResult<HRESULT> {
+  fn check_feature_support_format_support(&self, feature_support_data: &mut D3D12_FEATURE_DATA_FORMAT_SUPPORT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(_hr,_hr)
   }
   
   
   #[allow(non_snake_case)]
-  pub fn check_feature_support_multisample_quality_levels(&self, feature_support_data: &mut D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS) -> HResult<HRESULT> {
+  fn check_feature_support_multisample_quality_levels(&self, feature_support_data: &mut D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(_hr,_hr)
   }
   
   
   #[allow(non_snake_case)]
-  pub fn check_feature_support_format_info(&self, feature_support_data: &mut D3D12_FEATURE_DATA_FORMAT_INFO) -> HResult<HRESULT> {
+  fn check_feature_support_format_info(&self, feature_support_data: &mut D3D12_FEATURE_DATA_FORMAT_INFO) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_FORMAT_INFO, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_FORMAT_INFO, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(_hr,_hr)
   }
   
   
   #[allow(non_snake_case)]
-  pub fn check_feature_support_virtual_address(&self, feature_support_data: &mut D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT) -> HResult<HRESULT> {
+  fn check_feature_support_virtual_address(&self, feature_support_data: &mut D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CheckFeatureSupport(D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, feature_support_data as *mut _ as *mut _, mem::size_of_val(feature_support_data) as UINT) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CreateDescriptorHeap
   
   #[allow(non_snake_case)]
-  pub fn create_descriptor_heap(&self, descriptor_heap_desc: &D3D12_DESCRIPTOR_HEAP_DESC) -> HResult<D3D12DescriptorHeap> {
+  fn create_descriptor_heap(&self, descriptor_heap_desc: &D3D12_DESCRIPTOR_HEAP_DESC) -> HResult<D3D12DescriptorHeap> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateDescriptorHeap(descriptor_heap_desc, D3D12DescriptorHeap::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateDescriptorHeap(descriptor_heap_desc, D3D12DescriptorHeap::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12DescriptorHeap::new(lv1))
   }
   
   //  Method GetDescriptorHandleIncrementSize
   
   #[allow(non_snake_case)]
-  pub fn get_descriptor_handle_increment_size(&self, descriptor_heap_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> UINT {
+  fn get_descriptor_handle_increment_size(&self, descriptor_heap_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> UINT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).GetDescriptorHandleIncrementSize(descriptor_heap_type) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).GetDescriptorHandleIncrementSize(descriptor_heap_type) };
     _hr
   }
   
   //  Method CreateRootSignature
   
   #[allow(non_snake_case)]
-  pub fn create_root_signature<T>(&self, nodeMask: UINT, blob_with_root_signature: &[T]) -> HResult<D3D12RootSignature> {
+  fn create_root_signature<T>(&self, nodeMask: UINT, blob_with_root_signature: &[T]) -> HResult<D3D12RootSignature> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateRootSignature(nodeMask, blob_with_root_signature.as_ptr() as *const _, (mem::size_of_val(blob_with_root_signature)/1) as SIZE_T, D3D12RootSignature::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateRootSignature(nodeMask, blob_with_root_signature.as_ptr() as *const _, (mem::size_of_val(blob_with_root_signature)/1) as SIZE_T, D3D12RootSignature::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12RootSignature::new(lv1))
   }
   
   //  Method CreateConstantBufferView
   
   #[allow(non_snake_case)]
-  pub fn create_constant_buffer_view(&self, desc: Option<&D3D12_CONSTANT_BUFFER_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  fn create_constant_buffer_view(&self, desc: Option<&D3D12_CONSTANT_BUFFER_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateConstantBufferView(desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateConstantBufferView(desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
   }
   
   //  Method CreateShaderResourceView
   
   #[allow(non_snake_case)]
-  pub fn create_shader_resource_view(&self, resource: Option<&D3D12Resource>, desc: Option<&D3D12_SHADER_RESOURCE_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  fn create_shader_resource_view(&self, resource: Option<&D3D12Resource>, desc: Option<&D3D12_SHADER_RESOURCE_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateShaderResourceView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateShaderResourceView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
   }
   
   //  Method CreateUnorderedAccessView
   
   #[allow(non_snake_case)]
-  pub fn create_unordered_access_view(&self, resource: Option<&D3D12Resource>, counter_resource: Option<&D3D12Resource>, desc: Option<&D3D12_UNORDERED_ACCESS_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  fn create_unordered_access_view(&self, resource: Option<&D3D12Resource>, counter_resource: Option<&D3D12Resource>, desc: Option<&D3D12_UNORDERED_ACCESS_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateUnorderedAccessView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, counter_resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateUnorderedAccessView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, counter_resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
   }
   
   //  Method CreateRenderTargetView
   
   #[allow(non_snake_case)]
-  pub fn create_render_target_view(&self, resource: Option<&D3D12Resource>, desc: Option<&D3D12_RENDER_TARGET_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  fn create_render_target_view(&self, resource: Option<&D3D12Resource>, desc: Option<&D3D12_RENDER_TARGET_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateRenderTargetView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateRenderTargetView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
   }
   
   //  Method CreateDepthStencilView
   
   #[allow(non_snake_case)]
-  pub fn create_depth_stencil_view(&self, resource: Option<&D3D12Resource>, desc: Option<&D3D12_DEPTH_STENCIL_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  fn create_depth_stencil_view(&self, resource: Option<&D3D12Resource>, desc: Option<&D3D12_DEPTH_STENCIL_VIEW_DESC>, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateDepthStencilView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateDepthStencilView(resource.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, desc.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), dest_descriptor) };
     ()
   }
   
   //  Method CreateSampler
   
   #[allow(non_snake_case)]
-  pub fn create_sampler(&self, desc: &D3D12_SAMPLER_DESC, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
+  fn create_sampler(&self, desc: &D3D12_SAMPLER_DESC, dest_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateSampler(desc, dest_descriptor) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateSampler(desc, dest_descriptor) };
     ()
   }
   
   //  Method CopyDescriptors
   
   #[allow(non_snake_case)]
-  pub fn copy_descriptors(&self, dest_descriptor_range_starts: &[D3D12_CPU_DESCRIPTOR_HANDLE], dest_descriptor_range_sizes: Option<&[UINT]>, src_descriptor_range_starts: &[D3D12_CPU_DESCRIPTOR_HANDLE], src_descriptor_range_sizes: Option<&[UINT]>, descriptor_heaps_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> () {
+  fn copy_descriptors(&self, dest_descriptor_range_starts: &[D3D12_CPU_DESCRIPTOR_HANDLE], dest_descriptor_range_sizes: Option<&[UINT]>, src_descriptor_range_starts: &[D3D12_CPU_DESCRIPTOR_HANDLE], src_descriptor_range_sizes: Option<&[UINT]>, descriptor_heaps_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CopyDescriptors( same_length(&[Some(dest_descriptor_range_starts.len()),dest_descriptor_range_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(dest_descriptor_range_starts), opt_arr_as_ptr(&dest_descriptor_range_sizes) as *const _,  same_length(&[Some(src_descriptor_range_starts.len()),src_descriptor_range_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(src_descriptor_range_starts), opt_arr_as_ptr(&src_descriptor_range_sizes) as *const _, descriptor_heaps_type) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CopyDescriptors( same_length(&[Some(dest_descriptor_range_starts.len()),dest_descriptor_range_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(dest_descriptor_range_starts), opt_arr_as_ptr(&dest_descriptor_range_sizes) as *const _,  same_length(&[Some(src_descriptor_range_starts.len()),src_descriptor_range_sizes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, slice_as_ptr(src_descriptor_range_starts), opt_arr_as_ptr(&src_descriptor_range_sizes) as *const _, descriptor_heaps_type) };
     ()
   }
   
   //  Method CopyDescriptorsSimple
   
   #[allow(non_snake_case)]
-  pub fn copy_descriptors_simple(&self, num_descriptors: UINT, dest_descriptor_range_start: D3D12_CPU_DESCRIPTOR_HANDLE, src_descriptor_range_start: D3D12_CPU_DESCRIPTOR_HANDLE, descriptor_heaps_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> () {
+  fn copy_descriptors_simple(&self, num_descriptors: UINT, dest_descriptor_range_start: D3D12_CPU_DESCRIPTOR_HANDLE, src_descriptor_range_start: D3D12_CPU_DESCRIPTOR_HANDLE, descriptor_heaps_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CopyDescriptorsSimple(num_descriptors, dest_descriptor_range_start, src_descriptor_range_start, descriptor_heaps_type) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CopyDescriptorsSimple(num_descriptors, dest_descriptor_range_start, src_descriptor_range_start, descriptor_heaps_type) };
     ()
   }
   
   //  Method GetResourceAllocationInfo
   
   #[allow(non_snake_case)]
-  pub fn get_resource_allocation_info(&self, visibleMask: UINT, resource_descs: &[D3D12_RESOURCE_DESC]) -> D3D12_RESOURCE_ALLOCATION_INFO {
+  fn get_resource_allocation_info(&self, visibleMask: UINT, resource_descs: &[D3D12_RESOURCE_DESC]) -> D3D12_RESOURCE_ALLOCATION_INFO {
     let mut lv1: D3D12_RESOURCE_ALLOCATION_INFO = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).GetResourceAllocationInfo(visibleMask, resource_descs.len() as UINT, slice_as_ptr(resource_descs), &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).GetResourceAllocationInfo(visibleMask, resource_descs.len() as UINT, slice_as_ptr(resource_descs), &mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetCustomHeapProperties
   
   #[allow(non_snake_case)]
-  pub fn get_custom_heap_properties(&self, nodeMask: UINT, heapType: D3D12_HEAP_TYPE) -> D3D12_HEAP_PROPERTIES {
+  fn get_custom_heap_properties(&self, nodeMask: UINT, heapType: D3D12_HEAP_TYPE) -> D3D12_HEAP_PROPERTIES {
     let mut lv1: D3D12_HEAP_PROPERTIES = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).GetCustomHeapProperties(nodeMask, heapType, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).GetCustomHeapProperties(nodeMask, heapType, &mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method CreateCommittedResource
   
   #[allow(non_snake_case)]
-  pub fn create_committed_resource(&self, heap_properties: &D3D12_HEAP_PROPERTIES, heap_flags: D3D12_HEAP_FLAGS, resource_desc: &D3D12_RESOURCE_DESC, initial_resource_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
+  fn create_committed_resource(&self, heap_properties: &D3D12_HEAP_PROPERTIES, heap_flags: D3D12_HEAP_FLAGS, resource_desc: &D3D12_RESOURCE_DESC, initial_resource_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateCommittedResource(heap_properties, heap_flags, resource_desc, initial_resource_state, optimized_clear_value.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), D3D12Resource::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateCommittedResource(heap_properties, heap_flags, resource_desc, initial_resource_state, optimized_clear_value.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), D3D12Resource::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12Resource::new(lv1))
   }
   
   //  Method CreateHeap
   
   #[allow(non_snake_case)]
-  pub fn create_heap(&self, desc: &D3D12_HEAP_DESC) -> HResult<D3D12Heap> {
+  fn create_heap(&self, desc: &D3D12_HEAP_DESC) -> HResult<D3D12Heap> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateHeap(desc, D3D12Heap::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateHeap(desc, D3D12Heap::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12Heap::new(lv1))
   }
   
   //  Method CreatePlacedResource
   
   #[allow(non_snake_case)]
-  pub fn create_placed_resource(&self, heap: &mut ID3D12Heap, heap_offset: UINT64, desc: &D3D12_RESOURCE_DESC, initial_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
+  fn create_placed_resource(&self, heap: &mut ID3D12Heap, heap_offset: UINT64, desc: &D3D12_RESOURCE_DESC, initial_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreatePlacedResource(heap, heap_offset, desc, initial_state, optimized_clear_value.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), D3D12Resource::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreatePlacedResource(heap, heap_offset, desc, initial_state, optimized_clear_value.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), D3D12Resource::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12Resource::new(lv1))
   }
   
   //  Method CreateReservedResource
   
   #[allow(non_snake_case)]
-  pub fn create_reserved_resource(&self, desc: &D3D12_RESOURCE_DESC, initial_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
+  fn create_reserved_resource(&self, desc: &D3D12_RESOURCE_DESC, initial_state: D3D12_RESOURCE_STATES, optimized_clear_value: Option<&D3D12_CLEAR_VALUE>) -> HResult<D3D12Resource> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateReservedResource(desc, initial_state, optimized_clear_value.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), D3D12Resource::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateReservedResource(desc, initial_state, optimized_clear_value.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), D3D12Resource::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12Resource::new(lv1))
   }
   
   //  Method CreateSharedHandle
   
   #[allow(non_snake_case)]
-  pub fn create_shared_handle(&self, object: &mut ID3D12DeviceChild, attributes: Option<&SECURITY_ATTRIBUTES>, access: DWORD, name: Cow<str>) -> HResult<HANDLE> {
+  fn create_shared_handle(&self, object: &mut ID3D12DeviceChild, attributes: Option<&SECURITY_ATTRIBUTES>, access: DWORD, name: Cow<str>) -> HResult<HANDLE> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let mut lv2: HANDLE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateSharedHandle(object, attributes.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), access, lv1.as_ptr() as LPCWSTR, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateSharedHandle(object, attributes.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), access, lv1.as_ptr() as LPCWSTR, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,lv2)
   }
   
   //  Method OpenSharedHandle
   
   #[allow(non_snake_case)]
-  pub fn open_shared_handle<T: HasIID>(&self, n_t_handle: HANDLE) -> HResult<T> {
+  fn open_shared_handle<T: TUnknown+HasIID>(&self, n_t_handle: HANDLE) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).OpenSharedHandle(n_t_handle, T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).OpenSharedHandle(n_t_handle, T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,T::new(lv1))
   }
   
   //  Method OpenSharedHandleByName
   
   #[allow(non_snake_case)]
-  pub fn open_shared_handle_by_name(&self, name: Cow<str>, access: DWORD) -> HResult<HANDLE> {
+  fn open_shared_handle_by_name(&self, name: Cow<str>, access: DWORD) -> HResult<HANDLE> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
     let mut lv2: HANDLE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).OpenSharedHandleByName(lv1.as_ptr() as LPCWSTR, access, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).OpenSharedHandleByName(lv1.as_ptr() as LPCWSTR, access, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,lv2)
   }
   
   //  Method MakeResident
   
   #[allow(non_snake_case)]
-  pub fn make_resident<T: HasIID>(&self, objects: &[&T]) -> HResult<HRESULT> {
+  fn make_resident<T: TD3D12Pageable>(&self, objects: &[&T]) -> HResult<HRESULT> {
     let mut lv1: Vec<*mut IUnknown> = objects.iter().map(|o|o.iptr()).collect();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).MakeResident(objects.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).MakeResident(objects.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Evict
   
   #[allow(non_snake_case)]
-  pub fn evict<T: HasIID>(&self, objects: &[&T]) -> HResult<HRESULT> {
+  fn evict<T: TD3D12Pageable>(&self, objects: &[&T]) -> HResult<HRESULT> {
     let mut lv1: Vec<*mut IUnknown> = objects.iter().map(|o|o.iptr()).collect();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).Evict(objects.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).Evict(objects.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CreateFence
   
   #[allow(non_snake_case)]
-  pub fn create_fence(&self, initial_value: UINT64, flags: D3D12_FENCE_FLAGS) -> HResult<D3D12Fence> {
+  fn create_fence(&self, initial_value: UINT64, flags: D3D12_FENCE_FLAGS) -> HResult<D3D12Fence> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateFence(initial_value, flags, D3D12Fence::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateFence(initial_value, flags, D3D12Fence::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12Fence::new(lv1))
   }
   
   //  Method GetDeviceRemovedReason
   
   #[allow(non_snake_case)]
-  pub fn get_device_removed_reason(&self) -> HResult<HRESULT> {
+  fn get_device_removed_reason(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).GetDeviceRemovedReason() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).GetDeviceRemovedReason() };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetCopyableFootprints
   
   #[allow(non_snake_case)]
-  pub fn get_copyable_footprints(&self, resource_desc: &D3D12_RESOURCE_DESC, first_subresource: UINT, base_offset: UINT64, layouts: Option<&mut [D3D12_PLACED_SUBRESOURCE_FOOTPRINT]>, num_rows: Option<&mut [UINT]>, row_size_in_bytes: Option<&mut [UINT64]>, total_bytes: Option<&mut UINT64>) -> () {
+  fn get_copyable_footprints(&self, resource_desc: &D3D12_RESOURCE_DESC, first_subresource: UINT, base_offset: UINT64, layouts: Option<&mut [D3D12_PLACED_SUBRESOURCE_FOOTPRINT]>, num_rows: Option<&mut [UINT]>, row_size_in_bytes: Option<&mut [UINT64]>, total_bytes: Option<&mut UINT64>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).GetCopyableFootprints(resource_desc, first_subresource,  same_length(&[layouts.as_ref().map(|a|a.len()),num_rows.as_ref().map(|a|a.len()),row_size_in_bytes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, base_offset, opt_arr_as_mut_ptr(&layouts) as *mut _, opt_arr_as_mut_ptr(&num_rows) as *mut _, opt_arr_as_mut_ptr(&row_size_in_bytes) as *mut _, opt_as_mut_ptr(&total_bytes)) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).GetCopyableFootprints(resource_desc, first_subresource,  same_length(&[layouts.as_ref().map(|a|a.len()),num_rows.as_ref().map(|a|a.len()),row_size_in_bytes.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT, base_offset, opt_arr_as_mut_ptr(&layouts) as *mut _, opt_arr_as_mut_ptr(&num_rows) as *mut _, opt_arr_as_mut_ptr(&row_size_in_bytes) as *mut _, opt_as_mut_ptr(&total_bytes)) };
     ()
   }
   
   //  Method CreateQueryHeap
   
   #[allow(non_snake_case)]
-  pub fn create_query_heap(&self, desc: &D3D12_QUERY_HEAP_DESC) -> HResult<D3D12QueryHeap> {
+  fn create_query_heap(&self, desc: &D3D12_QUERY_HEAP_DESC) -> HResult<D3D12QueryHeap> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateQueryHeap(desc, D3D12QueryHeap::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateQueryHeap(desc, D3D12QueryHeap::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12QueryHeap::new(lv1))
   }
   
   //  Method SetStablePowerState
   
   #[allow(non_snake_case)]
-  pub fn set_stable_power_state(&self, enable: BOOL) -> HResult<HRESULT> {
+  fn set_stable_power_state(&self, enable: BOOL) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).SetStablePowerState(enable) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).SetStablePowerState(enable) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CreateCommandSignature
   
   #[allow(non_snake_case)]
-  pub fn create_command_signature(&self, desc: &D3D12_COMMAND_SIGNATURE_DESC, root_signature: Option<&mut ID3D12RootSignature>) -> HResult<D3D12CommandSignature> {
+  fn create_command_signature(&self, desc: &D3D12_COMMAND_SIGNATURE_DESC, root_signature: Option<&mut ID3D12RootSignature>) -> HResult<D3D12CommandSignature> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).CreateCommandSignature(desc, opt_as_mut_ptr(&root_signature), D3D12CommandSignature::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).CreateCommandSignature(desc, opt_as_mut_ptr(&root_signature), D3D12CommandSignature::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,D3D12CommandSignature::new(lv1))
   }
   
   //  Method GetResourceTiling
   
   #[allow(non_snake_case)]
-  pub fn get_resource_tiling<T: HasIID>(&self, tiled_resource: &T, num_tiles_for_entire_resource: Option<&mut UINT>, packed_mip_desc: Option<&mut D3D12_PACKED_MIP_INFO>, standard_tile_shape_for_non_packed_mips: Option<&mut D3D12_TILE_SHAPE>, num_subresource_tilings: Option<&mut UINT>, first_subresource_tiling_to_get: UINT) -> D3D12_SUBRESOURCE_TILING {
+  fn get_resource_tiling<T: TD3D12Resource>(&self, tiled_resource: &T, num_tiles_for_entire_resource: Option<&mut UINT>, packed_mip_desc: Option<&mut D3D12_PACKED_MIP_INFO>, standard_tile_shape_for_non_packed_mips: Option<&mut D3D12_TILE_SHAPE>, num_subresource_tilings: Option<&mut UINT>, first_subresource_tiling_to_get: UINT) -> D3D12_SUBRESOURCE_TILING {
     let mut lv1: D3D12_SUBRESOURCE_TILING = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).GetResourceTiling(tiled_resource.iptr() as *mut _ as *mut _ , opt_as_mut_ptr(&num_tiles_for_entire_resource), opt_as_mut_ptr(&packed_mip_desc), opt_as_mut_ptr(&standard_tile_shape_for_non_packed_mips), opt_as_mut_ptr(&num_subresource_tilings), first_subresource_tiling_to_get, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).GetResourceTiling(tiled_resource.iptr() as *mut _ as *mut _ , opt_as_mut_ptr(&num_tiles_for_entire_resource), opt_as_mut_ptr(&packed_mip_desc), opt_as_mut_ptr(&standard_tile_shape_for_non_packed_mips), opt_as_mut_ptr(&num_subresource_tilings), first_subresource_tiling_to_get, &mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetAdapterLuid
   
   #[allow(non_snake_case)]
-  pub fn get_adapter_luid(&self) -> LUID {
+  fn get_adapter_luid(&self) -> LUID {
     let mut lv1: LUID = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Device)).GetAdapterLuid(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Device)).GetAdapterLuid(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   
 }
 
-pub struct D3D12Fence(*mut ID3D12Fence);
-unsafe impl Sync for D3D12Fence {}
-
-impl HasIID for D3D12Fence {
-  fn iid() -> REFGUID { &IID_ID3D12Fence }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Fence(pp_vtbl as *mut _ as *mut ID3D12Fence) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12Fence {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D3D12Device {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12Device(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D3D12Device {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12Device {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12Device {}
+impl TD3D12Device for D3D12Device {}
 
-impl Clone for D3D12Fence {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D3D12Device(*mut ID3D12Device);
+
+impl HasIID for D3D12Device {
+  fn iid() -> REFGUID { &IID_ID3D12Device }
 }
 
-
-
-impl D3D12Fence {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TD3D12Fence: TD3D12Pageable {
   //  Method GetCompletedValue
   
   #[allow(non_snake_case)]
-  pub fn get_completed_value(&self) -> UINT64 {
+  fn get_completed_value(&self) -> UINT64 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Fence)).GetCompletedValue() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Fence)).GetCompletedValue() };
     _hr
   }
   
   //  Method SetEventOnCompletion
   
   #[allow(non_snake_case)]
-  pub fn set_event_on_completion(&self, value: UINT64, hEvent: HANDLE) -> HResult<HRESULT> {
+  fn set_event_on_completion(&self, value: UINT64, hEvent: HANDLE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Fence)).SetEventOnCompletion(value, hEvent) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Fence)).SetEventOnCompletion(value, hEvent) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Signal
   
   #[allow(non_snake_case)]
-  pub fn signal(&self, value: UINT64) -> HResult<HRESULT> {
+  fn signal(&self, value: UINT64) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Fence)).Signal(value) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Fence)).Signal(value) };
     hr2ret(_hr,_hr)
   }
   
   
 }
+
+impl TUnknown for D3D12Fence {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12Fence(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12Fence {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12Fence {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12Fence {}
+impl TD3D12DeviceChild for D3D12Fence {}
+impl TD3D12Pageable for D3D12Fence {}
+impl TD3D12Fence for D3D12Fence {}
+
+pub struct D3D12Fence(*mut ID3D12Fence);
+unsafe impl Sync for D3D12Fence {}
+
+impl HasIID for D3D12Fence {
+  fn iid() -> REFGUID { &IID_ID3D12Fence }
+}
+
+pub trait TD3D12GraphicsCommandList: TD3D12CommandList {
+  //  Method Close
+  
+  #[allow(non_snake_case)]
+  fn close(&self) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).Close() };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method Reset
+  
+  #[allow(non_snake_case)]
+  fn reset<T: TD3D12CommandAllocator>(&self, allocator: &T, initial_state: Option<&D3D12PipelineState>) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).Reset(allocator.iptr() as *mut _ as *mut _ , initial_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method ClearState
+  
+  #[allow(non_snake_case)]
+  fn clear_state(&self, pipeline_state: Option<&D3D12PipelineState>) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).ClearState(pipeline_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
+    ()
+  }
+  
+  //  Method DrawInstanced
+  
+  #[allow(non_snake_case)]
+  fn draw_instanced(&self, vertex_count_per_instance: UINT, instance_count: UINT, start_vertex_location: UINT, start_instance_location: UINT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).DrawInstanced(vertex_count_per_instance, instance_count, start_vertex_location, start_instance_location) };
+    ()
+  }
+  
+  //  Method DrawIndexedInstanced
+  
+  #[allow(non_snake_case)]
+  fn draw_indexed_instanced(&self, index_count_per_instance: UINT, instance_count: UINT, start_index_location: UINT, base_vertex_location: INT, start_instance_location: UINT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).DrawIndexedInstanced(index_count_per_instance, instance_count, start_index_location, base_vertex_location, start_instance_location) };
+    ()
+  }
+  
+  //  Method Dispatch
+  
+  #[allow(non_snake_case)]
+  fn dispatch(&self, thread_group_count_x: UINT, thread_group_count_y: UINT, thread_group_count_z: UINT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).Dispatch(thread_group_count_x, thread_group_count_y, thread_group_count_z) };
+    ()
+  }
+  
+  //  Method CopyBufferRegion
+  
+  #[allow(non_snake_case)]
+  fn copy_buffer_region<T: TD3D12Resource, T1: TD3D12Resource>(&self, dst_buffer: &T, dst_offset: UINT64, src_buffer: &T1, src_offset: UINT64, num_bytes: UINT64) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).CopyBufferRegion(dst_buffer.iptr() as *mut _ as *mut _ , dst_offset, src_buffer.iptr() as *mut _ as *mut _ , src_offset, num_bytes) };
+    ()
+  }
+  
+  //  Method CopyTextureRegion
+  
+  #[allow(non_snake_case)]
+  fn copy_texture_region(&self, dst: &D3D12_TEXTURE_COPY_LOCATION, dst_x: UINT, dst_y: UINT, dst_z: UINT, src: &D3D12_TEXTURE_COPY_LOCATION, src_box: Option<&D3D12_BOX>) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).CopyTextureRegion(dst, dst_x, dst_y, dst_z, src, src_box.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    ()
+  }
+  
+  //  Method CopyResource
+  
+  #[allow(non_snake_case)]
+  fn copy_resource<T: TD3D12Resource, T1: TD3D12Resource>(&self, dst_resource: &T, src_resource: &T1) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).CopyResource(dst_resource.iptr() as *mut _ as *mut _ , src_resource.iptr() as *mut _ as *mut _ ) };
+    ()
+  }
+  
+  //  Method CopyTiles
+  
+  #[allow(non_snake_case)]
+  fn copy_tiles<T: TD3D12Resource, T1: TD3D12Resource>(&self, tiled_resource: &T, tile_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, tile_region_size: &D3D12_TILE_REGION_SIZE, buffer: &T1, buffer_start_offset_in_bytes: UINT64, flags: D3D12_TILE_COPY_FLAGS) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).CopyTiles(tiled_resource.iptr() as *mut _ as *mut _ , tile_region_start_coordinate, tile_region_size, buffer.iptr() as *mut _ as *mut _ , buffer_start_offset_in_bytes, flags) };
+    ()
+  }
+  
+  //  Method ResolveSubresource
+  
+  #[allow(non_snake_case)]
+  fn resolve_subresource<T: TD3D12Resource, T1: TD3D12Resource>(&self, dst_resource: &T, dst_subresource: UINT, src_resource: &T1, src_subresource: UINT, format: DXGI_FORMAT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).ResolveSubresource(dst_resource.iptr() as *mut _ as *mut _ , dst_subresource, src_resource.iptr() as *mut _ as *mut _ , src_subresource, format) };
+    ()
+  }
+  
+  //  Method IASetPrimitiveTopology
+  
+  #[allow(non_snake_case)]
+  fn ia_set_primitive_topology(&self, primitive_topology: D3D12_PRIMITIVE_TOPOLOGY) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).IASetPrimitiveTopology(primitive_topology) };
+    ()
+  }
+  
+  //  Method RSSetViewports
+  
+  #[allow(non_snake_case)]
+  fn rs_set_viewports(&self, viewports: &[D3D12_VIEWPORT]) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).RSSetViewports(viewports.len() as UINT, slice_as_ptr(viewports)) };
+    ()
+  }
+  
+  //  Method RSSetScissorRects
+  
+  #[allow(non_snake_case)]
+  fn rs_set_scissor_rects(&self, rects: &[D3D12_RECT]) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).RSSetScissorRects(rects.len() as UINT, slice_as_ptr(rects)) };
+    ()
+  }
+  
+  //  Method OMSetBlendFactor
+  
+  #[allow(non_snake_case)]
+  fn om_set_blend_factor(&self, blend_factor: Option<&[FLOAT;4]>) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).OMSetBlendFactor(blend_factor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    ()
+  }
+  
+  //  Method OMSetStencilRef
+  
+  #[allow(non_snake_case)]
+  fn om_set_stencil_ref(&self, stencil_ref: UINT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).OMSetStencilRef(stencil_ref) };
+    ()
+  }
+  
+  //  Method SetPipelineState
+  
+  #[allow(non_snake_case)]
+  fn set_pipeline_state<T: TD3D12PipelineState>(&self, pipeline_state: &T) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetPipelineState(pipeline_state.iptr() as *mut _ as *mut _ ) };
+    ()
+  }
+  
+  //  Method ResourceBarrier
+  
+  #[allow(non_snake_case)]
+  fn resource_barrier(&self, barriers: &[D3D12_RESOURCE_BARRIER]) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).ResourceBarrier(barriers.len() as UINT, slice_as_ptr(barriers)) };
+    ()
+  }
+  
+  //  Method ExecuteBundle
+  
+  #[allow(non_snake_case)]
+  fn execute_bundle<T: TD3D12GraphicsCommandList>(&self, command_list: &T) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).ExecuteBundle(command_list.iptr() as *mut _ as *mut _ ) };
+    ()
+  }
+  
+  //  Method SetDescriptorHeaps
+  
+  #[allow(non_snake_case)]
+  fn set_descriptor_heaps<T: TD3D12DescriptorHeap>(&self, descriptor_heaps: &[&T]) -> () {
+    let mut lv1: Vec<*mut IUnknown> = descriptor_heaps.iter().map(|o|o.iptr()).collect();
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetDescriptorHeaps(descriptor_heaps.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
+    ()
+  }
+  
+  //  Method SetComputeRootSignature
+  
+  #[allow(non_snake_case)]
+  fn set_compute_root_signature<T: TD3D12RootSignature>(&self, root_signature: &T) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetComputeRootSignature(root_signature.iptr() as *mut _ as *mut _ ) };
+    ()
+  }
+  
+  //  Method SetGraphicsRootSignature
+  
+  #[allow(non_snake_case)]
+  fn set_graphics_root_signature<T: TD3D12RootSignature>(&self, root_signature: &T) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetGraphicsRootSignature(root_signature.iptr() as *mut _ as *mut _ ) };
+    ()
+  }
+  
+  //  Method SetComputeRootDescriptorTable
+  
+  #[allow(non_snake_case)]
+  fn set_compute_root_descriptor_table(&self, root_parameter_index: UINT, base_descriptor: D3D12_GPU_DESCRIPTOR_HANDLE) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetComputeRootDescriptorTable(root_parameter_index, base_descriptor) };
+    ()
+  }
+  
+  //  Method SetGraphicsRootDescriptorTable
+  
+  #[allow(non_snake_case)]
+  fn set_graphics_root_descriptor_table(&self, root_parameter_index: UINT, base_descriptor: D3D12_GPU_DESCRIPTOR_HANDLE) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetGraphicsRootDescriptorTable(root_parameter_index, base_descriptor) };
+    ()
+  }
+  
+  //  Method SetComputeRoot32BitConstant
+  
+  #[allow(non_snake_case)]
+  fn set_compute_root32_bit_constant(&self, root_parameter_index: UINT, src_data: UINT, dest_offset_in32_bit_values: UINT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetComputeRoot32BitConstant(root_parameter_index, src_data, dest_offset_in32_bit_values) };
+    ()
+  }
+  
+  //  Method SetGraphicsRoot32BitConstant
+  
+  #[allow(non_snake_case)]
+  fn set_graphics_root32_bit_constant(&self, root_parameter_index: UINT, src_data: UINT, dest_offset_in32_bit_values: UINT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetGraphicsRoot32BitConstant(root_parameter_index, src_data, dest_offset_in32_bit_values) };
+    ()
+  }
+  
+  //  Method SetComputeRoot32BitConstants
+  
+  #[allow(non_snake_case)]
+  fn set_compute_root32_bit_constants<T>(&self, root_parameter_index: UINT, src_data: &[T], dest_offset_in32_bit_values: UINT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetComputeRoot32BitConstants(root_parameter_index, (mem::size_of_val(src_data)/4) as UINT, src_data.as_ptr() as *const _, dest_offset_in32_bit_values) };
+    ()
+  }
+  
+  //  Method SetGraphicsRoot32BitConstants
+  
+  #[allow(non_snake_case)]
+  fn set_graphics_root32_bit_constants<T>(&self, root_parameter_index: UINT, src_data: &[T], dest_offset_in32_bit_values: UINT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetGraphicsRoot32BitConstants(root_parameter_index, (mem::size_of_val(src_data)/4) as UINT, src_data.as_ptr() as *const _, dest_offset_in32_bit_values) };
+    ()
+  }
+  
+  //  Method SetComputeRootConstantBufferView
+  
+  #[allow(non_snake_case)]
+  fn set_compute_root_constant_buffer_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetComputeRootConstantBufferView(root_parameter_index, buffer_location) };
+    ()
+  }
+  
+  //  Method SetGraphicsRootConstantBufferView
+  
+  #[allow(non_snake_case)]
+  fn set_graphics_root_constant_buffer_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetGraphicsRootConstantBufferView(root_parameter_index, buffer_location) };
+    ()
+  }
+  
+  //  Method SetComputeRootShaderResourceView
+  
+  #[allow(non_snake_case)]
+  fn set_compute_root_shader_resource_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetComputeRootShaderResourceView(root_parameter_index, buffer_location) };
+    ()
+  }
+  
+  //  Method SetGraphicsRootShaderResourceView
+  
+  #[allow(non_snake_case)]
+  fn set_graphics_root_shader_resource_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetGraphicsRootShaderResourceView(root_parameter_index, buffer_location) };
+    ()
+  }
+  
+  //  Method SetComputeRootUnorderedAccessView
+  
+  #[allow(non_snake_case)]
+  fn set_compute_root_unordered_access_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetComputeRootUnorderedAccessView(root_parameter_index, buffer_location) };
+    ()
+  }
+  
+  //  Method SetGraphicsRootUnorderedAccessView
+  
+  #[allow(non_snake_case)]
+  fn set_graphics_root_unordered_access_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetGraphicsRootUnorderedAccessView(root_parameter_index, buffer_location) };
+    ()
+  }
+  
+  //  Method IASetIndexBuffer
+  
+  #[allow(non_snake_case)]
+  fn ia_set_index_buffer(&self, view: Option<&D3D12_INDEX_BUFFER_VIEW>) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).IASetIndexBuffer(view.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    ()
+  }
+  
+  //  Method IASetVertexBuffers
+  
+  #[allow(non_snake_case)]
+  fn ia_set_vertex_buffers(&self, start_slot: UINT, views: Option<&[D3D12_VERTEX_BUFFER_VIEW]>) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).IASetVertexBuffers(start_slot, views.as_ref().map(|a|a.len()).unwrap_or(0) as UINT, opt_arr_as_ptr(&views) as *const _) };
+    ()
+  }
+  
+  //  Method SOSetTargets
+  
+  #[allow(non_snake_case)]
+  fn so_set_targets(&self, start_slot: UINT, views: Option<&[D3D12_STREAM_OUTPUT_BUFFER_VIEW]>) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SOSetTargets(start_slot, views.as_ref().map(|a|a.len()).unwrap_or(0) as UINT, opt_arr_as_ptr(&views) as *const _) };
+    ()
+  }
+  
+  //  Method OMSetRenderTargets
+  
+  #[allow(non_snake_case)]
+  fn om_set_render_targets(&self, num_render_target_descriptors: UINT, render_target_descriptors: &D3D12_CPU_DESCRIPTOR_HANDLE, depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).OMSetRenderTargets(num_render_target_descriptors, render_target_descriptors, TRUE, depth_stencil_descriptor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    ()
+  }
+  
+  
+  #[allow(non_snake_case)]
+  fn om_set_render_targets_arr(&self, render_target_descriptors: &[D3D12_CPU_DESCRIPTOR_HANDLE], depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).OMSetRenderTargets(render_target_descriptors.len() as UINT, slice_as_ptr(render_target_descriptors), FALSE, depth_stencil_descriptor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    ()
+  }
+  
+  //  Method ClearDepthStencilView
+  
+  #[allow(non_snake_case)]
+  fn clear_depth_stencil_view(&self, depth_stencil_view: D3D12_CPU_DESCRIPTOR_HANDLE, clear_flags: D3D12_CLEAR_FLAGS, depth: FLOAT, stencil: UINT8, rects: &[D3D12_RECT]) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).ClearDepthStencilView(depth_stencil_view, clear_flags, depth, stencil, rects.len() as UINT, slice_as_ptr(rects)) };
+    ()
+  }
+  
+  //  Method ClearRenderTargetView
+  
+  #[allow(non_snake_case)]
+  fn clear_render_target_view(&self, render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE, color_r_g_b_a: &[FLOAT;4], rects: &[D3D12_RECT]) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).ClearRenderTargetView(render_target_view, color_r_g_b_a, rects.len() as UINT, slice_as_ptr(rects)) };
+    ()
+  }
+  
+  //  Method ClearUnorderedAccessViewUint
+  
+  #[allow(non_snake_case)]
+  fn clear_unordered_access_view_uint<T: TD3D12Resource>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[UINT;4], rects: &[D3D12_RECT]) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).ClearUnorderedAccessViewUint(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values, rects.len() as UINT, slice_as_ptr(rects)) };
+    ()
+  }
+  
+  //  Method ClearUnorderedAccessViewFloat
+  
+  #[allow(non_snake_case)]
+  fn clear_unordered_access_view_float<T: TD3D12Resource>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[FLOAT;4], rects: &[D3D12_RECT]) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).ClearUnorderedAccessViewFloat(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values, rects.len() as UINT, slice_as_ptr(rects)) };
+    ()
+  }
+  
+  //  Method DiscardResource
+  
+  #[allow(non_snake_case)]
+  fn discard_resource<T: TD3D12Resource>(&self, resource: &T, region: Option<&D3D12_DISCARD_REGION>) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).DiscardResource(resource.iptr() as *mut _ as *mut _ , region.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    ()
+  }
+  
+  //  Method BeginQuery
+  
+  #[allow(non_snake_case)]
+  fn begin_query<T: TD3D12QueryHeap>(&self, query_heap: &T, type_: D3D12_QUERY_TYPE, index: UINT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).BeginQuery(query_heap.iptr() as *mut _ as *mut _ , type_, index) };
+    ()
+  }
+  
+  //  Method EndQuery
+  
+  #[allow(non_snake_case)]
+  fn end_query<T: TD3D12QueryHeap>(&self, query_heap: &T, type_: D3D12_QUERY_TYPE, index: UINT) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).EndQuery(query_heap.iptr() as *mut _ as *mut _ , type_, index) };
+    ()
+  }
+  
+  //  Method ResolveQueryData
+  
+  #[allow(non_snake_case)]
+  fn resolve_query_data<T: TD3D12QueryHeap, T1: TD3D12Resource>(&self, query_heap: &T, type_: D3D12_QUERY_TYPE, start_index: UINT, num_queries: UINT, destination_buffer: &T1, aligned_destination_buffer_offset: UINT64) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).ResolveQueryData(query_heap.iptr() as *mut _ as *mut _ , type_, start_index, num_queries, destination_buffer.iptr() as *mut _ as *mut _ , aligned_destination_buffer_offset) };
+    ()
+  }
+  
+  //  Method SetPredication
+  
+  #[allow(non_snake_case)]
+  fn set_predication(&self, buffer: Option<&D3D12Resource>, aligned_buffer_offset: UINT64, operation: D3D12_PREDICATION_OP) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).SetPredication(buffer.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, aligned_buffer_offset, operation) };
+    ()
+  }
+  
+  //  Method ExecuteIndirect
+  
+  #[allow(non_snake_case)]
+  fn execute_indirect<T: TD3D12CommandSignature, T1: TD3D12Resource, T2: TD3D12Resource>(&self, command_signature: &T, max_command_count: UINT, argument_buffer: &T1, argument_buffer_offset: UINT64, count_buffer: &T2, count_buffer_offset: UINT64) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12GraphicsCommandList)).ExecuteIndirect(command_signature.iptr() as *mut _ as *mut _ , max_command_count, argument_buffer.iptr() as *mut _ as *mut _ , argument_buffer_offset, count_buffer.iptr() as *mut _ as *mut _ , count_buffer_offset) };
+    ()
+  }
+  
+  
+}
+
+impl TUnknown for D3D12GraphicsCommandList {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12GraphicsCommandList(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12GraphicsCommandList {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12GraphicsCommandList {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12GraphicsCommandList {}
+impl TD3D12DeviceChild for D3D12GraphicsCommandList {}
+impl TD3D12CommandList for D3D12GraphicsCommandList {}
+impl TD3D12GraphicsCommandList for D3D12GraphicsCommandList {}
 
 pub struct D3D12GraphicsCommandList(*mut ID3D12GraphicsCommandList);
 unsafe impl Sync for D3D12GraphicsCommandList {}
@@ -1026,817 +1244,262 @@ unsafe impl Send for D3D12GraphicsCommandList {}
 
 impl HasIID for D3D12GraphicsCommandList {
   fn iid() -> REFGUID { &IID_ID3D12GraphicsCommandList }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12GraphicsCommandList(pp_vtbl as *mut _ as *mut ID3D12GraphicsCommandList) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12GraphicsCommandList {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D3D12GraphicsCommandList {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12GraphicsCommandList {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  //  Method GetType
-  
-  #[allow(non_snake_case)]
-  pub fn get_type(&self) -> D3D12_COMMAND_LIST_TYPE {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12CommandList)).GetType() };
-    _hr
-  }
-  
-  //  Method Close
-  
-  #[allow(non_snake_case)]
-  pub fn close(&self) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).Close() };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Reset
-  
-  #[allow(non_snake_case)]
-  pub fn reset<T: HasIID>(&self, allocator: &T, initial_state: Option<&D3D12PipelineState>) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).Reset(allocator.iptr() as *mut _ as *mut _ , initial_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method ClearState
-  
-  #[allow(non_snake_case)]
-  pub fn clear_state(&self, pipeline_state: Option<&D3D12PipelineState>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearState(pipeline_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    ()
-  }
-  
-  //  Method DrawInstanced
-  
-  #[allow(non_snake_case)]
-  pub fn draw_instanced(&self, vertex_count_per_instance: UINT, instance_count: UINT, start_vertex_location: UINT, start_instance_location: UINT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).DrawInstanced(vertex_count_per_instance, instance_count, start_vertex_location, start_instance_location) };
-    ()
-  }
-  
-  //  Method DrawIndexedInstanced
-  
-  #[allow(non_snake_case)]
-  pub fn draw_indexed_instanced(&self, index_count_per_instance: UINT, instance_count: UINT, start_index_location: UINT, base_vertex_location: INT, start_instance_location: UINT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).DrawIndexedInstanced(index_count_per_instance, instance_count, start_index_location, base_vertex_location, start_instance_location) };
-    ()
-  }
-  
-  //  Method Dispatch
-  
-  #[allow(non_snake_case)]
-  pub fn dispatch(&self, thread_group_count_x: UINT, thread_group_count_y: UINT, thread_group_count_z: UINT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).Dispatch(thread_group_count_x, thread_group_count_y, thread_group_count_z) };
-    ()
-  }
-  
-  //  Method CopyBufferRegion
-  
-  #[allow(non_snake_case)]
-  pub fn copy_buffer_region<T: HasIID, T1: HasIID>(&self, dst_buffer: &T, dst_offset: UINT64, src_buffer: &T1, src_offset: UINT64, num_bytes: UINT64) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).CopyBufferRegion(dst_buffer.iptr() as *mut _ as *mut _ , dst_offset, src_buffer.iptr() as *mut _ as *mut _ , src_offset, num_bytes) };
-    ()
-  }
-  
-  //  Method CopyTextureRegion
-  
-  #[allow(non_snake_case)]
-  pub fn copy_texture_region(&self, dst: &D3D12_TEXTURE_COPY_LOCATION, dst_x: UINT, dst_y: UINT, dst_z: UINT, src: &D3D12_TEXTURE_COPY_LOCATION, src_box: Option<&D3D12_BOX>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).CopyTextureRegion(dst, dst_x, dst_y, dst_z, src, src_box.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
-    ()
-  }
-  
-  //  Method CopyResource
-  
-  #[allow(non_snake_case)]
-  pub fn copy_resource<T: HasIID, T1: HasIID>(&self, dst_resource: &T, src_resource: &T1) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).CopyResource(dst_resource.iptr() as *mut _ as *mut _ , src_resource.iptr() as *mut _ as *mut _ ) };
-    ()
-  }
-  
-  //  Method CopyTiles
-  
-  #[allow(non_snake_case)]
-  pub fn copy_tiles<T: HasIID, T1: HasIID>(&self, tiled_resource: &T, tile_region_start_coordinate: &D3D12_TILED_RESOURCE_COORDINATE, tile_region_size: &D3D12_TILE_REGION_SIZE, buffer: &T1, buffer_start_offset_in_bytes: UINT64, flags: D3D12_TILE_COPY_FLAGS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).CopyTiles(tiled_resource.iptr() as *mut _ as *mut _ , tile_region_start_coordinate, tile_region_size, buffer.iptr() as *mut _ as *mut _ , buffer_start_offset_in_bytes, flags) };
-    ()
-  }
-  
-  //  Method ResolveSubresource
-  
-  #[allow(non_snake_case)]
-  pub fn resolve_subresource<T: HasIID, T1: HasIID>(&self, dst_resource: &T, dst_subresource: UINT, src_resource: &T1, src_subresource: UINT, format: DXGI_FORMAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ResolveSubresource(dst_resource.iptr() as *mut _ as *mut _ , dst_subresource, src_resource.iptr() as *mut _ as *mut _ , src_subresource, format) };
-    ()
-  }
-  
-  //  Method IASetPrimitiveTopology
-  
-  #[allow(non_snake_case)]
-  pub fn ia_set_primitive_topology(&self, primitive_topology: D3D12_PRIMITIVE_TOPOLOGY) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).IASetPrimitiveTopology(primitive_topology) };
-    ()
-  }
-  
-  //  Method RSSetViewports
-  
-  #[allow(non_snake_case)]
-  pub fn rs_set_viewports(&self, viewports: &[D3D12_VIEWPORT]) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).RSSetViewports(viewports.len() as UINT, slice_as_ptr(viewports)) };
-    ()
-  }
-  
-  //  Method RSSetScissorRects
-  
-  #[allow(non_snake_case)]
-  pub fn rs_set_scissor_rects(&self, rects: &[D3D12_RECT]) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).RSSetScissorRects(rects.len() as UINT, slice_as_ptr(rects)) };
-    ()
-  }
-  
-  //  Method OMSetBlendFactor
-  
-  #[allow(non_snake_case)]
-  pub fn om_set_blend_factor(&self, blend_factor: Option<&[FLOAT;4]>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).OMSetBlendFactor(blend_factor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
-    ()
-  }
-  
-  //  Method OMSetStencilRef
-  
-  #[allow(non_snake_case)]
-  pub fn om_set_stencil_ref(&self, stencil_ref: UINT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).OMSetStencilRef(stencil_ref) };
-    ()
-  }
-  
-  //  Method SetPipelineState
-  
-  #[allow(non_snake_case)]
-  pub fn set_pipeline_state<T: HasIID>(&self, pipeline_state: &T) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetPipelineState(pipeline_state.iptr() as *mut _ as *mut _ ) };
-    ()
-  }
-  
-  //  Method ResourceBarrier
-  
-  #[allow(non_snake_case)]
-  pub fn resource_barrier(&self, barriers: &[D3D12_RESOURCE_BARRIER]) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ResourceBarrier(barriers.len() as UINT, slice_as_ptr(barriers)) };
-    ()
-  }
-  
-  //  Method ExecuteBundle
-  
-  #[allow(non_snake_case)]
-  pub fn execute_bundle<T: HasIID>(&self, command_list: &T) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ExecuteBundle(command_list.iptr() as *mut _ as *mut _ ) };
-    ()
-  }
-  
-  //  Method SetDescriptorHeaps
-  
-  #[allow(non_snake_case)]
-  pub fn set_descriptor_heaps<T: HasIID>(&self, descriptor_heaps: &[&T]) -> () {
-    let mut lv1: Vec<*mut IUnknown> = descriptor_heaps.iter().map(|o|o.iptr()).collect();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetDescriptorHeaps(descriptor_heaps.len() as UINT, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _) };
-    ()
-  }
-  
-  //  Method SetComputeRootSignature
-  
-  #[allow(non_snake_case)]
-  pub fn set_compute_root_signature<T: HasIID>(&self, root_signature: &T) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetComputeRootSignature(root_signature.iptr() as *mut _ as *mut _ ) };
-    ()
-  }
-  
-  //  Method SetGraphicsRootSignature
-  
-  #[allow(non_snake_case)]
-  pub fn set_graphics_root_signature<T: HasIID>(&self, root_signature: &T) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetGraphicsRootSignature(root_signature.iptr() as *mut _ as *mut _ ) };
-    ()
-  }
-  
-  //  Method SetComputeRootDescriptorTable
-  
-  #[allow(non_snake_case)]
-  pub fn set_compute_root_descriptor_table(&self, root_parameter_index: UINT, base_descriptor: D3D12_GPU_DESCRIPTOR_HANDLE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetComputeRootDescriptorTable(root_parameter_index, base_descriptor) };
-    ()
-  }
-  
-  //  Method SetGraphicsRootDescriptorTable
-  
-  #[allow(non_snake_case)]
-  pub fn set_graphics_root_descriptor_table(&self, root_parameter_index: UINT, base_descriptor: D3D12_GPU_DESCRIPTOR_HANDLE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetGraphicsRootDescriptorTable(root_parameter_index, base_descriptor) };
-    ()
-  }
-  
-  //  Method SetComputeRoot32BitConstant
-  
-  #[allow(non_snake_case)]
-  pub fn set_compute_root32_bit_constant(&self, root_parameter_index: UINT, src_data: UINT, dest_offset_in32_bit_values: UINT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetComputeRoot32BitConstant(root_parameter_index, src_data, dest_offset_in32_bit_values) };
-    ()
-  }
-  
-  //  Method SetGraphicsRoot32BitConstant
-  
-  #[allow(non_snake_case)]
-  pub fn set_graphics_root32_bit_constant(&self, root_parameter_index: UINT, src_data: UINT, dest_offset_in32_bit_values: UINT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetGraphicsRoot32BitConstant(root_parameter_index, src_data, dest_offset_in32_bit_values) };
-    ()
-  }
-  
-  //  Method SetComputeRoot32BitConstants
-  
-  #[allow(non_snake_case)]
-  pub fn set_compute_root32_bit_constants<T>(&self, root_parameter_index: UINT, src_data: &[T], dest_offset_in32_bit_values: UINT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetComputeRoot32BitConstants(root_parameter_index, (mem::size_of_val(src_data)/4) as UINT, src_data.as_ptr() as *const _, dest_offset_in32_bit_values) };
-    ()
-  }
-  
-  //  Method SetGraphicsRoot32BitConstants
-  
-  #[allow(non_snake_case)]
-  pub fn set_graphics_root32_bit_constants<T>(&self, root_parameter_index: UINT, src_data: &[T], dest_offset_in32_bit_values: UINT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetGraphicsRoot32BitConstants(root_parameter_index, (mem::size_of_val(src_data)/4) as UINT, src_data.as_ptr() as *const _, dest_offset_in32_bit_values) };
-    ()
-  }
-  
-  //  Method SetComputeRootConstantBufferView
-  
-  #[allow(non_snake_case)]
-  pub fn set_compute_root_constant_buffer_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetComputeRootConstantBufferView(root_parameter_index, buffer_location) };
-    ()
-  }
-  
-  //  Method SetGraphicsRootConstantBufferView
-  
-  #[allow(non_snake_case)]
-  pub fn set_graphics_root_constant_buffer_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetGraphicsRootConstantBufferView(root_parameter_index, buffer_location) };
-    ()
-  }
-  
-  //  Method SetComputeRootShaderResourceView
-  
-  #[allow(non_snake_case)]
-  pub fn set_compute_root_shader_resource_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetComputeRootShaderResourceView(root_parameter_index, buffer_location) };
-    ()
-  }
-  
-  //  Method SetGraphicsRootShaderResourceView
-  
-  #[allow(non_snake_case)]
-  pub fn set_graphics_root_shader_resource_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetGraphicsRootShaderResourceView(root_parameter_index, buffer_location) };
-    ()
-  }
-  
-  //  Method SetComputeRootUnorderedAccessView
-  
-  #[allow(non_snake_case)]
-  pub fn set_compute_root_unordered_access_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetComputeRootUnorderedAccessView(root_parameter_index, buffer_location) };
-    ()
-  }
-  
-  //  Method SetGraphicsRootUnorderedAccessView
-  
-  #[allow(non_snake_case)]
-  pub fn set_graphics_root_unordered_access_view(&self, root_parameter_index: UINT, buffer_location: D3D12_GPU_VIRTUAL_ADDRESS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetGraphicsRootUnorderedAccessView(root_parameter_index, buffer_location) };
-    ()
-  }
-  
-  //  Method IASetIndexBuffer
-  
-  #[allow(non_snake_case)]
-  pub fn ia_set_index_buffer(&self, view: Option<&D3D12_INDEX_BUFFER_VIEW>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).IASetIndexBuffer(view.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
-    ()
-  }
-  
-  //  Method IASetVertexBuffers
-  
-  #[allow(non_snake_case)]
-  pub fn ia_set_vertex_buffers(&self, start_slot: UINT, views: Option<&[D3D12_VERTEX_BUFFER_VIEW]>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).IASetVertexBuffers(start_slot, views.as_ref().map(|a|a.len()).unwrap_or(0) as UINT, opt_arr_as_ptr(&views) as *const _) };
-    ()
-  }
-  
-  //  Method SOSetTargets
-  
-  #[allow(non_snake_case)]
-  pub fn so_set_targets(&self, start_slot: UINT, views: Option<&[D3D12_STREAM_OUTPUT_BUFFER_VIEW]>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SOSetTargets(start_slot, views.as_ref().map(|a|a.len()).unwrap_or(0) as UINT, opt_arr_as_ptr(&views) as *const _) };
-    ()
-  }
-  
-  //  Method OMSetRenderTargets
-  
-  #[allow(non_snake_case)]
-  pub fn om_set_render_targets(&self, num_render_target_descriptors: UINT, render_target_descriptors: &D3D12_CPU_DESCRIPTOR_HANDLE, depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).OMSetRenderTargets(num_render_target_descriptors, render_target_descriptors, TRUE, depth_stencil_descriptor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
-    ()
-  }
-  
-  
-  #[allow(non_snake_case)]
-  pub fn om_set_render_targets_arr(&self, render_target_descriptors: &[D3D12_CPU_DESCRIPTOR_HANDLE], depth_stencil_descriptor: Option<&D3D12_CPU_DESCRIPTOR_HANDLE>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).OMSetRenderTargets(render_target_descriptors.len() as UINT, slice_as_ptr(render_target_descriptors), FALSE, depth_stencil_descriptor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
-    ()
-  }
-  
-  //  Method ClearDepthStencilView
-  
-  #[allow(non_snake_case)]
-  pub fn clear_depth_stencil_view(&self, depth_stencil_view: D3D12_CPU_DESCRIPTOR_HANDLE, clear_flags: D3D12_CLEAR_FLAGS, depth: FLOAT, stencil: UINT8, rects: &[D3D12_RECT]) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearDepthStencilView(depth_stencil_view, clear_flags, depth, stencil, rects.len() as UINT, slice_as_ptr(rects)) };
-    ()
-  }
-  
-  //  Method ClearRenderTargetView
-  
-  #[allow(non_snake_case)]
-  pub fn clear_render_target_view(&self, render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE, color_r_g_b_a: &[FLOAT;4], rects: &[D3D12_RECT]) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearRenderTargetView(render_target_view, color_r_g_b_a, rects.len() as UINT, slice_as_ptr(rects)) };
-    ()
-  }
-  
-  //  Method ClearUnorderedAccessViewUint
-  
-  #[allow(non_snake_case)]
-  pub fn clear_unordered_access_view_uint<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[UINT;4], rects: &[D3D12_RECT]) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearUnorderedAccessViewUint(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values, rects.len() as UINT, slice_as_ptr(rects)) };
-    ()
-  }
-  
-  //  Method ClearUnorderedAccessViewFloat
-  
-  #[allow(non_snake_case)]
-  pub fn clear_unordered_access_view_float<T: HasIID>(&self, view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE, view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE, resource: &T, values: &[FLOAT;4], rects: &[D3D12_RECT]) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ClearUnorderedAccessViewFloat(view_gpu_handle_in_current_heap, view_cpu_handle, resource.iptr() as *mut _ as *mut _ , values, rects.len() as UINT, slice_as_ptr(rects)) };
-    ()
-  }
-  
-  //  Method DiscardResource
-  
-  #[allow(non_snake_case)]
-  pub fn discard_resource<T: HasIID>(&self, resource: &T, region: Option<&D3D12_DISCARD_REGION>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).DiscardResource(resource.iptr() as *mut _ as *mut _ , region.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
-    ()
-  }
-  
-  //  Method BeginQuery
-  
-  #[allow(non_snake_case)]
-  pub fn begin_query<T: HasIID>(&self, query_heap: &T, type_: D3D12_QUERY_TYPE, index: UINT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).BeginQuery(query_heap.iptr() as *mut _ as *mut _ , type_, index) };
-    ()
-  }
-  
-  //  Method EndQuery
-  
-  #[allow(non_snake_case)]
-  pub fn end_query<T: HasIID>(&self, query_heap: &T, type_: D3D12_QUERY_TYPE, index: UINT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).EndQuery(query_heap.iptr() as *mut _ as *mut _ , type_, index) };
-    ()
-  }
-  
-  //  Method ResolveQueryData
-  
-  #[allow(non_snake_case)]
-  pub fn resolve_query_data<T: HasIID, T1: HasIID>(&self, query_heap: &T, type_: D3D12_QUERY_TYPE, start_index: UINT, num_queries: UINT, destination_buffer: &T1, aligned_destination_buffer_offset: UINT64) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ResolveQueryData(query_heap.iptr() as *mut _ as *mut _ , type_, start_index, num_queries, destination_buffer.iptr() as *mut _ as *mut _ , aligned_destination_buffer_offset) };
-    ()
-  }
-  
-  //  Method SetPredication
-  
-  #[allow(non_snake_case)]
-  pub fn set_predication(&self, buffer: Option<&D3D12Resource>, aligned_buffer_offset: UINT64, operation: D3D12_PREDICATION_OP) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).SetPredication(buffer.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, aligned_buffer_offset, operation) };
-    ()
-  }
-  
-  //  Method ExecuteIndirect
-  
-  #[allow(non_snake_case)]
-  pub fn execute_indirect<T: HasIID, T1: HasIID, T2: HasIID>(&self, command_signature: &T, max_command_count: UINT, argument_buffer: &T1, argument_buffer_offset: UINT64, count_buffer: &T2, count_buffer_offset: UINT64) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12GraphicsCommandList)).ExecuteIndirect(command_signature.iptr() as *mut _ as *mut _ , max_command_count, argument_buffer.iptr() as *mut _ as *mut _ , argument_buffer_offset, count_buffer.iptr() as *mut _ as *mut _ , count_buffer_offset) };
-    ()
-  }
-  
-  
-}
-
-pub struct D3D12Heap(*mut ID3D12Heap);
-
-impl HasIID for D3D12Heap {
-  fn iid() -> REFGUID { &IID_ID3D12Heap }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Heap(pp_vtbl as *mut _ as *mut ID3D12Heap) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12Heap {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D3D12Heap {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12Heap {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TD3D12Heap: TD3D12Pageable {
   //  Method GetDesc
   
   #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> D3D12_HEAP_DESC {
+  fn get_desc(&self) -> D3D12_HEAP_DESC {
     let mut lv1: D3D12_HEAP_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Heap)).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Heap)).GetDesc(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   
 }
 
-pub struct D3D12Object(*mut ID3D12Object);
-
-impl HasIID for D3D12Object {
-  fn iid() -> REFGUID { &IID_ID3D12Object }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Object(pp_vtbl as *mut _ as *mut ID3D12Object) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12Object {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D3D12Heap {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12Heap(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D3D12Heap {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12Heap {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12Heap {}
+impl TD3D12DeviceChild for D3D12Heap {}
+impl TD3D12Pageable for D3D12Heap {}
+impl TD3D12Heap for D3D12Heap {}
 
-impl Clone for D3D12Object {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D3D12Heap(*mut ID3D12Heap);
+
+impl HasIID for D3D12Heap {
+  fn iid() -> REFGUID { &IID_ID3D12Heap }
 }
 
-
-
-impl D3D12Object {
+pub trait TD3D12Object: TUnknown {
   //  Method GetPrivateData
   
   #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
+  unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
     let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
+    let _hr= { (*(self.iptr() as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
     hr2ret(_hr,lv1)
   }
   
   //  Method SetPrivateData
   
   #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
+  fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetName
   
   #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
+  fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
     let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
     hr2ret(_hr,_hr)
   }
   
   
 }
+
+impl TUnknown for D3D12Object {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12Object(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12Object {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12Object {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12Object {}
+
+pub struct D3D12Object(*mut ID3D12Object);
+
+impl HasIID for D3D12Object {
+  fn iid() -> REFGUID { &IID_ID3D12Object }
+}
+
+pub trait TD3D12Pageable: TD3D12DeviceChild {
+  
+}
+
+impl TUnknown for D3D12Pageable {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12Pageable(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12Pageable {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12Pageable {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12Pageable {}
+impl TD3D12DeviceChild for D3D12Pageable {}
+impl TD3D12Pageable for D3D12Pageable {}
 
 pub struct D3D12Pageable(*mut ID3D12Pageable);
 
 impl HasIID for D3D12Pageable {
   fn iid() -> REFGUID { &IID_ID3D12Pageable }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Pageable(pp_vtbl as *mut _ as *mut ID3D12Pageable) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12Pageable {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D3D12Pageable {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12Pageable {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TD3D12PipelineState: TD3D12Pageable {
   
 }
+
+impl TUnknown for D3D12PipelineState {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12PipelineState(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12PipelineState {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12PipelineState {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12PipelineState {}
+impl TD3D12DeviceChild for D3D12PipelineState {}
+impl TD3D12Pageable for D3D12PipelineState {}
+impl TD3D12PipelineState for D3D12PipelineState {}
 
 pub struct D3D12PipelineState(*mut ID3D12PipelineState);
 unsafe impl Send for D3D12PipelineState {}
 
 impl HasIID for D3D12PipelineState {
   fn iid() -> REFGUID { &IID_ID3D12PipelineState }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12PipelineState(pp_vtbl as *mut _ as *mut ID3D12PipelineState) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12PipelineState {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D3D12PipelineState {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12PipelineState {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TD3D12QueryHeap: TD3D12Pageable {
   
 }
+
+impl TUnknown for D3D12QueryHeap {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12QueryHeap(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12QueryHeap {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12QueryHeap {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12QueryHeap {}
+impl TD3D12DeviceChild for D3D12QueryHeap {}
+impl TD3D12Pageable for D3D12QueryHeap {}
+impl TD3D12QueryHeap for D3D12QueryHeap {}
 
 pub struct D3D12QueryHeap(*mut ID3D12QueryHeap);
 
 impl HasIID for D3D12QueryHeap {
   fn iid() -> REFGUID { &IID_ID3D12QueryHeap }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12QueryHeap(pp_vtbl as *mut _ as *mut ID3D12QueryHeap) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12QueryHeap {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D3D12QueryHeap {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12QueryHeap {
-  //  Method GetPrivateData
+pub trait TD3D12Resource: TD3D12Pageable {
+  //  Method Map
   
   #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
+  unsafe fn map<T>(&self, subresource: UINT, read_range: Option<&D3D12_RANGE>, data: Option<&mut *mut T>) -> HResult<HRESULT> {
   
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
+    let _hr= { (*(self.iptr() as *mut ID3D12Resource)).Map(subresource, read_range.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), opt_as_mut_ptr(&data) as *mut *mut _) };
     hr2ret(_hr,_hr)
   }
   
-  //  Method SetName
+  //  Method Unmap
   
   #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
+  fn unmap(&self, subresource: UINT, written_range: Option<&D3D12_RANGE>) -> () {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Resource)).Unmap(subresource, written_range.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    ()
+  }
+  
+  //  Method GetDesc
+  
+  #[allow(non_snake_case)]
+  fn get_desc(&self) -> D3D12_RESOURCE_DESC {
+    let mut lv1: D3D12_RESOURCE_DESC = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Resource)).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    lv1
+  }
+  
+  //  Method GetGPUVirtualAddress
+  
+  #[allow(non_snake_case)]
+  fn get_gpu_virtual_address(&self) -> D3D12_GPU_VIRTUAL_ADDRESS {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Resource)).GetGPUVirtualAddress() };
+    _hr
+  }
+  
+  //  Method WriteToSubresource
+  
+  #[allow(non_snake_case)]
+  unsafe fn write_to_subresource<T>(&self, dst_subresource: UINT, dst_box: Option<&D3D12_BOX>, src_data: &[T], src_row_pitch: UINT, src_depth_pitch: UINT) -> HResult<HRESULT> {
+  
+    let _hr= { (*(self.iptr() as *mut ID3D12Resource)).WriteToSubresource(dst_subresource, dst_box.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), src_data.as_ptr() as *const _, src_row_pitch, src_depth_pitch) };
     hr2ret(_hr,_hr)
   }
   
-  //  Method GetDevice
+  //  Method GetHeapProperties
   
   #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
+  fn get_heap_properties(&self, heap_properties: Option<&mut D3D12_HEAP_PROPERTIES>, heap_flags: Option<&mut D3D12_HEAP_FLAGS>) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Resource)).GetHeapProperties(opt_as_mut_ptr(&heap_properties), opt_as_mut_ptr(&heap_flags)) };
+    hr2ret(_hr,_hr)
   }
   
   
 }
+
+impl TUnknown for D3D12Resource {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12Resource(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12Resource {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12Resource {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Object for D3D12Resource {}
+impl TD3D12DeviceChild for D3D12Resource {}
+impl TD3D12Pageable for D3D12Resource {}
+impl TD3D12Resource for D3D12Resource {}
 
 pub struct D3D12Resource(*mut ID3D12Resource);
 unsafe impl Sync for D3D12Resource {}
@@ -1844,209 +1507,69 @@ unsafe impl Send for D3D12Resource {}
 
 impl HasIID for D3D12Resource {
   fn iid() -> REFGUID { &IID_ID3D12Resource }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Resource(pp_vtbl as *mut _ as *mut ID3D12Resource) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12Resource {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D3D12Resource {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12Resource {
-  //  Method GetPrivateData
+pub trait TD3D12RootSignatureDeserializer: TUnknown {
+  //  Method GetRootSignatureDesc
   
   #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
+  fn get_root_signature_desc(&self) -> *const D3D12_ROOT_SIGNATURE_DESC {
   
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  //  Method Map
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn map<T>(&self, subresource: UINT, read_range: Option<&D3D12_RANGE>, data: Option<&mut *mut T>) -> HResult<HRESULT> {
-  
-    let _hr= { (*(self.0 as *mut ID3D12Resource)).Map(subresource, read_range.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), opt_as_mut_ptr(&data) as *mut *mut _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Unmap
-  
-  #[allow(non_snake_case)]
-  pub fn unmap(&self, subresource: UINT, written_range: Option<&D3D12_RANGE>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Resource)).Unmap(subresource, written_range.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
-    ()
-  }
-  
-  //  Method GetDesc
-  
-  #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> D3D12_RESOURCE_DESC {
-    let mut lv1: D3D12_RESOURCE_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Resource)).GetDesc(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method GetGPUVirtualAddress
-  
-  #[allow(non_snake_case)]
-  pub fn get_gpu_virtual_address(&self) -> D3D12_GPU_VIRTUAL_ADDRESS {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Resource)).GetGPUVirtualAddress() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12RootSignatureDeserializer)).GetRootSignatureDesc() };
     _hr
   }
   
-  //  Method WriteToSubresource
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn write_to_subresource<T>(&self, dst_subresource: UINT, dst_box: Option<&D3D12_BOX>, src_data: &[T], src_row_pitch: UINT, src_depth_pitch: UINT) -> HResult<HRESULT> {
-  
-    let _hr= { (*(self.0 as *mut ID3D12Resource)).WriteToSubresource(dst_subresource, dst_box.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), src_data.as_ptr() as *const _, src_row_pitch, src_depth_pitch) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetHeapProperties
-  
-  #[allow(non_snake_case)]
-  pub fn get_heap_properties(&self, heap_properties: Option<&mut D3D12_HEAP_PROPERTIES>, heap_flags: Option<&mut D3D12_HEAP_FLAGS>) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Resource)).GetHeapProperties(opt_as_mut_ptr(&heap_properties), opt_as_mut_ptr(&heap_flags)) };
-    hr2ret(_hr,_hr)
-  }
-  
   
 }
+
+impl TUnknown for D3D12RootSignatureDeserializer {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12RootSignatureDeserializer(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12RootSignatureDeserializer {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12RootSignatureDeserializer {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12RootSignatureDeserializer for D3D12RootSignatureDeserializer {}
 
 pub struct D3D12RootSignatureDeserializer(*mut ID3D12RootSignatureDeserializer);
 
 impl HasIID for D3D12RootSignatureDeserializer {
   fn iid() -> REFGUID { &IID_ID3D12RootSignatureDeserializer }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12RootSignatureDeserializer(pp_vtbl as *mut _ as *mut ID3D12RootSignatureDeserializer) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
 }
-impl Drop for D3D12RootSignatureDeserializer {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+
+pub trait TD3D12RootSignature: TD3D12DeviceChild {
+  
+}
+
+impl TUnknown for D3D12RootSignature {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12RootSignature(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
-
-impl Clone for D3D12RootSignatureDeserializer {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+impl Drop for D3D12RootSignature {
+  fn drop(&mut self) { drop_unknown(self) }
 }
-
-
-
-impl D3D12RootSignatureDeserializer {
-  //  Method GetRootSignatureDesc
-  
-  #[allow(non_snake_case)]
-  pub fn get_root_signature_desc(&self) -> *const D3D12_ROOT_SIGNATURE_DESC {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12RootSignatureDeserializer)).GetRootSignatureDesc() };
-    _hr
-  }
-  
-  
+impl Clone for D3D12RootSignature {
+  fn clone(&self) -> Self { clone_unknown(self) }
 }
+impl TD3D12Object for D3D12RootSignature {}
+impl TD3D12DeviceChild for D3D12RootSignature {}
+impl TD3D12RootSignature for D3D12RootSignature {}
 
 pub struct D3D12RootSignature(*mut ID3D12RootSignature);
 unsafe impl Send for D3D12RootSignature {}
 
 impl HasIID for D3D12RootSignature {
   fn iid() -> REFGUID { &IID_ID3D12RootSignature }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12RootSignature(pp_vtbl as *mut _ as *mut ID3D12RootSignature) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D12RootSignature {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D3D12RootSignature {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D12RootSignature {
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_private_data<T>(&self, guid: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr= { (*(self.0 as *mut ID3D12Object)).GetPrivateData(guid, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetPrivateData(guid, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetName
-  
-  #[allow(non_snake_case)]
-  pub fn set_name(&self, name: Cow<str>) -> HResult<HRESULT> {
-    let lv1: Vec<u16> = str_to_vec_u16(name);
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Object)).SetName(lv1.as_ptr() as LPCWSTR) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  
-  #[allow(non_snake_case)]
-  pub fn get_device<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D12DeviceChild)).GetDevice(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  
-}

@@ -300,7 +300,7 @@ let generateMethodFromRouting
   let nativeInvocation=
     System.String.Concat(
       seq{
-        yield "(*(self.0 as *mut "+implclass+"))."+nname+"("
+        yield "(*(self.iptr() as *mut "+implclass+"))."+nname+"("
         yield System.String.Join(", ", nparms |> List.toSeq |> Seq.tail |> Seq.map snd)
         yield ")"
       })
@@ -311,7 +311,7 @@ let generateMethodFromRouting
     System.String.Format(
       @"
 #[allow(non_snake_case)]
-pub {0} {{
+{0} {{
 {1}
   let _hr={4} {{ {2} }};
   {3}
@@ -411,7 +411,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
       match pannot with
       |AThis ->
         if List.isEmpty refs then
-          addNativeParm pname None "self.0"
+          addNativeParm pname None "self.iptr()"
         else
           addError "_This parameter: shouldn't be referenced in annotation"
 // -----------------------------------------------------------------------------------------------------------------------------------------
@@ -742,9 +742,9 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           |Ptr(Const(Ptr(StructRef s)))
           |Ptr(Ptr(StructRef s)) ->
             //let riname=s.Substring(1,s.Length-1)
-            // TODO: impement traits for interfaces
-            let gt=newGenType "HasIID"
-            addSafeParm safeParmName (RBorrow(RSlice(RBorrow(RGeneric(gt,"HasIID")))))
+            let traitName = "T"+s.Substring(1)
+            let gt=newGenType traitName
+            addSafeParm safeParmName (RBorrow(RSlice(RBorrow(RGeneric(gt,traitName)))))
             let lv=newLocalVar true (RVec(RMutPtr(RType "IUnknown"))) (fun _ -> safeParmName+".iter().map(|o|o.iptr()).collect()")
             addNativeParm pname (Some(safeParmName)) (lv+".as_mut_ptr() as *mut *mut _ as *mut *mut _")
           |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
@@ -760,9 +760,9 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           |Ptr(StructRef ciname) ->
             // Let's strip 'I' part
             //let iname=ciname.Substring(1,ciname.Length-1)
-            // TODO: impement traits for interfaces
-            let gt=newGenType "HasIID"
-            let rty=RBorrow(RGeneric(gt,"HasIID"))
+            let traitName = "T"+ciname.Substring(1)
+            let gt=newGenType traitName
+            let rty=RBorrow(RGeneric(gt, traitName))
             addSafeParm safeParmName rty
             addNativeParm pname (Some(safeParmName)) (safeParmName+".iptr() as *mut _ as *mut _ ")
           |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
@@ -776,6 +776,8 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           match pty with
           |Ptr(TypedefRef ciname) 
           |Ptr(StructRef ciname) ->
+            //let traitName = "T"+ciname.Substring(1)
+            //let gt=newGenType traitName
             // Let's strip 'I' part
             let iname=ciname.Substring(1,ciname.Length-1)
             let rty=ROption(RBorrow(RType iname))
@@ -860,8 +862,8 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           match pty with
           |Ptr(uty) ->
             // TODO: check pty. 
-            let gt=newGenType "HasIID"
-            let rty=RGeneric(gt, "HasIID")
+            let gt=newGenType "TUnknown+HasIID"
+            let rty=RGeneric(gt, "TUnknown+HasIID")
             let lv=newLocalVar true (RMutPtr(RType "IUnknown")) (fun m -> "ptr::null_mut()")
             addNativeParm pname None ("&mut "+lv+" as *mut *mut _ as *mut *mut c_void")
             addNativeParm rname None (gt+"::iid()")
@@ -876,8 +878,8 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           match pty with
           |Ptr(uty) ->
             // TODO: check pty. 
-            let gt=newGenType "HasIID"
-            let rty=RGeneric(gt, "HasIID")
+            let gt=newGenType "TUnknown+HasIID"
+            let rty=RGeneric(gt, "TUnknown+HasIID")
             addSafeParm safeParmName (RBorrow(rty))
             addNativeParm pname (Some(safeParmName)) (pname+".iptr() as *mut _ as *mut c_void")
             addNativeParm rname None (gt+"::iid()")
@@ -1087,6 +1089,8 @@ use utils::*;
 let joinMaps a b =
   Map.ofSeq (Seq.concat [Map.toSeq a; Map.toSeq b])
 
+// TODO: Use hierarchy of traits to be able to express "parameter receives interfaceA or descendant interfaces"
+
 let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInterfaces noEnumConversion (types:Map<string,CTypeDesc*CodeLocation>, enums:Map<string,CTypeDesc*CodeLocation>, structs:Map<string,CTypeDesc*CodeLocation>, funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) 
                         (annotations: Annotations) =
   let uses = if uses_CanBeFreakingNull = null then Seq.empty else uses_CanBeFreakingNull
@@ -1112,18 +1116,48 @@ let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInt
         |None -> 
           if bas<>"IUnknown" && bas<>"" then
             printfn "No header file for base class in %s:%s" iname bas
-        let rec ancMeths bName = 
-          if bName = "IUnknown" || bName = "" then
-            []
-          else 
-            match Map.tryFind bName iamap with
-            |Some(bas, meths, header) ->
-              List.concat [ancMeths bas; meths |> List.map (fun m -> (bName,m))]
-            |None -> 
-              let error = sprintf "Error: Generating interface for %s. Base class %s is not defined" iname bName
-              printfn "%s" error
-              raise <| new System.Exception(error)
-        let methods1 = ancMeths ("I"+iname)
+        // Create trait for interface 
+        if bas <> "" then
+            apl <| "pub trait T"+iname+": T"+(bas.Substring(1))+" {"
+        else
+            apl <| "pub trait T"+iname+" {"
+        apl <| (generateMethods ("I"+iname) noEnumConversion (methods |> List.map (fun m -> ("I"+iname,m))) |> indentBy "  ")
+        apl <| "}"
+        apl <| ""
+        // create structure and implement all applicable traits
+        let rec ancTraits bName = 
+            match bName with
+            |""
+            |"IUnknown" -> ["TUnknown"]
+            |_ -> 
+                match Map.tryFind bName iamap with
+                |Some(bas, _, _) ->
+                    List.concat [ancTraits bas; ["T"+bName.Substring(1)]]
+                |None ->
+                    let error = sprintf "Error: Generating interface for %s. Base class %s is not defined" iname bName
+                    printfn "%s" error
+                    raise <| new System.Exception(error)
+        let comCompliant = ref false
+        for tr in ancTraits ("I"+iname) do
+            match tr with
+            |"TUnknown" -> // implement TUnknown, Drop and Clone
+                comCompliant := true
+                apl <| "impl TUnknown for "+iname+" {"
+                apl <| "  fn new(ptr: *mut IUnknown) -> Self {"
+                apl <| "    "+iname+"(ptr as *mut _)"
+                apl <| "  }"
+                apl <| "  fn iptr(&self) -> *mut IUnknown {"
+                apl <| "    self.0 as *mut _"
+                apl <| "  }"
+                apl <| "}"
+                apl <| "impl Drop for "+iname+" {"
+                apl <| "  fn drop(&mut self) { drop_unknown(self) }"
+                apl <| "}"
+                apl <| "impl Clone for "+iname+" {"
+                apl <| "  fn clone(&self) -> Self { clone_unknown(self) }"
+                apl <| "}"
+            |_ -> apl <| "impl "+tr+" for "+iname+" {}";
+
         let implSend = 
           opts |> Set.fold (
               fun s opt ->
@@ -1131,39 +1165,27 @@ let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInt
                 |IOSend -> "unsafe impl Send for "+iname+" {}\r\n" + s
                 |IOSync -> "unsafe impl Sync for "+iname+" {}\r\n" + s
             ) "" 
-        let (derive, implDropClone) = 
-            if bas="" then
-                // If interface doesn't have base class, then it means it's not COM-compliant
-                ("#[derive(Clone)]\r\n", "")
+        let derive = 
+            if !comCompliant then
+                // COM-compliant no derives
+                ""
             else
-                ("", "\
-impl Drop for "+iname+" {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for "+iname+" {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-"                   )
+                // If interface doesn't have base class, then it means it's not COM-compliant
+                // Just copy it
+                "#[derive(Clone)]\r\n"
+                
         apl <| derive 
         apl <| "pub struct "+iname+"(*mut I"+iname+");"
         apl <| implSend
         apl <| "impl HasIID for "+iname+" {"
         apl <| "  fn iid() -> REFGUID { &IID_I"+iname+" }"
-        apl <| "  fn new(pp_vtbl : *mut IUnknown) -> Self { "+iname+"(pp_vtbl as *mut _ as *mut I"+iname+") }"
-        apl <| "  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}"
         apl <| "}"
-        apl <| implDropClone
         apl <| ""
-        apl <| "impl "+iname+" {"
-        apl <|   (generateMethods ("I"+iname) noEnumConversion methods1 |> indentBy "  ")
-        apl <| "}"
-
+//        apl <| "impl "+iname+" {"
+//        apl <|   (generateMethods ("I"+iname) noEnumConversion methods1 |> indentBy "  ")
+//        apl <| "}"
+        // end match IAAutogen
+    // end for ...
     (sb.ToString(), iamap, !dependencies)
   |None -> 
     printfn "Sanity check failed. No Rust interfaces generated"

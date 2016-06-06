@@ -2,376 +2,379 @@
 
 use utils::*;
 
-
-pub struct D3D12Debug(*mut ID3D12Debug);
-
-impl HasIID for D3D12Debug {
-  fn iid() -> REFGUID { &IID_ID3D12Debug }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12Debug(pp_vtbl as *mut _ as *mut ID3D12Debug) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-
-impl Drop for D3D12Debug {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D3D12Debug {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-impl D3D12Debug {
+pub trait TD3D12Debug: TUnknown {
   //  Method EnableDebugLayer
   
   #[allow(non_snake_case)]
-  pub fn enable_debug_layer(&self) -> () {
+  fn enable_debug_layer(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12Debug)).EnableDebugLayer() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12Debug)).EnableDebugLayer() };
     ()
   }
   
   
 }
 
-pub struct D3D12InfoQueue(*mut ID3D12InfoQueue);
-
-impl HasIID for D3D12InfoQueue {
-  fn iid() -> REFGUID { &IID_ID3D12InfoQueue }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D12InfoQueue(pp_vtbl as *mut _ as *mut ID3D12InfoQueue) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-
-impl Drop for D3D12InfoQueue {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D3D12Debug {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12Debug(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D3D12Debug {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12Debug {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12Debug for D3D12Debug {}
 
-impl Clone for D3D12InfoQueue {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D3D12Debug(*mut ID3D12Debug);
+
+impl HasIID for D3D12Debug {
+  fn iid() -> REFGUID { &IID_ID3D12Debug }
 }
 
-impl D3D12InfoQueue {
+pub trait TD3D12InfoQueue: TUnknown {
   //  Method SetMessageCountLimit
   
   #[allow(non_snake_case)]
-  pub fn set_message_count_limit(&self, message_count_limit: UINT64) -> HResult<HRESULT> {
+  fn set_message_count_limit(&self, message_count_limit: UINT64) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).SetMessageCountLimit(message_count_limit) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).SetMessageCountLimit(message_count_limit) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ClearStoredMessages
   
   #[allow(non_snake_case)]
-  pub fn clear_stored_messages(&self) -> () {
+  fn clear_stored_messages(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).ClearStoredMessages() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).ClearStoredMessages() };
     ()
   }
   
   //  Method GetMessage
   
   #[allow(non_snake_case)]
-  pub fn get_message(&self, message_index: UINT64, message: Option<&mut D3D12_MESSAGE>, message_byte_length: &mut SIZE_T) -> HResult<HRESULT> {
+  fn get_message(&self, message_index: UINT64, message: Option<&mut D3D12_MESSAGE>, message_byte_length: &mut SIZE_T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetMessage(message_index, opt_as_mut_ptr(&message), message_byte_length) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetMessage(message_index, opt_as_mut_ptr(&message), message_byte_length) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetNumMessagesAllowedByStorageFilter
   
   #[allow(non_snake_case)]
-  pub fn get_num_messages_allowed_by_storage_filter(&self) -> UINT64 {
+  fn get_num_messages_allowed_by_storage_filter(&self) -> UINT64 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetNumMessagesAllowedByStorageFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetNumMessagesAllowedByStorageFilter() };
     _hr
   }
   
   //  Method GetNumMessagesDeniedByStorageFilter
   
   #[allow(non_snake_case)]
-  pub fn get_num_messages_denied_by_storage_filter(&self) -> UINT64 {
+  fn get_num_messages_denied_by_storage_filter(&self) -> UINT64 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetNumMessagesDeniedByStorageFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetNumMessagesDeniedByStorageFilter() };
     _hr
   }
   
   //  Method GetNumStoredMessages
   
   #[allow(non_snake_case)]
-  pub fn get_num_stored_messages(&self) -> UINT64 {
+  fn get_num_stored_messages(&self) -> UINT64 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetNumStoredMessages() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetNumStoredMessages() };
     _hr
   }
   
   //  Method GetNumStoredMessagesAllowedByRetrievalFilter
   
   #[allow(non_snake_case)]
-  pub fn get_num_stored_messages_allowed_by_retrieval_filter(&self) -> UINT64 {
+  fn get_num_stored_messages_allowed_by_retrieval_filter(&self) -> UINT64 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetNumStoredMessagesAllowedByRetrievalFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetNumStoredMessagesAllowedByRetrievalFilter() };
     _hr
   }
   
   //  Method GetNumMessagesDiscardedByMessageCountLimit
   
   #[allow(non_snake_case)]
-  pub fn get_num_messages_discarded_by_message_count_limit(&self) -> UINT64 {
+  fn get_num_messages_discarded_by_message_count_limit(&self) -> UINT64 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetNumMessagesDiscardedByMessageCountLimit() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetNumMessagesDiscardedByMessageCountLimit() };
     _hr
   }
   
   //  Method GetMessageCountLimit
   
   #[allow(non_snake_case)]
-  pub fn get_message_count_limit(&self) -> UINT64 {
+  fn get_message_count_limit(&self) -> UINT64 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetMessageCountLimit() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetMessageCountLimit() };
     _hr
   }
   
   //  Method AddStorageFilterEntries
   
   #[allow(non_snake_case)]
-  pub fn add_storage_filter_entries(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<HRESULT> {
+  fn add_storage_filter_entries(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).AddStorageFilterEntries(filter) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).AddStorageFilterEntries(filter) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetStorageFilter
   
   #[allow(non_snake_case)]
-  pub fn get_storage_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER, filter_byte_length: &mut SIZE_T) -> HResult<HRESULT> {
+  fn get_storage_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER, filter_byte_length: &mut SIZE_T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetStorageFilter(filter, filter_byte_length) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetStorageFilter(filter, filter_byte_length) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ClearStorageFilter
   
   #[allow(non_snake_case)]
-  pub fn clear_storage_filter(&self) -> () {
+  fn clear_storage_filter(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).ClearStorageFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).ClearStorageFilter() };
     ()
   }
   
   //  Method PushEmptyStorageFilter
   
   #[allow(non_snake_case)]
-  pub fn push_empty_storage_filter(&self) -> HResult<HRESULT> {
+  fn push_empty_storage_filter(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).PushEmptyStorageFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).PushEmptyStorageFilter() };
     hr2ret(_hr,_hr)
   }
   
   //  Method PushCopyOfStorageFilter
   
   #[allow(non_snake_case)]
-  pub fn push_copy_of_storage_filter(&self) -> HResult<HRESULT> {
+  fn push_copy_of_storage_filter(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).PushCopyOfStorageFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).PushCopyOfStorageFilter() };
     hr2ret(_hr,_hr)
   }
   
   //  Method PushStorageFilter
   
   #[allow(non_snake_case)]
-  pub fn push_storage_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<HRESULT> {
+  fn push_storage_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).PushStorageFilter(filter) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).PushStorageFilter(filter) };
     hr2ret(_hr,_hr)
   }
   
   //  Method PopStorageFilter
   
   #[allow(non_snake_case)]
-  pub fn pop_storage_filter(&self) -> () {
+  fn pop_storage_filter(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).PopStorageFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).PopStorageFilter() };
     ()
   }
   
   //  Method GetStorageFilterStackSize
   
   #[allow(non_snake_case)]
-  pub fn get_storage_filter_stack_size(&self) -> UINT {
+  fn get_storage_filter_stack_size(&self) -> UINT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetStorageFilterStackSize() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetStorageFilterStackSize() };
     _hr
   }
   
   //  Method AddRetrievalFilterEntries
   
   #[allow(non_snake_case)]
-  pub fn add_retrieval_filter_entries(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<HRESULT> {
+  fn add_retrieval_filter_entries(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).AddRetrievalFilterEntries(filter) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).AddRetrievalFilterEntries(filter) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetRetrievalFilter
   
   #[allow(non_snake_case)]
-  pub fn get_retrieval_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER, filter_byte_length: &mut SIZE_T) -> HResult<HRESULT> {
+  fn get_retrieval_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER, filter_byte_length: &mut SIZE_T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetRetrievalFilter(filter, filter_byte_length) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetRetrievalFilter(filter, filter_byte_length) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ClearRetrievalFilter
   
   #[allow(non_snake_case)]
-  pub fn clear_retrieval_filter(&self) -> () {
+  fn clear_retrieval_filter(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).ClearRetrievalFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).ClearRetrievalFilter() };
     ()
   }
   
   //  Method PushEmptyRetrievalFilter
   
   #[allow(non_snake_case)]
-  pub fn push_empty_retrieval_filter(&self) -> HResult<HRESULT> {
+  fn push_empty_retrieval_filter(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).PushEmptyRetrievalFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).PushEmptyRetrievalFilter() };
     hr2ret(_hr,_hr)
   }
   
   //  Method PushCopyOfRetrievalFilter
   
   #[allow(non_snake_case)]
-  pub fn push_copy_of_retrieval_filter(&self) -> HResult<HRESULT> {
+  fn push_copy_of_retrieval_filter(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).PushCopyOfRetrievalFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).PushCopyOfRetrievalFilter() };
     hr2ret(_hr,_hr)
   }
   
   //  Method PushRetrievalFilter
   
   #[allow(non_snake_case)]
-  pub fn push_retrieval_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<HRESULT> {
+  fn push_retrieval_filter(&self, filter: &mut D3D12_INFO_QUEUE_FILTER) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).PushRetrievalFilter(filter) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).PushRetrievalFilter(filter) };
     hr2ret(_hr,_hr)
   }
   
   //  Method PopRetrievalFilter
   
   #[allow(non_snake_case)]
-  pub fn pop_retrieval_filter(&self) -> () {
+  fn pop_retrieval_filter(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).PopRetrievalFilter() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).PopRetrievalFilter() };
     ()
   }
   
   //  Method GetRetrievalFilterStackSize
   
   #[allow(non_snake_case)]
-  pub fn get_retrieval_filter_stack_size(&self) -> UINT {
+  fn get_retrieval_filter_stack_size(&self) -> UINT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetRetrievalFilterStackSize() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetRetrievalFilterStackSize() };
     _hr
   }
   
   //  Method AddMessage
   
   #[allow(non_snake_case)]
-  pub fn add_message(&self, category: D3D12_MESSAGE_CATEGORY, severity: D3D12_MESSAGE_SEVERITY, i_d: D3D12_MESSAGE_ID, description: LPCSTR) -> HResult<HRESULT> {
+  fn add_message(&self, category: D3D12_MESSAGE_CATEGORY, severity: D3D12_MESSAGE_SEVERITY, i_d: D3D12_MESSAGE_ID, description: LPCSTR) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).AddMessage(category, severity, i_d, description) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).AddMessage(category, severity, i_d, description) };
     hr2ret(_hr,_hr)
   }
   
   //  Method AddApplicationMessage
   
   #[allow(non_snake_case)]
-  pub fn add_application_message(&self, severity: D3D12_MESSAGE_SEVERITY, description: LPCSTR) -> HResult<HRESULT> {
+  fn add_application_message(&self, severity: D3D12_MESSAGE_SEVERITY, description: LPCSTR) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).AddApplicationMessage(severity, description) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).AddApplicationMessage(severity, description) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetBreakOnCategory
   
   #[allow(non_snake_case)]
-  pub fn set_break_on_category(&self, category: D3D12_MESSAGE_CATEGORY, bEnable: BOOL) -> HResult<HRESULT> {
+  fn set_break_on_category(&self, category: D3D12_MESSAGE_CATEGORY, bEnable: BOOL) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).SetBreakOnCategory(category, bEnable) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).SetBreakOnCategory(category, bEnable) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetBreakOnSeverity
   
   #[allow(non_snake_case)]
-  pub fn set_break_on_severity(&self, severity: D3D12_MESSAGE_SEVERITY, bEnable: BOOL) -> HResult<HRESULT> {
+  fn set_break_on_severity(&self, severity: D3D12_MESSAGE_SEVERITY, bEnable: BOOL) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).SetBreakOnSeverity(severity, bEnable) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).SetBreakOnSeverity(severity, bEnable) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetBreakOnID
   
   #[allow(non_snake_case)]
-  pub fn set_break_on_id(&self, i_d: D3D12_MESSAGE_ID, bEnable: BOOL) -> HResult<HRESULT> {
+  fn set_break_on_id(&self, i_d: D3D12_MESSAGE_ID, bEnable: BOOL) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).SetBreakOnID(i_d, bEnable) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).SetBreakOnID(i_d, bEnable) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetBreakOnCategory
   
   #[allow(non_snake_case)]
-  pub fn get_break_on_category(&self, category: D3D12_MESSAGE_CATEGORY) -> BOOL {
+  fn get_break_on_category(&self, category: D3D12_MESSAGE_CATEGORY) -> BOOL {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetBreakOnCategory(category) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetBreakOnCategory(category) };
     _hr
   }
   
   //  Method GetBreakOnSeverity
   
   #[allow(non_snake_case)]
-  pub fn get_break_on_severity(&self, severity: D3D12_MESSAGE_SEVERITY) -> BOOL {
+  fn get_break_on_severity(&self, severity: D3D12_MESSAGE_SEVERITY) -> BOOL {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetBreakOnSeverity(severity) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetBreakOnSeverity(severity) };
     _hr
   }
   
   //  Method GetBreakOnID
   
   #[allow(non_snake_case)]
-  pub fn get_break_on_id(&self, i_d: D3D12_MESSAGE_ID) -> BOOL {
+  fn get_break_on_id(&self, i_d: D3D12_MESSAGE_ID) -> BOOL {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetBreakOnID(i_d) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetBreakOnID(i_d) };
     _hr
   }
   
   //  Method SetMuteDebugOutput
   
   #[allow(non_snake_case)]
-  pub fn set_mute_debug_output(&self, bMute: BOOL) -> () {
+  fn set_mute_debug_output(&self, bMute: BOOL) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).SetMuteDebugOutput(bMute) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).SetMuteDebugOutput(bMute) };
     ()
   }
   
   //  Method GetMuteDebugOutput
   
   #[allow(non_snake_case)]
-  pub fn get_mute_debug_output(&self) -> BOOL {
+  fn get_mute_debug_output(&self) -> BOOL {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D12InfoQueue)).GetMuteDebugOutput() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D12InfoQueue)).GetMuteDebugOutput() };
     _hr
   }
   
   
+}
+
+impl TUnknown for D3D12InfoQueue {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D12InfoQueue(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D12InfoQueue {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D12InfoQueue {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D12InfoQueue for D3D12InfoQueue {}
+
+pub struct D3D12InfoQueue(*mut ID3D12InfoQueue);
+
+impl HasIID for D3D12InfoQueue {
+  fn iid() -> REFGUID { &IID_ID3D12InfoQueue }
 }
 

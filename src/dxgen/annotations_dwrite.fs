@@ -182,7 +182,7 @@ let dwrite = [
   ]);
   // This is callback interface.
   // TODO: Do something to simplify implementation.
-  ("IDWriteFontCollectionLoaderVtbl",IAManual, "IUnknownVtbl", [
+  ("IDWriteFontCollectionLoaderVtbl",IAAutogen(Set.empty), "IUnknownVtbl", [
     ("CreateEnumeratorFromKey",[
       ("This",AThis);
       ("factory",InComPtr);
@@ -331,7 +331,7 @@ let dwrite = [
     ],MANone);
   ]);
   // Another callback interface
-  ("IDWriteFontFileLoaderVtbl",IAManual, "IUnknownVtbl", [
+  ("IDWriteFontFileLoaderVtbl",IAAutogen(Set.empty), "IUnknownVtbl", [
     ("CreateStreamFromKey",[
       ("This",AThis);
       ("fontFileReferenceKey",ANone);

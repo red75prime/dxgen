@@ -65,7 +65,7 @@ pub fn d3d12_test_create_device(adapter: Option<&DXGIAdapter1>,
     }
 }
 
-pub fn create_dxgi_factory2<T: HasIID>(debug: bool) -> HResult<T> {
+pub fn create_dxgi_factory2<T: HasIID+TUnknown>(debug: bool) -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
     let hr = unsafe {
         CreateDXGIFactory2(if debug {
@@ -83,7 +83,7 @@ pub fn create_dxgi_factory2<T: HasIID>(debug: bool) -> HResult<T> {
     }
 }
 
-pub fn create_dxgi_factory1<T: HasIID>(debug: bool) -> HResult<T> {
+pub fn create_dxgi_factory1<T: HasIID+TUnknown>(debug: bool) -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
     let hr = unsafe {
         CreateDXGIFactory1(T::iid(), &mut p_fac as *mut *mut _ as *mut *mut _)
@@ -95,7 +95,7 @@ pub fn create_dxgi_factory1<T: HasIID>(debug: bool) -> HResult<T> {
     }
 }
 
-pub fn create_d2d1_factory_single_threaded<T: HasIID>() -> HResult<T> {
+pub fn create_d2d1_factory_single_threaded<T: HasIID+TUnknown>() -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
     let opts = D2D1_FACTORY_OPTIONS { debugLevel: D2D1_DEBUG_LEVEL_INFORMATION };
     let hr = unsafe {
@@ -108,7 +108,7 @@ pub fn create_d2d1_factory_single_threaded<T: HasIID>() -> HResult<T> {
     }
 }
 
-pub fn create_d2d1_factory_multi_threaded<T: HasIID>() -> HResult<T> {
+pub fn create_d2d1_factory_multi_threaded<T: HasIID+TUnknown>() -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
     let opts = D2D1_FACTORY_OPTIONS { debugLevel: D2D1_DEBUG_LEVEL_INFORMATION };
     let hr = unsafe {

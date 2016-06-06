@@ -1,5 +1,5 @@
 use winapi::*;
-use iid::{HResult, HasIID};
+use iid::{HResult, HasIID, TUnknown};
 use d3d12_safe::*;
 use std::marker::PhantomData;
 use std::ops::Deref;

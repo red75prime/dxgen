@@ -2,181 +2,100 @@
 
 use utils::*;
 
-
-pub struct D3D11BlendState(*mut ID3D11BlendState);
-
-impl HasIID for D3D11BlendState {
-  fn iid() -> REFGUID { &IID_ID3D11BlendState }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D11BlendState(pp_vtbl as *mut _ as *mut ID3D11BlendState) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D11BlendState {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D3D11BlendState {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D11BlendState {
-  //  Method GetDevice
-  //  Error: ppDevice parameter: ANone annotation cannot be used with double indirection
-  //  Method GetPrivateData
-  //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, guid: &GUID, data_size: &mut UINT, data: &mut [T]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).GetPrivateData(guid, data_size, data.as_mut_ptr() as *mut _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetPrivateData
-  //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data_size: UINT, data: &[T]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).SetPrivateData(guid, data_size, data.as_ptr() as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetPrivateDataInterface
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data_interface(&self, guid: &GUID, data: &IUnknown) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).SetPrivateDataInterface(guid, data) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD3D11BlendState: TD3D11DeviceChild {
   //  Method GetDesc
   
   #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> D3D11_BLEND_DESC {
+  fn get_desc(&self) -> D3D11_BLEND_DESC {
     let mut lv1: D3D11_BLEND_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID3D11BlendState)).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11BlendState)).GetDesc(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   
 }
 
+impl TUnknown for D3D11BlendState {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D11BlendState(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D11BlendState {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D11BlendState {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D11DeviceChild for D3D11BlendState {}
+impl TD3D11BlendState for D3D11BlendState {}
+
+pub struct D3D11BlendState(*mut ID3D11BlendState);
+
+impl HasIID for D3D11BlendState {
+  fn iid() -> REFGUID { &IID_ID3D11BlendState }
+}
+
+pub trait TD3D11DeviceChild: TUnknown {
+  //  Method GetDevice
+  //  Error: ppDevice parameter: ANone annotation cannot be used with double indirection
+  //  Method GetPrivateData
+  //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
+  
+  #[allow(non_snake_case)]
+  fn get_private_data<T>(&self, guid: &GUID, data_size: &mut UINT, data: &mut [T]) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceChild)).GetPrivateData(guid, data_size, data.as_mut_ptr() as *mut _) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method SetPrivateData
+  //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
+  
+  #[allow(non_snake_case)]
+  fn set_private_data<T>(&self, guid: &GUID, data_size: UINT, data: &[T]) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceChild)).SetPrivateData(guid, data_size, data.as_ptr() as *const _) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method SetPrivateDataInterface
+  
+  #[allow(non_snake_case)]
+  fn set_private_data_interface(&self, guid: &GUID, data: &IUnknown) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceChild)).SetPrivateDataInterface(guid, data) };
+    hr2ret(_hr,_hr)
+  }
+  
+  
+}
+
+impl TUnknown for D3D11DeviceChild {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D11DeviceChild(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D11DeviceChild {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D11DeviceChild {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D11DeviceChild for D3D11DeviceChild {}
+
 pub struct D3D11DeviceChild(*mut ID3D11DeviceChild);
 
 impl HasIID for D3D11DeviceChild {
   fn iid() -> REFGUID { &IID_ID3D11DeviceChild }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D11DeviceChild(pp_vtbl as *mut _ as *mut ID3D11DeviceChild) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D11DeviceChild {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D3D11DeviceChild {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D11DeviceChild {
-  //  Method GetDevice
-  //  Error: ppDevice parameter: ANone annotation cannot be used with double indirection
-  //  Method GetPrivateData
-  //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, guid: &GUID, data_size: &mut UINT, data: &mut [T]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).GetPrivateData(guid, data_size, data.as_mut_ptr() as *mut _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetPrivateData
-  //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data_size: UINT, data: &[T]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).SetPrivateData(guid, data_size, data.as_ptr() as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetPrivateDataInterface
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data_interface(&self, guid: &GUID, data: &IUnknown) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).SetPrivateDataInterface(guid, data) };
-    hr2ret(_hr,_hr)
-  }
-  
-  
-}
-
-pub struct D3D11DeviceContext(*mut ID3D11DeviceContext);
-
-impl HasIID for D3D11DeviceContext {
-  fn iid() -> REFGUID { &IID_ID3D11DeviceContext }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D11DeviceContext(pp_vtbl as *mut _ as *mut ID3D11DeviceContext) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D11DeviceContext {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D3D11DeviceContext {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D3D11DeviceContext {
-  //  Method GetDevice
-  //  Error: ppDevice parameter: ANone annotation cannot be used with double indirection
-  //  Method GetPrivateData
-  //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, guid: &GUID, data_size: &mut UINT, data: &mut [T]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).GetPrivateData(guid, data_size, data.as_mut_ptr() as *mut _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetPrivateData
-  //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data_size: UINT, data: &[T]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).SetPrivateData(guid, data_size, data.as_ptr() as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetPrivateDataInterface
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data_interface(&self, guid: &GUID, data: &IUnknown) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).SetPrivateDataInterface(guid, data) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD3D11DeviceContext: TD3D11DeviceChild {
   //  Method VSSetConstantBuffers
   //  Error: ppConstantBuffers parameter: ANone annotation cannot be used with double indirection
   //  Method PSSetShaderResources
@@ -190,36 +109,36 @@ impl D3D11DeviceContext {
   //  Method DrawIndexed
   
   #[allow(non_snake_case)]
-  pub fn draw_indexed(&self, index_count: UINT, start_index_location: UINT, base_vertex_location: INT) -> () {
+  fn draw_indexed(&self, index_count: UINT, start_index_location: UINT, base_vertex_location: INT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).DrawIndexed(index_count, start_index_location, base_vertex_location) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).DrawIndexed(index_count, start_index_location, base_vertex_location) };
     ()
   }
   
   //  Method Draw
   
   #[allow(non_snake_case)]
-  pub fn draw(&self, vertex_count: UINT, start_vertex_location: UINT) -> () {
+  fn draw(&self, vertex_count: UINT, start_vertex_location: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).Draw(vertex_count, start_vertex_location) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).Draw(vertex_count, start_vertex_location) };
     ()
   }
   
   //  Method Map
   
   #[allow(non_snake_case)]
-  pub fn map(&self, resource: &mut ID3D11Resource, subresource: UINT, map_type: D3D11_MAP, map_flags: UINT, mapped_resource: &mut D3D11_MAPPED_SUBRESOURCE) -> HResult<HRESULT> {
+  fn map(&self, resource: &mut ID3D11Resource, subresource: UINT, map_type: D3D11_MAP, map_flags: UINT, mapped_resource: &mut D3D11_MAPPED_SUBRESOURCE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).Map(resource, subresource, map_type, map_flags, mapped_resource) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).Map(resource, subresource, map_type, map_flags, mapped_resource) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Unmap
   
   #[allow(non_snake_case)]
-  pub fn unmap(&self, resource: &mut ID3D11Resource, subresource: UINT) -> () {
+  fn unmap(&self, resource: &mut ID3D11Resource, subresource: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).Unmap(resource, subresource) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).Unmap(resource, subresource) };
     ()
   }
   
@@ -228,9 +147,9 @@ impl D3D11DeviceContext {
   //  Method IASetInputLayout
   
   #[allow(non_snake_case)]
-  pub fn ia_set_input_layout(&self, input_layout: &mut ID3D11InputLayout) -> () {
+  fn ia_set_input_layout(&self, input_layout: &mut ID3D11InputLayout) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).IASetInputLayout(input_layout) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).IASetInputLayout(input_layout) };
     ()
   }
   
@@ -239,27 +158,27 @@ impl D3D11DeviceContext {
   //  Method IASetIndexBuffer
   
   #[allow(non_snake_case)]
-  pub fn ia_set_index_buffer(&self, index_buffer: &mut ID3D11Buffer, format: DXGI_FORMAT, offset: UINT) -> () {
+  fn ia_set_index_buffer(&self, index_buffer: &mut ID3D11Buffer, format: DXGI_FORMAT, offset: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).IASetIndexBuffer(index_buffer, format, offset) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).IASetIndexBuffer(index_buffer, format, offset) };
     ()
   }
   
   //  Method DrawIndexedInstanced
   
   #[allow(non_snake_case)]
-  pub fn draw_indexed_instanced(&self, index_count_per_instance: UINT, instance_count: UINT, start_index_location: UINT, base_vertex_location: INT, start_instance_location: UINT) -> () {
+  fn draw_indexed_instanced(&self, index_count_per_instance: UINT, instance_count: UINT, start_index_location: UINT, base_vertex_location: INT, start_instance_location: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).DrawIndexedInstanced(index_count_per_instance, instance_count, start_index_location, base_vertex_location, start_instance_location) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).DrawIndexedInstanced(index_count_per_instance, instance_count, start_index_location, base_vertex_location, start_instance_location) };
     ()
   }
   
   //  Method DrawInstanced
   
   #[allow(non_snake_case)]
-  pub fn draw_instanced(&self, vertex_count_per_instance: UINT, instance_count: UINT, start_vertex_location: UINT, start_instance_location: UINT) -> () {
+  fn draw_instanced(&self, vertex_count_per_instance: UINT, instance_count: UINT, start_vertex_location: UINT, start_instance_location: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).DrawInstanced(vertex_count_per_instance, instance_count, start_vertex_location, start_instance_location) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).DrawInstanced(vertex_count_per_instance, instance_count, start_vertex_location, start_instance_location) };
     ()
   }
   
@@ -270,9 +189,9 @@ impl D3D11DeviceContext {
   //  Method IASetPrimitiveTopology
   
   #[allow(non_snake_case)]
-  pub fn ia_set_primitive_topology(&self, topology: D3D11_PRIMITIVE_TOPOLOGY) -> () {
+  fn ia_set_primitive_topology(&self, topology: D3D11_PRIMITIVE_TOPOLOGY) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).IASetPrimitiveTopology(topology) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).IASetPrimitiveTopology(topology) };
     ()
   }
   
@@ -283,18 +202,18 @@ impl D3D11DeviceContext {
   //  Method Begin
   
   #[allow(non_snake_case)]
-  pub fn begin(&self, async: &mut ID3D11Asynchronous) -> () {
+  fn begin(&self, async: &mut ID3D11Asynchronous) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).Begin(async) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).Begin(async) };
     ()
   }
   
   //  Method End
   
   #[allow(non_snake_case)]
-  pub fn end(&self, async: &mut ID3D11Asynchronous) -> () {
+  fn end(&self, async: &mut ID3D11Asynchronous) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).End(async) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).End(async) };
     ()
   }
   
@@ -302,18 +221,18 @@ impl D3D11DeviceContext {
   //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
   
   #[allow(non_snake_case)]
-  pub fn get_data<T>(&self, async: &mut ID3D11Asynchronous, data: &mut [T], data_size: UINT, get_data_flags: UINT) -> HResult<HRESULT> {
+  fn get_data<T>(&self, async: &mut ID3D11Asynchronous, data: &mut [T], data_size: UINT, get_data_flags: UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).GetData(async, data.as_mut_ptr() as *mut _, data_size, get_data_flags) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).GetData(async, data.as_mut_ptr() as *mut _, data_size, get_data_flags) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetPredication
   
   #[allow(non_snake_case)]
-  pub fn set_predication(&self, predicate: &mut ID3D11Predicate, predicate_value: BOOL) -> () {
+  fn set_predication(&self, predicate: &mut ID3D11Predicate, predicate_value: BOOL) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).SetPredication(predicate, predicate_value) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).SetPredication(predicate, predicate_value) };
     ()
   }
   
@@ -329,18 +248,18 @@ impl D3D11DeviceContext {
   //  Method OMSetBlendState
   
   #[allow(non_snake_case)]
-  pub fn om_set_blend_state(&self, blend_state: Option<&D3D11BlendState>, blend_factor: Option<&[FLOAT;4]>, sample_mask: UINT) -> () {
+  fn om_set_blend_state(&self, blend_state: Option<&D3D11BlendState>, blend_factor: Option<&[FLOAT;4]>, sample_mask: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).OMSetBlendState(blend_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, blend_factor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), sample_mask) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).OMSetBlendState(blend_state.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, blend_factor.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), sample_mask) };
     ()
   }
   
   //  Method OMSetDepthStencilState
   
   #[allow(non_snake_case)]
-  pub fn om_set_depth_stencil_state(&self, depth_stencil_state: &mut ID3D11DepthStencilState, stencil_ref: UINT) -> () {
+  fn om_set_depth_stencil_state(&self, depth_stencil_state: &mut ID3D11DepthStencilState, stencil_ref: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).OMSetDepthStencilState(depth_stencil_state, stencil_ref) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).OMSetDepthStencilState(depth_stencil_state, stencil_ref) };
     ()
   }
   
@@ -349,90 +268,90 @@ impl D3D11DeviceContext {
   //  Method DrawAuto
   
   #[allow(non_snake_case)]
-  pub fn draw_auto(&self) -> () {
+  fn draw_auto(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).DrawAuto() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).DrawAuto() };
     ()
   }
   
   //  Method DrawIndexedInstancedIndirect
   
   #[allow(non_snake_case)]
-  pub fn draw_indexed_instanced_indirect(&self, buffer_for_args: &mut ID3D11Buffer, aligned_byte_offset_for_args: UINT) -> () {
+  fn draw_indexed_instanced_indirect(&self, buffer_for_args: &mut ID3D11Buffer, aligned_byte_offset_for_args: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).DrawIndexedInstancedIndirect(buffer_for_args, aligned_byte_offset_for_args) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).DrawIndexedInstancedIndirect(buffer_for_args, aligned_byte_offset_for_args) };
     ()
   }
   
   //  Method DrawInstancedIndirect
   
   #[allow(non_snake_case)]
-  pub fn draw_instanced_indirect(&self, buffer_for_args: &mut ID3D11Buffer, aligned_byte_offset_for_args: UINT) -> () {
+  fn draw_instanced_indirect(&self, buffer_for_args: &mut ID3D11Buffer, aligned_byte_offset_for_args: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).DrawInstancedIndirect(buffer_for_args, aligned_byte_offset_for_args) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).DrawInstancedIndirect(buffer_for_args, aligned_byte_offset_for_args) };
     ()
   }
   
   //  Method Dispatch
   
   #[allow(non_snake_case)]
-  pub fn dispatch(&self, thread_group_count_x: UINT, thread_group_count_y: UINT, thread_group_count_z: UINT) -> () {
+  fn dispatch(&self, thread_group_count_x: UINT, thread_group_count_y: UINT, thread_group_count_z: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).Dispatch(thread_group_count_x, thread_group_count_y, thread_group_count_z) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).Dispatch(thread_group_count_x, thread_group_count_y, thread_group_count_z) };
     ()
   }
   
   //  Method DispatchIndirect
   
   #[allow(non_snake_case)]
-  pub fn dispatch_indirect(&self, buffer_for_args: &mut ID3D11Buffer, aligned_byte_offset_for_args: UINT) -> () {
+  fn dispatch_indirect(&self, buffer_for_args: &mut ID3D11Buffer, aligned_byte_offset_for_args: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).DispatchIndirect(buffer_for_args, aligned_byte_offset_for_args) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).DispatchIndirect(buffer_for_args, aligned_byte_offset_for_args) };
     ()
   }
   
   //  Method RSSetState
   
   #[allow(non_snake_case)]
-  pub fn rs_set_state(&self, rasterizer_state: &mut ID3D11RasterizerState) -> () {
+  fn rs_set_state(&self, rasterizer_state: &mut ID3D11RasterizerState) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).RSSetState(rasterizer_state) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).RSSetState(rasterizer_state) };
     ()
   }
   
   //  Method RSSetViewports
   
   #[allow(non_snake_case)]
-  pub fn rs_set_viewports(&self, num_viewports: UINT, viewports: &D3D11_VIEWPORT) -> () {
+  fn rs_set_viewports(&self, num_viewports: UINT, viewports: &D3D11_VIEWPORT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).RSSetViewports(num_viewports, viewports) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).RSSetViewports(num_viewports, viewports) };
     ()
   }
   
   //  Method RSSetScissorRects
   
   #[allow(non_snake_case)]
-  pub fn rs_set_scissor_rects(&self, num_rects: UINT, rects: &D3D11_RECT) -> () {
+  fn rs_set_scissor_rects(&self, num_rects: UINT, rects: &D3D11_RECT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).RSSetScissorRects(num_rects, rects) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).RSSetScissorRects(num_rects, rects) };
     ()
   }
   
   //  Method CopySubresourceRegion
   
   #[allow(non_snake_case)]
-  pub fn copy_subresource_region(&self, dst_resource: &mut ID3D11Resource, dst_subresource: UINT, dst_x: UINT, dst_y: UINT, dst_z: UINT, src_resource: &mut ID3D11Resource, src_subresource: UINT, src_box: &D3D11_BOX) -> () {
+  fn copy_subresource_region(&self, dst_resource: &mut ID3D11Resource, dst_subresource: UINT, dst_x: UINT, dst_y: UINT, dst_z: UINT, src_resource: &mut ID3D11Resource, src_subresource: UINT, src_box: &D3D11_BOX) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).CopySubresourceRegion(dst_resource, dst_subresource, dst_x, dst_y, dst_z, src_resource, src_subresource, src_box) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).CopySubresourceRegion(dst_resource, dst_subresource, dst_x, dst_y, dst_z, src_resource, src_subresource, src_box) };
     ()
   }
   
   //  Method CopyResource
   
   #[allow(non_snake_case)]
-  pub fn copy_resource(&self, dst_resource: &mut ID3D11Resource, src_resource: &mut ID3D11Resource) -> () {
+  fn copy_resource(&self, dst_resource: &mut ID3D11Resource, src_resource: &mut ID3D11Resource) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).CopyResource(dst_resource, src_resource) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).CopyResource(dst_resource, src_resource) };
     ()
   }
   
@@ -440,99 +359,99 @@ impl D3D11DeviceContext {
   //  Warning: pSrcData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
   
   #[allow(non_snake_case)]
-  pub fn update_subresource<T>(&self, dst_resource: &mut ID3D11Resource, dst_subresource: UINT, dst_box: &D3D11_BOX, src_data: &[T], src_row_pitch: UINT, src_depth_pitch: UINT) -> () {
+  fn update_subresource<T>(&self, dst_resource: &mut ID3D11Resource, dst_subresource: UINT, dst_box: &D3D11_BOX, src_data: &[T], src_row_pitch: UINT, src_depth_pitch: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).UpdateSubresource(dst_resource, dst_subresource, dst_box, src_data.as_ptr() as *const _, src_row_pitch, src_depth_pitch) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).UpdateSubresource(dst_resource, dst_subresource, dst_box, src_data.as_ptr() as *const _, src_row_pitch, src_depth_pitch) };
     ()
   }
   
   //  Method CopyStructureCount
   
   #[allow(non_snake_case)]
-  pub fn copy_structure_count(&self, dst_buffer: &mut ID3D11Buffer, dst_aligned_byte_offset: UINT, src_view: &mut ID3D11UnorderedAccessView) -> () {
+  fn copy_structure_count(&self, dst_buffer: &mut ID3D11Buffer, dst_aligned_byte_offset: UINT, src_view: &mut ID3D11UnorderedAccessView) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).CopyStructureCount(dst_buffer, dst_aligned_byte_offset, src_view) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).CopyStructureCount(dst_buffer, dst_aligned_byte_offset, src_view) };
     ()
   }
   
   //  Method ClearRenderTargetView
   
   #[allow(non_snake_case)]
-  pub fn clear_render_target_view(&self, render_target_view: &mut ID3D11RenderTargetView, color_r_g_b_a: &[FLOAT;4]) -> () {
+  fn clear_render_target_view(&self, render_target_view: &mut ID3D11RenderTargetView, color_r_g_b_a: &[FLOAT;4]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).ClearRenderTargetView(render_target_view, color_r_g_b_a) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).ClearRenderTargetView(render_target_view, color_r_g_b_a) };
     ()
   }
   
   //  Method ClearUnorderedAccessViewUint
   
   #[allow(non_snake_case)]
-  pub fn clear_unordered_access_view_uint(&self, unordered_access_view: &mut ID3D11UnorderedAccessView, values: &[UINT;4]) -> () {
+  fn clear_unordered_access_view_uint(&self, unordered_access_view: &mut ID3D11UnorderedAccessView, values: &[UINT;4]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).ClearUnorderedAccessViewUint(unordered_access_view, values) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).ClearUnorderedAccessViewUint(unordered_access_view, values) };
     ()
   }
   
   //  Method ClearUnorderedAccessViewFloat
   
   #[allow(non_snake_case)]
-  pub fn clear_unordered_access_view_float(&self, unordered_access_view: &mut ID3D11UnorderedAccessView, values: &[FLOAT;4]) -> () {
+  fn clear_unordered_access_view_float(&self, unordered_access_view: &mut ID3D11UnorderedAccessView, values: &[FLOAT;4]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).ClearUnorderedAccessViewFloat(unordered_access_view, values) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).ClearUnorderedAccessViewFloat(unordered_access_view, values) };
     ()
   }
   
   //  Method ClearDepthStencilView
   
   #[allow(non_snake_case)]
-  pub fn clear_depth_stencil_view(&self, depth_stencil_view: &mut ID3D11DepthStencilView, clear_flags: UINT, depth: FLOAT, stencil: UINT8) -> () {
+  fn clear_depth_stencil_view(&self, depth_stencil_view: &mut ID3D11DepthStencilView, clear_flags: UINT, depth: FLOAT, stencil: UINT8) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).ClearDepthStencilView(depth_stencil_view, clear_flags, depth, stencil) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).ClearDepthStencilView(depth_stencil_view, clear_flags, depth, stencil) };
     ()
   }
   
   //  Method GenerateMips
   
   #[allow(non_snake_case)]
-  pub fn generate_mips(&self, shader_resource_view: &mut ID3D11ShaderResourceView) -> () {
+  fn generate_mips(&self, shader_resource_view: &mut ID3D11ShaderResourceView) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).GenerateMips(shader_resource_view) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).GenerateMips(shader_resource_view) };
     ()
   }
   
   //  Method SetResourceMinLOD
   
   #[allow(non_snake_case)]
-  pub fn set_resource_min_l_o_d(&self, resource: &mut ID3D11Resource, min_l_o_d: FLOAT) -> () {
+  fn set_resource_min_l_o_d(&self, resource: &mut ID3D11Resource, min_l_o_d: FLOAT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).SetResourceMinLOD(resource, min_l_o_d) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).SetResourceMinLOD(resource, min_l_o_d) };
     ()
   }
   
   //  Method GetResourceMinLOD
   
   #[allow(non_snake_case)]
-  pub fn get_resource_min_l_o_d(&self, resource: &mut ID3D11Resource) -> FLOAT {
+  fn get_resource_min_l_o_d(&self, resource: &mut ID3D11Resource) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).GetResourceMinLOD(resource) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).GetResourceMinLOD(resource) };
     _hr
   }
   
   //  Method ResolveSubresource
   
   #[allow(non_snake_case)]
-  pub fn resolve_subresource(&self, dst_resource: &mut ID3D11Resource, dst_subresource: UINT, src_resource: &mut ID3D11Resource, src_subresource: UINT, format: DXGI_FORMAT) -> () {
+  fn resolve_subresource(&self, dst_resource: &mut ID3D11Resource, dst_subresource: UINT, src_resource: &mut ID3D11Resource, src_subresource: UINT, format: DXGI_FORMAT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).ResolveSubresource(dst_resource, dst_subresource, src_resource, src_subresource, format) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).ResolveSubresource(dst_resource, dst_subresource, src_resource, src_subresource, format) };
     ()
   }
   
   //  Method ExecuteCommandList
   
   #[allow(non_snake_case)]
-  pub fn execute_command_list(&self, command_list: &mut ID3D11CommandList, restore_context_state: BOOL) -> () {
+  fn execute_command_list(&self, command_list: &mut ID3D11CommandList, restore_context_state: BOOL) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).ExecuteCommandList(command_list, restore_context_state) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).ExecuteCommandList(command_list, restore_context_state) };
     ()
   }
   
@@ -590,9 +509,9 @@ impl D3D11DeviceContext {
   //  Method IAGetPrimitiveTopology
   
   #[allow(non_snake_case)]
-  pub fn i_a_get_primitive_topology(&self, topology: &mut D3D11_PRIMITIVE_TOPOLOGY) -> () {
+  fn i_a_get_primitive_topology(&self, topology: &mut D3D11_PRIMITIVE_TOPOLOGY) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).IAGetPrimitiveTopology(topology) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).IAGetPrimitiveTopology(topology) };
     ()
   }
   
@@ -616,9 +535,9 @@ impl D3D11DeviceContext {
   //  Method OMGetBlendState
   
   #[allow(non_snake_case)]
-  pub fn o_m_get_blend_state(&self, blend_factor: Option<&mut [FLOAT;4]>, sample_mask: Option<&mut UINT>) -> D3D11BlendState {
+  fn o_m_get_blend_state(&self, blend_factor: Option<&mut [FLOAT;4]>, sample_mask: Option<&mut UINT>) -> D3D11BlendState {
     let mut lv1: *mut ID3D11BlendState = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).OMGetBlendState(&mut lv1 as *mut *mut _, opt_as_mut_ptr(&blend_factor), opt_as_mut_ptr(&sample_mask)) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).OMGetBlendState(&mut lv1 as *mut *mut _, opt_as_mut_ptr(&blend_factor), opt_as_mut_ptr(&sample_mask)) };
     D3D11BlendState::new(lv1 as *mut _)
   }
   
@@ -631,18 +550,18 @@ impl D3D11DeviceContext {
   //  Method RSGetViewports
   
   #[allow(non_snake_case)]
-  pub fn r_s_get_viewports(&self, num_viewports: &mut UINT, viewports: &mut D3D11_VIEWPORT) -> () {
+  fn r_s_get_viewports(&self, num_viewports: &mut UINT, viewports: &mut D3D11_VIEWPORT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).RSGetViewports(num_viewports, viewports) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).RSGetViewports(num_viewports, viewports) };
     ()
   }
   
   //  Method RSGetScissorRects
   
   #[allow(non_snake_case)]
-  pub fn r_s_get_scissor_rects(&self, num_rects: &mut UINT, rects: &mut D3D11_RECT) -> () {
+  fn r_s_get_scissor_rects(&self, num_rects: &mut UINT, rects: &mut D3D11_RECT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).RSGetScissorRects(num_rects, rects) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).RSGetScissorRects(num_rects, rects) };
     ()
   }
   
@@ -678,36 +597,36 @@ impl D3D11DeviceContext {
   //  Method ClearState
   
   #[allow(non_snake_case)]
-  pub fn clear_state(&self) -> () {
+  fn clear_state(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).ClearState() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).ClearState() };
     ()
   }
   
   //  Method Flush
   
   #[allow(non_snake_case)]
-  pub fn flush(&self) -> () {
+  fn flush(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).Flush() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).Flush() };
     ()
   }
   
   //  Method GetType
   
   #[allow(non_snake_case)]
-  pub fn get_type(&self) -> D3D11_DEVICE_CONTEXT_TYPE {
+  fn get_type(&self) -> D3D11_DEVICE_CONTEXT_TYPE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).GetType() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).GetType() };
     _hr
   }
   
   //  Method GetContextFlags
   
   #[allow(non_snake_case)]
-  pub fn get_context_flags(&self) -> UINT {
+  fn get_context_flags(&self) -> UINT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceContext)).GetContextFlags() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11DeviceContext)).GetContextFlags() };
     _hr
   }
   
@@ -716,28 +635,30 @@ impl D3D11DeviceContext {
   
 }
 
-pub struct D3D11Device(*mut ID3D11Device);
-
-impl HasIID for D3D11Device {
-  fn iid() -> REFGUID { &IID_ID3D11Device }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D11Device(pp_vtbl as *mut _ as *mut ID3D11Device) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D11Device {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D3D11DeviceContext {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D11DeviceContext(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D3D11DeviceContext {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D11DeviceContext {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D11DeviceChild for D3D11DeviceContext {}
+impl TD3D11DeviceContext for D3D11DeviceContext {}
 
-impl Clone for D3D11Device {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D3D11DeviceContext(*mut ID3D11DeviceContext);
+
+impl HasIID for D3D11DeviceContext {
+  fn iid() -> REFGUID { &IID_ID3D11DeviceContext }
 }
 
-
-
-impl D3D11Device {
+pub trait TD3D11Device: TUnknown {
   //  Method CreateBuffer
   //  Error: ppBuffer parameter: ANone annotation cannot be used with double indirection
   //  Method CreateTexture1D
@@ -793,36 +714,36 @@ impl D3D11Device {
   //  Method CheckFormatSupport
   
   #[allow(non_snake_case)]
-  pub fn check_format_support(&self, format: DXGI_FORMAT, format_support: &mut UINT) -> HResult<HRESULT> {
+  fn check_format_support(&self, format: DXGI_FORMAT, format_support: &mut UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).CheckFormatSupport(format, format_support) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).CheckFormatSupport(format, format_support) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CheckMultisampleQualityLevels
   
   #[allow(non_snake_case)]
-  pub fn check_multisample_quality_levels(&self, format: DXGI_FORMAT, sample_count: UINT, num_quality_levels: &mut UINT) -> HResult<HRESULT> {
+  fn check_multisample_quality_levels(&self, format: DXGI_FORMAT, sample_count: UINT, num_quality_levels: &mut UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).CheckMultisampleQualityLevels(format, sample_count, num_quality_levels) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).CheckMultisampleQualityLevels(format, sample_count, num_quality_levels) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CheckCounterInfo
   
   #[allow(non_snake_case)]
-  pub fn check_counter_info(&self, counter_info: &mut D3D11_COUNTER_INFO) -> () {
+  fn check_counter_info(&self, counter_info: &mut D3D11_COUNTER_INFO) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).CheckCounterInfo(counter_info) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).CheckCounterInfo(counter_info) };
     ()
   }
   
   //  Method CheckCounter
   
   #[allow(non_snake_case)]
-  pub fn check_counter(&self, desc: &D3D11_COUNTER_DESC, type_: &mut D3D11_COUNTER_TYPE, active_counters: &mut UINT, szName: LPSTR, name_length: &mut UINT, szUnits: LPSTR, units_length: &mut UINT, szDescription: LPSTR, description_length: &mut UINT) -> HResult<HRESULT> {
+  fn check_counter(&self, desc: &D3D11_COUNTER_DESC, type_: &mut D3D11_COUNTER_TYPE, active_counters: &mut UINT, szName: LPSTR, name_length: &mut UINT, szUnits: LPSTR, units_length: &mut UINT, szDescription: LPSTR, description_length: &mut UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).CheckCounter(desc, type_, active_counters, szName, name_length, szUnits, units_length, szDescription, description_length) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).CheckCounter(desc, type_, active_counters, szName, name_length, szUnits, units_length, szDescription, description_length) };
     hr2ret(_hr,_hr)
   }
   
@@ -830,9 +751,9 @@ impl D3D11Device {
   //  Warning: pFeatureSupportData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
   
   #[allow(non_snake_case)]
-  pub fn check_feature_support<T>(&self, feature: D3D11_FEATURE, feature_support_data: &mut [T], feature_support_data_size: UINT) -> HResult<HRESULT> {
+  fn check_feature_support<T>(&self, feature: D3D11_FEATURE, feature_support_data: &mut [T], feature_support_data_size: UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).CheckFeatureSupport(feature, feature_support_data.as_mut_ptr() as *mut _, feature_support_data_size) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).CheckFeatureSupport(feature, feature_support_data.as_mut_ptr() as *mut _, feature_support_data_size) };
     hr2ret(_hr,_hr)
   }
   
@@ -840,9 +761,9 @@ impl D3D11Device {
   //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
   
   #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, guid: &GUID, data_size: &mut UINT, data: &mut [T]) -> HResult<HRESULT> {
+  fn get_private_data<T>(&self, guid: &GUID, data_size: &mut UINT, data: &mut [T]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).GetPrivateData(guid, data_size, data.as_mut_ptr() as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).GetPrivateData(guid, data_size, data.as_mut_ptr() as *mut _) };
     hr2ret(_hr,_hr)
   }
   
@@ -850,45 +771,45 @@ impl D3D11Device {
   //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
   
   #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data_size: UINT, data: &[T]) -> HResult<HRESULT> {
+  fn set_private_data<T>(&self, guid: &GUID, data_size: UINT, data: &[T]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).SetPrivateData(guid, data_size, data.as_ptr() as *const _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).SetPrivateData(guid, data_size, data.as_ptr() as *const _) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetPrivateDataInterface
   
   #[allow(non_snake_case)]
-  pub fn set_private_data_interface(&self, guid: &GUID, data: &IUnknown) -> HResult<HRESULT> {
+  fn set_private_data_interface(&self, guid: &GUID, data: &IUnknown) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).SetPrivateDataInterface(guid, data) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).SetPrivateDataInterface(guid, data) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetFeatureLevel
   
   #[allow(non_snake_case)]
-  pub fn get_feature_level(&self) -> D3D_FEATURE_LEVEL {
+  fn get_feature_level(&self) -> D3D_FEATURE_LEVEL {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).GetFeatureLevel() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).GetFeatureLevel() };
     _hr
   }
   
   //  Method GetCreationFlags
   
   #[allow(non_snake_case)]
-  pub fn get_creation_flags(&self) -> UINT {
+  fn get_creation_flags(&self) -> UINT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).GetCreationFlags() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).GetCreationFlags() };
     _hr
   }
   
   //  Method GetDeviceRemovedReason
   
   #[allow(non_snake_case)]
-  pub fn get_device_removed_reason(&self) -> HResult<HRESULT> {
+  fn get_device_removed_reason(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).GetDeviceRemovedReason() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).GetDeviceRemovedReason() };
     hr2ret(_hr,_hr)
   }
   
@@ -897,103 +818,97 @@ impl D3D11Device {
   //  Method SetExceptionMode
   
   #[allow(non_snake_case)]
-  pub fn set_exception_mode(&self, raise_flags: UINT) -> HResult<HRESULT> {
+  fn set_exception_mode(&self, raise_flags: UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).SetExceptionMode(raise_flags) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).SetExceptionMode(raise_flags) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetExceptionMode
   
   #[allow(non_snake_case)]
-  pub fn get_exception_mode(&self) -> UINT {
+  fn get_exception_mode(&self) -> UINT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Device)).GetExceptionMode() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Device)).GetExceptionMode() };
     _hr
   }
   
   
 }
 
-pub struct D3D11Resource(*mut ID3D11Resource);
-
-impl HasIID for D3D11Resource {
-  fn iid() -> REFGUID { &IID_ID3D11Resource }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D3D11Resource(pp_vtbl as *mut _ as *mut ID3D11Resource) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D3D11Resource {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D3D11Device {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D11Device(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D3D11Device {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D11Device {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D11Device for D3D11Device {}
 
-impl Clone for D3D11Resource {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D3D11Device(*mut ID3D11Device);
+
+impl HasIID for D3D11Device {
+  fn iid() -> REFGUID { &IID_ID3D11Device }
 }
 
-
-
-impl D3D11Resource {
-  //  Method GetDevice
-  //  Error: ppDevice parameter: ANone annotation cannot be used with double indirection
-  //  Method GetPrivateData
-  //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, guid: &GUID, data_size: &mut UINT, data: &mut [T]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).GetPrivateData(guid, data_size, data.as_mut_ptr() as *mut _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetPrivateData
-  //  Warning: pData parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, guid: &GUID, data_size: UINT, data: &[T]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).SetPrivateData(guid, data_size, data.as_ptr() as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetPrivateDataInterface
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data_interface(&self, guid: &GUID, data: &IUnknown) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID3D11DeviceChild)).SetPrivateDataInterface(guid, data) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD3D11Resource: TD3D11DeviceChild {
   //  Method GetType
   
   #[allow(non_snake_case)]
-  pub fn get_type(&self, resource_dimension: &mut D3D11_RESOURCE_DIMENSION) -> () {
+  fn get_type(&self, resource_dimension: &mut D3D11_RESOURCE_DIMENSION) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Resource)).GetType(resource_dimension) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Resource)).GetType(resource_dimension) };
     ()
   }
   
   //  Method SetEvictionPriority
   
   #[allow(non_snake_case)]
-  pub fn set_eviction_priority(&self, eviction_priority: UINT) -> () {
+  fn set_eviction_priority(&self, eviction_priority: UINT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Resource)).SetEvictionPriority(eviction_priority) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Resource)).SetEvictionPriority(eviction_priority) };
     ()
   }
   
   //  Method GetEvictionPriority
   
   #[allow(non_snake_case)]
-  pub fn get_eviction_priority(&self) -> UINT {
+  fn get_eviction_priority(&self) -> UINT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID3D11Resource)).GetEvictionPriority() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID3D11Resource)).GetEvictionPriority() };
     _hr
   }
   
   
 }
+
+impl TUnknown for D3D11Resource {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D3D11Resource(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D3D11Resource {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D3D11Resource {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD3D11DeviceChild for D3D11Resource {}
+impl TD3D11Resource for D3D11Resource {}
+
+pub struct D3D11Resource(*mut ID3D11Resource);
+
+impl HasIID for D3D11Resource {
+  fn iid() -> REFGUID { &IID_ID3D11Resource }
+}
+

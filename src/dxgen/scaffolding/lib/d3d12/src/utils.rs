@@ -8,6 +8,8 @@ pub use std::os::windows::ffi::OsStrExt;
 
 pub use iid::*;
 
+pub trait TDWriteGeometrySink : ::d2d1_safe::TD2D1SimplifiedGeometrySink {}
+
 #[allow(dead_code)]
 pub fn os_str_to_vec_u16(s : &OsStr) -> Vec<u16> {
   s.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()

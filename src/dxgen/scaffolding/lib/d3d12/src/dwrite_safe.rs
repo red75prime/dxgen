@@ -2,1391 +2,1425 @@
 
 use utils::*;
 
-
-pub struct DWriteBitmapRenderTarget(*mut IDWriteBitmapRenderTarget);
-
-impl HasIID for DWriteBitmapRenderTarget {
-  fn iid() -> REFGUID { &IID_IDWriteBitmapRenderTarget }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteBitmapRenderTarget(pp_vtbl as *mut _ as *mut IDWriteBitmapRenderTarget) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteBitmapRenderTarget {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for DWriteBitmapRenderTarget {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DWriteBitmapRenderTarget {
+pub trait TDWriteBitmapRenderTarget: TUnknown {
   //  Method DrawGlyphRun
   
   #[allow(non_snake_case)]
-  pub fn draw_glyph_run<T: HasIID>(&self, baselineOriginX: FLOAT, baselineOriginY: FLOAT, measuringMode: DWRITE_MEASURING_MODE, glyphRun: &DWRITE_GLYPH_RUN, renderingParams: &T, textColor: COLORREF, blackBoxRect: Option<&mut RECT>) -> HResult<HRESULT> {
+  fn draw_glyph_run<T: TDWriteRenderingParams>(&self, baselineOriginX: FLOAT, baselineOriginY: FLOAT, measuringMode: DWRITE_MEASURING_MODE, glyphRun: &DWRITE_GLYPH_RUN, renderingParams: &T, textColor: COLORREF, blackBoxRect: Option<&mut RECT>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteBitmapRenderTarget)).DrawGlyphRun(baselineOriginX, baselineOriginY, measuringMode, glyphRun, renderingParams.iptr() as *mut _ as *mut _ , textColor, opt_as_mut_ptr(&blackBoxRect)) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteBitmapRenderTarget)).DrawGlyphRun(baselineOriginX, baselineOriginY, measuringMode, glyphRun, renderingParams.iptr() as *mut _ as *mut _ , textColor, opt_as_mut_ptr(&blackBoxRect)) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetMemoryDC
   
   #[allow(non_snake_case)]
-  pub fn get_memory_dc(&self) -> HDC {
+  fn get_memory_dc(&self) -> HDC {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteBitmapRenderTarget)).GetMemoryDC() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteBitmapRenderTarget)).GetMemoryDC() };
     _hr
   }
   
   //  Method GetPixelsPerDip
   
   #[allow(non_snake_case)]
-  pub fn get_pixels_per_dip(&self) -> FLOAT {
+  fn get_pixels_per_dip(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteBitmapRenderTarget)).GetPixelsPerDip() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteBitmapRenderTarget)).GetPixelsPerDip() };
     _hr
   }
   
   //  Method SetPixelsPerDip
   
   #[allow(non_snake_case)]
-  pub fn set_pixels_per_dip(&self, pixelsPerDip: FLOAT) -> HResult<HRESULT> {
+  fn set_pixels_per_dip(&self, pixelsPerDip: FLOAT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteBitmapRenderTarget)).SetPixelsPerDip(pixelsPerDip) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteBitmapRenderTarget)).SetPixelsPerDip(pixelsPerDip) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetCurrentTransform
   
   #[allow(non_snake_case)]
-  pub fn get_current_transform(&self) -> HResult<DWRITE_MATRIX> {
+  fn get_current_transform(&self) -> HResult<DWRITE_MATRIX> {
     let mut lv1: DWRITE_MATRIX = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteBitmapRenderTarget)).GetCurrentTransform(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteBitmapRenderTarget)).GetCurrentTransform(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method SetCurrentTransform
   
   #[allow(non_snake_case)]
-  pub fn set_current_transform(&self, transform: &DWRITE_MATRIX) -> HResult<HRESULT> {
+  fn set_current_transform(&self, transform: &DWRITE_MATRIX) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteBitmapRenderTarget)).SetCurrentTransform(transform) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteBitmapRenderTarget)).SetCurrentTransform(transform) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetSize
   
   #[allow(non_snake_case)]
-  pub fn get_size(&self) -> HResult<SIZE> {
+  fn get_size(&self) -> HResult<SIZE> {
     let mut lv1: SIZE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteBitmapRenderTarget)).GetSize(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteBitmapRenderTarget)).GetSize(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method Resize
   
   #[allow(non_snake_case)]
-  pub fn resize(&self, width: UINT32, height: UINT32) -> HResult<HRESULT> {
+  fn resize(&self, width: UINT32, height: UINT32) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteBitmapRenderTarget)).Resize(width, height) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteBitmapRenderTarget)).Resize(width, height) };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
-pub struct DWriteFactory(*mut IDWriteFactory);
-
-impl HasIID for DWriteFactory {
-  fn iid() -> REFGUID { &IID_IDWriteFactory }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFactory(pp_vtbl as *mut _ as *mut IDWriteFactory) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteFactory {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteBitmapRenderTarget {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteBitmapRenderTarget(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteBitmapRenderTarget {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteBitmapRenderTarget {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteBitmapRenderTarget for DWriteBitmapRenderTarget {}
 
-impl Clone for DWriteFactory {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteBitmapRenderTarget(*mut IDWriteBitmapRenderTarget);
+
+impl HasIID for DWriteBitmapRenderTarget {
+  fn iid() -> REFGUID { &IID_IDWriteBitmapRenderTarget }
 }
 
-
-
-impl DWriteFactory {
+pub trait TDWriteFactory: TUnknown {
   //  Method GetSystemFontCollection
   
   #[allow(non_snake_case)]
-  pub fn get_system_font_collection(&self, checkForUpdates: BOOL) -> HResult<DWriteFontCollection> {
+  fn get_system_font_collection(&self, checkForUpdates: BOOL) -> HResult<DWriteFontCollection> {
     let mut lv1: *mut IDWriteFontCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).GetSystemFontCollection(&mut lv1 as *mut *mut _, checkForUpdates) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).GetSystemFontCollection(&mut lv1 as *mut *mut _, checkForUpdates) };
     hr2ret(_hr,DWriteFontCollection::new(lv1 as *mut _))
   }
   
   //  Method CreateCustomFontCollection
   
   #[allow(non_snake_case)]
-  pub fn create_custom_font_collection<T: HasIID, T1>(&self, collectionLoader: &T, collectionKey: &T1) -> HResult<DWriteFontCollection> {
+  fn create_custom_font_collection<T: TDWriteFontCollectionLoader, T1>(&self, collectionLoader: &T, collectionKey: &T1) -> HResult<DWriteFontCollection> {
     let mut lv1: *mut IDWriteFontCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateCustomFontCollection(collectionLoader.iptr() as *mut _ as *mut _ , collectionKey as *const _ as *const _, mem::size_of_val(collectionKey) as UINT32, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateCustomFontCollection(collectionLoader.iptr() as *mut _ as *mut _ , collectionKey as *const _ as *const _, mem::size_of_val(collectionKey) as UINT32, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFontCollection::new(lv1 as *mut _))
   }
   
   //  Method RegisterFontCollectionLoader
   
   #[allow(non_snake_case)]
-  pub fn register_font_collection_loader<T: HasIID>(&self, fontCollectionLoader: &T) -> HResult<HRESULT> {
+  fn register_font_collection_loader<T: TDWriteFontCollectionLoader>(&self, fontCollectionLoader: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).RegisterFontCollectionLoader(fontCollectionLoader.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).RegisterFontCollectionLoader(fontCollectionLoader.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method UnregisterFontCollectionLoader
   
   #[allow(non_snake_case)]
-  pub fn unregister_font_collection_loader<T: HasIID>(&self, fontCollectionLoader: &T) -> HResult<HRESULT> {
+  fn unregister_font_collection_loader<T: TDWriteFontCollectionLoader>(&self, fontCollectionLoader: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).UnregisterFontCollectionLoader(fontCollectionLoader.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).UnregisterFontCollectionLoader(fontCollectionLoader.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CreateFontFileReference
   
   #[allow(non_snake_case)]
-  pub fn create_font_file_reference(&self, filePath: Cow<str>, lastWriteTime: Option<&FILETIME>) -> HResult<DWriteFontFile> {
+  fn create_font_file_reference(&self, filePath: Cow<str>, lastWriteTime: Option<&FILETIME>) -> HResult<DWriteFontFile> {
     let lv1: Vec<u16> = str_to_vec_u16(filePath);
     let mut lv2: *mut IDWriteFontFile = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateFontFileReference(lv1.as_ptr() as LPCWSTR, lastWriteTime.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv2 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateFontFileReference(lv1.as_ptr() as LPCWSTR, lastWriteTime.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv2 as *mut *mut _) };
     hr2ret(_hr,DWriteFontFile::new(lv2 as *mut _))
   }
   
   //  Method CreateCustomFontFileReference
   
   #[allow(non_snake_case)]
-  pub fn create_custom_font_file_reference<T, T1: HasIID>(&self, fontFileReferenceKey: &T, fontFileLoader: &T1) -> HResult<DWriteFontFile> {
+  fn create_custom_font_file_reference<T, T1: TDWriteFontFileLoader>(&self, fontFileReferenceKey: &T, fontFileLoader: &T1) -> HResult<DWriteFontFile> {
     let mut lv1: *mut IDWriteFontFile = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateCustomFontFileReference(fontFileReferenceKey as *const _ as *const _, mem::size_of_val(fontFileReferenceKey) as UINT32, fontFileLoader.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateCustomFontFileReference(fontFileReferenceKey as *const _ as *const _, mem::size_of_val(fontFileReferenceKey) as UINT32, fontFileLoader.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFontFile::new(lv1 as *mut _))
   }
   
   //  Method CreateFontFace
   
   #[allow(non_snake_case)]
-  pub fn create_font_face<T: HasIID>(&self, fontFaceType: DWRITE_FONT_FACE_TYPE, fontFiles: &[&T], faceIndex: UINT32, fontFaceSimulationFlags: DWRITE_FONT_SIMULATIONS) -> HResult<DWriteFontFace> {
+  fn create_font_face<T: TDWriteFontFile>(&self, fontFaceType: DWRITE_FONT_FACE_TYPE, fontFiles: &[&T], faceIndex: UINT32, fontFaceSimulationFlags: DWRITE_FONT_SIMULATIONS) -> HResult<DWriteFontFace> {
     let mut lv1: Vec<*mut IUnknown> = fontFiles.iter().map(|o|o.iptr()).collect();
     let mut lv2: *mut IDWriteFontFace = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateFontFace(fontFaceType, fontFiles.len() as UINT32, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, faceIndex, fontFaceSimulationFlags, &mut lv2 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateFontFace(fontFaceType, fontFiles.len() as UINT32, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, faceIndex, fontFaceSimulationFlags, &mut lv2 as *mut *mut _) };
     hr2ret(_hr,DWriteFontFace::new(lv2 as *mut _))
   }
   
   //  Method CreateRenderingParams
   
   #[allow(non_snake_case)]
-  pub fn create_rendering_params(&self) -> HResult<DWriteRenderingParams> {
+  fn create_rendering_params(&self) -> HResult<DWriteRenderingParams> {
     let mut lv1: *mut IDWriteRenderingParams = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateRenderingParams(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateRenderingParams(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteRenderingParams::new(lv1 as *mut _))
   }
   
   //  Method CreateMonitorRenderingParams
   
   #[allow(non_snake_case)]
-  pub fn create_monitor_rendering_params(&self, monitor: HMONITOR) -> HResult<DWriteRenderingParams> {
+  fn create_monitor_rendering_params(&self, monitor: HMONITOR) -> HResult<DWriteRenderingParams> {
     let mut lv1: *mut IDWriteRenderingParams = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateMonitorRenderingParams(monitor, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateMonitorRenderingParams(monitor, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteRenderingParams::new(lv1 as *mut _))
   }
   
   //  Method CreateCustomRenderingParams
   
   #[allow(non_snake_case)]
-  pub fn create_custom_rendering_params(&self, gamma: FLOAT, enhancedContrast: FLOAT, clearTypeLevel: FLOAT, pixelGeometry: DWRITE_PIXEL_GEOMETRY, renderingMode: DWRITE_RENDERING_MODE) -> HResult<DWriteRenderingParams> {
+  fn create_custom_rendering_params(&self, gamma: FLOAT, enhancedContrast: FLOAT, clearTypeLevel: FLOAT, pixelGeometry: DWRITE_PIXEL_GEOMETRY, renderingMode: DWRITE_RENDERING_MODE) -> HResult<DWriteRenderingParams> {
     let mut lv1: *mut IDWriteRenderingParams = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateCustomRenderingParams(gamma, enhancedContrast, clearTypeLevel, pixelGeometry, renderingMode, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateCustomRenderingParams(gamma, enhancedContrast, clearTypeLevel, pixelGeometry, renderingMode, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteRenderingParams::new(lv1 as *mut _))
   }
   
   //  Method RegisterFontFileLoader
   
   #[allow(non_snake_case)]
-  pub fn register_font_file_loader<T: HasIID>(&self, fontFileLoader: &T) -> HResult<HRESULT> {
+  fn register_font_file_loader<T: TDWriteFontFileLoader>(&self, fontFileLoader: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).RegisterFontFileLoader(fontFileLoader.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).RegisterFontFileLoader(fontFileLoader.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method UnregisterFontFileLoader
   
   #[allow(non_snake_case)]
-  pub fn unregister_font_file_loader<T: HasIID>(&self, fontFileLoader: &T) -> HResult<HRESULT> {
+  fn unregister_font_file_loader<T: TDWriteFontFileLoader>(&self, fontFileLoader: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).UnregisterFontFileLoader(fontFileLoader.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).UnregisterFontFileLoader(fontFileLoader.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CreateTextFormat
   
   #[allow(non_snake_case)]
-  pub fn create_text_format(&self, fontFamilyName: Cow<str>, fontCollection: Option<&DWriteFontCollection>, fontWeight: DWRITE_FONT_WEIGHT, fontStyle: DWRITE_FONT_STYLE, fontStretch: DWRITE_FONT_STRETCH, fontSize: FLOAT, localeName: Cow<str>) -> HResult<DWriteTextFormat> {
+  fn create_text_format(&self, fontFamilyName: Cow<str>, fontCollection: Option<&DWriteFontCollection>, fontWeight: DWRITE_FONT_WEIGHT, fontStyle: DWRITE_FONT_STYLE, fontStretch: DWRITE_FONT_STRETCH, fontSize: FLOAT, localeName: Cow<str>) -> HResult<DWriteTextFormat> {
     let lv1: Vec<u16> = str_to_vec_u16(fontFamilyName);
     let lv2: Vec<u16> = str_to_vec_u16(localeName);
     let mut lv3: *mut IDWriteTextFormat = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateTextFormat(lv1.as_ptr() as LPCWSTR, fontCollection.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, fontWeight, fontStyle, fontStretch, fontSize, lv2.as_ptr() as LPCWSTR, &mut lv3 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateTextFormat(lv1.as_ptr() as LPCWSTR, fontCollection.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, fontWeight, fontStyle, fontStretch, fontSize, lv2.as_ptr() as LPCWSTR, &mut lv3 as *mut *mut _) };
     hr2ret(_hr,DWriteTextFormat::new(lv3 as *mut _))
   }
   
   //  Method CreateTypography
   
   #[allow(non_snake_case)]
-  pub fn create_typography(&self) -> HResult<DWriteTypography> {
+  fn create_typography(&self) -> HResult<DWriteTypography> {
     let mut lv1: *mut IDWriteTypography = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateTypography(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateTypography(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteTypography::new(lv1 as *mut _))
   }
   
   //  Method GetGdiInterop
   
   #[allow(non_snake_case)]
-  pub fn get_gdi_interop(&self) -> HResult<DWriteGdiInterop> {
+  fn get_gdi_interop(&self) -> HResult<DWriteGdiInterop> {
     let mut lv1: *mut IDWriteGdiInterop = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).GetGdiInterop(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).GetGdiInterop(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteGdiInterop::new(lv1 as *mut _))
   }
   
   //  Method CreateTextLayout
   
   #[allow(non_snake_case)]
-  pub fn create_text_layout<T: HasIID>(&self, string: &[WCHAR], textFormat: &T, maxWidth: FLOAT, maxHeight: FLOAT) -> HResult<DWriteTextLayout> {
+  fn create_text_layout<T: TDWriteTextFormat>(&self, string: &[WCHAR], textFormat: &T, maxWidth: FLOAT, maxHeight: FLOAT) -> HResult<DWriteTextLayout> {
     let mut lv1: *mut IDWriteTextLayout = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateTextLayout(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , maxWidth, maxHeight, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateTextLayout(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , maxWidth, maxHeight, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteTextLayout::new(lv1 as *mut _))
   }
   
   //  Method CreateGdiCompatibleTextLayout
   
   #[allow(non_snake_case)]
-  pub fn create_gdi_compatible_text_layout<T: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutWidth: FLOAT, layoutHeight: FLOAT, pixelsPerDip: FLOAT, transform: Option<&DWRITE_MATRIX>, useGdiNatural: BOOL) -> HResult<DWriteTextLayout> {
+  fn create_gdi_compatible_text_layout<T: TDWriteTextFormat>(&self, string: &[WCHAR], textFormat: &T, layoutWidth: FLOAT, layoutHeight: FLOAT, pixelsPerDip: FLOAT, transform: Option<&DWRITE_MATRIX>, useGdiNatural: BOOL) -> HResult<DWriteTextLayout> {
     let mut lv1: *mut IDWriteTextLayout = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateGdiCompatibleTextLayout(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutWidth, layoutHeight, pixelsPerDip, transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), useGdiNatural, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateGdiCompatibleTextLayout(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutWidth, layoutHeight, pixelsPerDip, transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), useGdiNatural, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteTextLayout::new(lv1 as *mut _))
   }
   
   //  Method CreateEllipsisTrimmingSign
   
   #[allow(non_snake_case)]
-  pub fn create_ellipsis_trimming_sign<T: HasIID>(&self, textFormat: &T) -> HResult<DWriteInlineObject> {
+  fn create_ellipsis_trimming_sign<T: TDWriteTextFormat>(&self, textFormat: &T) -> HResult<DWriteInlineObject> {
     let mut lv1: *mut IDWriteInlineObject = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateEllipsisTrimmingSign(textFormat.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateEllipsisTrimmingSign(textFormat.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteInlineObject::new(lv1 as *mut _))
   }
   
   //  Method CreateTextAnalyzer
   
   #[allow(non_snake_case)]
-  pub fn create_text_analyzer(&self) -> HResult<DWriteTextAnalyzer> {
+  fn create_text_analyzer(&self) -> HResult<DWriteTextAnalyzer> {
     let mut lv1: *mut IDWriteTextAnalyzer = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateTextAnalyzer(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateTextAnalyzer(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteTextAnalyzer::new(lv1 as *mut _))
   }
   
   //  Method CreateNumberSubstitution
   
   #[allow(non_snake_case)]
-  pub fn create_number_substitution(&self, substitutionMethod: DWRITE_NUMBER_SUBSTITUTION_METHOD, localeName: Cow<str>, ignoreUserOverride: BOOL) -> HResult<DWriteNumberSubstitution> {
+  fn create_number_substitution(&self, substitutionMethod: DWRITE_NUMBER_SUBSTITUTION_METHOD, localeName: Cow<str>, ignoreUserOverride: BOOL) -> HResult<DWriteNumberSubstitution> {
     let lv1: Vec<u16> = str_to_vec_u16(localeName);
     let mut lv2: *mut IDWriteNumberSubstitution = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateNumberSubstitution(substitutionMethod, lv1.as_ptr() as LPCWSTR, ignoreUserOverride, &mut lv2 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateNumberSubstitution(substitutionMethod, lv1.as_ptr() as LPCWSTR, ignoreUserOverride, &mut lv2 as *mut *mut _) };
     hr2ret(_hr,DWriteNumberSubstitution::new(lv2 as *mut _))
   }
   
   //  Method CreateGlyphRunAnalysis
   
   #[allow(non_snake_case)]
-  pub fn create_glyph_run_analysis(&self, glyphRun: &DWRITE_GLYPH_RUN, pixelsPerDip: FLOAT, transform: &DWRITE_MATRIX, renderingMode: DWRITE_RENDERING_MODE, measuringMode: DWRITE_MEASURING_MODE, baselineOriginX: FLOAT, baselineOriginY: FLOAT) -> HResult<DWriteGlyphRunAnalysis> {
+  fn create_glyph_run_analysis(&self, glyphRun: &DWRITE_GLYPH_RUN, pixelsPerDip: FLOAT, transform: &DWRITE_MATRIX, renderingMode: DWRITE_RENDERING_MODE, measuringMode: DWRITE_MEASURING_MODE, baselineOriginX: FLOAT, baselineOriginY: FLOAT) -> HResult<DWriteGlyphRunAnalysis> {
     let mut lv1: *mut IDWriteGlyphRunAnalysis = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFactory)).CreateGlyphRunAnalysis(glyphRun, pixelsPerDip, transform, renderingMode, measuringMode, baselineOriginX, baselineOriginY, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFactory)).CreateGlyphRunAnalysis(glyphRun, pixelsPerDip, transform, renderingMode, measuringMode, baselineOriginX, baselineOriginY, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteGlyphRunAnalysis::new(lv1 as *mut _))
   }
   
   
 }
 
-pub struct DWriteFontCollection(*mut IDWriteFontCollection);
-
-impl HasIID for DWriteFontCollection {
-  fn iid() -> REFGUID { &IID_IDWriteFontCollection }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontCollection(pp_vtbl as *mut _ as *mut IDWriteFontCollection) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteFontCollection {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteFactory {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFactory(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteFactory {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFactory {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFactory for DWriteFactory {}
 
-impl Clone for DWriteFontCollection {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteFactory(*mut IDWriteFactory);
+
+impl HasIID for DWriteFactory {
+  fn iid() -> REFGUID { &IID_IDWriteFactory }
 }
 
+pub trait TDWriteFontCollectionLoader: TUnknown {
+  //  Method CreateEnumeratorFromKey
+  
+  #[allow(non_snake_case)]
+  fn create_enumerator_from_key<T: TDWriteFactory, T1>(&self, factory: &T, collectionKey: &T1) -> HResult<DWriteFontFileEnumerator> {
+    let mut lv1: *mut IDWriteFontFileEnumerator = ptr::null_mut();
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontCollectionLoader)).CreateEnumeratorFromKey(factory.iptr() as *mut _ as *mut _ , collectionKey as *const _ as *const _, mem::size_of_val(collectionKey) as UINT32, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,DWriteFontFileEnumerator::new(lv1 as *mut _))
+  }
+  
+  
+}
 
+impl TUnknown for DWriteFontCollectionLoader {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFontCollectionLoader(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DWriteFontCollectionLoader {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFontCollectionLoader {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFontCollectionLoader for DWriteFontCollectionLoader {}
 
-impl DWriteFontCollection {
+pub struct DWriteFontCollectionLoader(*mut IDWriteFontCollectionLoader);
+
+impl HasIID for DWriteFontCollectionLoader {
+  fn iid() -> REFGUID { &IID_IDWriteFontCollectionLoader }
+}
+
+pub trait TDWriteFontCollection: TUnknown {
   //  Method GetFontFamilyCount
   
   #[allow(non_snake_case)]
-  pub fn get_font_family_count(&self) -> UINT32 {
+  fn get_font_family_count(&self) -> UINT32 {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontCollection)).GetFontFamilyCount() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontCollection)).GetFontFamilyCount() };
     _hr
   }
   
   //  Method GetFontFamily
   
   #[allow(non_snake_case)]
-  pub fn get_font_family(&self, index: UINT32) -> HResult<DWriteFontFamily> {
+  fn get_font_family(&self, index: UINT32) -> HResult<DWriteFontFamily> {
     let mut lv1: *mut IDWriteFontFamily = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontCollection)).GetFontFamily(index, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontCollection)).GetFontFamily(index, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFontFamily::new(lv1 as *mut _))
   }
   
   //  Method FindFamilyName
   
   #[allow(non_snake_case)]
-  pub fn find_family_name(&self, familyName: Cow<str>) -> HResult<(UINT32, BOOL)> {
+  fn find_family_name(&self, familyName: Cow<str>) -> HResult<(UINT32, BOOL)> {
     let lv1: Vec<u16> = str_to_vec_u16(familyName);
     let mut lv2: UINT32 = unsafe {mem::uninitialized::<_>()};
     let mut lv3: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontCollection)).FindFamilyName(lv1.as_ptr() as LPCWSTR, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontCollection)).FindFamilyName(lv1.as_ptr() as LPCWSTR, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
     hr2ret(_hr,(lv2, lv3))
   }
   
   //  Method GetFontFromFontFace
   
   #[allow(non_snake_case)]
-  pub fn get_font_from_font_face<T: HasIID>(&self, fontFace: &T) -> HResult<DWriteFont> {
+  fn get_font_from_font_face<T: TDWriteFontFace>(&self, fontFace: &T) -> HResult<DWriteFont> {
     let mut lv1: *mut IDWriteFont = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontCollection)).GetFontFromFontFace(fontFace.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontCollection)).GetFontFromFontFace(fontFace.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFont::new(lv1 as *mut _))
   }
   
   
 }
 
-pub struct DWriteFontFace(*mut IDWriteFontFace);
-
-impl HasIID for DWriteFontFace {
-  fn iid() -> REFGUID { &IID_IDWriteFontFace }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontFace(pp_vtbl as *mut _ as *mut IDWriteFontFace) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteFontFace {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteFontCollection {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFontCollection(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteFontCollection {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFontCollection {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFontCollection for DWriteFontCollection {}
 
-impl Clone for DWriteFontFace {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteFontCollection(*mut IDWriteFontCollection);
+
+impl HasIID for DWriteFontCollection {
+  fn iid() -> REFGUID { &IID_IDWriteFontCollection }
 }
 
-
-
-impl DWriteFontFace {
+pub trait TDWriteFontFace: TUnknown {
   //  Method GetType
   
   #[allow(non_snake_case)]
-  pub fn get_type(&self) -> DWRITE_FONT_FACE_TYPE {
+  fn get_type(&self) -> DWRITE_FONT_FACE_TYPE {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetType() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetType() };
     _hr
   }
   
   //  Method GetIndex
   
   #[allow(non_snake_case)]
-  pub fn get_index(&self) -> UINT32 {
+  fn get_index(&self) -> UINT32 {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetIndex() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetIndex() };
     _hr
   }
   
   //  Method GetSimulations
   
   #[allow(non_snake_case)]
-  pub fn get_simulations(&self) -> DWRITE_FONT_SIMULATIONS {
+  fn get_simulations(&self) -> DWRITE_FONT_SIMULATIONS {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetSimulations() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetSimulations() };
     _hr
   }
   
   //  Method IsSymbolFont
   
   #[allow(non_snake_case)]
-  pub fn is_symbol_font(&self) -> BOOL {
+  fn is_symbol_font(&self) -> BOOL {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).IsSymbolFont() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).IsSymbolFont() };
     _hr
   }
   
   //  Method GetMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_metrics(&self) -> DWRITE_FONT_METRICS {
+  fn get_metrics(&self) -> DWRITE_FONT_METRICS {
     let mut lv1: DWRITE_FONT_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetMetrics(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetMetrics(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetGlyphCount
   
   #[allow(non_snake_case)]
-  pub fn get_glyph_count(&self) -> UINT16 {
+  fn get_glyph_count(&self) -> UINT16 {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetGlyphCount() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetGlyphCount() };
     _hr
   }
   
   //  Method GetDesignGlyphMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_design_glyph_metrics(&self, glyphIndices: &[UINT16], isSideways: BOOL) -> HResult<DWRITE_GLYPH_METRICS> {
+  fn get_design_glyph_metrics(&self, glyphIndices: &[UINT16], isSideways: BOOL) -> HResult<DWRITE_GLYPH_METRICS> {
     let mut lv1: DWRITE_GLYPH_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetDesignGlyphMetrics(slice_as_ptr(glyphIndices), glyphIndices.len() as UINT32, &mut lv1 as *mut _ as *mut _, isSideways) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetDesignGlyphMetrics(slice_as_ptr(glyphIndices), glyphIndices.len() as UINT32, &mut lv1 as *mut _ as *mut _, isSideways) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetGlyphIndices
   
   #[allow(non_snake_case)]
-  pub fn get_glyph_indices(&self, codePoints: &[UINT32], glyphIndices: &mut [UINT16]) -> HResult<HRESULT> {
+  fn get_glyph_indices(&self, codePoints: &[UINT32], glyphIndices: &mut [UINT16]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetGlyphIndices(slice_as_ptr(codePoints),  same_length(&[Some(codePoints.len()),Some(glyphIndices.len())]).expect("Arrays must have equal sizes") as UINT32, slice_as_mut_ptr(glyphIndices)) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetGlyphIndices(slice_as_ptr(codePoints),  same_length(&[Some(codePoints.len()),Some(glyphIndices.len())]).expect("Arrays must have equal sizes") as UINT32, slice_as_mut_ptr(glyphIndices)) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetGlyphRunOutline
   
   #[allow(non_snake_case)]
-  pub fn get_glyph_run_outline<T: HasIID>(&self, emSize: FLOAT, glyphIndices: &[UINT16], glyphAdvances: Option<&[FLOAT]>, glyphOffsets: Option<&[DWRITE_GLYPH_OFFSET]>, isSideways: BOOL, isRightToLeft: BOOL, geometrySink: &T) -> HResult<HRESULT> {
+  fn get_glyph_run_outline<T: TDWriteGeometrySink>(&self, emSize: FLOAT, glyphIndices: &[UINT16], glyphAdvances: Option<&[FLOAT]>, glyphOffsets: Option<&[DWRITE_GLYPH_OFFSET]>, isSideways: BOOL, isRightToLeft: BOOL, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetGlyphRunOutline(emSize, slice_as_ptr(glyphIndices), opt_arr_as_ptr(&glyphAdvances) as *const _, opt_arr_as_ptr(&glyphOffsets) as *const _,  same_length(&[Some(glyphIndices.len()),glyphAdvances.as_ref().map(|a|a.len()),glyphOffsets.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT32, isSideways, isRightToLeft, geometrySink.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetGlyphRunOutline(emSize, slice_as_ptr(glyphIndices), opt_arr_as_ptr(&glyphAdvances) as *const _, opt_arr_as_ptr(&glyphOffsets) as *const _,  same_length(&[Some(glyphIndices.len()),glyphAdvances.as_ref().map(|a|a.len()),glyphOffsets.as_ref().map(|a|a.len())]).expect("Arrays must have equal sizes") as UINT32, isSideways, isRightToLeft, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetRecommendedRenderingMode
   
   #[allow(non_snake_case)]
-  pub fn get_recommended_rendering_mode<T: HasIID>(&self, emSize: FLOAT, pixelsPerDip: FLOAT, measuringMode: DWRITE_MEASURING_MODE, renderingParams: &T) -> HResult<DWRITE_RENDERING_MODE> {
+  fn get_recommended_rendering_mode<T: TDWriteRenderingParams>(&self, emSize: FLOAT, pixelsPerDip: FLOAT, measuringMode: DWRITE_MEASURING_MODE, renderingParams: &T) -> HResult<DWRITE_RENDERING_MODE> {
     let mut lv1: DWRITE_RENDERING_MODE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetRecommendedRenderingMode(emSize, pixelsPerDip, measuringMode, renderingParams.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetRecommendedRenderingMode(emSize, pixelsPerDip, measuringMode, renderingParams.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetGdiCompatibleMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_gdi_compatible_metrics(&self, emSize: FLOAT, pixelsPerDip: FLOAT, transform: Option<&DWRITE_MATRIX>) -> HResult<DWRITE_FONT_METRICS> {
+  fn get_gdi_compatible_metrics(&self, emSize: FLOAT, pixelsPerDip: FLOAT, transform: Option<&DWRITE_MATRIX>) -> HResult<DWRITE_FONT_METRICS> {
     let mut lv1: DWRITE_FONT_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetGdiCompatibleMetrics(emSize, pixelsPerDip, transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetGdiCompatibleMetrics(emSize, pixelsPerDip, transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetGdiCompatibleGlyphMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_gdi_compatible_glyph_metrics(&self, emSize: FLOAT, pixelsPerDip: FLOAT, transform: Option<&DWRITE_MATRIX>, useGdiNatural: BOOL, glyphIndices: &[UINT16], glyphMetrics: &mut [DWRITE_GLYPH_METRICS], isSideways: BOOL) -> HResult<HRESULT> {
+  fn get_gdi_compatible_glyph_metrics(&self, emSize: FLOAT, pixelsPerDip: FLOAT, transform: Option<&DWRITE_MATRIX>, useGdiNatural: BOOL, glyphIndices: &[UINT16], glyphMetrics: &mut [DWRITE_GLYPH_METRICS], isSideways: BOOL) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFace)).GetGdiCompatibleGlyphMetrics(emSize, pixelsPerDip, transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), useGdiNatural, slice_as_ptr(glyphIndices),  same_length(&[Some(glyphIndices.len()),Some(glyphMetrics.len())]).expect("Arrays must have equal sizes") as UINT32, slice_as_mut_ptr(glyphMetrics), isSideways) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFace)).GetGdiCompatibleGlyphMetrics(emSize, pixelsPerDip, transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), useGdiNatural, slice_as_ptr(glyphIndices),  same_length(&[Some(glyphIndices.len()),Some(glyphMetrics.len())]).expect("Arrays must have equal sizes") as UINT32, slice_as_mut_ptr(glyphMetrics), isSideways) };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
-pub struct DWriteFontFamily(*mut IDWriteFontFamily);
-
-impl HasIID for DWriteFontFamily {
-  fn iid() -> REFGUID { &IID_IDWriteFontFamily }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontFamily(pp_vtbl as *mut _ as *mut IDWriteFontFamily) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteFontFamily {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteFontFace {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFontFace(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteFontFace {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFontFace {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFontFace for DWriteFontFace {}
 
-impl Clone for DWriteFontFamily {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteFontFace(*mut IDWriteFontFace);
+
+impl HasIID for DWriteFontFace {
+  fn iid() -> REFGUID { &IID_IDWriteFontFace }
 }
 
-
-
-impl DWriteFontFamily {
-  //  Method GetFontCollection
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_collection(&self) -> HResult<DWriteFontCollection> {
-    let mut lv1: *mut IDWriteFontCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontList)).GetFontCollection(&mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DWriteFontCollection::new(lv1 as *mut _))
-  }
-  
-  //  Method GetFontCount
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_count(&self) -> UINT32 {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontList)).GetFontCount() };
-    _hr
-  }
-  
-  //  Method GetFont
-  
-  #[allow(non_snake_case)]
-  pub fn get_font(&self, index: UINT32) -> HResult<DWriteFont> {
-    let mut lv1: *mut IDWriteFont = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontList)).GetFont(index, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DWriteFont::new(lv1 as *mut _))
-  }
-  
+pub trait TDWriteFontFamily: TDWriteFontList {
   //  Method GetFamilyNames
   
   #[allow(non_snake_case)]
-  pub fn get_family_names(&self) -> HResult<DWriteLocalizedStrings> {
+  fn get_family_names(&self) -> HResult<DWriteLocalizedStrings> {
     let mut lv1: *mut IDWriteLocalizedStrings = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFamily)).GetFamilyNames(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFamily)).GetFamilyNames(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteLocalizedStrings::new(lv1 as *mut _))
   }
   
   //  Method GetFirstMatchingFont
   
   #[allow(non_snake_case)]
-  pub fn get_first_matching_font(&self, weight: DWRITE_FONT_WEIGHT, stretch: DWRITE_FONT_STRETCH, style: DWRITE_FONT_STYLE) -> HResult<DWriteFont> {
+  fn get_first_matching_font(&self, weight: DWRITE_FONT_WEIGHT, stretch: DWRITE_FONT_STRETCH, style: DWRITE_FONT_STYLE) -> HResult<DWriteFont> {
     let mut lv1: *mut IDWriteFont = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFamily)).GetFirstMatchingFont(weight, stretch, style, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFamily)).GetFirstMatchingFont(weight, stretch, style, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFont::new(lv1 as *mut _))
   }
   
   //  Method GetMatchingFonts
   
   #[allow(non_snake_case)]
-  pub fn get_matching_fonts(&self, weight: DWRITE_FONT_WEIGHT, stretch: DWRITE_FONT_STRETCH, style: DWRITE_FONT_STYLE) -> HResult<DWriteFontList> {
+  fn get_matching_fonts(&self, weight: DWRITE_FONT_WEIGHT, stretch: DWRITE_FONT_STRETCH, style: DWRITE_FONT_STYLE) -> HResult<DWriteFontList> {
     let mut lv1: *mut IDWriteFontList = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFamily)).GetMatchingFonts(weight, stretch, style, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFamily)).GetMatchingFonts(weight, stretch, style, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFontList::new(lv1 as *mut _))
   }
   
   
 }
 
-pub struct DWriteFontFileEnumerator(*mut IDWriteFontFileEnumerator);
-
-impl HasIID for DWriteFontFileEnumerator {
-  fn iid() -> REFGUID { &IID_IDWriteFontFileEnumerator }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontFileEnumerator(pp_vtbl as *mut _ as *mut IDWriteFontFileEnumerator) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteFontFileEnumerator {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteFontFamily {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFontFamily(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteFontFamily {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFontFamily {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFontList for DWriteFontFamily {}
+impl TDWriteFontFamily for DWriteFontFamily {}
 
-impl Clone for DWriteFontFileEnumerator {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteFontFamily(*mut IDWriteFontFamily);
+
+impl HasIID for DWriteFontFamily {
+  fn iid() -> REFGUID { &IID_IDWriteFontFamily }
 }
 
-
-
-impl DWriteFontFileEnumerator {
+pub trait TDWriteFontFileEnumerator: TUnknown {
   //  Method MoveNext
   
   #[allow(non_snake_case)]
-  pub fn move_next(&self) -> HResult<BOOL> {
+  fn move_next(&self) -> HResult<BOOL> {
     let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFileEnumerator)).MoveNext(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFileEnumerator)).MoveNext(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetCurrentFontFile
   
   #[allow(non_snake_case)]
-  pub fn get_current_font_file(&self) -> HResult<DWriteFontFile> {
+  fn get_current_font_file(&self) -> HResult<DWriteFontFile> {
     let mut lv1: *mut IDWriteFontFile = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontFileEnumerator)).GetCurrentFontFile(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontFileEnumerator)).GetCurrentFontFile(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFontFile::new(lv1 as *mut _))
   }
   
   
 }
 
+impl TUnknown for DWriteFontFileEnumerator {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFontFileEnumerator(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DWriteFontFileEnumerator {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFontFileEnumerator {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFontFileEnumerator for DWriteFontFileEnumerator {}
+
+pub struct DWriteFontFileEnumerator(*mut IDWriteFontFileEnumerator);
+
+impl HasIID for DWriteFontFileEnumerator {
+  fn iid() -> REFGUID { &IID_IDWriteFontFileEnumerator }
+}
+
+pub trait TDWriteFontFileLoader: TUnknown {
+  //  Method CreateStreamFromKey
+  //  Error: fontFileStream parameter: ANone annotation cannot be used with double indirection
+  
+}
+
+impl TUnknown for DWriteFontFileLoader {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFontFileLoader(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DWriteFontFileLoader {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFontFileLoader {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFontFileLoader for DWriteFontFileLoader {}
+
+pub struct DWriteFontFileLoader(*mut IDWriteFontFileLoader);
+
+impl HasIID for DWriteFontFileLoader {
+  fn iid() -> REFGUID { &IID_IDWriteFontFileLoader }
+}
+
+pub trait TDWriteFontFileStream: TUnknown {
+  
+}
+
+impl TUnknown for DWriteFontFileStream {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFontFileStream(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DWriteFontFileStream {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFontFileStream {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFontFileStream for DWriteFontFileStream {}
+
 pub struct DWriteFontFileStream(*mut IDWriteFontFileStream);
 
 impl HasIID for DWriteFontFileStream {
   fn iid() -> REFGUID { &IID_IDWriteFontFileStream }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontFileStream(pp_vtbl as *mut _ as *mut IDWriteFontFileStream) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteFontFileStream {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for DWriteFontFileStream {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DWriteFontFileStream {
+pub trait TDWriteFontFile: TUnknown {
   
 }
+
+impl TUnknown for DWriteFontFile {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFontFile(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DWriteFontFile {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFontFile {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFontFile for DWriteFontFile {}
 
 pub struct DWriteFontFile(*mut IDWriteFontFile);
 
 impl HasIID for DWriteFontFile {
   fn iid() -> REFGUID { &IID_IDWriteFontFile }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontFile(pp_vtbl as *mut _ as *mut IDWriteFontFile) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteFontFile {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for DWriteFontFile {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DWriteFontFile {
-  
-}
-
-pub struct DWriteFontList(*mut IDWriteFontList);
-
-impl HasIID for DWriteFontList {
-  fn iid() -> REFGUID { &IID_IDWriteFontList }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFontList(pp_vtbl as *mut _ as *mut IDWriteFontList) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteFontList {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for DWriteFontList {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DWriteFontList {
+pub trait TDWriteFontList: TUnknown {
   //  Method GetFontCollection
   
   #[allow(non_snake_case)]
-  pub fn get_font_collection(&self) -> HResult<DWriteFontCollection> {
+  fn get_font_collection(&self) -> HResult<DWriteFontCollection> {
     let mut lv1: *mut IDWriteFontCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontList)).GetFontCollection(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontList)).GetFontCollection(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFontCollection::new(lv1 as *mut _))
   }
   
   //  Method GetFontCount
   
   #[allow(non_snake_case)]
-  pub fn get_font_count(&self) -> UINT32 {
+  fn get_font_count(&self) -> UINT32 {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontList)).GetFontCount() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontList)).GetFontCount() };
     _hr
   }
   
   //  Method GetFont
   
   #[allow(non_snake_case)]
-  pub fn get_font(&self, index: UINT32) -> HResult<DWriteFont> {
+  fn get_font(&self, index: UINT32) -> HResult<DWriteFont> {
     let mut lv1: *mut IDWriteFont = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFontList)).GetFont(index, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFontList)).GetFont(index, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFont::new(lv1 as *mut _))
   }
   
   
 }
 
-pub struct DWriteFont(*mut IDWriteFont);
-
-impl HasIID for DWriteFont {
-  fn iid() -> REFGUID { &IID_IDWriteFont }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteFont(pp_vtbl as *mut _ as *mut IDWriteFont) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteFont {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteFontList {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFontList(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteFontList {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFontList {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFontList for DWriteFontList {}
 
-impl Clone for DWriteFont {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteFontList(*mut IDWriteFontList);
+
+impl HasIID for DWriteFontList {
+  fn iid() -> REFGUID { &IID_IDWriteFontList }
 }
 
-
-
-impl DWriteFont {
+pub trait TDWriteFont: TUnknown {
   //  Method GetFontFamily
   
   #[allow(non_snake_case)]
-  pub fn get_font_family(&self) -> HResult<DWriteFontFamily> {
+  fn get_font_family(&self) -> HResult<DWriteFontFamily> {
     let mut lv1: *mut IDWriteFontFamily = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).GetFontFamily(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).GetFontFamily(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFontFamily::new(lv1 as *mut _))
   }
   
   //  Method GetWeight
   
   #[allow(non_snake_case)]
-  pub fn get_weight(&self) -> DWRITE_FONT_WEIGHT {
+  fn get_weight(&self) -> DWRITE_FONT_WEIGHT {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).GetWeight() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).GetWeight() };
     _hr
   }
   
   //  Method GetStretch
   
   #[allow(non_snake_case)]
-  pub fn get_stretch(&self) -> DWRITE_FONT_STRETCH {
+  fn get_stretch(&self) -> DWRITE_FONT_STRETCH {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).GetStretch() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).GetStretch() };
     _hr
   }
   
   //  Method GetStyle
   
   #[allow(non_snake_case)]
-  pub fn get_style(&self) -> DWRITE_FONT_STYLE {
+  fn get_style(&self) -> DWRITE_FONT_STYLE {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).GetStyle() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).GetStyle() };
     _hr
   }
   
   //  Method IsSymbolFont
   
   #[allow(non_snake_case)]
-  pub fn is_symbol_font(&self) -> BOOL {
+  fn is_symbol_font(&self) -> BOOL {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).IsSymbolFont() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).IsSymbolFont() };
     _hr
   }
   
   //  Method GetFaceNames
   
   #[allow(non_snake_case)]
-  pub fn get_face_names(&self) -> HResult<DWriteLocalizedStrings> {
+  fn get_face_names(&self) -> HResult<DWriteLocalizedStrings> {
     let mut lv1: *mut IDWriteLocalizedStrings = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).GetFaceNames(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).GetFaceNames(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteLocalizedStrings::new(lv1 as *mut _))
   }
   
   //  Method GetInformationalStrings
   
   #[allow(non_snake_case)]
-  pub fn get_informational_strings(&self, informationalStringID: DWRITE_INFORMATIONAL_STRING_ID) -> HResult<(DWriteLocalizedStrings, BOOL)> {
+  fn get_informational_strings(&self, informationalStringID: DWRITE_INFORMATIONAL_STRING_ID) -> HResult<(DWriteLocalizedStrings, BOOL)> {
     let mut lv1: *mut IDWriteLocalizedStrings = ptr::null_mut();
     let mut lv2: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).GetInformationalStrings(informationalStringID, &mut lv1 as *mut *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).GetInformationalStrings(informationalStringID, &mut lv1 as *mut *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(DWriteLocalizedStrings::new(lv1 as *mut _), lv2))
   }
   
   //  Method GetSimulations
   
   #[allow(non_snake_case)]
-  pub fn get_simulations(&self) -> DWRITE_FONT_SIMULATIONS {
+  fn get_simulations(&self) -> DWRITE_FONT_SIMULATIONS {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).GetSimulations() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).GetSimulations() };
     _hr
   }
   
   //  Method GetMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_metrics(&self) -> DWRITE_FONT_METRICS {
+  fn get_metrics(&self) -> DWRITE_FONT_METRICS {
     let mut lv1: DWRITE_FONT_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).GetMetrics(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).GetMetrics(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method HasCharacter
   
   #[allow(non_snake_case)]
-  pub fn has_character(&self, unicodeValue: UINT32) -> HResult<BOOL> {
+  fn has_character(&self, unicodeValue: UINT32) -> HResult<BOOL> {
     let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).HasCharacter(unicodeValue, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).HasCharacter(unicodeValue, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method CreateFontFace
   
   #[allow(non_snake_case)]
-  pub fn create_font_face(&self) -> HResult<DWriteFontFace> {
+  fn create_font_face(&self) -> HResult<DWriteFontFace> {
     let mut lv1: *mut IDWriteFontFace = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteFont)).CreateFontFace(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteFont)).CreateFontFace(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFontFace::new(lv1 as *mut _))
   }
   
   
 }
 
-pub struct DWriteGdiInterop(*mut IDWriteGdiInterop);
-
-impl HasIID for DWriteGdiInterop {
-  fn iid() -> REFGUID { &IID_IDWriteGdiInterop }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteGdiInterop(pp_vtbl as *mut _ as *mut IDWriteGdiInterop) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteGdiInterop {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteFont {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteFont(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteFont {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteFont {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFont for DWriteFont {}
 
-impl Clone for DWriteGdiInterop {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteFont(*mut IDWriteFont);
+
+impl HasIID for DWriteFont {
+  fn iid() -> REFGUID { &IID_IDWriteFont }
 }
 
-
-
-impl DWriteGdiInterop {
+pub trait TDWriteGdiInterop: TUnknown {
   //  Method CreateFontFromLOGFONT
   
   #[allow(non_snake_case)]
-  pub fn create_font_from_logfont(&self, logFont: &LOGFONTW) -> HResult<DWriteFont> {
+  fn create_font_from_logfont(&self, logFont: &LOGFONTW) -> HResult<DWriteFont> {
     let mut lv1: *mut IDWriteFont = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteGdiInterop)).CreateFontFromLOGFONT(logFont, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteGdiInterop)).CreateFontFromLOGFONT(logFont, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFont::new(lv1 as *mut _))
   }
   
   //  Method ConvertFontToLOGFONT
   
   #[allow(non_snake_case)]
-  pub fn convert_font_to_logfont<T: HasIID>(&self, font: &T) -> HResult<(LOGFONTW, BOOL)> {
+  fn convert_font_to_logfont<T: TDWriteFont>(&self, font: &T) -> HResult<(LOGFONTW, BOOL)> {
     let mut lv1: LOGFONTW = unsafe {mem::uninitialized::<_>()};
     let mut lv2: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteGdiInterop)).ConvertFontToLOGFONT(font.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteGdiInterop)).ConvertFontToLOGFONT(font.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method ConvertFontFaceToLOGFONT
   
   #[allow(non_snake_case)]
-  pub fn convert_font_face_to_logfont<T: HasIID>(&self, font: &T) -> HResult<LOGFONTW> {
+  fn convert_font_face_to_logfont<T: TDWriteFontFace>(&self, font: &T) -> HResult<LOGFONTW> {
     let mut lv1: LOGFONTW = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteGdiInterop)).ConvertFontFaceToLOGFONT(font.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteGdiInterop)).ConvertFontFaceToLOGFONT(font.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method CreateFontFaceFromHdc
   
   #[allow(non_snake_case)]
-  pub fn create_font_face_from_hdc(&self, hdc: HDC) -> HResult<DWriteFontFace> {
+  fn create_font_face_from_hdc(&self, hdc: HDC) -> HResult<DWriteFontFace> {
     let mut lv1: *mut IDWriteFontFace = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteGdiInterop)).CreateFontFaceFromHdc(hdc, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteGdiInterop)).CreateFontFaceFromHdc(hdc, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteFontFace::new(lv1 as *mut _))
   }
   
   //  Method CreateBitmapRenderTarget
   
   #[allow(non_snake_case)]
-  pub fn create_bitmap_render_target(&self, hdc: Option<HDC>, width: UINT32, height: UINT32) -> HResult<DWriteBitmapRenderTarget> {
+  fn create_bitmap_render_target(&self, hdc: Option<HDC>, width: UINT32, height: UINT32) -> HResult<DWriteBitmapRenderTarget> {
     let mut lv1: *mut IDWriteBitmapRenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteGdiInterop)).CreateBitmapRenderTarget(match hdc{Some(v)=>v, _=>ptr::null_mut() as HDC}, width, height, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteGdiInterop)).CreateBitmapRenderTarget(match hdc{Some(v)=>v, _=>ptr::null_mut() as HDC}, width, height, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DWriteBitmapRenderTarget::new(lv1 as *mut _))
   }
   
   
 }
 
-pub struct DWriteGlyphRunAnalysis(*mut IDWriteGlyphRunAnalysis);
-
-impl HasIID for DWriteGlyphRunAnalysis {
-  fn iid() -> REFGUID { &IID_IDWriteGlyphRunAnalysis }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteGlyphRunAnalysis(pp_vtbl as *mut _ as *mut IDWriteGlyphRunAnalysis) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteGlyphRunAnalysis {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteGdiInterop {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteGdiInterop(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteGdiInterop {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteGdiInterop {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteGdiInterop for DWriteGdiInterop {}
 
-impl Clone for DWriteGlyphRunAnalysis {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteGdiInterop(*mut IDWriteGdiInterop);
+
+impl HasIID for DWriteGdiInterop {
+  fn iid() -> REFGUID { &IID_IDWriteGdiInterop }
 }
 
-
-
-impl DWriteGlyphRunAnalysis {
+pub trait TDWriteGlyphRunAnalysis: TUnknown {
   //  Method GetAlphaTextureBounds
   
   #[allow(non_snake_case)]
-  pub fn get_alpha_texture_bounds(&self, textureType: DWRITE_TEXTURE_TYPE) -> HResult<RECT> {
+  fn get_alpha_texture_bounds(&self, textureType: DWRITE_TEXTURE_TYPE) -> HResult<RECT> {
     let mut lv1: RECT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteGlyphRunAnalysis)).GetAlphaTextureBounds(textureType, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteGlyphRunAnalysis)).GetAlphaTextureBounds(textureType, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method CreateAlphaTexture
   
   #[allow(non_snake_case)]
-  pub fn create_alpha_texture(&self, textureType: DWRITE_TEXTURE_TYPE, textureBounds: &RECT, alphaValues: &mut [BYTE]) -> HResult<HRESULT> {
+  fn create_alpha_texture(&self, textureType: DWRITE_TEXTURE_TYPE, textureBounds: &RECT, alphaValues: &mut [BYTE]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteGlyphRunAnalysis)).CreateAlphaTexture(textureType, textureBounds, slice_as_mut_ptr(alphaValues), alphaValues.len() as UINT32) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteGlyphRunAnalysis)).CreateAlphaTexture(textureType, textureBounds, slice_as_mut_ptr(alphaValues), alphaValues.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetAlphaBlendParams
   
   #[allow(non_snake_case)]
-  pub fn get_alpha_blend_params<T: HasIID>(&self, renderingParams: &T) -> HResult<(FLOAT, FLOAT, FLOAT)> {
+  fn get_alpha_blend_params<T: TDWriteRenderingParams>(&self, renderingParams: &T) -> HResult<(FLOAT, FLOAT, FLOAT)> {
     let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
     let mut lv2: FLOAT = unsafe {mem::uninitialized::<_>()};
     let mut lv3: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteGlyphRunAnalysis)).GetAlphaBlendParams(renderingParams.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteGlyphRunAnalysis)).GetAlphaBlendParams(renderingParams.iptr() as *mut _ as *mut _ , &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2, lv3))
   }
   
   
 }
 
-pub struct DWriteInlineObject(*mut IDWriteInlineObject);
-
-impl HasIID for DWriteInlineObject {
-  fn iid() -> REFGUID { &IID_IDWriteInlineObject }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteInlineObject(pp_vtbl as *mut _ as *mut IDWriteInlineObject) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteInlineObject {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteGlyphRunAnalysis {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteGlyphRunAnalysis(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteGlyphRunAnalysis {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteGlyphRunAnalysis {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteGlyphRunAnalysis for DWriteGlyphRunAnalysis {}
 
-impl Clone for DWriteInlineObject {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteGlyphRunAnalysis(*mut IDWriteGlyphRunAnalysis);
+
+impl HasIID for DWriteGlyphRunAnalysis {
+  fn iid() -> REFGUID { &IID_IDWriteGlyphRunAnalysis }
 }
 
-
-
-impl DWriteInlineObject {
+pub trait TDWriteInlineObject: TUnknown {
   //  Method Draw
   //  Warning: clientDrawingContext parameter: ANone annotation applied to void pointer and method isn't marked as unsafe
   
   #[allow(non_snake_case)]
-  pub fn draw<T, T1: HasIID, T2: HasIID>(&self, clientDrawingContext: &mut [T], renderer: &T1, originX: FLOAT, originY: FLOAT, isSideways: BOOL, isRightToLeft: BOOL, clientDrawingEffect: &T2) -> HResult<HRESULT> {
+  fn draw<T, T1: TDWriteTextRenderer, T2: TUnknown>(&self, clientDrawingContext: &mut [T], renderer: &T1, originX: FLOAT, originY: FLOAT, isSideways: BOOL, isRightToLeft: BOOL, clientDrawingEffect: &T2) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteInlineObject)).Draw(clientDrawingContext.as_mut_ptr() as *mut _, renderer.iptr() as *mut _ as *mut _ , originX, originY, isSideways, isRightToLeft, clientDrawingEffect.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteInlineObject)).Draw(clientDrawingContext.as_mut_ptr() as *mut _, renderer.iptr() as *mut _ as *mut _ , originX, originY, isSideways, isRightToLeft, clientDrawingEffect.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_metrics(&self) -> HResult<DWRITE_INLINE_OBJECT_METRICS> {
+  fn get_metrics(&self) -> HResult<DWRITE_INLINE_OBJECT_METRICS> {
     let mut lv1: DWRITE_INLINE_OBJECT_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteInlineObject)).GetMetrics(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteInlineObject)).GetMetrics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetOverhangMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_overhang_metrics(&self) -> HResult<DWRITE_OVERHANG_METRICS> {
+  fn get_overhang_metrics(&self) -> HResult<DWRITE_OVERHANG_METRICS> {
     let mut lv1: DWRITE_OVERHANG_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteInlineObject)).GetOverhangMetrics(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteInlineObject)).GetOverhangMetrics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetBreakConditions
   
   #[allow(non_snake_case)]
-  pub fn get_break_conditions(&self) -> HResult<(DWRITE_BREAK_CONDITION, DWRITE_BREAK_CONDITION)> {
+  fn get_break_conditions(&self) -> HResult<(DWRITE_BREAK_CONDITION, DWRITE_BREAK_CONDITION)> {
     let mut lv1: DWRITE_BREAK_CONDITION = unsafe {mem::uninitialized::<_>()};
     let mut lv2: DWRITE_BREAK_CONDITION = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteInlineObject)).GetBreakConditions(&mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteInlineObject)).GetBreakConditions(&mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2))
   }
   
   
 }
 
-pub struct DWriteLocalFontFileLoader(*mut IDWriteLocalFontFileLoader);
-
-impl HasIID for DWriteLocalFontFileLoader {
-  fn iid() -> REFGUID { &IID_IDWriteLocalFontFileLoader }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteLocalFontFileLoader(pp_vtbl as *mut _ as *mut IDWriteLocalFontFileLoader) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteLocalFontFileLoader {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteInlineObject {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteInlineObject(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteInlineObject {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteInlineObject {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteInlineObject for DWriteInlineObject {}
 
-impl Clone for DWriteLocalFontFileLoader {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteInlineObject(*mut IDWriteInlineObject);
+
+impl HasIID for DWriteInlineObject {
+  fn iid() -> REFGUID { &IID_IDWriteInlineObject }
 }
 
-
-
-impl DWriteLocalFontFileLoader {
+pub trait TDWriteLocalFontFileLoader: TDWriteFontFileLoader {
   //  Method GetFilePathLengthFromKey
   
   #[allow(non_snake_case)]
-  pub fn get_file_path_length_from_key<T>(&self, fontFileReferenceKey: &T) -> HResult<UINT32> {
+  fn get_file_path_length_from_key<T>(&self, fontFileReferenceKey: &T) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalFontFileLoader)).GetFilePathLengthFromKey(fontFileReferenceKey as *const _ as *const _, mem::size_of_val(fontFileReferenceKey) as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteLocalFontFileLoader)).GetFilePathLengthFromKey(fontFileReferenceKey as *const _ as *const _, mem::size_of_val(fontFileReferenceKey) as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetFilePathFromKey
   
   #[allow(non_snake_case)]
-  pub fn get_file_path_from_key<T>(&self, fontFileReferenceKey: &T, filePath: &mut [WCHAR]) -> HResult<HRESULT> {
+  fn get_file_path_from_key<T>(&self, fontFileReferenceKey: &T, filePath: &mut [WCHAR]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalFontFileLoader)).GetFilePathFromKey(fontFileReferenceKey as *const _ as *const _, mem::size_of_val(fontFileReferenceKey) as UINT32, slice_as_mut_ptr(filePath), filePath.len() as UINT32) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteLocalFontFileLoader)).GetFilePathFromKey(fontFileReferenceKey as *const _ as *const _, mem::size_of_val(fontFileReferenceKey) as UINT32, slice_as_mut_ptr(filePath), filePath.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetLastWriteTimeFromKey
   
   #[allow(non_snake_case)]
-  pub fn get_last_write_time_from_key<T>(&self, fontFileReferenceKey: &T) -> HResult<FILETIME> {
+  fn get_last_write_time_from_key<T>(&self, fontFileReferenceKey: &T) -> HResult<FILETIME> {
     let mut lv1: FILETIME = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalFontFileLoader)).GetLastWriteTimeFromKey(fontFileReferenceKey as *const _ as *const _, mem::size_of_val(fontFileReferenceKey) as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteLocalFontFileLoader)).GetLastWriteTimeFromKey(fontFileReferenceKey as *const _ as *const _, mem::size_of_val(fontFileReferenceKey) as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
 
-pub struct DWriteLocalizedStrings(*mut IDWriteLocalizedStrings);
-
-impl HasIID for DWriteLocalizedStrings {
-  fn iid() -> REFGUID { &IID_IDWriteLocalizedStrings }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteLocalizedStrings(pp_vtbl as *mut _ as *mut IDWriteLocalizedStrings) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteLocalizedStrings {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteLocalFontFileLoader {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteLocalFontFileLoader(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteLocalFontFileLoader {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteLocalFontFileLoader {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteFontFileLoader for DWriteLocalFontFileLoader {}
+impl TDWriteLocalFontFileLoader for DWriteLocalFontFileLoader {}
 
-impl Clone for DWriteLocalizedStrings {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteLocalFontFileLoader(*mut IDWriteLocalFontFileLoader);
+
+impl HasIID for DWriteLocalFontFileLoader {
+  fn iid() -> REFGUID { &IID_IDWriteLocalFontFileLoader }
 }
 
-
-
-impl DWriteLocalizedStrings {
+pub trait TDWriteLocalizedStrings: TUnknown {
   //  Method GetCount
   
   #[allow(non_snake_case)]
-  pub fn get_count(&self) -> UINT32 {
+  fn get_count(&self) -> UINT32 {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).GetCount() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteLocalizedStrings)).GetCount() };
     _hr
   }
   
   //  Method FindLocaleName
   
   #[allow(non_snake_case)]
-  pub fn find_locale_name(&self, localeName: Cow<str>) -> HResult<(UINT32, BOOL)> {
+  fn find_locale_name(&self, localeName: Cow<str>) -> HResult<(UINT32, BOOL)> {
     let lv1: Vec<u16> = str_to_vec_u16(localeName);
     let mut lv2: UINT32 = unsafe {mem::uninitialized::<_>()};
     let mut lv3: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).FindLocaleName(lv1.as_ptr() as LPCWSTR, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteLocalizedStrings)).FindLocaleName(lv1.as_ptr() as LPCWSTR, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
     hr2ret(_hr,(lv2, lv3))
   }
   
   //  Method GetLocaleNameLength
   
   #[allow(non_snake_case)]
-  pub fn get_locale_name_length(&self, index: UINT32) -> HResult<UINT32> {
+  fn get_locale_name_length(&self, index: UINT32) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).GetLocaleNameLength(index, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteLocalizedStrings)).GetLocaleNameLength(index, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetLocaleName
   
   #[allow(non_snake_case)]
-  pub fn get_locale_name(&self, index: UINT32, localeName: &mut [WCHAR]) -> HResult<HRESULT> {
+  fn get_locale_name(&self, index: UINT32, localeName: &mut [WCHAR]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).GetLocaleName(index, slice_as_mut_ptr(localeName), localeName.len() as UINT32) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteLocalizedStrings)).GetLocaleName(index, slice_as_mut_ptr(localeName), localeName.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetStringLength
   
   #[allow(non_snake_case)]
-  pub fn get_string_length(&self, index: UINT32) -> HResult<UINT32> {
+  fn get_string_length(&self, index: UINT32) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).GetStringLength(index, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteLocalizedStrings)).GetStringLength(index, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetString
   
   #[allow(non_snake_case)]
-  pub fn get_string(&self, index: UINT32, stringBuffer: &mut [WCHAR]) -> HResult<HRESULT> {
+  fn get_string(&self, index: UINT32, stringBuffer: &mut [WCHAR]) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteLocalizedStrings)).GetString(index, slice_as_mut_ptr(stringBuffer), stringBuffer.len() as UINT32) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteLocalizedStrings)).GetString(index, slice_as_mut_ptr(stringBuffer), stringBuffer.len() as UINT32) };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
+impl TUnknown for DWriteLocalizedStrings {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteLocalizedStrings(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DWriteLocalizedStrings {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteLocalizedStrings {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteLocalizedStrings for DWriteLocalizedStrings {}
+
+pub struct DWriteLocalizedStrings(*mut IDWriteLocalizedStrings);
+
+impl HasIID for DWriteLocalizedStrings {
+  fn iid() -> REFGUID { &IID_IDWriteLocalizedStrings }
+}
+
+pub trait TDWriteNumberSubstitution: TUnknown {
+  
+}
+
+impl TUnknown for DWriteNumberSubstitution {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteNumberSubstitution(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DWriteNumberSubstitution {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteNumberSubstitution {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteNumberSubstitution for DWriteNumberSubstitution {}
+
 pub struct DWriteNumberSubstitution(*mut IDWriteNumberSubstitution);
 
 impl HasIID for DWriteNumberSubstitution {
   fn iid() -> REFGUID { &IID_IDWriteNumberSubstitution }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteNumberSubstitution(pp_vtbl as *mut _ as *mut IDWriteNumberSubstitution) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteNumberSubstitution {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for DWriteNumberSubstitution {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DWriteNumberSubstitution {
-  
-}
-
-pub struct DWritePixelSnapping(*mut IDWritePixelSnapping);
-
-impl HasIID for DWritePixelSnapping {
-  fn iid() -> REFGUID { &IID_IDWritePixelSnapping }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWritePixelSnapping(pp_vtbl as *mut _ as *mut IDWritePixelSnapping) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWritePixelSnapping {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for DWritePixelSnapping {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DWritePixelSnapping {
+pub trait TDWritePixelSnapping: TUnknown {
   //  Method IsPixelSnappingDisabled
   
   #[allow(non_snake_case)]
-  pub unsafe fn is_pixel_snapping_disabled<T>(&self, clientDrawingContext: &mut [T]) -> HResult<BOOL> {
+  unsafe fn is_pixel_snapping_disabled<T>(&self, clientDrawingContext: &mut [T]) -> HResult<BOOL> {
     let mut lv1: BOOL = {mem::uninitialized::<_>()};
-    let _hr= { (*(self.0 as *mut IDWritePixelSnapping)).IsPixelSnappingDisabled(clientDrawingContext.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
+    let _hr= { (*(self.iptr() as *mut IDWritePixelSnapping)).IsPixelSnappingDisabled(clientDrawingContext.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetCurrentTransform
   
   #[allow(non_snake_case)]
-  pub unsafe fn get_current_transform<T>(&self, clientDrawingContext: &mut [T]) -> HResult<DWRITE_MATRIX> {
+  unsafe fn get_current_transform<T>(&self, clientDrawingContext: &mut [T]) -> HResult<DWRITE_MATRIX> {
     let mut lv1: DWRITE_MATRIX = {mem::uninitialized::<_>()};
-    let _hr= { (*(self.0 as *mut IDWritePixelSnapping)).GetCurrentTransform(clientDrawingContext.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
+    let _hr= { (*(self.iptr() as *mut IDWritePixelSnapping)).GetCurrentTransform(clientDrawingContext.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetPixelsPerDip
   
   #[allow(non_snake_case)]
-  pub unsafe fn get_pixels_per_dip<T>(&self, clientDrawingContext: &mut [T]) -> HResult<FLOAT> {
+  unsafe fn get_pixels_per_dip<T>(&self, clientDrawingContext: &mut [T]) -> HResult<FLOAT> {
     let mut lv1: FLOAT = {mem::uninitialized::<_>()};
-    let _hr= { (*(self.0 as *mut IDWritePixelSnapping)).GetPixelsPerDip(clientDrawingContext.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
+    let _hr= { (*(self.iptr() as *mut IDWritePixelSnapping)).GetPixelsPerDip(clientDrawingContext.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
 
-pub struct DWriteRenderingParams(*mut IDWriteRenderingParams);
-
-impl HasIID for DWriteRenderingParams {
-  fn iid() -> REFGUID { &IID_IDWriteRenderingParams }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteRenderingParams(pp_vtbl as *mut _ as *mut IDWriteRenderingParams) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteRenderingParams {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWritePixelSnapping {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWritePixelSnapping(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWritePixelSnapping {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWritePixelSnapping {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWritePixelSnapping for DWritePixelSnapping {}
 
-impl Clone for DWriteRenderingParams {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWritePixelSnapping(*mut IDWritePixelSnapping);
+
+impl HasIID for DWritePixelSnapping {
+  fn iid() -> REFGUID { &IID_IDWritePixelSnapping }
 }
 
-
-
-impl DWriteRenderingParams {
+pub trait TDWriteRenderingParams: TUnknown {
   //  Method GetGamma
   
   #[allow(non_snake_case)]
-  pub fn get_gamma(&self) -> FLOAT {
+  fn get_gamma(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteRenderingParams)).GetGamma() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteRenderingParams)).GetGamma() };
     _hr
   }
   
   //  Method GetEnhancedContrast
   
   #[allow(non_snake_case)]
-  pub fn get_enhanced_contrast(&self) -> FLOAT {
+  fn get_enhanced_contrast(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteRenderingParams)).GetEnhancedContrast() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteRenderingParams)).GetEnhancedContrast() };
     _hr
   }
   
   //  Method GetClearTypeLevel
   
   #[allow(non_snake_case)]
-  pub fn get_clear_type_level(&self) -> FLOAT {
+  fn get_clear_type_level(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteRenderingParams)).GetClearTypeLevel() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteRenderingParams)).GetClearTypeLevel() };
     _hr
   }
   
   //  Method GetPixelGeometry
   
   #[allow(non_snake_case)]
-  pub fn get_pixel_geometry(&self) -> DWRITE_PIXEL_GEOMETRY {
+  fn get_pixel_geometry(&self) -> DWRITE_PIXEL_GEOMETRY {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteRenderingParams)).GetPixelGeometry() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteRenderingParams)).GetPixelGeometry() };
     _hr
   }
   
   //  Method GetRenderingMode
   
   #[allow(non_snake_case)]
-  pub fn get_rendering_mode(&self) -> DWRITE_RENDERING_MODE {
+  fn get_rendering_mode(&self) -> DWRITE_RENDERING_MODE {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteRenderingParams)).GetRenderingMode() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteRenderingParams)).GetRenderingMode() };
     _hr
   }
   
   
 }
 
-pub struct DWriteTextAnalyzer(*mut IDWriteTextAnalyzer);
-
-impl HasIID for DWriteTextAnalyzer {
-  fn iid() -> REFGUID { &IID_IDWriteTextAnalyzer }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteTextAnalyzer(pp_vtbl as *mut _ as *mut IDWriteTextAnalyzer) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteTextAnalyzer {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteRenderingParams {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteRenderingParams(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteRenderingParams {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteRenderingParams {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteRenderingParams for DWriteRenderingParams {}
 
-impl Clone for DWriteTextAnalyzer {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteRenderingParams(*mut IDWriteRenderingParams);
+
+impl HasIID for DWriteRenderingParams {
+  fn iid() -> REFGUID { &IID_IDWriteRenderingParams }
 }
 
-
-
-impl DWriteTextAnalyzer {
+pub trait TDWriteTextAnalyzer: TUnknown {
   //  Method AnalyzeScript
   
   #[allow(non_snake_case)]
-  pub fn analyze_script(&self, analysisSource: &mut IDWriteTextAnalysisSource, textPosition: UINT32, textLength: UINT32, analysisSink: &mut IDWriteTextAnalysisSink) -> HResult<HRESULT> {
+  fn analyze_script(&self, analysisSource: &mut IDWriteTextAnalysisSource, textPosition: UINT32, textLength: UINT32, analysisSink: &mut IDWriteTextAnalysisSink) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextAnalyzer)).AnalyzeScript(analysisSource, textPosition, textLength, analysisSink) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextAnalyzer)).AnalyzeScript(analysisSource, textPosition, textLength, analysisSink) };
     hr2ret(_hr,_hr)
   }
   
   //  Method AnalyzeBidi
   
   #[allow(non_snake_case)]
-  pub fn analyze_bidi(&self, analysisSource: &mut IDWriteTextAnalysisSource, textPosition: UINT32, textLength: UINT32, analysisSink: &mut IDWriteTextAnalysisSink) -> HResult<HRESULT> {
+  fn analyze_bidi(&self, analysisSource: &mut IDWriteTextAnalysisSource, textPosition: UINT32, textLength: UINT32, analysisSink: &mut IDWriteTextAnalysisSink) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextAnalyzer)).AnalyzeBidi(analysisSource, textPosition, textLength, analysisSink) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextAnalyzer)).AnalyzeBidi(analysisSource, textPosition, textLength, analysisSink) };
     hr2ret(_hr,_hr)
   }
   
   //  Method AnalyzeNumberSubstitution
   
   #[allow(non_snake_case)]
-  pub fn analyze_number_substitution(&self, analysisSource: &mut IDWriteTextAnalysisSource, textPosition: UINT32, textLength: UINT32, analysisSink: &mut IDWriteTextAnalysisSink) -> HResult<HRESULT> {
+  fn analyze_number_substitution(&self, analysisSource: &mut IDWriteTextAnalysisSource, textPosition: UINT32, textLength: UINT32, analysisSink: &mut IDWriteTextAnalysisSink) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextAnalyzer)).AnalyzeNumberSubstitution(analysisSource, textPosition, textLength, analysisSink) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextAnalyzer)).AnalyzeNumberSubstitution(analysisSource, textPosition, textLength, analysisSink) };
     hr2ret(_hr,_hr)
   }
   
   //  Method AnalyzeLineBreakpoints
   
   #[allow(non_snake_case)]
-  pub fn analyze_line_breakpoints(&self, analysisSource: &mut IDWriteTextAnalysisSource, textPosition: UINT32, textLength: UINT32, analysisSink: &mut IDWriteTextAnalysisSink) -> HResult<HRESULT> {
+  fn analyze_line_breakpoints(&self, analysisSource: &mut IDWriteTextAnalysisSource, textPosition: UINT32, textLength: UINT32, analysisSink: &mut IDWriteTextAnalysisSink) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextAnalyzer)).AnalyzeLineBreakpoints(analysisSource, textPosition, textLength, analysisSink) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextAnalyzer)).AnalyzeLineBreakpoints(analysisSource, textPosition, textLength, analysisSink) };
     hr2ret(_hr,_hr)
   }
   
@@ -1399,1012 +1433,787 @@ impl DWriteTextAnalyzer {
   
 }
 
+impl TUnknown for DWriteTextAnalyzer {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteTextAnalyzer(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DWriteTextAnalyzer {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteTextAnalyzer {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteTextAnalyzer for DWriteTextAnalyzer {}
+
+pub struct DWriteTextAnalyzer(*mut IDWriteTextAnalyzer);
+
+impl HasIID for DWriteTextAnalyzer {
+  fn iid() -> REFGUID { &IID_IDWriteTextAnalyzer }
+}
+
+pub trait TDWriteTextFormat: TUnknown {
+  //  Method SetTextAlignment
+  
+  #[allow(non_snake_case)]
+  fn set_text_alignment(&self, textAlignment: DWRITE_TEXT_ALIGNMENT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).SetTextAlignment(textAlignment) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method SetParagraphAlignment
+  
+  #[allow(non_snake_case)]
+  fn set_paragraph_alignment(&self, paragraphAlignment: DWRITE_PARAGRAPH_ALIGNMENT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).SetParagraphAlignment(paragraphAlignment) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method SetWordWrapping
+  
+  #[allow(non_snake_case)]
+  fn set_word_wrapping(&self, wordWrapping: DWRITE_WORD_WRAPPING) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).SetWordWrapping(wordWrapping) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method SetReadingDirection
+  
+  #[allow(non_snake_case)]
+  fn set_reading_direction(&self, readingDirection: DWRITE_READING_DIRECTION) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).SetReadingDirection(readingDirection) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method SetFlowDirection
+  
+  #[allow(non_snake_case)]
+  fn set_flow_direction(&self, flowDirection: DWRITE_FLOW_DIRECTION) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).SetFlowDirection(flowDirection) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method SetIncrementalTabStop
+  
+  #[allow(non_snake_case)]
+  fn set_incremental_tab_stop(&self, incrementalTabStop: FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).SetIncrementalTabStop(incrementalTabStop) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method SetTrimming
+  
+  #[allow(non_snake_case)]
+  fn set_trimming<T: TDWriteInlineObject>(&self, trimmingOptions: &DWRITE_TRIMMING, trimmingSign: &T) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).SetTrimming(trimmingOptions, trimmingSign.iptr() as *mut _ as *mut _ ) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method SetLineSpacing
+  
+  #[allow(non_snake_case)]
+  fn set_line_spacing(&self, lineSpacingMethod: DWRITE_LINE_SPACING_METHOD, lineSpacing: FLOAT, baseline: FLOAT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).SetLineSpacing(lineSpacingMethod, lineSpacing, baseline) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method GetTextAlignment
+  
+  #[allow(non_snake_case)]
+  fn get_text_alignment(&self) -> DWRITE_TEXT_ALIGNMENT {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetTextAlignment() };
+    _hr
+  }
+  
+  //  Method GetParagraphAlignment
+  
+  #[allow(non_snake_case)]
+  fn get_paragraph_alignment(&self) -> DWRITE_PARAGRAPH_ALIGNMENT {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetParagraphAlignment() };
+    _hr
+  }
+  
+  //  Method GetWordWrapping
+  
+  #[allow(non_snake_case)]
+  fn get_word_wrapping(&self) -> DWRITE_WORD_WRAPPING {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetWordWrapping() };
+    _hr
+  }
+  
+  //  Method GetReadingDirection
+  
+  #[allow(non_snake_case)]
+  fn get_reading_direction(&self) -> DWRITE_READING_DIRECTION {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetReadingDirection() };
+    _hr
+  }
+  
+  //  Method GetFlowDirection
+  
+  #[allow(non_snake_case)]
+  fn get_flow_direction(&self) -> DWRITE_FLOW_DIRECTION {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetFlowDirection() };
+    _hr
+  }
+  
+  //  Method GetIncrementalTabStop
+  
+  #[allow(non_snake_case)]
+  fn get_incremental_tab_stop(&self) -> FLOAT {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetIncrementalTabStop() };
+    _hr
+  }
+  
+  //  Method GetTrimming
+  
+  #[allow(non_snake_case)]
+  fn get_trimming(&self, trimmingOptions: &mut DWRITE_TRIMMING) -> HResult<DWriteInlineObject> {
+    let mut lv1: *mut IDWriteInlineObject = ptr::null_mut();
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetTrimming(trimmingOptions, &mut lv1 as *mut *mut _) };
+    hr2ret(_hr,DWriteInlineObject::new(lv1 as *mut _))
+  }
+  
+  //  Method GetLineSpacing
+  
+  #[allow(non_snake_case)]
+  fn get_line_spacing(&self) -> HResult<(DWRITE_LINE_SPACING_METHOD, FLOAT, FLOAT)> {
+    let mut lv1: DWRITE_LINE_SPACING_METHOD = unsafe {mem::uninitialized::<_>()};
+    let mut lv2: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let mut lv3: FLOAT = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetLineSpacing(&mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
+    hr2ret(_hr,(lv1, lv2, lv3))
+  }
+  
+  //  Method GetFontCollection
+  
+  #[allow(non_snake_case)]
+  fn get_font_collection(&self) -> HResult<DWriteFontCollection> {
+    let mut lv1: *mut IDWriteFontCollection = ptr::null_mut();
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetFontCollection(&mut lv1 as *mut *mut _) };
+    hr2ret(_hr,DWriteFontCollection::new(lv1 as *mut _))
+  }
+  
+  //  Method GetFontFamilyNameLength
+  
+  #[allow(non_snake_case)]
+  fn get_font_family_name_length(&self) -> UINT32 {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetFontFamilyNameLength() };
+    _hr
+  }
+  
+  //  Method GetFontFamilyName
+  
+  #[allow(non_snake_case)]
+  fn get_font_family_name(&self, fontFamilyName: &mut [WCHAR]) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetFontFamilyName(slice_as_mut_ptr(fontFamilyName), fontFamilyName.len() as UINT32) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method GetFontWeight
+  
+  #[allow(non_snake_case)]
+  fn get_font_weight(&self) -> DWRITE_FONT_WEIGHT {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetFontWeight() };
+    _hr
+  }
+  
+  //  Method GetFontStyle
+  
+  #[allow(non_snake_case)]
+  fn get_font_style(&self) -> DWRITE_FONT_STYLE {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetFontStyle() };
+    _hr
+  }
+  
+  //  Method GetFontStretch
+  
+  #[allow(non_snake_case)]
+  fn get_font_stretch(&self) -> DWRITE_FONT_STRETCH {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetFontStretch() };
+    _hr
+  }
+  
+  //  Method GetFontSize
+  
+  #[allow(non_snake_case)]
+  fn get_font_size(&self) -> FLOAT {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetFontSize() };
+    _hr
+  }
+  
+  //  Method GetLocaleNameLength
+  
+  #[allow(non_snake_case)]
+  fn get_locale_name_length(&self) -> UINT32 {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetLocaleNameLength() };
+    _hr
+  }
+  
+  //  Method GetLocaleName
+  
+  #[allow(non_snake_case)]
+  fn get_locale_name(&self, localeName: &mut [WCHAR]) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextFormat)).GetLocaleName(slice_as_mut_ptr(localeName), localeName.len() as UINT32) };
+    hr2ret(_hr,_hr)
+  }
+  
+  
+}
+
+impl TUnknown for DWriteTextFormat {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteTextFormat(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DWriteTextFormat {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteTextFormat {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteTextFormat for DWriteTextFormat {}
+
 pub struct DWriteTextFormat(*mut IDWriteTextFormat);
 
 impl HasIID for DWriteTextFormat {
   fn iid() -> REFGUID { &IID_IDWriteTextFormat }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteTextFormat(pp_vtbl as *mut _ as *mut IDWriteTextFormat) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteTextFormat {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for DWriteTextFormat {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DWriteTextFormat {
-  //  Method SetTextAlignment
-  
-  #[allow(non_snake_case)]
-  pub fn set_text_alignment(&self, textAlignment: DWRITE_TEXT_ALIGNMENT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetTextAlignment(textAlignment) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetParagraphAlignment
-  
-  #[allow(non_snake_case)]
-  pub fn set_paragraph_alignment(&self, paragraphAlignment: DWRITE_PARAGRAPH_ALIGNMENT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetParagraphAlignment(paragraphAlignment) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetWordWrapping
-  
-  #[allow(non_snake_case)]
-  pub fn set_word_wrapping(&self, wordWrapping: DWRITE_WORD_WRAPPING) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetWordWrapping(wordWrapping) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetReadingDirection
-  
-  #[allow(non_snake_case)]
-  pub fn set_reading_direction(&self, readingDirection: DWRITE_READING_DIRECTION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetReadingDirection(readingDirection) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetFlowDirection
-  
-  #[allow(non_snake_case)]
-  pub fn set_flow_direction(&self, flowDirection: DWRITE_FLOW_DIRECTION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetFlowDirection(flowDirection) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetIncrementalTabStop
-  
-  #[allow(non_snake_case)]
-  pub fn set_incremental_tab_stop(&self, incrementalTabStop: FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetIncrementalTabStop(incrementalTabStop) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetTrimming
-  
-  #[allow(non_snake_case)]
-  pub fn set_trimming<T: HasIID>(&self, trimmingOptions: &DWRITE_TRIMMING, trimmingSign: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetTrimming(trimmingOptions, trimmingSign.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetLineSpacing
-  
-  #[allow(non_snake_case)]
-  pub fn set_line_spacing(&self, lineSpacingMethod: DWRITE_LINE_SPACING_METHOD, lineSpacing: FLOAT, baseline: FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetLineSpacing(lineSpacingMethod, lineSpacing, baseline) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetTextAlignment
-  
-  #[allow(non_snake_case)]
-  pub fn get_text_alignment(&self) -> DWRITE_TEXT_ALIGNMENT {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetTextAlignment() };
-    _hr
-  }
-  
-  //  Method GetParagraphAlignment
-  
-  #[allow(non_snake_case)]
-  pub fn get_paragraph_alignment(&self) -> DWRITE_PARAGRAPH_ALIGNMENT {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetParagraphAlignment() };
-    _hr
-  }
-  
-  //  Method GetWordWrapping
-  
-  #[allow(non_snake_case)]
-  pub fn get_word_wrapping(&self) -> DWRITE_WORD_WRAPPING {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetWordWrapping() };
-    _hr
-  }
-  
-  //  Method GetReadingDirection
-  
-  #[allow(non_snake_case)]
-  pub fn get_reading_direction(&self) -> DWRITE_READING_DIRECTION {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetReadingDirection() };
-    _hr
-  }
-  
-  //  Method GetFlowDirection
-  
-  #[allow(non_snake_case)]
-  pub fn get_flow_direction(&self) -> DWRITE_FLOW_DIRECTION {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFlowDirection() };
-    _hr
-  }
-  
-  //  Method GetIncrementalTabStop
-  
-  #[allow(non_snake_case)]
-  pub fn get_incremental_tab_stop(&self) -> FLOAT {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetIncrementalTabStop() };
-    _hr
-  }
-  
-  //  Method GetTrimming
-  
-  #[allow(non_snake_case)]
-  pub fn get_trimming(&self, trimmingOptions: &mut DWRITE_TRIMMING) -> HResult<DWriteInlineObject> {
-    let mut lv1: *mut IDWriteInlineObject = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetTrimming(trimmingOptions, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DWriteInlineObject::new(lv1 as *mut _))
-  }
-  
-  //  Method GetLineSpacing
-  
-  #[allow(non_snake_case)]
-  pub fn get_line_spacing(&self) -> HResult<(DWRITE_LINE_SPACING_METHOD, FLOAT, FLOAT)> {
-    let mut lv1: DWRITE_LINE_SPACING_METHOD = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let mut lv3: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetLineSpacing(&mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
-    hr2ret(_hr,(lv1, lv2, lv3))
-  }
-  
-  //  Method GetFontCollection
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_collection(&self) -> HResult<DWriteFontCollection> {
-    let mut lv1: *mut IDWriteFontCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontCollection(&mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DWriteFontCollection::new(lv1 as *mut _))
-  }
-  
-  //  Method GetFontFamilyNameLength
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_family_name_length(&self) -> UINT32 {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontFamilyNameLength() };
-    _hr
-  }
-  
-  //  Method GetFontFamilyName
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_family_name(&self, fontFamilyName: &mut [WCHAR]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontFamilyName(slice_as_mut_ptr(fontFamilyName), fontFamilyName.len() as UINT32) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetFontWeight
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_weight(&self) -> DWRITE_FONT_WEIGHT {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontWeight() };
-    _hr
-  }
-  
-  //  Method GetFontStyle
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_style(&self) -> DWRITE_FONT_STYLE {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontStyle() };
-    _hr
-  }
-  
-  //  Method GetFontStretch
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_stretch(&self) -> DWRITE_FONT_STRETCH {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontStretch() };
-    _hr
-  }
-  
-  //  Method GetFontSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_size(&self) -> FLOAT {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontSize() };
-    _hr
-  }
-  
-  //  Method GetLocaleNameLength
-  
-  #[allow(non_snake_case)]
-  pub fn get_locale_name_length(&self) -> UINT32 {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetLocaleNameLength() };
-    _hr
-  }
-  
-  //  Method GetLocaleName
-  
-  #[allow(non_snake_case)]
-  pub fn get_locale_name(&self, localeName: &mut [WCHAR]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetLocaleName(slice_as_mut_ptr(localeName), localeName.len() as UINT32) };
-    hr2ret(_hr,_hr)
-  }
-  
-  
-}
-
-pub struct DWriteTextLayout(*mut IDWriteTextLayout);
-
-impl HasIID for DWriteTextLayout {
-  fn iid() -> REFGUID { &IID_IDWriteTextLayout }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteTextLayout(pp_vtbl as *mut _ as *mut IDWriteTextLayout) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteTextLayout {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for DWriteTextLayout {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DWriteTextLayout {
-  //  Method SetTextAlignment
-  
-  #[allow(non_snake_case)]
-  pub fn set_text_alignment(&self, textAlignment: DWRITE_TEXT_ALIGNMENT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetTextAlignment(textAlignment) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetParagraphAlignment
-  
-  #[allow(non_snake_case)]
-  pub fn set_paragraph_alignment(&self, paragraphAlignment: DWRITE_PARAGRAPH_ALIGNMENT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetParagraphAlignment(paragraphAlignment) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetWordWrapping
-  
-  #[allow(non_snake_case)]
-  pub fn set_word_wrapping(&self, wordWrapping: DWRITE_WORD_WRAPPING) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetWordWrapping(wordWrapping) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetReadingDirection
-  
-  #[allow(non_snake_case)]
-  pub fn set_reading_direction(&self, readingDirection: DWRITE_READING_DIRECTION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetReadingDirection(readingDirection) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetFlowDirection
-  
-  #[allow(non_snake_case)]
-  pub fn set_flow_direction(&self, flowDirection: DWRITE_FLOW_DIRECTION) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetFlowDirection(flowDirection) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetIncrementalTabStop
-  
-  #[allow(non_snake_case)]
-  pub fn set_incremental_tab_stop(&self, incrementalTabStop: FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetIncrementalTabStop(incrementalTabStop) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetTrimming
-  
-  #[allow(non_snake_case)]
-  pub fn set_trimming<T: HasIID>(&self, trimmingOptions: &DWRITE_TRIMMING, trimmingSign: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetTrimming(trimmingOptions, trimmingSign.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetLineSpacing
-  
-  #[allow(non_snake_case)]
-  pub fn set_line_spacing(&self, lineSpacingMethod: DWRITE_LINE_SPACING_METHOD, lineSpacing: FLOAT, baseline: FLOAT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).SetLineSpacing(lineSpacingMethod, lineSpacing, baseline) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetTextAlignment
-  
-  #[allow(non_snake_case)]
-  pub fn get_text_alignment(&self) -> DWRITE_TEXT_ALIGNMENT {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetTextAlignment() };
-    _hr
-  }
-  
-  //  Method GetParagraphAlignment
-  
-  #[allow(non_snake_case)]
-  pub fn get_paragraph_alignment(&self) -> DWRITE_PARAGRAPH_ALIGNMENT {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetParagraphAlignment() };
-    _hr
-  }
-  
-  //  Method GetWordWrapping
-  
-  #[allow(non_snake_case)]
-  pub fn get_word_wrapping(&self) -> DWRITE_WORD_WRAPPING {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetWordWrapping() };
-    _hr
-  }
-  
-  //  Method GetReadingDirection
-  
-  #[allow(non_snake_case)]
-  pub fn get_reading_direction(&self) -> DWRITE_READING_DIRECTION {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetReadingDirection() };
-    _hr
-  }
-  
-  //  Method GetFlowDirection
-  
-  #[allow(non_snake_case)]
-  pub fn get_flow_direction(&self) -> DWRITE_FLOW_DIRECTION {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFlowDirection() };
-    _hr
-  }
-  
-  //  Method GetIncrementalTabStop
-  
-  #[allow(non_snake_case)]
-  pub fn get_incremental_tab_stop(&self) -> FLOAT {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetIncrementalTabStop() };
-    _hr
-  }
-  
-  //  Method GetTrimming
-  
-  #[allow(non_snake_case)]
-  pub fn get_trimming(&self, trimmingOptions: &mut DWRITE_TRIMMING) -> HResult<DWriteInlineObject> {
-    let mut lv1: *mut IDWriteInlineObject = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetTrimming(trimmingOptions, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DWriteInlineObject::new(lv1 as *mut _))
-  }
-  
-  //  Method GetLineSpacing
-  
-  #[allow(non_snake_case)]
-  pub fn get_line_spacing(&self) -> HResult<(DWRITE_LINE_SPACING_METHOD, FLOAT, FLOAT)> {
-    let mut lv1: DWRITE_LINE_SPACING_METHOD = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let mut lv3: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetLineSpacing(&mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
-    hr2ret(_hr,(lv1, lv2, lv3))
-  }
-  
-  //  Method GetFontCollection
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_collection(&self) -> HResult<DWriteFontCollection> {
-    let mut lv1: *mut IDWriteFontCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontCollection(&mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DWriteFontCollection::new(lv1 as *mut _))
-  }
-  
-  //  Method GetFontFamilyNameLength
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_family_name_length(&self) -> UINT32 {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontFamilyNameLength() };
-    _hr
-  }
-  
-  //  Method GetFontFamilyName
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_family_name(&self, fontFamilyName: &mut [WCHAR]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontFamilyName(slice_as_mut_ptr(fontFamilyName), fontFamilyName.len() as UINT32) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetFontWeight
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_weight(&self) -> DWRITE_FONT_WEIGHT {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontWeight() };
-    _hr
-  }
-  
-  //  Method GetFontStyle
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_style(&self) -> DWRITE_FONT_STYLE {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontStyle() };
-    _hr
-  }
-  
-  //  Method GetFontStretch
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_stretch(&self) -> DWRITE_FONT_STRETCH {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontStretch() };
-    _hr
-  }
-  
-  //  Method GetFontSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_font_size(&self) -> FLOAT {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetFontSize() };
-    _hr
-  }
-  
-  //  Method GetLocaleNameLength
-  
-  #[allow(non_snake_case)]
-  pub fn get_locale_name_length(&self) -> UINT32 {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetLocaleNameLength() };
-    _hr
-  }
-  
-  //  Method GetLocaleName
-  
-  #[allow(non_snake_case)]
-  pub fn get_locale_name(&self, localeName: &mut [WCHAR]) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextFormat)).GetLocaleName(slice_as_mut_ptr(localeName), localeName.len() as UINT32) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TDWriteTextLayout: TDWriteTextFormat {
   //  Method SetMaxWidth
   
   #[allow(non_snake_case)]
-  pub fn set_max_width(&self, maxWidth: FLOAT) -> HResult<HRESULT> {
+  fn set_max_width(&self, maxWidth: FLOAT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetMaxWidth(maxWidth) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetMaxWidth(maxWidth) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetMaxHeight
   
   #[allow(non_snake_case)]
-  pub fn set_max_height(&self, maxHeight: FLOAT) -> HResult<HRESULT> {
+  fn set_max_height(&self, maxHeight: FLOAT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetMaxHeight(maxHeight) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetMaxHeight(maxHeight) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetFontCollection
   
   #[allow(non_snake_case)]
-  pub fn set_font_collection<T: HasIID>(&self, fontCollection: &T, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_font_collection<T: TDWriteFontCollection>(&self, fontCollection: &T, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetFontCollection(fontCollection.iptr() as *mut _ as *mut _ , textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetFontCollection(fontCollection.iptr() as *mut _ as *mut _ , textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetFontFamilyName
   
   #[allow(non_snake_case)]
-  pub fn set_font_family_name(&self, fontFamilyName: Cow<str>, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_font_family_name(&self, fontFamilyName: Cow<str>, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
     let lv1: Vec<u16> = str_to_vec_u16(fontFamilyName);
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetFontFamilyName(lv1.as_ptr() as LPCWSTR, textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetFontFamilyName(lv1.as_ptr() as LPCWSTR, textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetFontWeight
   
   #[allow(non_snake_case)]
-  pub fn set_font_weight(&self, fontWeight: DWRITE_FONT_WEIGHT, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_font_weight(&self, fontWeight: DWRITE_FONT_WEIGHT, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetFontWeight(fontWeight, textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetFontWeight(fontWeight, textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetFontStyle
   
   #[allow(non_snake_case)]
-  pub fn set_font_style(&self, fontStyle: DWRITE_FONT_STYLE, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_font_style(&self, fontStyle: DWRITE_FONT_STYLE, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetFontStyle(fontStyle, textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetFontStyle(fontStyle, textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetFontStretch
   
   #[allow(non_snake_case)]
-  pub fn set_font_stretch(&self, fontStretch: DWRITE_FONT_STRETCH, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_font_stretch(&self, fontStretch: DWRITE_FONT_STRETCH, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetFontStretch(fontStretch, textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetFontStretch(fontStretch, textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetFontSize
   
   #[allow(non_snake_case)]
-  pub fn set_font_size(&self, fontSize: FLOAT, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_font_size(&self, fontSize: FLOAT, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetFontSize(fontSize, textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetFontSize(fontSize, textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetUnderline
   
   #[allow(non_snake_case)]
-  pub fn set_underline(&self, hasUnderline: BOOL, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_underline(&self, hasUnderline: BOOL, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetUnderline(hasUnderline, textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetUnderline(hasUnderline, textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetStrikethrough
   
   #[allow(non_snake_case)]
-  pub fn set_strikethrough(&self, hasStrikethrough: BOOL, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_strikethrough(&self, hasStrikethrough: BOOL, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetStrikethrough(hasStrikethrough, textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetStrikethrough(hasStrikethrough, textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetDrawingEffect
   
   #[allow(non_snake_case)]
-  pub fn set_drawing_effect<T: HasIID>(&self, drawingEffect: &T, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_drawing_effect<T: TUnknown>(&self, drawingEffect: &T, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetDrawingEffect(drawingEffect.iptr() as *mut _ as *mut _ , textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetDrawingEffect(drawingEffect.iptr() as *mut _ as *mut _ , textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetInlineObject
   
   #[allow(non_snake_case)]
-  pub fn set_inline_object<T: HasIID>(&self, inlineObject: &T, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_inline_object<T: TDWriteInlineObject>(&self, inlineObject: &T, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetInlineObject(inlineObject.iptr() as *mut _ as *mut _ , textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetInlineObject(inlineObject.iptr() as *mut _ as *mut _ , textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetTypography
   
   #[allow(non_snake_case)]
-  pub fn set_typography<T: HasIID>(&self, typography: &T, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_typography<T: TDWriteTypography>(&self, typography: &T, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetTypography(typography.iptr() as *mut _ as *mut _ , textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetTypography(typography.iptr() as *mut _ as *mut _ , textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetLocaleName
   
   #[allow(non_snake_case)]
-  pub fn set_locale_name(&self, localeName: Cow<str>, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn set_locale_name(&self, localeName: Cow<str>, textRange: DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
     let lv1: Vec<u16> = str_to_vec_u16(localeName);
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).SetLocaleName(lv1.as_ptr() as LPCWSTR, textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).SetLocaleName(lv1.as_ptr() as LPCWSTR, textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetMaxWidth
   
   #[allow(non_snake_case)]
-  pub fn get_max_width(&self) -> FLOAT {
+  fn get_max_width(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetMaxWidth() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetMaxWidth() };
     _hr
   }
   
   //  Method GetMaxHeight
   
   #[allow(non_snake_case)]
-  pub fn get_max_height(&self) -> FLOAT {
+  fn get_max_height(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetMaxHeight() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetMaxHeight() };
     _hr
   }
   
   //  Method GetFontCollection
   
   #[allow(non_snake_case)]
-  pub fn get_font_collection_tl(&self, currentPosition: UINT32) -> HResult<(DWriteFontCollection, DWRITE_TEXT_RANGE)> {
+  fn get_font_collection_tl(&self, currentPosition: UINT32) -> HResult<(DWriteFontCollection, DWRITE_TEXT_RANGE)> {
     let mut lv1: *mut IDWriteFontCollection = ptr::null_mut();
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetFontCollection(currentPosition, &mut lv1 as *mut *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetFontCollection(currentPosition, &mut lv1 as *mut *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(DWriteFontCollection::new(lv1 as *mut _), lv2))
   }
   
   //  Method GetFontFamilyNameLength
   
   #[allow(non_snake_case)]
-  pub fn get_font_family_name_length_tl(&self, currentPosition: UINT32) -> HResult<(UINT32, DWRITE_TEXT_RANGE)> {
+  fn get_font_family_name_length_tl(&self, currentPosition: UINT32) -> HResult<(UINT32, DWRITE_TEXT_RANGE)> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetFontFamilyNameLength(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetFontFamilyNameLength(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method GetFontFamilyName
   
   #[allow(non_snake_case)]
-  pub fn get_font_family_name_tl(&self, currentPosition: UINT32, fontFamilyName: &mut [WCHAR]) -> HResult<DWRITE_TEXT_RANGE> {
+  fn get_font_family_name_tl(&self, currentPosition: UINT32, fontFamilyName: &mut [WCHAR]) -> HResult<DWRITE_TEXT_RANGE> {
     let mut lv1: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetFontFamilyName(currentPosition, slice_as_mut_ptr(fontFamilyName), fontFamilyName.len() as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetFontFamilyName(currentPosition, slice_as_mut_ptr(fontFamilyName), fontFamilyName.len() as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetFontWeight
   
   #[allow(non_snake_case)]
-  pub fn get_font_weight_tl(&self, currentPosition: UINT32) -> HResult<(DWRITE_FONT_WEIGHT, DWRITE_TEXT_RANGE)> {
+  fn get_font_weight_tl(&self, currentPosition: UINT32) -> HResult<(DWRITE_FONT_WEIGHT, DWRITE_TEXT_RANGE)> {
     let mut lv1: DWRITE_FONT_WEIGHT = unsafe {mem::uninitialized::<_>()};
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetFontWeight(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetFontWeight(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method GetFontStyle
   
   #[allow(non_snake_case)]
-  pub fn get_font_style_tl(&self, currentPosition: UINT32) -> HResult<(DWRITE_FONT_STYLE, DWRITE_TEXT_RANGE)> {
+  fn get_font_style_tl(&self, currentPosition: UINT32) -> HResult<(DWRITE_FONT_STYLE, DWRITE_TEXT_RANGE)> {
     let mut lv1: DWRITE_FONT_STYLE = unsafe {mem::uninitialized::<_>()};
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetFontStyle(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetFontStyle(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method GetFontStretch
   
   #[allow(non_snake_case)]
-  pub fn get_font_stretch_tl(&self, currentPosition: UINT32) -> HResult<(DWRITE_FONT_STRETCH, DWRITE_TEXT_RANGE)> {
+  fn get_font_stretch_tl(&self, currentPosition: UINT32) -> HResult<(DWRITE_FONT_STRETCH, DWRITE_TEXT_RANGE)> {
     let mut lv1: DWRITE_FONT_STRETCH = unsafe {mem::uninitialized::<_>()};
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetFontStretch(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetFontStretch(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method GetFontSize
   
   #[allow(non_snake_case)]
-  pub fn get_font_size_tl(&self, currentPosition: UINT32) -> HResult<(FLOAT, DWRITE_TEXT_RANGE)> {
+  fn get_font_size_tl(&self, currentPosition: UINT32) -> HResult<(FLOAT, DWRITE_TEXT_RANGE)> {
     let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetFontSize(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetFontSize(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method GetUnderline
   
   #[allow(non_snake_case)]
-  pub fn get_underline(&self, currentPosition: UINT32, hasUnderline: &mut BOOL, textRange: &mut DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
+  fn get_underline(&self, currentPosition: UINT32, hasUnderline: &mut BOOL, textRange: &mut DWRITE_TEXT_RANGE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetUnderline(currentPosition, hasUnderline, textRange) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetUnderline(currentPosition, hasUnderline, textRange) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetStrikethrough
   
   #[allow(non_snake_case)]
-  pub fn get_strikethrough(&self, currentPosition: UINT32) -> HResult<(BOOL, DWRITE_TEXT_RANGE)> {
+  fn get_strikethrough(&self, currentPosition: UINT32) -> HResult<(BOOL, DWRITE_TEXT_RANGE)> {
     let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetStrikethrough(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetStrikethrough(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method GetDrawingEffect
   
   #[allow(non_snake_case)]
-  pub fn get_drawing_effect(&self, currentPosition: UINT32) -> HResult<(Unknown, DWRITE_TEXT_RANGE)> {
+  fn get_drawing_effect(&self, currentPosition: UINT32) -> HResult<(Unknown, DWRITE_TEXT_RANGE)> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetDrawingEffect(currentPosition, &mut lv1 as *mut *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetDrawingEffect(currentPosition, &mut lv1 as *mut *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(Unknown::new(lv1 as *mut _), lv2))
   }
   
   //  Method GetInlineObject
   
   #[allow(non_snake_case)]
-  pub fn get_inline_object(&self, currentPosition: UINT32) -> HResult<(DWriteInlineObject, DWRITE_TEXT_RANGE)> {
+  fn get_inline_object(&self, currentPosition: UINT32) -> HResult<(DWriteInlineObject, DWRITE_TEXT_RANGE)> {
     let mut lv1: *mut IDWriteInlineObject = ptr::null_mut();
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetInlineObject(currentPosition, &mut lv1 as *mut *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetInlineObject(currentPosition, &mut lv1 as *mut *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(DWriteInlineObject::new(lv1 as *mut _), lv2))
   }
   
   //  Method GetTypography
   
   #[allow(non_snake_case)]
-  pub fn get_typography(&self, currentPosition: UINT32) -> HResult<(DWriteTypography, DWRITE_TEXT_RANGE)> {
+  fn get_typography(&self, currentPosition: UINT32) -> HResult<(DWriteTypography, DWRITE_TEXT_RANGE)> {
     let mut lv1: *mut IDWriteTypography = ptr::null_mut();
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetTypography(currentPosition, &mut lv1 as *mut *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetTypography(currentPosition, &mut lv1 as *mut *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(DWriteTypography::new(lv1 as *mut _), lv2))
   }
   
   //  Method GetLocaleNameLength
   
   #[allow(non_snake_case)]
-  pub fn get_locale_name_length_tl(&self, currentPosition: UINT32) -> HResult<(UINT32, DWRITE_TEXT_RANGE)> {
+  fn get_locale_name_length_tl(&self, currentPosition: UINT32) -> HResult<(UINT32, DWRITE_TEXT_RANGE)> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
     let mut lv2: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetLocaleNameLength(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetLocaleNameLength(currentPosition, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method GetLocaleName
   
   #[allow(non_snake_case)]
-  pub fn get_locale_name_tl(&self, currentPosition: UINT32, localeName: &mut [WCHAR]) -> HResult<DWRITE_TEXT_RANGE> {
+  fn get_locale_name_tl(&self, currentPosition: UINT32, localeName: &mut [WCHAR]) -> HResult<DWRITE_TEXT_RANGE> {
     let mut lv1: DWRITE_TEXT_RANGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetLocaleName(currentPosition, slice_as_mut_ptr(localeName), localeName.len() as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetLocaleName(currentPosition, slice_as_mut_ptr(localeName), localeName.len() as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method Draw
   
   #[allow(non_snake_case)]
-  pub unsafe fn draw<T, T1: HasIID>(&self, clientDrawingContext: &mut [T], renderer: &T1, originX: FLOAT, originY: FLOAT) -> HResult<HRESULT> {
+  unsafe fn draw<T, T1: TDWriteTextRenderer>(&self, clientDrawingContext: &mut [T], renderer: &T1, originX: FLOAT, originY: FLOAT) -> HResult<HRESULT> {
   
-    let _hr= { (*(self.0 as *mut IDWriteTextLayout)).Draw(clientDrawingContext.as_mut_ptr() as *mut _, renderer.iptr() as *mut _ as *mut _ , originX, originY) };
+    let _hr= { (*(self.iptr() as *mut IDWriteTextLayout)).Draw(clientDrawingContext.as_mut_ptr() as *mut _, renderer.iptr() as *mut _ as *mut _ , originX, originY) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetLineMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_line_metrics(&self, lineMetrics: Option<&mut [DWRITE_LINE_METRICS]>) -> HResult<UINT32> {
+  fn get_line_metrics(&self, lineMetrics: Option<&mut [DWRITE_LINE_METRICS]>) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetLineMetrics(opt_arr_as_mut_ptr(&lineMetrics) as *mut _, lineMetrics.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetLineMetrics(opt_arr_as_mut_ptr(&lineMetrics) as *mut _, lineMetrics.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_metrics(&self) -> HResult<DWRITE_TEXT_METRICS> {
+  fn get_metrics(&self) -> HResult<DWRITE_TEXT_METRICS> {
     let mut lv1: DWRITE_TEXT_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetMetrics(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetMetrics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetOverhangMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_overhang_metrics(&self) -> HResult<DWRITE_OVERHANG_METRICS> {
+  fn get_overhang_metrics(&self) -> HResult<DWRITE_OVERHANG_METRICS> {
     let mut lv1: DWRITE_OVERHANG_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetOverhangMetrics(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetOverhangMetrics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetClusterMetrics
   
   #[allow(non_snake_case)]
-  pub fn get_cluster_metrics(&self, clusterMetrics: Option<&mut [DWRITE_CLUSTER_METRICS]>) -> HResult<UINT32> {
+  fn get_cluster_metrics(&self, clusterMetrics: Option<&mut [DWRITE_CLUSTER_METRICS]>) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).GetClusterMetrics(opt_arr_as_mut_ptr(&clusterMetrics) as *mut _, clusterMetrics.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).GetClusterMetrics(opt_arr_as_mut_ptr(&clusterMetrics) as *mut _, clusterMetrics.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method DetermineMinWidth
   
   #[allow(non_snake_case)]
-  pub fn determine_min_width(&self) -> HResult<FLOAT> {
+  fn determine_min_width(&self) -> HResult<FLOAT> {
     let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).DetermineMinWidth(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).DetermineMinWidth(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method HitTestPoint
   
   #[allow(non_snake_case)]
-  pub fn hit_test_point(&self, pointX: FLOAT, pointY: FLOAT) -> HResult<(BOOL, BOOL, DWRITE_HIT_TEST_METRICS)> {
+  fn hit_test_point(&self, pointX: FLOAT, pointY: FLOAT) -> HResult<(BOOL, BOOL, DWRITE_HIT_TEST_METRICS)> {
     let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
     let mut lv2: BOOL = unsafe {mem::uninitialized::<_>()};
     let mut lv3: DWRITE_HIT_TEST_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).HitTestPoint(pointX, pointY, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).HitTestPoint(pointX, pointY, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2, lv3))
   }
   
   //  Method HitTestTextPosition
   
   #[allow(non_snake_case)]
-  pub fn hit_test_text_position(&self, textPosition: UINT32, isTrailingHit: BOOL) -> HResult<(FLOAT, FLOAT, DWRITE_HIT_TEST_METRICS)> {
+  fn hit_test_text_position(&self, textPosition: UINT32, isTrailingHit: BOOL) -> HResult<(FLOAT, FLOAT, DWRITE_HIT_TEST_METRICS)> {
     let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
     let mut lv2: FLOAT = unsafe {mem::uninitialized::<_>()};
     let mut lv3: DWRITE_HIT_TEST_METRICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).HitTestTextPosition(textPosition, isTrailingHit, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).HitTestTextPosition(textPosition, isTrailingHit, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _, &mut lv3 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2, lv3))
   }
   
   //  Method HitTestTextRange
   
   #[allow(non_snake_case)]
-  pub fn hit_test_text_range(&self, textPosition: UINT32, textLength: UINT32, originX: FLOAT, originY: FLOAT, hitTestMetrics: Option<&mut [DWRITE_HIT_TEST_METRICS]>) -> HResult<UINT32> {
+  fn hit_test_text_range(&self, textPosition: UINT32, textLength: UINT32, originX: FLOAT, originY: FLOAT, hitTestMetrics: Option<&mut [DWRITE_HIT_TEST_METRICS]>) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTextLayout)).HitTestTextRange(textPosition, textLength, originX, originY, opt_arr_as_mut_ptr(&hitTestMetrics) as *mut _, hitTestMetrics.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTextLayout)).HitTestTextRange(textPosition, textLength, originX, originY, opt_arr_as_mut_ptr(&hitTestMetrics) as *mut _, hitTestMetrics.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
 
-pub struct DWriteTextRenderer(*mut IDWriteTextRenderer);
-
-impl HasIID for DWriteTextRenderer {
-  fn iid() -> REFGUID { &IID_IDWriteTextRenderer }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteTextRenderer(pp_vtbl as *mut _ as *mut IDWriteTextRenderer) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteTextRenderer {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteTextLayout {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteTextLayout(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteTextLayout {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteTextLayout {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteTextFormat for DWriteTextLayout {}
+impl TDWriteTextLayout for DWriteTextLayout {}
 
-impl Clone for DWriteTextRenderer {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteTextLayout(*mut IDWriteTextLayout);
+
+impl HasIID for DWriteTextLayout {
+  fn iid() -> REFGUID { &IID_IDWriteTextLayout }
 }
 
-
-
-impl DWriteTextRenderer {
-  //  Method IsPixelSnappingDisabled
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn is_pixel_snapping_disabled<T>(&self, clientDrawingContext: &mut [T]) -> HResult<BOOL> {
-    let mut lv1: BOOL = {mem::uninitialized::<_>()};
-    let _hr= { (*(self.0 as *mut IDWritePixelSnapping)).IsPixelSnappingDisabled(clientDrawingContext.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetCurrentTransform
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_current_transform<T>(&self, clientDrawingContext: &mut [T]) -> HResult<DWRITE_MATRIX> {
-    let mut lv1: DWRITE_MATRIX = {mem::uninitialized::<_>()};
-    let _hr= { (*(self.0 as *mut IDWritePixelSnapping)).GetCurrentTransform(clientDrawingContext.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetPixelsPerDip
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn get_pixels_per_dip<T>(&self, clientDrawingContext: &mut [T]) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = {mem::uninitialized::<_>()};
-    let _hr= { (*(self.0 as *mut IDWritePixelSnapping)).GetPixelsPerDip(clientDrawingContext.as_mut_ptr() as *mut _, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
+pub trait TDWriteTextRenderer: TDWritePixelSnapping {
   //  Method DrawGlyphRun
   
   #[allow(non_snake_case)]
-  pub unsafe fn draw_glyph_run<T, T1: HasIID>(&self, clientDrawingContext: &mut [T], baselineOriginX: FLOAT, baselineOriginY: FLOAT, measuringMode: DWRITE_MEASURING_MODE, glyphRun: &DWRITE_GLYPH_RUN, glyphRunDescription: &DWRITE_GLYPH_RUN_DESCRIPTION, clientDrawingEffect: &T1) -> HResult<HRESULT> {
+  unsafe fn draw_glyph_run<T, T1: TUnknown>(&self, clientDrawingContext: &mut [T], baselineOriginX: FLOAT, baselineOriginY: FLOAT, measuringMode: DWRITE_MEASURING_MODE, glyphRun: &DWRITE_GLYPH_RUN, glyphRunDescription: &DWRITE_GLYPH_RUN_DESCRIPTION, clientDrawingEffect: &T1) -> HResult<HRESULT> {
   
-    let _hr= { (*(self.0 as *mut IDWriteTextRenderer)).DrawGlyphRun(clientDrawingContext.as_mut_ptr() as *mut _, baselineOriginX, baselineOriginY, measuringMode, glyphRun, glyphRunDescription, clientDrawingEffect.iptr() as *mut _ as *mut _ ) };
+    let _hr= { (*(self.iptr() as *mut IDWriteTextRenderer)).DrawGlyphRun(clientDrawingContext.as_mut_ptr() as *mut _, baselineOriginX, baselineOriginY, measuringMode, glyphRun, glyphRunDescription, clientDrawingEffect.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method DrawUnderline
   
   #[allow(non_snake_case)]
-  pub unsafe fn draw_underline<T, T1: HasIID>(&self, clientDrawingContext: &mut [T], baselineOriginX: FLOAT, baselineOriginY: FLOAT, underline: &DWRITE_UNDERLINE, clientDrawingEffect: &T1) -> HResult<HRESULT> {
+  unsafe fn draw_underline<T, T1: TUnknown>(&self, clientDrawingContext: &mut [T], baselineOriginX: FLOAT, baselineOriginY: FLOAT, underline: &DWRITE_UNDERLINE, clientDrawingEffect: &T1) -> HResult<HRESULT> {
   
-    let _hr= { (*(self.0 as *mut IDWriteTextRenderer)).DrawUnderline(clientDrawingContext.as_mut_ptr() as *mut _, baselineOriginX, baselineOriginY, underline, clientDrawingEffect.iptr() as *mut _ as *mut _ ) };
+    let _hr= { (*(self.iptr() as *mut IDWriteTextRenderer)).DrawUnderline(clientDrawingContext.as_mut_ptr() as *mut _, baselineOriginX, baselineOriginY, underline, clientDrawingEffect.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method DrawStrikethrough
   
   #[allow(non_snake_case)]
-  pub unsafe fn draw_strikethrough<T, T1: HasIID>(&self, clientDrawingContext: &mut [T], baselineOriginX: FLOAT, baselineOriginY: FLOAT, strikethrough: &DWRITE_STRIKETHROUGH, clientDrawingEffect: &T1) -> HResult<HRESULT> {
+  unsafe fn draw_strikethrough<T, T1: TUnknown>(&self, clientDrawingContext: &mut [T], baselineOriginX: FLOAT, baselineOriginY: FLOAT, strikethrough: &DWRITE_STRIKETHROUGH, clientDrawingEffect: &T1) -> HResult<HRESULT> {
   
-    let _hr= { (*(self.0 as *mut IDWriteTextRenderer)).DrawStrikethrough(clientDrawingContext.as_mut_ptr() as *mut _, baselineOriginX, baselineOriginY, strikethrough, clientDrawingEffect.iptr() as *mut _ as *mut _ ) };
+    let _hr= { (*(self.iptr() as *mut IDWriteTextRenderer)).DrawStrikethrough(clientDrawingContext.as_mut_ptr() as *mut _, baselineOriginX, baselineOriginY, strikethrough, clientDrawingEffect.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method DrawInlineObject
   
   #[allow(non_snake_case)]
-  pub unsafe fn draw_inline_object<T, T1: HasIID, T2: HasIID>(&self, clientDrawingContext: &mut [T], originX: FLOAT, originY: FLOAT, inlineObject: &T1, isSideways: BOOL, isRightToLeft: BOOL, clientDrawingEffect: &T2) -> HResult<HRESULT> {
+  unsafe fn draw_inline_object<T, T1: TDWriteInlineObject, T2: TUnknown>(&self, clientDrawingContext: &mut [T], originX: FLOAT, originY: FLOAT, inlineObject: &T1, isSideways: BOOL, isRightToLeft: BOOL, clientDrawingEffect: &T2) -> HResult<HRESULT> {
   
-    let _hr= { (*(self.0 as *mut IDWriteTextRenderer)).DrawInlineObject(clientDrawingContext.as_mut_ptr() as *mut _, originX, originY, inlineObject.iptr() as *mut _ as *mut _ , isSideways, isRightToLeft, clientDrawingEffect.iptr() as *mut _ as *mut _ ) };
+    let _hr= { (*(self.iptr() as *mut IDWriteTextRenderer)).DrawInlineObject(clientDrawingContext.as_mut_ptr() as *mut _, originX, originY, inlineObject.iptr() as *mut _ as *mut _ , isSideways, isRightToLeft, clientDrawingEffect.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
-pub struct DWriteTypography(*mut IDWriteTypography);
-
-impl HasIID for DWriteTypography {
-  fn iid() -> REFGUID { &IID_IDWriteTypography }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DWriteTypography(pp_vtbl as *mut _ as *mut IDWriteTypography) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DWriteTypography {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DWriteTextRenderer {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteTextRenderer(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DWriteTextRenderer {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteTextRenderer {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWritePixelSnapping for DWriteTextRenderer {}
+impl TDWriteTextRenderer for DWriteTextRenderer {}
 
-impl Clone for DWriteTypography {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DWriteTextRenderer(*mut IDWriteTextRenderer);
+
+impl HasIID for DWriteTextRenderer {
+  fn iid() -> REFGUID { &IID_IDWriteTextRenderer }
 }
 
-
-
-impl DWriteTypography {
+pub trait TDWriteTypography: TUnknown {
   //  Method AddFontFeature
   
   #[allow(non_snake_case)]
-  pub fn add_font_feature(&self, fontFeature: DWRITE_FONT_FEATURE) -> HResult<HRESULT> {
+  fn add_font_feature(&self, fontFeature: DWRITE_FONT_FEATURE) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTypography)).AddFontFeature(fontFeature) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTypography)).AddFontFeature(fontFeature) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetFontFeatureCount
   
   #[allow(non_snake_case)]
-  pub fn get_font_feature_count(&self) -> UINT32 {
+  fn get_font_feature_count(&self) -> UINT32 {
   
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTypography)).GetFontFeatureCount() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTypography)).GetFontFeatureCount() };
     _hr
   }
   
   //  Method GetFontFeature
   
   #[allow(non_snake_case)]
-  pub fn get_font_feature(&self, fontFeatureIndex: UINT32) -> HResult<DWRITE_FONT_FEATURE> {
+  fn get_font_feature(&self, fontFeatureIndex: UINT32) -> HResult<DWRITE_FONT_FEATURE> {
     let mut lv1: DWRITE_FONT_FEATURE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDWriteTypography)).GetFontFeature(fontFeatureIndex, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDWriteTypography)).GetFontFeature(fontFeatureIndex, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
+
+impl TUnknown for DWriteTypography {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DWriteTypography(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DWriteTypography {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DWriteTypography {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDWriteTypography for DWriteTypography {}
+
+pub struct DWriteTypography(*mut IDWriteTypography);
+
+impl HasIID for DWriteTypography {
+  fn iid() -> REFGUID { &IID_IDWriteTypography }
+}
+

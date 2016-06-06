@@ -4,839 +4,64 @@ use utils::*;
 
 use d2d1_safe::*;
 use d2d1_1_safe::*;
+use dxgi_safe::*;
 use dwrite_safe::*;
-
-pub struct D2D1Device1(*mut ID2D1Device1);
-
-impl HasIID for D2D1Device1 {
-  fn iid() -> REFGUID { &IID_ID2D1Device1 }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Device1(pp_vtbl as *mut _ as *mut ID2D1Device1) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1Device1 {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D2D1Device1 {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1Device1 {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method CreateDeviceContext
-  
-  #[allow(non_snake_case)]
-  pub fn create_device_context(&self, options: D2D1_DEVICE_CONTEXT_OPTIONS) -> HResult<D2D1DeviceContext> {
-    let mut lv1: *mut ID2D1DeviceContext = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Device)).CreateDeviceContext(options, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1DeviceContext::new(lv1 as *mut _))
-  }
-  
-  //  Method CreatePrintControl
-  //  Error: printControl parameter: ANone annotation cannot be used with double indirection
-  //  Method SetMaximumTextureMemory
-  
-  #[allow(non_snake_case)]
-  pub fn set_maximum_texture_memory(&self, maximumInBytes: UINT64) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Device)).SetMaximumTextureMemory(maximumInBytes) };
-    ()
-  }
-  
-  //  Method GetMaximumTextureMemory
-  
-  #[allow(non_snake_case)]
-  pub fn get_maximum_texture_memory(&self) -> UINT64 {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Device)).GetMaximumTextureMemory() };
-    _hr
-  }
-  
-  //  Method ClearResources
-  
-  #[allow(non_snake_case)]
-  pub fn clear_resources(&self, millisecondsSinceUse: UINT32) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Device)).ClearResources(millisecondsSinceUse) };
-    ()
-  }
-  
+pub trait TD2D1Device1: TD2D1Device {
   //  Method GetRenderingPriority
   
   #[allow(non_snake_case)]
-  pub fn get_rendering_priority(&self) -> D2D1_RENDERING_PRIORITY {
+  fn get_rendering_priority(&self) -> D2D1_RENDERING_PRIORITY {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Device1)).GetRenderingPriority() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Device1)).GetRenderingPriority() };
     _hr
   }
   
   //  Method SetRenderingPriority
   
   #[allow(non_snake_case)]
-  pub fn set_rendering_priority(&self, renderingPriority: D2D1_RENDERING_PRIORITY) -> () {
+  fn set_rendering_priority(&self, renderingPriority: D2D1_RENDERING_PRIORITY) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Device1)).SetRenderingPriority(renderingPriority) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Device1)).SetRenderingPriority(renderingPriority) };
     ()
   }
   
   //  Method CreateDeviceContext
   
   #[allow(non_snake_case)]
-  pub fn create_device_context1(&self, options: D2D1_DEVICE_CONTEXT_OPTIONS) -> HResult<D2D1DeviceContext1> {
+  fn create_device_context1(&self, options: D2D1_DEVICE_CONTEXT_OPTIONS) -> HResult<D2D1DeviceContext1> {
     let mut lv1: *mut ID2D1DeviceContext1 = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Device1)).CreateDeviceContext(options, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Device1)).CreateDeviceContext(options, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1DeviceContext1::new(lv1 as *mut _))
   }
   
   
 }
 
-pub struct D2D1DeviceContext1(*mut ID2D1DeviceContext1);
-
-impl HasIID for D2D1DeviceContext1 {
-  fn iid() -> REFGUID { &IID_ID2D1DeviceContext1 }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1DeviceContext1(pp_vtbl as *mut _ as *mut ID2D1DeviceContext1) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1DeviceContext1 {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1Device1 {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1Device1(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1Device1 {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1Device1 {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1Device1 {}
+impl TD2D1Device for D2D1Device1 {}
+impl TD2D1Device1 for D2D1Device1 {}
 
-impl Clone for D2D1DeviceContext1 {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1Device1(*mut ID2D1Device1);
+
+impl HasIID for D2D1Device1 {
+  fn iid() -> REFGUID { &IID_ID2D1Device1 }
 }
 
-
-
-impl D2D1DeviceContext1 {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method CreateBitmap
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn create_bitmap<T>(&self, size: D2D1_SIZE_U, srcData: &[T], pitch: UINT32, bitmapProperties: &D2D1_BITMAP_PROPERTIES) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr= { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmap(size, srcData.as_ptr() as *const _, pitch, bitmapProperties, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateBitmapFromWicBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn create_bitmap_from_wic_bitmap<T: HasIID>(&self, wicBitmapSource: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapFromWicBitmap(wicBitmapSource.iptr() as *mut _ as *mut _ , bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateSharedBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn create_shared_bitmap<T: HasIID>(&self, data: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSharedBitmap(T::iid(), data.iptr() as *mut _ as *mut c_void, bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateBitmapBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_bitmap_brush<T: HasIID>(&self, bitmap: &T, bitmapBrushProperties: Option<&D2D1_BITMAP_BRUSH_PROPERTIES>, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1BitmapBrush> {
-    let mut lv1: *mut ID2D1BitmapBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapBrush(bitmap.iptr() as *mut _ as *mut _ , bitmapBrushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1BitmapBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateSolidColorBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_solid_color_brush(&self, color: &D2D1_COLOR_F, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1SolidColorBrush> {
-    let mut lv1: *mut ID2D1SolidColorBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSolidColorBrush(color, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1SolidColorBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateGradientStopCollection
-  
-  #[allow(non_snake_case)]
-  pub fn create_gradient_stop_collection(&self, gradientStops: &[D2D1_GRADIENT_STOP], colorInterpolationGamma: D2D1_GAMMA, extendMode: D2D1_EXTEND_MODE) -> HResult<D2D1GradientStopCollection> {
-    let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateGradientStopCollection(slice_as_ptr(gradientStops), gradientStops.len() as UINT32, colorInterpolationGamma, extendMode, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1GradientStopCollection::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateLinearGradientBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_linear_gradient_brush<T: HasIID>(&self, linearGradientBrushProperties: &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1LinearGradientBrush> {
-    let mut lv1: *mut ID2D1LinearGradientBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLinearGradientBrush(linearGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1LinearGradientBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateRadialGradientBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_radial_gradient_brush<T: HasIID>(&self, radialGradientBrushProperties: &D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1RadialGradientBrush> {
-    let mut lv1: *mut ID2D1RadialGradientBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateRadialGradientBrush(radialGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1RadialGradientBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateCompatibleRenderTarget
-  
-  #[allow(non_snake_case)]
-  pub fn create_compatible_render_target(&self, desiredSize: Option<&D2D1_SIZE_F>, desiredPixelSize: Option<&D2D1_SIZE_U>, desiredFormat: Option<&D2D1_PIXEL_FORMAT>, options: D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS) -> HResult<D2D1BitmapRenderTarget> {
-    let mut lv1: *mut ID2D1BitmapRenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateCompatibleRenderTarget(desiredSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredPixelSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredFormat.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), options, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1BitmapRenderTarget::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateLayer
-  
-  #[allow(non_snake_case)]
-  pub fn create_layer(&self, size: Option<&D2D1_SIZE_F>) -> HResult<D2D1Layer> {
-    let mut lv1: *mut ID2D1Layer = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLayer(size.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Layer::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateMesh
-  
-  #[allow(non_snake_case)]
-  pub fn create_mesh(&self) -> HResult<D2D1Mesh> {
-    let mut lv1: *mut ID2D1Mesh = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateMesh(&mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Mesh::new(lv1 as *mut _))
-  }
-  
-  //  Method DrawLine
-  
-  #[allow(non_snake_case)]
-  pub fn draw_line<T: HasIID>(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    ()
-  }
-  
-  //  Method DrawRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn draw_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    ()
-  }
-  
-  //  Method FillRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn fill_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush.iptr() as *mut _ as *mut _ ) };
-    ()
-  }
-  
-  //  Method DrawRoundedRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn draw_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRoundedRectangle(roundedRect, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillRoundedRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn fill_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRoundedRectangle(roundedRect, brush) };
-    ()
-  }
-  
-  //  Method DrawEllipse
-  
-  #[allow(non_snake_case)]
-  pub fn draw_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawEllipse(ellipse, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillEllipse
-  
-  #[allow(non_snake_case)]
-  pub fn fill_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillEllipse(ellipse, brush) };
-    ()
-  }
-  
-  //  Method DrawGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn draw_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawGeometry(geometry, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn fill_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, opacityBrush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillGeometry(geometry, brush, opacityBrush) };
-    ()
-  }
-  
-  //  Method FillMesh
-  
-  #[allow(non_snake_case)]
-  pub fn fill_mesh(&self, mesh: &mut ID2D1Mesh, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillMesh(mesh, brush) };
-    ()
-  }
-  
-  //  Method FillOpacityMask
-  
-  #[allow(non_snake_case)]
-  pub fn fill_opacity_mask(&self, opacityMask: &mut ID2D1Bitmap, brush: &mut ID2D1Brush, content: D2D1_OPACITY_MASK_CONTENT, destinationRectangle: &D2D1_RECT_F, sourceRectangle: &D2D1_RECT_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillOpacityMask(opacityMask, brush, content, destinationRectangle, sourceRectangle) };
-    ()
-  }
-  
-  //  Method DrawBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn draw_bitmap(&self, bitmap: &mut ID2D1Bitmap, destinationRectangle: &D2D1_RECT_F, opacity: FLOAT, interpolationMode: D2D1_BITMAP_INTERPOLATION_MODE, sourceRectangle: &D2D1_RECT_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode, sourceRectangle) };
-    ()
-  }
-  
-  //  Method DrawText
-  
-  #[allow(non_snake_case)]
-  pub fn draw_text<T: HasIID, T1: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &T1, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutRect, defaultForegroundBrush.iptr() as *mut _ as *mut _ , options, measuringMode) };
-    ()
-  }
-  
-  //  Method DrawTextLayout
-  
-  #[allow(non_snake_case)]
-  pub fn draw_text_layout(&self, origin: D2D1_POINT_2F, textLayout: &mut IDWriteTextLayout, defaultForegroundBrush: &mut ID2D1Brush, options: D2D1_DRAW_TEXT_OPTIONS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawTextLayout(origin, textLayout, defaultForegroundBrush, options) };
-    ()
-  }
-  
-  //  Method DrawGlyphRun
-  
-  #[allow(non_snake_case)]
-  pub fn draw_glyph_run(&self, baselineOrigin: D2D1_POINT_2F, glyphRun: &DWRITE_GLYPH_RUN, foregroundBrush: &mut ID2D1Brush, measuringMode: DWRITE_MEASURING_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawGlyphRun(baselineOrigin, glyphRun, foregroundBrush, measuringMode) };
-    ()
-  }
-  
-  //  Method SetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTransform(transform) };
-    ()
-  }
-  
-  //  Method GetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn get_transform(&self, transform: &mut D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTransform(transform) };
-    ()
-  }
-  
-  //  Method SetAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn set_antialias_mode(&self, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetAntialiasMode(antialiasMode) };
-    ()
-  }
-  
-  //  Method GetAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn get_antialias_mode(&self) -> D2D1_ANTIALIAS_MODE {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetAntialiasMode() };
-    _hr
-  }
-  
-  //  Method SetTextAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn set_text_antialias_mode(&self, textAntialiasMode: D2D1_TEXT_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTextAntialiasMode(textAntialiasMode) };
-    ()
-  }
-  
-  //  Method GetTextAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn get_text_antialias_mode(&self) -> D2D1_TEXT_ANTIALIAS_MODE {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTextAntialiasMode() };
-    _hr
-  }
-  
-  //  Method SetTextRenderingParams
-  
-  #[allow(non_snake_case)]
-  pub fn set_text_rendering_params(&self, textRenderingParams: &mut IDWriteRenderingParams) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTextRenderingParams(textRenderingParams) };
-    ()
-  }
-  
-  //  Method GetTextRenderingParams
-  //  Error: textRenderingParams parameter: ANone annotation cannot be used with double indirection
-  //  Method SetTags
-  
-  #[allow(non_snake_case)]
-  pub fn set_tags(&self, tag1: D2D1_TAG, tag2: D2D1_TAG) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTags(tag1, tag2) };
-    ()
-  }
-  
-  //  Method GetTags
-  
-  #[allow(non_snake_case)]
-  pub fn get_tags(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTags(tag1, tag2) };
-    ()
-  }
-  
-  //  Method PushLayer
-  
-  #[allow(non_snake_case)]
-  pub fn push_layer(&self, layerParameters: &D2D1_LAYER_PARAMETERS, layer: &mut ID2D1Layer) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PushLayer(layerParameters, layer) };
-    ()
-  }
-  
-  //  Method PopLayer
-  
-  #[allow(non_snake_case)]
-  pub fn pop_layer(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PopLayer() };
-    ()
-  }
-  
-  //  Method Flush
-  
-  #[allow(non_snake_case)]
-  pub fn flush(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SaveDrawingState
-  
-  #[allow(non_snake_case)]
-  pub fn save_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SaveDrawingState(drawingStateBlock) };
-    ()
-  }
-  
-  //  Method RestoreDrawingState
-  
-  #[allow(non_snake_case)]
-  pub fn restore_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).RestoreDrawingState(drawingStateBlock) };
-    ()
-  }
-  
-  //  Method PushAxisAlignedClip
-  
-  #[allow(non_snake_case)]
-  pub fn push_axis_aligned_clip(&self, clipRect: &D2D1_RECT_F, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PushAxisAlignedClip(clipRect, antialiasMode) };
-    ()
-  }
-  
-  //  Method PopAxisAlignedClip
-  
-  #[allow(non_snake_case)]
-  pub fn pop_axis_aligned_clip(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PopAxisAlignedClip() };
-    ()
-  }
-  
-  //  Method Clear
-  
-  #[allow(non_snake_case)]
-  pub fn clear(&self, clearColor: &D2D1_COLOR_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Clear(clearColor) };
-    ()
-  }
-  
-  //  Method BeginDraw
-  
-  #[allow(non_snake_case)]
-  pub fn begin_draw(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).BeginDraw() };
-    ()
-  }
-  
-  //  Method EndDraw
-  
-  #[allow(non_snake_case)]
-  pub fn end_draw(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPixelFormat
-  
-  #[allow(non_snake_case)]
-  pub fn get_pixel_format(&self) -> D2D1_PIXEL_FORMAT {
-    let mut lv1: D2D1_PIXEL_FORMAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetPixelFormat(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method SetDpi
-  
-  #[allow(non_snake_case)]
-  pub fn set_dpi(&self, dpiX: FLOAT, dpiY: FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetDpi(dpiX, dpiY) };
-    ()
-  }
-  
-  //  Method GetDpi
-  
-  #[allow(non_snake_case)]
-  pub fn get_dpi(&self, dpiX: &mut FLOAT, dpiY: &mut FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetDpi(dpiX, dpiY) };
-    ()
-  }
-  
-  //  Method GetSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_size(&self) -> D2D1_SIZE_F {
-    let mut lv1: D2D1_SIZE_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetSize(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method GetPixelSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_pixel_size(&self) -> D2D1_SIZE_U {
-    let mut lv1: D2D1_SIZE_U = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetPixelSize(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method GetMaximumBitmapSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_maximum_bitmap_size(&self) -> UINT32 {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetMaximumBitmapSize() };
-    _hr
-  }
-  
-  //  Method IsSupported
-  
-  #[allow(non_snake_case)]
-  pub fn is_supported(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> BOOL {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).IsSupported(renderTargetProperties) };
-    _hr
-  }
-  
-  //  Method CreateBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateBitmapFromWicBitmap
-  //  Error: bitmap parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateColorContext
-  //  Error: colorContext parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateColorContextFromFilename
-  //  Error: colorContext parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateColorContextFromWicColorContext
-  //  Error: colorContext parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateBitmapFromDxgiSurface
-  
-  #[allow(non_snake_case)]
-  pub fn create_bitmap_from_dxgi_surface<T: HasIID>(&self, surface: &T, bitmapProperties: &D2D1_BITMAP_PROPERTIES1) -> HResult<D2D1Bitmap1> {
-    let mut lv1: *mut ID2D1Bitmap1 = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).CreateBitmapFromDxgiSurface(surface.iptr() as *mut _ as *mut _ , bitmapProperties, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap1::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateEffect
-  //  Error: effect parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateGradientStopCollection
-  //  Error: gradientStopCollection1 parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateImageBrush
-  //  Error: imageBrush parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateBitmapBrush
-  //  Error: bitmapBrush parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateCommandList
-  //  Error: commandList parameter: ANone annotation cannot be used with double indirection
-  //  Method IsDxgiFormatSupported
-  
-  #[allow(non_snake_case)]
-  pub fn is_dxgi_format_supported(&self, format: DXGI_FORMAT) -> BOOL {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).IsDxgiFormatSupported(format) };
-    _hr
-  }
-  
-  //  Method IsBufferPrecisionSupported
-  
-  #[allow(non_snake_case)]
-  pub fn is_buffer_precision_supported(&self, bufferPrecision: D2D1_BUFFER_PRECISION) -> BOOL {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).IsBufferPrecisionSupported(bufferPrecision) };
-    _hr
-  }
-  
-  //  Method GetImageLocalBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_image_local_bounds(&self, image: &mut ID2D1Image, localBounds: &mut D2D1_RECT_F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).GetImageLocalBounds(image, localBounds) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetImageWorldBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_image_world_bounds(&self, image: &mut ID2D1Image, worldBounds: &mut D2D1_RECT_F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).GetImageWorldBounds(image, worldBounds) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetGlyphRunWorldBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_glyph_run_world_bounds(&self, baselineOrigin: D2D1_POINT_2F, glyphRun: &DWRITE_GLYPH_RUN, measuringMode: DWRITE_MEASURING_MODE, bounds: &mut D2D1_RECT_F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).GetGlyphRunWorldBounds(baselineOrigin, glyphRun, measuringMode, bounds) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDevice
-  //  Error: device parameter: ANone annotation cannot be used with double indirection
-  //  Method SetTarget
-  
-  #[allow(non_snake_case)]
-  pub fn set_target(&self, image: Option<&D2D1Image>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).SetTarget(image.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    ()
-  }
-  
-  //  Method GetTarget
-  //  Error: image parameter: ANone annotation cannot be used with double indirection
-  //  Method SetRenderingControls
-  
-  #[allow(non_snake_case)]
-  pub fn set_rendering_controls(&self, renderingControls: &D2D1_RENDERING_CONTROLS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).SetRenderingControls(renderingControls) };
-    ()
-  }
-  
-  //  Method GetRenderingControls
-  
-  #[allow(non_snake_case)]
-  pub fn get_rendering_controls(&self, renderingControls: &mut D2D1_RENDERING_CONTROLS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).GetRenderingControls(renderingControls) };
-    ()
-  }
-  
-  //  Method SetPrimitiveBlend
-  
-  #[allow(non_snake_case)]
-  pub fn set_primitive_blend(&self, primitiveBlend: D2D1_PRIMITIVE_BLEND) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).SetPrimitiveBlend(primitiveBlend) };
-    ()
-  }
-  
-  //  Method GetPrimitiveBlend
-  
-  #[allow(non_snake_case)]
-  pub fn get_primitive_blend(&self) -> D2D1_PRIMITIVE_BLEND {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).GetPrimitiveBlend() };
-    _hr
-  }
-  
-  //  Method SetUnitMode
-  
-  #[allow(non_snake_case)]
-  pub fn set_unit_mode(&self, unitMode: D2D1_UNIT_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).SetUnitMode(unitMode) };
-    ()
-  }
-  
-  //  Method GetUnitMode
-  
-  #[allow(non_snake_case)]
-  pub fn get_unit_mode(&self) -> D2D1_UNIT_MODE {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).GetUnitMode() };
-    _hr
-  }
-  
-  //  Method DrawGlyphRun
-  
-  #[allow(non_snake_case)]
-  pub fn draw_glyph_run_dc(&self, baselineOrigin: D2D1_POINT_2F, glyphRun: &DWRITE_GLYPH_RUN, glyphRunDescription: &DWRITE_GLYPH_RUN_DESCRIPTION, foregroundBrush: &mut ID2D1Brush, measuringMode: DWRITE_MEASURING_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).DrawGlyphRun(baselineOrigin, glyphRun, glyphRunDescription, foregroundBrush, measuringMode) };
-    ()
-  }
-  
-  //  Method DrawImage
-  
-  #[allow(non_snake_case)]
-  pub fn draw_image(&self, image: &mut ID2D1Image, targetOffset: &D2D1_POINT_2F, imageRectangle: &D2D1_RECT_F, interpolationMode: D2D1_INTERPOLATION_MODE, compositeMode: D2D1_COMPOSITE_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).DrawImage(image, targetOffset, imageRectangle, interpolationMode, compositeMode) };
-    ()
-  }
-  
-  //  Method DrawGdiMetafile
-  
-  #[allow(non_snake_case)]
-  pub fn draw_gdi_metafile(&self, gdiMetafile: &mut ID2D1GdiMetafile, targetOffset: &D2D1_POINT_2F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).DrawGdiMetafile(gdiMetafile, targetOffset) };
-    ()
-  }
-  
-  //  Method DrawBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn draw_bitmap_dc(&self, bitmap: &mut ID2D1Bitmap, destinationRectangle: &D2D1_RECT_F, opacity: FLOAT, interpolationMode: D2D1_INTERPOLATION_MODE, sourceRectangle: &D2D1_RECT_F, perspectiveTransform: &D2D1_MATRIX_4X4_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode, sourceRectangle, perspectiveTransform) };
-    ()
-  }
-  
-  //  Method PushLayer
-  
-  #[allow(non_snake_case)]
-  pub fn push_layer_dc(&self, layerParameters: &D2D1_LAYER_PARAMETERS1, layer: &mut ID2D1Layer) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).PushLayer(layerParameters, layer) };
-    ()
-  }
-  
-  //  Method InvalidateEffectInputRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn invalidate_effect_input_rectangle(&self, effect: &mut ID2D1Effect, input: UINT32, inputRectangle: &D2D1_RECT_F) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).InvalidateEffectInputRectangle(effect, input, inputRectangle) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetEffectInvalidRectangleCount
-  
-  #[allow(non_snake_case)]
-  pub fn get_effect_invalid_rectangle_count(&self, effect: &mut ID2D1Effect, rectangleCount: &mut UINT32) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).GetEffectInvalidRectangleCount(effect, rectangleCount) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetEffectInvalidRectangles
-  
-  #[allow(non_snake_case)]
-  pub fn get_effect_invalid_rectangles(&self, effect: &mut ID2D1Effect, rectangles: &mut D2D1_RECT_F, rectanglesCount: UINT32) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).GetEffectInvalidRectangles(effect, rectangles, rectanglesCount) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetEffectRequiredInputRectangles
-  
-  #[allow(non_snake_case)]
-  pub fn get_effect_required_input_rectangles(&self, renderEffect: &mut ID2D1Effect, renderImageRectangle: &D2D1_RECT_F, inputDescriptions: &D2D1_EFFECT_INPUT_DESCRIPTION, requiredInputRects: &mut D2D1_RECT_F, inputCount: UINT32) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).GetEffectRequiredInputRectangles(renderEffect, renderImageRectangle, inputDescriptions, requiredInputRects, inputCount) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method FillOpacityMask
-  
-  #[allow(non_snake_case)]
-  pub fn fill_opacity_mask_dc(&self, opacityMask: &mut ID2D1Bitmap, brush: &mut ID2D1Brush, destinationRectangle: &D2D1_RECT_F, sourceRectangle: &D2D1_RECT_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext)).FillOpacityMask(opacityMask, brush, destinationRectangle, sourceRectangle) };
-    ()
-  }
-  
+pub trait TD2D1DeviceContext1: TD2D1DeviceContext {
   //  Method CreateFilledGeometryRealization
   //  Error: geometryRealization parameter: ANone annotation cannot be used with double indirection
   //  Method CreateStrokedGeometryRealization
@@ -844,228 +69,74 @@ impl D2D1DeviceContext1 {
   //  Method DrawGeometryRealization
   
   #[allow(non_snake_case)]
-  pub fn draw_geometry_realization(&self, geometryRealization: &mut ID2D1GeometryRealization, brush: &mut ID2D1Brush) -> () {
+  fn draw_geometry_realization(&self, geometryRealization: &mut ID2D1GeometryRealization, brush: &mut ID2D1Brush) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DeviceContext1)).DrawGeometryRealization(geometryRealization, brush) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1DeviceContext1)).DrawGeometryRealization(geometryRealization, brush) };
     ()
   }
   
   
 }
 
-pub struct D2D1Factory2(*mut ID2D1Factory2);
-
-impl HasIID for D2D1Factory2 {
-  fn iid() -> REFGUID { &IID_ID2D1Factory2 }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Factory2(pp_vtbl as *mut _ as *mut ID2D1Factory2) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1Factory2 {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1DeviceContext1 {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1DeviceContext1(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1DeviceContext1 {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1DeviceContext1 {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1DeviceContext1 {}
+impl TD2D1RenderTarget for D2D1DeviceContext1 {}
+impl TD2D1DeviceContext for D2D1DeviceContext1 {}
+impl TD2D1DeviceContext1 for D2D1DeviceContext1 {}
 
-impl Clone for D2D1Factory2 {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1DeviceContext1(*mut ID2D1DeviceContext1);
+
+impl HasIID for D2D1DeviceContext1 {
+  fn iid() -> REFGUID { &IID_ID2D1DeviceContext1 }
 }
 
-
-
-impl D2D1Factory2 {
-  //  Method ReloadSystemMetrics
-  
-  #[allow(non_snake_case)]
-  pub fn reload_system_metrics(&self) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).ReloadSystemMetrics() };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetDesktopDpi
-  
-  #[allow(non_snake_case)]
-  pub fn get_desktop_dpi(&self) -> (FLOAT, FLOAT) {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).GetDesktopDpi(&mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
-    (lv1, lv2)
-  }
-  
-  //  Method CreateRectangleGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn create_rectangle_geometry(&self, rectangle: &D2D1_RECT_F) -> HResult<D2D1RectangleGeometry> {
-    let mut lv1: *mut ID2D1RectangleGeometry = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateRectangleGeometry(rectangle, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1RectangleGeometry::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateRoundedRectangleGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn create_rounded_rectangle_geometry(&self, roundedRectangle: &D2D1_ROUNDED_RECT) -> HResult<D2D1RoundedRectangleGeometry> {
-    let mut lv1: *mut ID2D1RoundedRectangleGeometry = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateRoundedRectangleGeometry(roundedRectangle, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1RoundedRectangleGeometry::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateEllipseGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn create_ellipse_geometry(&self, ellipse: &D2D1_ELLIPSE) -> HResult<D2D1EllipseGeometry> {
-    let mut lv1: *mut ID2D1EllipseGeometry = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateEllipseGeometry(ellipse, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1EllipseGeometry::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateGeometryGroup
-  
-  #[allow(non_snake_case)]
-  pub fn create_geometry_group<T: HasIID>(&self, fillMode: D2D1_FILL_MODE, geometries: &[&T]) -> HResult<D2D1GeometryGroup> {
-    let mut lv1: Vec<*mut IUnknown> = geometries.iter().map(|o|o.iptr()).collect();
-    let mut lv2: *mut ID2D1GeometryGroup = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateGeometryGroup(fillMode, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, geometries.len() as UINT32, &mut lv2 as *mut *mut _) };
-    hr2ret(_hr,D2D1GeometryGroup::new(lv2 as *mut _))
-  }
-  
-  //  Method CreateTransformedGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn create_transformed_geometry<T: HasIID>(&self, sourceGeometry: &T, transform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1TransformedGeometry> {
-    let mut lv1: *mut ID2D1TransformedGeometry = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateTransformedGeometry(sourceGeometry.iptr() as *mut _ as *mut _ , transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1TransformedGeometry::new(lv1 as *mut _))
-  }
-  
-  //  Method CreatePathGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn create_path_geometry(&self) -> HResult<D2D1PathGeometry> {
-    let mut lv1: *mut ID2D1PathGeometry = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreatePathGeometry(&mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1PathGeometry::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateStrokeStyle
-  
-  #[allow(non_snake_case)]
-  pub fn create_stroke_style(&self, strokeStyleProperties: &D2D1_STROKE_STYLE_PROPERTIES, dashes: Option<&[FLOAT]>) -> HResult<D2D1StrokeStyle> {
-    let mut lv1: *mut ID2D1StrokeStyle = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateStrokeStyle(strokeStyleProperties, opt_arr_as_ptr(&dashes) as *const _, dashes.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1StrokeStyle::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateDrawingStateBlock
-  
-  #[allow(non_snake_case)]
-  pub fn create_drawing_state_block(&self, drawingStateDescription: Option<&D2D1_DRAWING_STATE_DESCRIPTION>, textRenderingParams: Option<&DWriteRenderingParams>) -> HResult<D2D1DrawingStateBlock> {
-    let mut lv1: *mut ID2D1DrawingStateBlock = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateDrawingStateBlock(drawingStateDescription.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), textRenderingParams.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1DrawingStateBlock::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateWicBitmapRenderTarget
-  
-  #[allow(non_snake_case)]
-  pub fn create_wic_bitmap_render_target<T: HasIID>(&self, target: &T, renderTargetProperties: Option<&D2D1_RENDER_TARGET_PROPERTIES>) -> HResult<D2D1RenderTarget> {
-    let mut lv1: *mut ID2D1RenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateWicBitmapRenderTarget(target.iptr() as *mut _ as *mut _ , renderTargetProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1RenderTarget::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateHwndRenderTarget
-  
-  #[allow(non_snake_case)]
-  pub fn create_hwnd_render_target(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES, hwndRenderTargetProperties: &D2D1_HWND_RENDER_TARGET_PROPERTIES) -> HResult<D2D1HwndRenderTarget> {
-    let mut lv1: *mut ID2D1HwndRenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateHwndRenderTarget(renderTargetProperties, hwndRenderTargetProperties, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1HwndRenderTarget::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateDxgiSurfaceRenderTarget
-  
-  #[allow(non_snake_case)]
-  pub fn create_dxgi_surface_render_target<T: HasIID>(&self, dxgiSurface: &T, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> HResult<D2D1RenderTarget> {
-    let mut lv1: *mut ID2D1RenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateDxgiSurfaceRenderTarget(dxgiSurface.iptr() as *mut _ as *mut _ , renderTargetProperties, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1RenderTarget::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateDCRenderTarget
-  
-  #[allow(non_snake_case)]
-  pub fn create_d_c_render_target(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> HResult<D2D1DCRenderTarget> {
-    let mut lv1: *mut ID2D1DCRenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateDCRenderTarget(renderTargetProperties, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1DCRenderTarget::new(lv1 as *mut _))
-  }
-  
+pub trait TD2D1Factory2: TD2D1Factory1 {
   //  Method CreateDevice
   
   #[allow(non_snake_case)]
-  pub fn create_device<T: HasIID>(&self, dxgiDevice: &T) -> HResult<D2D1Device> {
-    let mut lv1: *mut ID2D1Device = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory1)).CreateDevice(dxgiDevice.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Device::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateStrokeStyle
-  //  Error: strokeStyle parameter: ANone annotation cannot be used with double indirection
-  //  Method CreatePathGeometry
-  //  Error: pathGeometry parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateDrawingStateBlock
-  //  Error: drawingStateBlock parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateGdiMetafile
-  //  Error: metafile parameter: ANone annotation cannot be used with double indirection
-  //  Method RegisterEffectFromStream
-  
-  #[allow(non_snake_case)]
-  pub fn register_effect_from_stream(&self, classId: &IID, propertyXml: &mut IStream, bindings: &D2D1_PROPERTY_BINDING, bindingsCount: UINT32, effectFactory: PD2D1_EFFECT_FACTORY) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory1)).RegisterEffectFromStream(classId, propertyXml, bindings, bindingsCount, effectFactory) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method RegisterEffectFromString
-  
-  #[allow(non_snake_case)]
-  pub fn register_effect_from_string(&self, classId: &IID, propertyXml: PCWSTR, bindings: &D2D1_PROPERTY_BINDING, bindingsCount: UINT32, effectFactory: PD2D1_EFFECT_FACTORY) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory1)).RegisterEffectFromString(classId, propertyXml, bindings, bindingsCount, effectFactory) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method UnregisterEffect
-  
-  #[allow(non_snake_case)]
-  pub fn unregister_effect(&self, classId: &IID) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory1)).UnregisterEffect(classId) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetRegisteredEffects
-  
-  #[allow(non_snake_case)]
-  pub fn get_registered_effects(&self, effects: &mut CLSID, effectsCount: UINT32, effectsReturned: &mut UINT32, effectsRegistered: &mut UINT32) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory1)).GetRegisteredEffects(effects, effectsCount, effectsReturned, effectsRegistered) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetEffectProperties
-  //  Error: properties parameter: ANone annotation cannot be used with double indirection
-  //  Method CreateDevice
-  
-  #[allow(non_snake_case)]
-  pub fn create_device2<T: HasIID>(&self, dxgiDevice: &T) -> HResult<D2D1Device1> {
+  fn create_device2<T: TDXGIDevice>(&self, dxgiDevice: &T) -> HResult<D2D1Device1> {
     let mut lv1: *mut ID2D1Device1 = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory2)).CreateDevice(dxgiDevice.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory2)).CreateDevice(dxgiDevice.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1Device1::new(lv1 as *mut _))
   }
   
   
 }
+
+impl TUnknown for D2D1Factory2 {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1Factory2(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1Factory2 {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1Factory2 {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Factory for D2D1Factory2 {}
+impl TD2D1Factory1 for D2D1Factory2 {}
+impl TD2D1Factory2 for D2D1Factory2 {}
+
+pub struct D2D1Factory2(*mut ID2D1Factory2);
+
+impl HasIID for D2D1Factory2 {
+  fn iid() -> REFGUID { &IID_ID2D1Factory2 }
+}
+

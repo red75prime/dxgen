@@ -2,1317 +2,867 @@
 
 use utils::*;
 
+pub trait TDXGIAdapter1: TDXGIAdapter {
+  //  Method GetDesc1
+  
+  #[allow(non_snake_case)]
+  fn get_desc1(&self) -> HResult<DXGI_ADAPTER_DESC1> {
+    let mut lv1: DXGI_ADAPTER_DESC1 = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIAdapter1)).GetDesc1(&mut lv1 as *mut _ as *mut _) };
+    hr2ret(_hr,lv1)
+  }
+  
+  
+}
+
+impl TUnknown for DXGIAdapter1 {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIAdapter1(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DXGIAdapter1 {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIAdapter1 {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIAdapter1 {}
+impl TDXGIAdapter for DXGIAdapter1 {}
+impl TDXGIAdapter1 for DXGIAdapter1 {}
 
 pub struct DXGIAdapter1(*mut IDXGIAdapter1);
 unsafe impl Send for DXGIAdapter1 {}
 
 impl HasIID for DXGIAdapter1 {
   fn iid() -> REFGUID { &IID_IDXGIAdapter1 }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIAdapter1(pp_vtbl as *mut _ as *mut IDXGIAdapter1) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIAdapter1 {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for DXGIAdapter1 {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DXGIAdapter1 {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TDXGIAdapter: TDXGIObject {
   //  Method EnumOutputs
   
   #[allow(non_snake_case)]
-  pub fn enum_outputs(&self, output: UINT) -> HResult<DXGIOutput> {
+  fn enum_outputs(&self, output: UINT) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIAdapter)).EnumOutputs(output, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIAdapter)).EnumOutputs(output, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DXGIOutput::new(lv1 as *mut _))
   }
   
   //  Method GetDesc
   
   #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> HResult<DXGI_ADAPTER_DESC> {
+  fn get_desc(&self) -> HResult<DXGI_ADAPTER_DESC> {
     let mut lv1: DXGI_ADAPTER_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIAdapter)).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIAdapter)).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method CheckInterfaceSupport
   
   #[allow(non_snake_case)]
-  pub fn check_interface_support(&self, interface_name: &GUID) -> HResult<LARGE_INTEGER> {
+  fn check_interface_support(&self, interface_name: &GUID) -> HResult<LARGE_INTEGER> {
     let mut lv1: LARGE_INTEGER = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIAdapter)).CheckInterfaceSupport(interface_name, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetDesc1
-  
-  #[allow(non_snake_case)]
-  pub fn get_desc1(&self) -> HResult<DXGI_ADAPTER_DESC1> {
-    let mut lv1: DXGI_ADAPTER_DESC1 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIAdapter1)).GetDesc1(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIAdapter)).CheckInterfaceSupport(interface_name, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
+
+impl TUnknown for DXGIAdapter {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIAdapter(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DXGIAdapter {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIAdapter {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIAdapter {}
+impl TDXGIAdapter for DXGIAdapter {}
 
 pub struct DXGIAdapter(*mut IDXGIAdapter);
 
 impl HasIID for DXGIAdapter {
   fn iid() -> REFGUID { &IID_IDXGIAdapter }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIAdapter(pp_vtbl as *mut _ as *mut IDXGIAdapter) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIAdapter {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for DXGIAdapter {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DXGIAdapter {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  //  Method EnumOutputs
-  
-  #[allow(non_snake_case)]
-  pub fn enum_outputs(&self, output: UINT) -> HResult<DXGIOutput> {
-    let mut lv1: *mut IDXGIOutput = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIAdapter)).EnumOutputs(output, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DXGIOutput::new(lv1 as *mut _))
-  }
-  
-  //  Method GetDesc
-  
-  #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> HResult<DXGI_ADAPTER_DESC> {
-    let mut lv1: DXGI_ADAPTER_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIAdapter)).GetDesc(&mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method CheckInterfaceSupport
-  
-  #[allow(non_snake_case)]
-  pub fn check_interface_support(&self, interface_name: &GUID) -> HResult<LARGE_INTEGER> {
-    let mut lv1: LARGE_INTEGER = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIAdapter)).CheckInterfaceSupport(interface_name, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  
-}
-
-pub struct DXGIDevice1(*mut IDXGIDevice1);
-
-impl HasIID for DXGIDevice1 {
-  fn iid() -> REFGUID { &IID_IDXGIDevice1 }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIDevice1(pp_vtbl as *mut _ as *mut IDXGIDevice1) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIDevice1 {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for DXGIDevice1 {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DXGIDevice1 {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  //  Method GetAdapter
-  
-  #[allow(non_snake_case)]
-  pub fn get_adapter(&self) -> HResult<DXGIAdapter> {
-    let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIDevice)).GetAdapter(&mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DXGIAdapter::new(lv1 as *mut _))
-  }
-  
-  //  Method QueryResourceResidency
-  
-  #[allow(non_snake_case)]
-  pub fn query_resource_residency<T: HasIID>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<HRESULT> {
-    let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIDevice)).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, slice_as_mut_ptr(residency_status),  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SetGPUThreadPriority
-  
-  #[allow(non_snake_case)]
-  pub fn set_gpu_thread_priority(&self, priority: INT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIDevice)).SetGPUThreadPriority(priority) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetGPUThreadPriority
-  
-  #[allow(non_snake_case)]
-  pub fn get_gpu_thread_priority(&self) -> HResult<INT> {
-    let mut lv1: INT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIDevice)).GetGPUThreadPriority(&mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
+pub trait TDXGIDevice1: TDXGIDevice {
   //  Method SetMaximumFrameLatency
   
   #[allow(non_snake_case)]
-  pub fn set_maximum_frame_latency(&self, max_latency: UINT) -> HResult<HRESULT> {
+  fn set_maximum_frame_latency(&self, max_latency: UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIDevice1)).SetMaximumFrameLatency(max_latency) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIDevice1)).SetMaximumFrameLatency(max_latency) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetMaximumFrameLatency
   
   #[allow(non_snake_case)]
-  pub fn get_maximum_frame_latency(&self) -> HResult<UINT> {
+  fn get_maximum_frame_latency(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIDevice1)).GetMaximumFrameLatency(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIDevice1)).GetMaximumFrameLatency(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
+
+impl TUnknown for DXGIDevice1 {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIDevice1(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DXGIDevice1 {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIDevice1 {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIDevice1 {}
+impl TDXGIDevice for DXGIDevice1 {}
+impl TDXGIDevice1 for DXGIDevice1 {}
+
+pub struct DXGIDevice1(*mut IDXGIDevice1);
+
+impl HasIID for DXGIDevice1 {
+  fn iid() -> REFGUID { &IID_IDXGIDevice1 }
+}
+
+pub trait TDXGIDeviceSubObject: TDXGIObject {
+  
+}
+
+impl TUnknown for DXGIDeviceSubObject {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIDeviceSubObject(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DXGIDeviceSubObject {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIDeviceSubObject {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIDeviceSubObject {}
+impl TDXGIDeviceSubObject for DXGIDeviceSubObject {}
 
 pub struct DXGIDeviceSubObject(*mut IDXGIDeviceSubObject);
 
 impl HasIID for DXGIDeviceSubObject {
   fn iid() -> REFGUID { &IID_IDXGIDeviceSubObject }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIDeviceSubObject(pp_vtbl as *mut _ as *mut IDXGIDeviceSubObject) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIDeviceSubObject {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for DXGIDeviceSubObject {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DXGIDeviceSubObject {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  
-}
-
-pub struct DXGIDevice(*mut IDXGIDevice);
-
-impl HasIID for DXGIDevice {
-  fn iid() -> REFGUID { &IID_IDXGIDevice }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIDevice(pp_vtbl as *mut _ as *mut IDXGIDevice) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIDevice {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for DXGIDevice {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DXGIDevice {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TDXGIDevice: TDXGIObject {
   //  Method GetAdapter
   
   #[allow(non_snake_case)]
-  pub fn get_adapter(&self) -> HResult<DXGIAdapter> {
+  fn get_adapter(&self) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIDevice)).GetAdapter(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIDevice)).GetAdapter(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DXGIAdapter::new(lv1 as *mut _))
   }
   
   //  Method QueryResourceResidency
   
   #[allow(non_snake_case)]
-  pub fn query_resource_residency<T: HasIID>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<HRESULT> {
+  fn query_resource_residency<T: TUnknown>(&self, resources: &[&T], residency_status: &mut [DXGI_RESIDENCY]) -> HResult<HRESULT> {
     let mut lv1: Vec<*mut IUnknown> = resources.iter().map(|o|o.iptr()).collect();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIDevice)).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, slice_as_mut_ptr(residency_status),  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIDevice)).QueryResourceResidency(lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, slice_as_mut_ptr(residency_status),  same_length(&[Some(resources.len()),Some(residency_status.len())]).expect("Arrays must have equal sizes") as UINT) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SetGPUThreadPriority
   
   #[allow(non_snake_case)]
-  pub fn set_gpu_thread_priority(&self, priority: INT) -> HResult<HRESULT> {
+  fn set_gpu_thread_priority(&self, priority: INT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIDevice)).SetGPUThreadPriority(priority) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIDevice)).SetGPUThreadPriority(priority) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetGPUThreadPriority
   
   #[allow(non_snake_case)]
-  pub fn get_gpu_thread_priority(&self) -> HResult<INT> {
+  fn get_gpu_thread_priority(&self) -> HResult<INT> {
     let mut lv1: INT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIDevice)).GetGPUThreadPriority(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIDevice)).GetGPUThreadPriority(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
 
-pub struct DXGIFactory1(*mut IDXGIFactory1);
-
-impl HasIID for DXGIFactory1 {
-  fn iid() -> REFGUID { &IID_IDXGIFactory1 }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIFactory1(pp_vtbl as *mut _ as *mut IDXGIFactory1) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIFactory1 {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DXGIDevice {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIDevice(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DXGIDevice {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIDevice {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIDevice {}
+impl TDXGIDevice for DXGIDevice {}
 
-impl Clone for DXGIFactory1 {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DXGIDevice(*mut IDXGIDevice);
+
+impl HasIID for DXGIDevice {
+  fn iid() -> REFGUID { &IID_IDXGIDevice }
 }
 
-
-
-impl DXGIFactory1 {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  //  Method EnumAdapters
-  
-  #[allow(non_snake_case)]
-  pub fn enum_adapters(&self, adapter: UINT) -> HResult<DXGIAdapter> {
-    let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory)).EnumAdapters(adapter, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DXGIAdapter::new(lv1 as *mut _))
-  }
-  
-  //  Method MakeWindowAssociation
-  
-  #[allow(non_snake_case)]
-  pub fn make_window_association(&self, window_handle: HWND, flags: UINT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory)).MakeWindowAssociation(window_handle, flags) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetWindowAssociation
-  
-  #[allow(non_snake_case)]
-  pub fn get_window_association(&self) -> HResult<HWND> {
-    let mut lv1: HWND = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory)).GetWindowAssociation(&mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method CreateSwapChain
-  
-  #[allow(non_snake_case)]
-  pub fn create_swap_chain<T: HasIID>(&self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
-    let mut lv1: *mut IDXGISwapChain = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory)).CreateSwapChain(device.iptr() as *mut _ as *mut _ , desc, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DXGISwapChain::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateSoftwareAdapter
-  
-  #[allow(non_snake_case)]
-  pub fn create_software_adapter(&self, module: HMODULE) -> HResult<DXGIAdapter> {
-    let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory)).CreateSoftwareAdapter(module, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,DXGIAdapter::new(lv1 as *mut _))
-  }
-  
+pub trait TDXGIFactory1: TDXGIFactory {
   //  Method EnumAdapters1
   
   #[allow(non_snake_case)]
-  pub fn enum_adapters1(&self, adapter: UINT) -> HResult<DXGIAdapter1> {
+  fn enum_adapters1(&self, adapter: UINT) -> HResult<DXGIAdapter1> {
     let mut lv1: *mut IDXGIAdapter1 = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory1)).EnumAdapters1(adapter, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIFactory1)).EnumAdapters1(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DXGIAdapter1::new(lv1 as *mut _))
   }
   
   //  Method IsCurrent
   
   #[allow(non_snake_case)]
-  pub fn is_current(&self) -> BOOL {
+  fn is_current(&self) -> BOOL {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory1)).IsCurrent() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIFactory1)).IsCurrent() };
     _hr
   }
   
   
 }
 
-pub struct DXGIFactory(*mut IDXGIFactory);
-
-impl HasIID for DXGIFactory {
-  fn iid() -> REFGUID { &IID_IDXGIFactory }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIFactory(pp_vtbl as *mut _ as *mut IDXGIFactory) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIFactory {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DXGIFactory1 {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIFactory1(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DXGIFactory1 {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIFactory1 {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIFactory1 {}
+impl TDXGIFactory for DXGIFactory1 {}
+impl TDXGIFactory1 for DXGIFactory1 {}
 
-impl Clone for DXGIFactory {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DXGIFactory1(*mut IDXGIFactory1);
+
+impl HasIID for DXGIFactory1 {
+  fn iid() -> REFGUID { &IID_IDXGIFactory1 }
 }
 
-
-
-impl DXGIFactory {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TDXGIFactory: TDXGIObject {
   //  Method EnumAdapters
   
   #[allow(non_snake_case)]
-  pub fn enum_adapters(&self, adapter: UINT) -> HResult<DXGIAdapter> {
+  fn enum_adapters(&self, adapter: UINT) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory)).EnumAdapters(adapter, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIFactory)).EnumAdapters(adapter, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DXGIAdapter::new(lv1 as *mut _))
   }
   
   //  Method MakeWindowAssociation
   
   #[allow(non_snake_case)]
-  pub fn make_window_association(&self, window_handle: HWND, flags: UINT) -> HResult<HRESULT> {
+  fn make_window_association(&self, window_handle: HWND, flags: UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory)).MakeWindowAssociation(window_handle, flags) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIFactory)).MakeWindowAssociation(window_handle, flags) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetWindowAssociation
   
   #[allow(non_snake_case)]
-  pub fn get_window_association(&self) -> HResult<HWND> {
+  fn get_window_association(&self) -> HResult<HWND> {
     let mut lv1: HWND = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory)).GetWindowAssociation(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIFactory)).GetWindowAssociation(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method CreateSwapChain
   
   #[allow(non_snake_case)]
-  pub fn create_swap_chain<T: HasIID>(&self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
+  fn create_swap_chain<T: TUnknown>(&self, device: &T, desc: &mut DXGI_SWAP_CHAIN_DESC) -> HResult<DXGISwapChain> {
     let mut lv1: *mut IDXGISwapChain = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory)).CreateSwapChain(device.iptr() as *mut _ as *mut _ , desc, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIFactory)).CreateSwapChain(device.iptr() as *mut _ as *mut _ , desc, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DXGISwapChain::new(lv1 as *mut _))
   }
   
   //  Method CreateSoftwareAdapter
   
   #[allow(non_snake_case)]
-  pub fn create_software_adapter(&self, module: HMODULE) -> HResult<DXGIAdapter> {
+  fn create_software_adapter(&self, module: HMODULE) -> HResult<DXGIAdapter> {
     let mut lv1: *mut IDXGIAdapter = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIFactory)).CreateSoftwareAdapter(module, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIFactory)).CreateSoftwareAdapter(module, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DXGIAdapter::new(lv1 as *mut _))
   }
   
   
 }
 
-pub struct DXGIKeyedMutex(*mut IDXGIKeyedMutex);
-
-impl HasIID for DXGIKeyedMutex {
-  fn iid() -> REFGUID { &IID_IDXGIKeyedMutex }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIKeyedMutex(pp_vtbl as *mut _ as *mut IDXGIKeyedMutex) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIKeyedMutex {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DXGIFactory {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIFactory(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DXGIFactory {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIFactory {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIFactory {}
+impl TDXGIFactory for DXGIFactory {}
 
-impl Clone for DXGIKeyedMutex {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DXGIFactory(*mut IDXGIFactory);
+
+impl HasIID for DXGIFactory {
+  fn iid() -> REFGUID { &IID_IDXGIFactory }
 }
 
-
-
-impl DXGIKeyedMutex {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TDXGIKeyedMutex: TDXGIDeviceSubObject {
   //  Method AcquireSync
   
   #[allow(non_snake_case)]
-  pub fn acquire_sync(&self, key: UINT64, milliseconds: DWORD) -> HResult<HRESULT> {
+  fn acquire_sync(&self, key: UINT64, milliseconds: DWORD) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIKeyedMutex)).AcquireSync(key, milliseconds) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIKeyedMutex)).AcquireSync(key, milliseconds) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ReleaseSync
   
   #[allow(non_snake_case)]
-  pub fn release_sync(&self, key: UINT64) -> HResult<HRESULT> {
+  fn release_sync(&self, key: UINT64) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIKeyedMutex)).ReleaseSync(key) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIKeyedMutex)).ReleaseSync(key) };
     hr2ret(_hr,_hr)
   }
   
   
 }
+
+impl TUnknown for DXGIKeyedMutex {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIKeyedMutex(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DXGIKeyedMutex {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIKeyedMutex {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIKeyedMutex {}
+impl TDXGIDeviceSubObject for DXGIKeyedMutex {}
+impl TDXGIKeyedMutex for DXGIKeyedMutex {}
+
+pub struct DXGIKeyedMutex(*mut IDXGIKeyedMutex);
+
+impl HasIID for DXGIKeyedMutex {
+  fn iid() -> REFGUID { &IID_IDXGIKeyedMutex }
+}
+
+pub trait TDXGIObject: TUnknown {
+  //  Method SetPrivateData
+  
+  #[allow(non_snake_case)]
+  fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
+    hr2ret(_hr,_hr)
+  }
+  
+  //  Method GetPrivateData
+  
+  #[allow(non_snake_case)]
+  fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
+    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
+    hr2ret(_hr,lv1)
+  }
+  
+  //  Method GetParent
+  
+  #[allow(non_snake_case)]
+  fn get_parent<T: TUnknown+HasIID>(&self) -> HResult<T> {
+    let mut lv1: *mut IUnknown = ptr::null_mut();
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    hr2ret(_hr,T::new(lv1))
+  }
+  
+  
+}
+
+impl TUnknown for DXGIObject {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIObject(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DXGIObject {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIObject {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIObject {}
 
 pub struct DXGIObject(*mut IDXGIObject);
 
 impl HasIID for DXGIObject {
   fn iid() -> REFGUID { &IID_IDXGIObject }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIObject(pp_vtbl as *mut _ as *mut IDXGIObject) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIObject {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for DXGIObject {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DXGIObject {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  
-}
-
-pub struct DXGIOutput(*mut IDXGIOutput);
-
-impl HasIID for DXGIOutput {
-  fn iid() -> REFGUID { &IID_IDXGIOutput }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIOutput(pp_vtbl as *mut _ as *mut IDXGIOutput) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIOutput {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for DXGIOutput {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl DXGIOutput {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TDXGIOutput: TDXGIObject {
   //  Method GetDesc
   
   #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> HResult<DXGI_OUTPUT_DESC> {
+  fn get_desc(&self) -> HResult<DXGI_OUTPUT_DESC> {
     let mut lv1: DXGI_OUTPUT_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetDisplayModeList
   
   #[allow(non_snake_case)]
-  pub fn get_display_mode_list(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
+  fn get_display_mode_list(&self, enum_format: DXGI_FORMAT, flags: UINT, desc: Option<&mut [DXGI_MODE_DESC]>) -> HResult<UINT> {
     let mut lv1: UINT = desc.as_ref().map(|v|v.len()).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).GetDisplayModeList(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).GetDisplayModeList(enum_format, flags, &mut lv1, opt_arr_as_mut_ptr(&desc) as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method FindClosestMatchingMode
   
   #[allow(non_snake_case)]
-  pub fn find_closest_matching_mode(&self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
+  fn find_closest_matching_mode(&self, mode_to_match: &DXGI_MODE_DESC, concerned_device: Option<&Unknown>) -> HResult<DXGI_MODE_DESC> {
     let mut lv1: DXGI_MODE_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).FindClosestMatchingMode(mode_to_match, &mut lv1 as *mut _ as *mut _, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).FindClosestMatchingMode(mode_to_match, &mut lv1 as *mut _ as *mut _, concerned_device.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method WaitForVBlank
   
   #[allow(non_snake_case)]
-  pub fn wait_for_v_blank(&self) -> HResult<HRESULT> {
+  fn wait_for_v_blank(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).WaitForVBlank() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).WaitForVBlank() };
     hr2ret(_hr,_hr)
   }
   
   //  Method TakeOwnership
   
   #[allow(non_snake_case)]
-  pub fn take_ownership<T: HasIID>(&self, device: &T, exclusive: BOOL) -> HResult<HRESULT> {
+  fn take_ownership<T: TUnknown>(&self, device: &T, exclusive: BOOL) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).TakeOwnership(device.iptr() as *mut _ as *mut _ , exclusive) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).TakeOwnership(device.iptr() as *mut _ as *mut _ , exclusive) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ReleaseOwnership
   
   #[allow(non_snake_case)]
-  pub fn release_ownership(&self) -> () {
+  fn release_ownership(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).ReleaseOwnership() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).ReleaseOwnership() };
     ()
   }
   
   //  Method GetGammaControlCapabilities
   
   #[allow(non_snake_case)]
-  pub fn get_gamma_control_capabilities(&self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
+  fn get_gamma_control_capabilities(&self) -> HResult<DXGI_GAMMA_CONTROL_CAPABILITIES> {
     let mut lv1: DXGI_GAMMA_CONTROL_CAPABILITIES = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).GetGammaControlCapabilities(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).GetGammaControlCapabilities(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method SetGammaControl
   
   #[allow(non_snake_case)]
-  pub fn set_gamma_control(&self, array: &DXGI_GAMMA_CONTROL) -> HResult<HRESULT> {
+  fn set_gamma_control(&self, array: &DXGI_GAMMA_CONTROL) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).SetGammaControl(array) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).SetGammaControl(array) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetGammaControl
   
   #[allow(non_snake_case)]
-  pub fn get_gamma_control(&self) -> HResult<DXGI_GAMMA_CONTROL> {
+  fn get_gamma_control(&self) -> HResult<DXGI_GAMMA_CONTROL> {
     let mut lv1: DXGI_GAMMA_CONTROL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).GetGammaControl(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).GetGammaControl(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method SetDisplaySurface
   
   #[allow(non_snake_case)]
-  pub fn set_display_surface<T: HasIID>(&self, scanout_surface: &T) -> HResult<HRESULT> {
+  fn set_display_surface<T: TDXGISurface>(&self, scanout_surface: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).SetDisplaySurface(scanout_surface.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).SetDisplaySurface(scanout_surface.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetDisplaySurfaceData
   
   #[allow(non_snake_case)]
-  pub fn get_display_surface_data<T: HasIID>(&self, destination: &T) -> HResult<HRESULT> {
+  fn get_display_surface_data<T: TDXGISurface>(&self, destination: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).GetDisplaySurfaceData(destination.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).GetDisplaySurfaceData(destination.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetFrameStatistics
   
   #[allow(non_snake_case)]
-  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
+  fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIOutput)).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIOutput)).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
 
-pub struct DXGIResource(*mut IDXGIResource);
-
-impl HasIID for DXGIResource {
-  fn iid() -> REFGUID { &IID_IDXGIResource }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGIResource(pp_vtbl as *mut _ as *mut IDXGIResource) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGIResource {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DXGIOutput {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIOutput(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DXGIOutput {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIOutput {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIOutput {}
+impl TDXGIOutput for DXGIOutput {}
 
-impl Clone for DXGIResource {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DXGIOutput(*mut IDXGIOutput);
+
+impl HasIID for DXGIOutput {
+  fn iid() -> REFGUID { &IID_IDXGIOutput }
 }
 
-
-
-impl DXGIResource {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TDXGIResource: TDXGIDeviceSubObject {
   //  Method GetSharedHandle
   
   #[allow(non_snake_case)]
-  pub fn get_shared_handle(&self) -> HResult<HANDLE> {
+  fn get_shared_handle(&self) -> HResult<HANDLE> {
     let mut lv1: HANDLE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIResource)).GetSharedHandle(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIResource)).GetSharedHandle(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetUsage
   
   #[allow(non_snake_case)]
-  pub fn get_usage(&self) -> HResult<DXGI_USAGE> {
+  fn get_usage(&self) -> HResult<DXGI_USAGE> {
     let mut lv1: DXGI_USAGE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIResource)).GetUsage(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIResource)).GetUsage(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method SetEvictionPriority
   
   #[allow(non_snake_case)]
-  pub fn set_eviction_priority(&self, eviction_priority: UINT) -> HResult<HRESULT> {
+  fn set_eviction_priority(&self, eviction_priority: UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGIResource)).SetEvictionPriority(eviction_priority) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIResource)).SetEvictionPriority(eviction_priority) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetEvictionPriority
   
   #[allow(non_snake_case)]
-  pub fn get_eviction_priority(&self) -> HResult<UINT> {
+  fn get_eviction_priority(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGIResource)).GetEvictionPriority(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGIResource)).GetEvictionPriority(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
 
-pub struct DXGISurface1(*mut IDXGISurface1);
-
-impl HasIID for DXGISurface1 {
-  fn iid() -> REFGUID { &IID_IDXGISurface1 }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGISurface1(pp_vtbl as *mut _ as *mut IDXGISurface1) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGISurface1 {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DXGIResource {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGIResource(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DXGIResource {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGIResource {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGIResource {}
+impl TDXGIDeviceSubObject for DXGIResource {}
+impl TDXGIResource for DXGIResource {}
 
-impl Clone for DXGISurface1 {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DXGIResource(*mut IDXGIResource);
+
+impl HasIID for DXGIResource {
+  fn iid() -> REFGUID { &IID_IDXGIResource }
 }
 
-
-
-impl DXGISurface1 {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
-  //  Method GetDesc
-  
-  #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> HResult<DXGI_SURFACE_DESC> {
-    let mut lv1: DXGI_SURFACE_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGISurface)).GetDesc(&mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method Map
-  
-  #[allow(non_snake_case)]
-  pub fn map(&self, map_flags: UINT) -> HResult<DXGI_MAPPED_RECT> {
-    let mut lv1: DXGI_MAPPED_RECT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGISurface)).Map(&mut lv1 as *mut _ as *mut _, map_flags) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method Unmap
-  
-  #[allow(non_snake_case)]
-  pub fn unmap(&self) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGISurface)).Unmap() };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TDXGISurface1: TDXGISurface {
   //  Method GetDC
   
   #[allow(non_snake_case)]
-  pub fn get_dc(&self, discard: BOOL) -> HResult<HDC> {
+  fn get_dc(&self, discard: BOOL) -> HResult<HDC> {
     let mut lv1: HDC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGISurface1)).GetDC(discard, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISurface1)).GetDC(discard, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method ReleaseDC
   
   #[allow(non_snake_case)]
-  pub fn release_dc(&self, dirty_rect: Option<&mut RECT>) -> HResult<HRESULT> {
+  fn release_dc(&self, dirty_rect: Option<&mut RECT>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGISurface1)).ReleaseDC(opt_as_mut_ptr(&dirty_rect)) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISurface1)).ReleaseDC(opt_as_mut_ptr(&dirty_rect)) };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
-pub struct DXGISurface(*mut IDXGISurface);
-
-impl HasIID for DXGISurface {
-  fn iid() -> REFGUID { &IID_IDXGISurface }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGISurface(pp_vtbl as *mut _ as *mut IDXGISurface) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGISurface {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DXGISurface1 {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGISurface1(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DXGISurface1 {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGISurface1 {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGISurface1 {}
+impl TDXGIDeviceSubObject for DXGISurface1 {}
+impl TDXGISurface for DXGISurface1 {}
+impl TDXGISurface1 for DXGISurface1 {}
 
-impl Clone for DXGISurface {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DXGISurface1(*mut IDXGISurface1);
+
+impl HasIID for DXGISurface1 {
+  fn iid() -> REFGUID { &IID_IDXGISurface1 }
 }
 
-
-
-impl DXGISurface {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TDXGISurface: TDXGIDeviceSubObject {
   //  Method GetDesc
   
   #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> HResult<DXGI_SURFACE_DESC> {
+  fn get_desc(&self) -> HResult<DXGI_SURFACE_DESC> {
     let mut lv1: DXGI_SURFACE_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGISurface)).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISurface)).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method Map
   
   #[allow(non_snake_case)]
-  pub fn map(&self, map_flags: UINT) -> HResult<DXGI_MAPPED_RECT> {
+  fn map(&self, map_flags: UINT) -> HResult<DXGI_MAPPED_RECT> {
     let mut lv1: DXGI_MAPPED_RECT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGISurface)).Map(&mut lv1 as *mut _ as *mut _, map_flags) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISurface)).Map(&mut lv1 as *mut _ as *mut _, map_flags) };
     hr2ret(_hr,lv1)
   }
   
   //  Method Unmap
   
   #[allow(non_snake_case)]
-  pub fn unmap(&self) -> HResult<HRESULT> {
+  fn unmap(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGISurface)).Unmap() };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISurface)).Unmap() };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
-pub struct DXGISwapChain(*mut IDXGISwapChain);
-
-impl HasIID for DXGISwapChain {
-  fn iid() -> REFGUID { &IID_IDXGISwapChain }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { DXGISwapChain(pp_vtbl as *mut _ as *mut IDXGISwapChain) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for DXGISwapChain {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for DXGISurface {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGISurface(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for DXGISurface {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGISurface {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGISurface {}
+impl TDXGIDeviceSubObject for DXGISurface {}
+impl TDXGISurface for DXGISurface {}
 
-impl Clone for DXGISwapChain {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct DXGISurface(*mut IDXGISurface);
+
+impl HasIID for DXGISurface {
+  fn iid() -> REFGUID { &IID_IDXGISurface }
 }
 
-
-
-impl DXGISwapChain {
-  //  Method SetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn set_private_data<T>(&self, name: &GUID, data: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).SetPrivateData(name, mem::size_of_val(data) as UINT, data as *const _ as *const _) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPrivateData
-  
-  #[allow(non_snake_case)]
-  pub fn get_private_data<T>(&self, name: &GUID, data: Option<&mut T>) -> HResult<UINT> {
-    let mut lv1: UINT = data.as_ref().map(|v|mem::size_of_val(*v)).unwrap_or(0) as UINT;
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetPrivateData(name, &mut lv1, data.map(|v|v as *const _ as *mut _).unwrap_or(ptr::null_mut())) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetParent
-  
-  #[allow(non_snake_case)]
-  pub fn get_parent<T: HasIID>(&self) -> HResult<T> {
-    let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGIObject)).GetParent(T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
-    hr2ret(_hr,T::new(lv1))
-  }
-  
+pub trait TDXGISwapChain: TDXGIDeviceSubObject {
   //  Method Present
   
   #[allow(non_snake_case)]
-  pub fn present(&self, sync_interval: UINT, flags: UINT) -> HResult<HRESULT> {
+  fn present(&self, sync_interval: UINT, flags: UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGISwapChain)).Present(sync_interval, flags) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISwapChain)).Present(sync_interval, flags) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetBuffer
   
   #[allow(non_snake_case)]
-  pub fn get_buffer<T: HasIID>(&self, buffer: UINT) -> HResult<T> {
+  fn get_buffer<T: TUnknown+HasIID>(&self, buffer: UINT) -> HResult<T> {
     let mut lv1: *mut IUnknown = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGISwapChain)).GetBuffer(buffer, T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISwapChain)).GetBuffer(buffer, T::iid(), &mut lv1 as *mut *mut _ as *mut *mut c_void) };
     hr2ret(_hr,T::new(lv1))
   }
   
   //  Method SetFullscreenState
   
   #[allow(non_snake_case)]
-  pub fn set_fullscreen_state(&self, fullscreen: BOOL, target: Option<&DXGIOutput>) -> HResult<HRESULT> {
+  fn set_fullscreen_state(&self, fullscreen: BOOL, target: Option<&DXGIOutput>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGISwapChain)).SetFullscreenState(fullscreen, target.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISwapChain)).SetFullscreenState(fullscreen, target.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetFullscreenState
   
   #[allow(non_snake_case)]
-  pub fn get_fullscreen_state(&self, fullscreen: Option<&mut BOOL>) -> HResult<DXGIOutput> {
+  fn get_fullscreen_state(&self, fullscreen: Option<&mut BOOL>) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGISwapChain)).GetFullscreenState(opt_as_mut_ptr(&fullscreen), &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISwapChain)).GetFullscreenState(opt_as_mut_ptr(&fullscreen), &mut lv1 as *mut *mut _) };
     hr2ret(_hr,DXGIOutput::new(lv1 as *mut _))
   }
   
   //  Method GetDesc
   
   #[allow(non_snake_case)]
-  pub fn get_desc(&self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
+  fn get_desc(&self) -> HResult<DXGI_SWAP_CHAIN_DESC> {
     let mut lv1: DXGI_SWAP_CHAIN_DESC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGISwapChain)).GetDesc(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISwapChain)).GetDesc(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method ResizeBuffers
   
   #[allow(non_snake_case)]
-  pub fn resize_buffers(&self, buffer_count: UINT, width: UINT, height: UINT, new_format: DXGI_FORMAT, swap_chain_flags: UINT) -> HResult<HRESULT> {
+  fn resize_buffers(&self, buffer_count: UINT, width: UINT, height: UINT, new_format: DXGI_FORMAT, swap_chain_flags: UINT) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGISwapChain)).ResizeBuffers(buffer_count, width, height, new_format, swap_chain_flags) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISwapChain)).ResizeBuffers(buffer_count, width, height, new_format, swap_chain_flags) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ResizeTarget
   
   #[allow(non_snake_case)]
-  pub fn resize_target(&self, new_target_parameters: &DXGI_MODE_DESC) -> HResult<HRESULT> {
+  fn resize_target(&self, new_target_parameters: &DXGI_MODE_DESC) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut IDXGISwapChain)).ResizeTarget(new_target_parameters) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISwapChain)).ResizeTarget(new_target_parameters) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetContainingOutput
   
   #[allow(non_snake_case)]
-  pub fn get_containing_output(&self) -> HResult<DXGIOutput> {
+  fn get_containing_output(&self) -> HResult<DXGIOutput> {
     let mut lv1: *mut IDXGIOutput = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut IDXGISwapChain)).GetContainingOutput(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISwapChain)).GetContainingOutput(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,DXGIOutput::new(lv1 as *mut _))
   }
   
   //  Method GetFrameStatistics
   
   #[allow(non_snake_case)]
-  pub fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
+  fn get_frame_statistics(&self) -> HResult<DXGI_FRAME_STATISTICS> {
     let mut lv1: DXGI_FRAME_STATISTICS = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGISwapChain)).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISwapChain)).GetFrameStatistics(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetLastPresentCount
   
   #[allow(non_snake_case)]
-  pub fn get_last_present_count(&self) -> HResult<UINT> {
+  fn get_last_present_count(&self) -> HResult<UINT> {
     let mut lv1: UINT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut IDXGISwapChain)).GetLastPresentCount(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut IDXGISwapChain)).GetLastPresentCount(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
+
+impl TUnknown for DXGISwapChain {
+  fn new(ptr: *mut IUnknown) -> Self {
+    DXGISwapChain(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for DXGISwapChain {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for DXGISwapChain {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TDXGIObject for DXGISwapChain {}
+impl TDXGIDeviceSubObject for DXGISwapChain {}
+impl TDXGISwapChain for DXGISwapChain {}
+
+pub struct DXGISwapChain(*mut IDXGISwapChain);
+
+impl HasIID for DXGISwapChain {
+  fn iid() -> REFGUID { &IID_IDXGISwapChain }
+}
+

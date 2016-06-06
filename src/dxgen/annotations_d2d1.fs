@@ -186,7 +186,7 @@ let d2d1 =
       ("target",InComPtr);
       ("renderTargetProperties",InOptional);
       ("renderTarget",OutReturnComPtr);
-    ],MANone);
+    ],MADontImplement);
     ("CreateHwndRenderTarget",[
       ("This",AThis);
       ("renderTargetProperties",ANone);
@@ -484,7 +484,7 @@ let d2d1 =
       ("wicBitmapSource",InComPtr);
       ("bitmapProperties",InOptional);
       ("bitmap",OutReturnComPtr);
-    ],MANone);
+    ],MADontImplement); // 
     ("CreateSharedBitmap",[
       ("This",AThis);
       ("riid",ANone);
@@ -1063,7 +1063,7 @@ let d2d1_1 = [
       ("wicBitmapSource",ANone);
       ("bitmapProperties",ANone);
       ("bitmap",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("CreateColorContext",[
       ("This",AThis);
       ("space",ANone);
@@ -1080,7 +1080,7 @@ let d2d1_1 = [
       ("This",AThis);
       ("wicColorContext",ANone);
       ("colorContext",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("CreateBitmapFromDxgiSurface",[
       ("This",AThis);
       ("surface",InComPtr);
@@ -1260,7 +1260,7 @@ let d2d1_1 = [
       ("documentTarget",ANone);
       ("printControlProperties",ANone);
       ("printControl",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("SetMaximumTextureMemory",[
       ("This",AThis);
       ("maximumInBytes",ANone);
@@ -1655,7 +1655,7 @@ let d2d1_3 = [
       ("loadingOptions",ANone);
       ("alphaMode",ANone);
       ("imageSource",ANone);
-    ],MANone);
+    ],MADontImplement);
     ("CreateLookupTable3D",[
       ("This",AThis);
       ("precision",ANone);

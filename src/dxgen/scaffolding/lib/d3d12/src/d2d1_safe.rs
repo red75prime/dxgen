@@ -2,3895 +2,1683 @@
 
 use utils::*;
 
+use dxgi_safe::*;
 use dwrite_safe::*;
-
-pub struct D2D1BitmapBrush(*mut ID2D1BitmapBrush);
-
-impl HasIID for D2D1BitmapBrush {
-  fn iid() -> REFGUID { &IID_ID2D1BitmapBrush }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1BitmapBrush(pp_vtbl as *mut _ as *mut ID2D1BitmapBrush) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1BitmapBrush {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D2D1BitmapBrush {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1BitmapBrush {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method SetOpacity
-  
-  #[allow(non_snake_case)]
-  pub fn set_opacity(&self, opacity: FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).SetOpacity(opacity) };
-    ()
-  }
-  
-  //  Method SetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).SetTransform(transform) };
-    ()
-  }
-  
-  //  Method GetOpacity
-  
-  #[allow(non_snake_case)]
-  pub fn get_opacity(&self) -> FLOAT {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).GetOpacity() };
-    _hr
-  }
-  
-  //  Method GetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn get_transform(&self) -> D2D1_MATRIX_3X2_F {
-    let mut lv1: D2D1_MATRIX_3X2_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).GetTransform(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
+pub trait TD2D1BitmapBrush: TD2D1Brush {
   //  Method SetExtendModeX
   
   #[allow(non_snake_case)]
-  pub fn set_extend_mode_x(&self, extendModeX: D2D1_EXTEND_MODE) -> () {
+  fn set_extend_mode_x(&self, extendModeX: D2D1_EXTEND_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1BitmapBrush)).SetExtendModeX(extendModeX) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1BitmapBrush)).SetExtendModeX(extendModeX) };
     ()
   }
   
   //  Method SetExtendModeY
   
   #[allow(non_snake_case)]
-  pub fn set_extend_mode_y(&self, extendModeY: D2D1_EXTEND_MODE) -> () {
+  fn set_extend_mode_y(&self, extendModeY: D2D1_EXTEND_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1BitmapBrush)).SetExtendModeY(extendModeY) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1BitmapBrush)).SetExtendModeY(extendModeY) };
     ()
   }
   
   //  Method SetInterpolationMode
   
   #[allow(non_snake_case)]
-  pub fn set_interpolation_mode(&self, interpolationMode: D2D1_BITMAP_INTERPOLATION_MODE) -> () {
+  fn set_interpolation_mode(&self, interpolationMode: D2D1_BITMAP_INTERPOLATION_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1BitmapBrush)).SetInterpolationMode(interpolationMode) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1BitmapBrush)).SetInterpolationMode(interpolationMode) };
     ()
   }
   
   //  Method SetBitmap
   
   #[allow(non_snake_case)]
-  pub fn set_bitmap<T: HasIID>(&self, bitmap: &T) -> () {
+  fn set_bitmap<T: TD2D1Bitmap>(&self, bitmap: &T) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1BitmapBrush)).SetBitmap(bitmap.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1BitmapBrush)).SetBitmap(bitmap.iptr() as *mut _ as *mut _ ) };
     ()
   }
   
   //  Method GetExtendModeX
   
   #[allow(non_snake_case)]
-  pub fn get_extend_mode_x(&self) -> D2D1_EXTEND_MODE {
+  fn get_extend_mode_x(&self) -> D2D1_EXTEND_MODE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1BitmapBrush)).GetExtendModeX() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1BitmapBrush)).GetExtendModeX() };
     _hr
   }
   
   //  Method GetExtendModeY
   
   #[allow(non_snake_case)]
-  pub fn get_extend_mode_y(&self) -> D2D1_EXTEND_MODE {
+  fn get_extend_mode_y(&self) -> D2D1_EXTEND_MODE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1BitmapBrush)).GetExtendModeY() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1BitmapBrush)).GetExtendModeY() };
     _hr
   }
   
   //  Method GetInterpolationMode
   
   #[allow(non_snake_case)]
-  pub fn get_interpolation_mode(&self) -> D2D1_BITMAP_INTERPOLATION_MODE {
+  fn get_interpolation_mode(&self) -> D2D1_BITMAP_INTERPOLATION_MODE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1BitmapBrush)).GetInterpolationMode() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1BitmapBrush)).GetInterpolationMode() };
     _hr
   }
   
   //  Method GetBitmap
   
   #[allow(non_snake_case)]
-  pub fn get_bitmap(&self) -> Option<D2D1Bitmap> {
+  fn get_bitmap(&self) -> Option<D2D1Bitmap> {
     let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1BitmapBrush)).GetBitmap(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1BitmapBrush)).GetBitmap(&mut lv1 as *mut *mut _) };
     if lv1==ptr::null_mut() {None} else {Some(D2D1Bitmap::new(lv1 as *mut _))}
   }
   
   
 }
 
+impl TUnknown for D2D1BitmapBrush {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1BitmapBrush(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1BitmapBrush {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1BitmapBrush {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1BitmapBrush {}
+impl TD2D1Brush for D2D1BitmapBrush {}
+impl TD2D1BitmapBrush for D2D1BitmapBrush {}
+
+pub struct D2D1BitmapBrush(*mut ID2D1BitmapBrush);
+
+impl HasIID for D2D1BitmapBrush {
+  fn iid() -> REFGUID { &IID_ID2D1BitmapBrush }
+}
+
+pub trait TD2D1BitmapRenderTarget: TD2D1RenderTarget {
+  //  Method GetBitmap
+  
+  #[allow(non_snake_case)]
+  fn get_bitmap(&self) -> HResult<D2D1Bitmap> {
+    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1BitmapRenderTarget)).GetBitmap(&mut lv1 as *mut *mut _) };
+    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
+  }
+  
+  
+}
+
+impl TUnknown for D2D1BitmapRenderTarget {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1BitmapRenderTarget(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1BitmapRenderTarget {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1BitmapRenderTarget {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1BitmapRenderTarget {}
+impl TD2D1RenderTarget for D2D1BitmapRenderTarget {}
+impl TD2D1BitmapRenderTarget for D2D1BitmapRenderTarget {}
+
 pub struct D2D1BitmapRenderTarget(*mut ID2D1BitmapRenderTarget);
 
 impl HasIID for D2D1BitmapRenderTarget {
   fn iid() -> REFGUID { &IID_ID2D1BitmapRenderTarget }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1BitmapRenderTarget(pp_vtbl as *mut _ as *mut ID2D1BitmapRenderTarget) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1BitmapRenderTarget {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D2D1BitmapRenderTarget {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1BitmapRenderTarget {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method CreateBitmap
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn create_bitmap<T>(&self, size: D2D1_SIZE_U, srcData: &[T], pitch: UINT32, bitmapProperties: &D2D1_BITMAP_PROPERTIES) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr= { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmap(size, srcData.as_ptr() as *const _, pitch, bitmapProperties, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateBitmapFromWicBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn create_bitmap_from_wic_bitmap<T: HasIID>(&self, wicBitmapSource: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapFromWicBitmap(wicBitmapSource.iptr() as *mut _ as *mut _ , bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateSharedBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn create_shared_bitmap<T: HasIID>(&self, data: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSharedBitmap(T::iid(), data.iptr() as *mut _ as *mut c_void, bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateBitmapBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_bitmap_brush<T: HasIID>(&self, bitmap: &T, bitmapBrushProperties: Option<&D2D1_BITMAP_BRUSH_PROPERTIES>, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1BitmapBrush> {
-    let mut lv1: *mut ID2D1BitmapBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapBrush(bitmap.iptr() as *mut _ as *mut _ , bitmapBrushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1BitmapBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateSolidColorBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_solid_color_brush(&self, color: &D2D1_COLOR_F, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1SolidColorBrush> {
-    let mut lv1: *mut ID2D1SolidColorBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSolidColorBrush(color, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1SolidColorBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateGradientStopCollection
-  
-  #[allow(non_snake_case)]
-  pub fn create_gradient_stop_collection(&self, gradientStops: &[D2D1_GRADIENT_STOP], colorInterpolationGamma: D2D1_GAMMA, extendMode: D2D1_EXTEND_MODE) -> HResult<D2D1GradientStopCollection> {
-    let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateGradientStopCollection(slice_as_ptr(gradientStops), gradientStops.len() as UINT32, colorInterpolationGamma, extendMode, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1GradientStopCollection::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateLinearGradientBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_linear_gradient_brush<T: HasIID>(&self, linearGradientBrushProperties: &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1LinearGradientBrush> {
-    let mut lv1: *mut ID2D1LinearGradientBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLinearGradientBrush(linearGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1LinearGradientBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateRadialGradientBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_radial_gradient_brush<T: HasIID>(&self, radialGradientBrushProperties: &D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1RadialGradientBrush> {
-    let mut lv1: *mut ID2D1RadialGradientBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateRadialGradientBrush(radialGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1RadialGradientBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateCompatibleRenderTarget
-  
-  #[allow(non_snake_case)]
-  pub fn create_compatible_render_target(&self, desiredSize: Option<&D2D1_SIZE_F>, desiredPixelSize: Option<&D2D1_SIZE_U>, desiredFormat: Option<&D2D1_PIXEL_FORMAT>, options: D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS) -> HResult<D2D1BitmapRenderTarget> {
-    let mut lv1: *mut ID2D1BitmapRenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateCompatibleRenderTarget(desiredSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredPixelSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredFormat.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), options, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1BitmapRenderTarget::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateLayer
-  
-  #[allow(non_snake_case)]
-  pub fn create_layer(&self, size: Option<&D2D1_SIZE_F>) -> HResult<D2D1Layer> {
-    let mut lv1: *mut ID2D1Layer = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLayer(size.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Layer::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateMesh
-  
-  #[allow(non_snake_case)]
-  pub fn create_mesh(&self) -> HResult<D2D1Mesh> {
-    let mut lv1: *mut ID2D1Mesh = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateMesh(&mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Mesh::new(lv1 as *mut _))
-  }
-  
-  //  Method DrawLine
-  
-  #[allow(non_snake_case)]
-  pub fn draw_line<T: HasIID>(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    ()
-  }
-  
-  //  Method DrawRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn draw_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    ()
-  }
-  
-  //  Method FillRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn fill_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush.iptr() as *mut _ as *mut _ ) };
-    ()
-  }
-  
-  //  Method DrawRoundedRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn draw_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRoundedRectangle(roundedRect, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillRoundedRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn fill_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRoundedRectangle(roundedRect, brush) };
-    ()
-  }
-  
-  //  Method DrawEllipse
-  
-  #[allow(non_snake_case)]
-  pub fn draw_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawEllipse(ellipse, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillEllipse
-  
-  #[allow(non_snake_case)]
-  pub fn fill_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillEllipse(ellipse, brush) };
-    ()
-  }
-  
-  //  Method DrawGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn draw_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawGeometry(geometry, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn fill_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, opacityBrush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillGeometry(geometry, brush, opacityBrush) };
-    ()
-  }
-  
-  //  Method FillMesh
-  
-  #[allow(non_snake_case)]
-  pub fn fill_mesh(&self, mesh: &mut ID2D1Mesh, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillMesh(mesh, brush) };
-    ()
-  }
-  
-  //  Method FillOpacityMask
-  
-  #[allow(non_snake_case)]
-  pub fn fill_opacity_mask(&self, opacityMask: &mut ID2D1Bitmap, brush: &mut ID2D1Brush, content: D2D1_OPACITY_MASK_CONTENT, destinationRectangle: &D2D1_RECT_F, sourceRectangle: &D2D1_RECT_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillOpacityMask(opacityMask, brush, content, destinationRectangle, sourceRectangle) };
-    ()
-  }
-  
-  //  Method DrawBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn draw_bitmap(&self, bitmap: &mut ID2D1Bitmap, destinationRectangle: &D2D1_RECT_F, opacity: FLOAT, interpolationMode: D2D1_BITMAP_INTERPOLATION_MODE, sourceRectangle: &D2D1_RECT_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode, sourceRectangle) };
-    ()
-  }
-  
-  //  Method DrawText
-  
-  #[allow(non_snake_case)]
-  pub fn draw_text<T: HasIID, T1: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &T1, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutRect, defaultForegroundBrush.iptr() as *mut _ as *mut _ , options, measuringMode) };
-    ()
-  }
-  
-  //  Method DrawTextLayout
-  
-  #[allow(non_snake_case)]
-  pub fn draw_text_layout(&self, origin: D2D1_POINT_2F, textLayout: &mut IDWriteTextLayout, defaultForegroundBrush: &mut ID2D1Brush, options: D2D1_DRAW_TEXT_OPTIONS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawTextLayout(origin, textLayout, defaultForegroundBrush, options) };
-    ()
-  }
-  
-  //  Method DrawGlyphRun
-  
-  #[allow(non_snake_case)]
-  pub fn draw_glyph_run(&self, baselineOrigin: D2D1_POINT_2F, glyphRun: &DWRITE_GLYPH_RUN, foregroundBrush: &mut ID2D1Brush, measuringMode: DWRITE_MEASURING_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawGlyphRun(baselineOrigin, glyphRun, foregroundBrush, measuringMode) };
-    ()
-  }
-  
-  //  Method SetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTransform(transform) };
-    ()
-  }
-  
-  //  Method GetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn get_transform(&self, transform: &mut D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTransform(transform) };
-    ()
-  }
-  
-  //  Method SetAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn set_antialias_mode(&self, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetAntialiasMode(antialiasMode) };
-    ()
-  }
-  
-  //  Method GetAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn get_antialias_mode(&self) -> D2D1_ANTIALIAS_MODE {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetAntialiasMode() };
-    _hr
-  }
-  
-  //  Method SetTextAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn set_text_antialias_mode(&self, textAntialiasMode: D2D1_TEXT_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTextAntialiasMode(textAntialiasMode) };
-    ()
-  }
-  
-  //  Method GetTextAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn get_text_antialias_mode(&self) -> D2D1_TEXT_ANTIALIAS_MODE {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTextAntialiasMode() };
-    _hr
-  }
-  
-  //  Method SetTextRenderingParams
-  
-  #[allow(non_snake_case)]
-  pub fn set_text_rendering_params(&self, textRenderingParams: &mut IDWriteRenderingParams) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTextRenderingParams(textRenderingParams) };
-    ()
-  }
-  
-  //  Method GetTextRenderingParams
-  //  Error: textRenderingParams parameter: ANone annotation cannot be used with double indirection
-  //  Method SetTags
-  
-  #[allow(non_snake_case)]
-  pub fn set_tags(&self, tag1: D2D1_TAG, tag2: D2D1_TAG) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTags(tag1, tag2) };
-    ()
-  }
-  
-  //  Method GetTags
-  
-  #[allow(non_snake_case)]
-  pub fn get_tags(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTags(tag1, tag2) };
-    ()
-  }
-  
-  //  Method PushLayer
-  
-  #[allow(non_snake_case)]
-  pub fn push_layer(&self, layerParameters: &D2D1_LAYER_PARAMETERS, layer: &mut ID2D1Layer) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PushLayer(layerParameters, layer) };
-    ()
-  }
-  
-  //  Method PopLayer
-  
-  #[allow(non_snake_case)]
-  pub fn pop_layer(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PopLayer() };
-    ()
-  }
-  
-  //  Method Flush
-  
-  #[allow(non_snake_case)]
-  pub fn flush(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SaveDrawingState
-  
-  #[allow(non_snake_case)]
-  pub fn save_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SaveDrawingState(drawingStateBlock) };
-    ()
-  }
-  
-  //  Method RestoreDrawingState
-  
-  #[allow(non_snake_case)]
-  pub fn restore_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).RestoreDrawingState(drawingStateBlock) };
-    ()
-  }
-  
-  //  Method PushAxisAlignedClip
-  
-  #[allow(non_snake_case)]
-  pub fn push_axis_aligned_clip(&self, clipRect: &D2D1_RECT_F, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PushAxisAlignedClip(clipRect, antialiasMode) };
-    ()
-  }
-  
-  //  Method PopAxisAlignedClip
-  
-  #[allow(non_snake_case)]
-  pub fn pop_axis_aligned_clip(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PopAxisAlignedClip() };
-    ()
-  }
-  
-  //  Method Clear
-  
-  #[allow(non_snake_case)]
-  pub fn clear(&self, clearColor: &D2D1_COLOR_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Clear(clearColor) };
-    ()
-  }
-  
-  //  Method BeginDraw
-  
-  #[allow(non_snake_case)]
-  pub fn begin_draw(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).BeginDraw() };
-    ()
-  }
-  
-  //  Method EndDraw
-  
-  #[allow(non_snake_case)]
-  pub fn end_draw(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPixelFormat
-  
-  #[allow(non_snake_case)]
-  pub fn get_pixel_format(&self) -> D2D1_PIXEL_FORMAT {
-    let mut lv1: D2D1_PIXEL_FORMAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetPixelFormat(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method SetDpi
-  
-  #[allow(non_snake_case)]
-  pub fn set_dpi(&self, dpiX: FLOAT, dpiY: FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetDpi(dpiX, dpiY) };
-    ()
-  }
-  
-  //  Method GetDpi
-  
-  #[allow(non_snake_case)]
-  pub fn get_dpi(&self, dpiX: &mut FLOAT, dpiY: &mut FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetDpi(dpiX, dpiY) };
-    ()
-  }
-  
+pub trait TD2D1Bitmap: TD2D1Image {
   //  Method GetSize
   
   #[allow(non_snake_case)]
-  pub fn get_size(&self) -> D2D1_SIZE_F {
+  fn get_size(&self) -> D2D1_SIZE_F {
     let mut lv1: D2D1_SIZE_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetSize(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Bitmap)).GetSize(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetPixelSize
   
   #[allow(non_snake_case)]
-  pub fn get_pixel_size(&self) -> D2D1_SIZE_U {
+  fn get_pixel_size(&self) -> D2D1_SIZE_U {
     let mut lv1: D2D1_SIZE_U = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetPixelSize(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method GetMaximumBitmapSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_maximum_bitmap_size(&self) -> UINT32 {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetMaximumBitmapSize() };
-    _hr
-  }
-  
-  //  Method IsSupported
-  
-  #[allow(non_snake_case)]
-  pub fn is_supported(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> BOOL {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).IsSupported(renderTargetProperties) };
-    _hr
-  }
-  
-  //  Method GetBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn get_bitmap(&self) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1BitmapRenderTarget)).GetBitmap(&mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  
-}
-
-pub struct D2D1Bitmap(*mut ID2D1Bitmap);
-
-impl HasIID for D2D1Bitmap {
-  fn iid() -> REFGUID { &IID_ID2D1Bitmap }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Bitmap(pp_vtbl as *mut _ as *mut ID2D1Bitmap) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1Bitmap {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D2D1Bitmap {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1Bitmap {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method GetSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_size(&self) -> D2D1_SIZE_F {
-    let mut lv1: D2D1_SIZE_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Bitmap)).GetSize(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method GetPixelSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_pixel_size(&self) -> D2D1_SIZE_U {
-    let mut lv1: D2D1_SIZE_U = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Bitmap)).GetPixelSize(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Bitmap)).GetPixelSize(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetPixelFormat
   
   #[allow(non_snake_case)]
-  pub fn get_pixel_format(&self) -> D2D1_PIXEL_FORMAT {
+  fn get_pixel_format(&self) -> D2D1_PIXEL_FORMAT {
     let mut lv1: D2D1_PIXEL_FORMAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Bitmap)).GetPixelFormat(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Bitmap)).GetPixelFormat(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetDpi
   
   #[allow(non_snake_case)]
-  pub fn get_dpi(&self) -> (FLOAT, FLOAT) {
+  fn get_dpi(&self) -> (FLOAT, FLOAT) {
     let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
     let mut lv2: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Bitmap)).GetDpi(&mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Bitmap)).GetDpi(&mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     (lv1, lv2)
   }
   
   //  Method CopyFromBitmap
   
   #[allow(non_snake_case)]
-  pub fn copy_from_bitmap<T: HasIID>(&self, destPoint: Option<&D2D1_POINT_2U>, bitmap: &T, srcRect: Option<&D2D1_RECT_U>) -> HResult<HRESULT> {
+  fn copy_from_bitmap<T: TD2D1Bitmap>(&self, destPoint: Option<&D2D1_POINT_2U>, bitmap: &T, srcRect: Option<&D2D1_RECT_U>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Bitmap)).CopyFromBitmap(destPoint.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), bitmap.iptr() as *mut _ as *mut _ , srcRect.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Bitmap)).CopyFromBitmap(destPoint.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), bitmap.iptr() as *mut _ as *mut _ , srcRect.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CopyFromRenderTarget
   
   #[allow(non_snake_case)]
-  pub fn copy_from_render_target<T: HasIID>(&self, destPoint: Option<&D2D1_POINT_2U>, renderTarget: &T, srcRect: Option<&D2D1_RECT_U>) -> HResult<HRESULT> {
+  fn copy_from_render_target<T: TD2D1RenderTarget>(&self, destPoint: Option<&D2D1_POINT_2U>, renderTarget: &T, srcRect: Option<&D2D1_RECT_U>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Bitmap)).CopyFromRenderTarget(destPoint.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), renderTarget.iptr() as *mut _ as *mut _ , srcRect.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Bitmap)).CopyFromRenderTarget(destPoint.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), renderTarget.iptr() as *mut _ as *mut _ , srcRect.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CopyFromMemory
   
   #[allow(non_snake_case)]
-  pub unsafe fn copy_from_memory<T>(&self, dstRect: Option<&D2D1_RECT_U>, srcData: &[T], pitch: UINT32) -> HResult<HRESULT> {
+  unsafe fn copy_from_memory<T>(&self, dstRect: Option<&D2D1_RECT_U>, srcData: &[T], pitch: UINT32) -> HResult<HRESULT> {
   
-    let _hr= { (*(self.0 as *mut ID2D1Bitmap)).CopyFromMemory(dstRect.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), srcData.as_ptr() as *const _, pitch) };
+    let _hr= { (*(self.iptr() as *mut ID2D1Bitmap)).CopyFromMemory(dstRect.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), srcData.as_ptr() as *const _, pitch) };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
-pub struct D2D1Brush(*mut ID2D1Brush);
-
-impl HasIID for D2D1Brush {
-  fn iid() -> REFGUID { &IID_ID2D1Brush }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Brush(pp_vtbl as *mut _ as *mut ID2D1Brush) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1Brush {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1Bitmap {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1Bitmap(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1Bitmap {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1Bitmap {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1Bitmap {}
+impl TD2D1Image for D2D1Bitmap {}
+impl TD2D1Bitmap for D2D1Bitmap {}
 
-impl Clone for D2D1Brush {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1Bitmap(*mut ID2D1Bitmap);
+
+impl HasIID for D2D1Bitmap {
+  fn iid() -> REFGUID { &IID_ID2D1Bitmap }
 }
 
-
-
-impl D2D1Brush {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
+pub trait TD2D1Brush: TD2D1Resource {
   //  Method SetOpacity
   
   #[allow(non_snake_case)]
-  pub fn set_opacity(&self, opacity: FLOAT) -> () {
+  fn set_opacity(&self, opacity: FLOAT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).SetOpacity(opacity) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Brush)).SetOpacity(opacity) };
     ()
   }
   
   //  Method SetTransform
   
   #[allow(non_snake_case)]
-  pub fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
+  fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).SetTransform(transform) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Brush)).SetTransform(transform) };
     ()
   }
   
   //  Method GetOpacity
   
   #[allow(non_snake_case)]
-  pub fn get_opacity(&self) -> FLOAT {
+  fn get_opacity(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).GetOpacity() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Brush)).GetOpacity() };
     _hr
   }
   
   //  Method GetTransform
   
   #[allow(non_snake_case)]
-  pub fn get_transform(&self) -> D2D1_MATRIX_3X2_F {
+  fn get_transform(&self) -> D2D1_MATRIX_3X2_F {
     let mut lv1: D2D1_MATRIX_3X2_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).GetTransform(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Brush)).GetTransform(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   
 }
+
+impl TUnknown for D2D1Brush {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1Brush(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1Brush {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1Brush {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1Brush {}
+impl TD2D1Brush for D2D1Brush {}
+
+pub struct D2D1Brush(*mut ID2D1Brush);
+
+impl HasIID for D2D1Brush {
+  fn iid() -> REFGUID { &IID_ID2D1Brush }
+}
+
+pub trait TD2D1DCRenderTarget: TD2D1RenderTarget {
+  //  Method BindDC
+  
+  #[allow(non_snake_case)]
+  fn bind_dc(&self, hDC: HDC, sub_rect: &RECT) -> HResult<HRESULT> {
+  
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1DCRenderTarget)).BindDC(hDC, sub_rect) };
+    hr2ret(_hr,_hr)
+  }
+  
+  
+}
+
+impl TUnknown for D2D1DCRenderTarget {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1DCRenderTarget(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1DCRenderTarget {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1DCRenderTarget {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1DCRenderTarget {}
+impl TD2D1RenderTarget for D2D1DCRenderTarget {}
+impl TD2D1DCRenderTarget for D2D1DCRenderTarget {}
 
 pub struct D2D1DCRenderTarget(*mut ID2D1DCRenderTarget);
 
 impl HasIID for D2D1DCRenderTarget {
   fn iid() -> REFGUID { &IID_ID2D1DCRenderTarget }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1DCRenderTarget(pp_vtbl as *mut _ as *mut ID2D1DCRenderTarget) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1DCRenderTarget {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D2D1DCRenderTarget {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1DCRenderTarget {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method CreateBitmap
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn create_bitmap<T>(&self, size: D2D1_SIZE_U, srcData: &[T], pitch: UINT32, bitmapProperties: &D2D1_BITMAP_PROPERTIES) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr= { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmap(size, srcData.as_ptr() as *const _, pitch, bitmapProperties, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateBitmapFromWicBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn create_bitmap_from_wic_bitmap<T: HasIID>(&self, wicBitmapSource: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapFromWicBitmap(wicBitmapSource.iptr() as *mut _ as *mut _ , bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateSharedBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn create_shared_bitmap<T: HasIID>(&self, data: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSharedBitmap(T::iid(), data.iptr() as *mut _ as *mut c_void, bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateBitmapBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_bitmap_brush<T: HasIID>(&self, bitmap: &T, bitmapBrushProperties: Option<&D2D1_BITMAP_BRUSH_PROPERTIES>, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1BitmapBrush> {
-    let mut lv1: *mut ID2D1BitmapBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapBrush(bitmap.iptr() as *mut _ as *mut _ , bitmapBrushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1BitmapBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateSolidColorBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_solid_color_brush(&self, color: &D2D1_COLOR_F, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1SolidColorBrush> {
-    let mut lv1: *mut ID2D1SolidColorBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSolidColorBrush(color, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1SolidColorBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateGradientStopCollection
-  
-  #[allow(non_snake_case)]
-  pub fn create_gradient_stop_collection(&self, gradientStops: &[D2D1_GRADIENT_STOP], colorInterpolationGamma: D2D1_GAMMA, extendMode: D2D1_EXTEND_MODE) -> HResult<D2D1GradientStopCollection> {
-    let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateGradientStopCollection(slice_as_ptr(gradientStops), gradientStops.len() as UINT32, colorInterpolationGamma, extendMode, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1GradientStopCollection::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateLinearGradientBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_linear_gradient_brush<T: HasIID>(&self, linearGradientBrushProperties: &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1LinearGradientBrush> {
-    let mut lv1: *mut ID2D1LinearGradientBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLinearGradientBrush(linearGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1LinearGradientBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateRadialGradientBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_radial_gradient_brush<T: HasIID>(&self, radialGradientBrushProperties: &D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1RadialGradientBrush> {
-    let mut lv1: *mut ID2D1RadialGradientBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateRadialGradientBrush(radialGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1RadialGradientBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateCompatibleRenderTarget
-  
-  #[allow(non_snake_case)]
-  pub fn create_compatible_render_target(&self, desiredSize: Option<&D2D1_SIZE_F>, desiredPixelSize: Option<&D2D1_SIZE_U>, desiredFormat: Option<&D2D1_PIXEL_FORMAT>, options: D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS) -> HResult<D2D1BitmapRenderTarget> {
-    let mut lv1: *mut ID2D1BitmapRenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateCompatibleRenderTarget(desiredSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredPixelSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredFormat.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), options, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1BitmapRenderTarget::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateLayer
-  
-  #[allow(non_snake_case)]
-  pub fn create_layer(&self, size: Option<&D2D1_SIZE_F>) -> HResult<D2D1Layer> {
-    let mut lv1: *mut ID2D1Layer = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLayer(size.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Layer::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateMesh
-  
-  #[allow(non_snake_case)]
-  pub fn create_mesh(&self) -> HResult<D2D1Mesh> {
-    let mut lv1: *mut ID2D1Mesh = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateMesh(&mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Mesh::new(lv1 as *mut _))
-  }
-  
-  //  Method DrawLine
-  
-  #[allow(non_snake_case)]
-  pub fn draw_line<T: HasIID>(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    ()
-  }
-  
-  //  Method DrawRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn draw_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    ()
-  }
-  
-  //  Method FillRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn fill_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush.iptr() as *mut _ as *mut _ ) };
-    ()
-  }
-  
-  //  Method DrawRoundedRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn draw_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRoundedRectangle(roundedRect, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillRoundedRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn fill_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRoundedRectangle(roundedRect, brush) };
-    ()
-  }
-  
-  //  Method DrawEllipse
-  
-  #[allow(non_snake_case)]
-  pub fn draw_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawEllipse(ellipse, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillEllipse
-  
-  #[allow(non_snake_case)]
-  pub fn fill_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillEllipse(ellipse, brush) };
-    ()
-  }
-  
-  //  Method DrawGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn draw_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawGeometry(geometry, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn fill_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, opacityBrush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillGeometry(geometry, brush, opacityBrush) };
-    ()
-  }
-  
-  //  Method FillMesh
-  
-  #[allow(non_snake_case)]
-  pub fn fill_mesh(&self, mesh: &mut ID2D1Mesh, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillMesh(mesh, brush) };
-    ()
-  }
-  
-  //  Method FillOpacityMask
-  
-  #[allow(non_snake_case)]
-  pub fn fill_opacity_mask(&self, opacityMask: &mut ID2D1Bitmap, brush: &mut ID2D1Brush, content: D2D1_OPACITY_MASK_CONTENT, destinationRectangle: &D2D1_RECT_F, sourceRectangle: &D2D1_RECT_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillOpacityMask(opacityMask, brush, content, destinationRectangle, sourceRectangle) };
-    ()
-  }
-  
-  //  Method DrawBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn draw_bitmap(&self, bitmap: &mut ID2D1Bitmap, destinationRectangle: &D2D1_RECT_F, opacity: FLOAT, interpolationMode: D2D1_BITMAP_INTERPOLATION_MODE, sourceRectangle: &D2D1_RECT_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode, sourceRectangle) };
-    ()
-  }
-  
-  //  Method DrawText
-  
-  #[allow(non_snake_case)]
-  pub fn draw_text<T: HasIID, T1: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &T1, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutRect, defaultForegroundBrush.iptr() as *mut _ as *mut _ , options, measuringMode) };
-    ()
-  }
-  
-  //  Method DrawTextLayout
-  
-  #[allow(non_snake_case)]
-  pub fn draw_text_layout(&self, origin: D2D1_POINT_2F, textLayout: &mut IDWriteTextLayout, defaultForegroundBrush: &mut ID2D1Brush, options: D2D1_DRAW_TEXT_OPTIONS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawTextLayout(origin, textLayout, defaultForegroundBrush, options) };
-    ()
-  }
-  
-  //  Method DrawGlyphRun
-  
-  #[allow(non_snake_case)]
-  pub fn draw_glyph_run(&self, baselineOrigin: D2D1_POINT_2F, glyphRun: &DWRITE_GLYPH_RUN, foregroundBrush: &mut ID2D1Brush, measuringMode: DWRITE_MEASURING_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawGlyphRun(baselineOrigin, glyphRun, foregroundBrush, measuringMode) };
-    ()
-  }
-  
-  //  Method SetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTransform(transform) };
-    ()
-  }
-  
-  //  Method GetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn get_transform(&self, transform: &mut D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTransform(transform) };
-    ()
-  }
-  
-  //  Method SetAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn set_antialias_mode(&self, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetAntialiasMode(antialiasMode) };
-    ()
-  }
-  
-  //  Method GetAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn get_antialias_mode(&self) -> D2D1_ANTIALIAS_MODE {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetAntialiasMode() };
-    _hr
-  }
-  
-  //  Method SetTextAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn set_text_antialias_mode(&self, textAntialiasMode: D2D1_TEXT_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTextAntialiasMode(textAntialiasMode) };
-    ()
-  }
-  
-  //  Method GetTextAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn get_text_antialias_mode(&self) -> D2D1_TEXT_ANTIALIAS_MODE {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTextAntialiasMode() };
-    _hr
-  }
-  
-  //  Method SetTextRenderingParams
-  
-  #[allow(non_snake_case)]
-  pub fn set_text_rendering_params(&self, textRenderingParams: &mut IDWriteRenderingParams) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTextRenderingParams(textRenderingParams) };
-    ()
-  }
-  
-  //  Method GetTextRenderingParams
-  //  Error: textRenderingParams parameter: ANone annotation cannot be used with double indirection
-  //  Method SetTags
-  
-  #[allow(non_snake_case)]
-  pub fn set_tags(&self, tag1: D2D1_TAG, tag2: D2D1_TAG) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTags(tag1, tag2) };
-    ()
-  }
-  
-  //  Method GetTags
-  
-  #[allow(non_snake_case)]
-  pub fn get_tags(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTags(tag1, tag2) };
-    ()
-  }
-  
-  //  Method PushLayer
-  
-  #[allow(non_snake_case)]
-  pub fn push_layer(&self, layerParameters: &D2D1_LAYER_PARAMETERS, layer: &mut ID2D1Layer) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PushLayer(layerParameters, layer) };
-    ()
-  }
-  
-  //  Method PopLayer
-  
-  #[allow(non_snake_case)]
-  pub fn pop_layer(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PopLayer() };
-    ()
-  }
-  
-  //  Method Flush
-  
-  #[allow(non_snake_case)]
-  pub fn flush(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SaveDrawingState
-  
-  #[allow(non_snake_case)]
-  pub fn save_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SaveDrawingState(drawingStateBlock) };
-    ()
-  }
-  
-  //  Method RestoreDrawingState
-  
-  #[allow(non_snake_case)]
-  pub fn restore_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).RestoreDrawingState(drawingStateBlock) };
-    ()
-  }
-  
-  //  Method PushAxisAlignedClip
-  
-  #[allow(non_snake_case)]
-  pub fn push_axis_aligned_clip(&self, clipRect: &D2D1_RECT_F, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PushAxisAlignedClip(clipRect, antialiasMode) };
-    ()
-  }
-  
-  //  Method PopAxisAlignedClip
-  
-  #[allow(non_snake_case)]
-  pub fn pop_axis_aligned_clip(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PopAxisAlignedClip() };
-    ()
-  }
-  
-  //  Method Clear
-  
-  #[allow(non_snake_case)]
-  pub fn clear(&self, clearColor: &D2D1_COLOR_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Clear(clearColor) };
-    ()
-  }
-  
-  //  Method BeginDraw
-  
-  #[allow(non_snake_case)]
-  pub fn begin_draw(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).BeginDraw() };
-    ()
-  }
-  
-  //  Method EndDraw
-  
-  #[allow(non_snake_case)]
-  pub fn end_draw(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPixelFormat
-  
-  #[allow(non_snake_case)]
-  pub fn get_pixel_format(&self) -> D2D1_PIXEL_FORMAT {
-    let mut lv1: D2D1_PIXEL_FORMAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetPixelFormat(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method SetDpi
-  
-  #[allow(non_snake_case)]
-  pub fn set_dpi(&self, dpiX: FLOAT, dpiY: FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetDpi(dpiX, dpiY) };
-    ()
-  }
-  
-  //  Method GetDpi
-  
-  #[allow(non_snake_case)]
-  pub fn get_dpi(&self, dpiX: &mut FLOAT, dpiY: &mut FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetDpi(dpiX, dpiY) };
-    ()
-  }
-  
-  //  Method GetSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_size(&self) -> D2D1_SIZE_F {
-    let mut lv1: D2D1_SIZE_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetSize(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method GetPixelSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_pixel_size(&self) -> D2D1_SIZE_U {
-    let mut lv1: D2D1_SIZE_U = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetPixelSize(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method GetMaximumBitmapSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_maximum_bitmap_size(&self) -> UINT32 {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetMaximumBitmapSize() };
-    _hr
-  }
-  
-  //  Method IsSupported
-  
-  #[allow(non_snake_case)]
-  pub fn is_supported(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> BOOL {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).IsSupported(renderTargetProperties) };
-    _hr
-  }
-  
-  //  Method BindDC
-  
-  #[allow(non_snake_case)]
-  pub fn bind_dc(&self, hDC: HDC, sub_rect: &RECT) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DCRenderTarget)).BindDC(hDC, sub_rect) };
-    hr2ret(_hr,_hr)
-  }
-  
-  
-}
-
-pub struct D2D1DrawingStateBlock(*mut ID2D1DrawingStateBlock);
-
-impl HasIID for D2D1DrawingStateBlock {
-  fn iid() -> REFGUID { &IID_ID2D1DrawingStateBlock }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1DrawingStateBlock(pp_vtbl as *mut _ as *mut ID2D1DrawingStateBlock) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1DrawingStateBlock {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D2D1DrawingStateBlock {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1DrawingStateBlock {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
+pub trait TD2D1DrawingStateBlock: TD2D1Resource {
   //  Method GetDescription
   
   #[allow(non_snake_case)]
-  pub fn get_description(&self) -> D2D1_DRAWING_STATE_DESCRIPTION {
+  fn get_description(&self) -> D2D1_DRAWING_STATE_DESCRIPTION {
     let mut lv1: D2D1_DRAWING_STATE_DESCRIPTION = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DrawingStateBlock)).GetDescription(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1DrawingStateBlock)).GetDescription(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method SetDescription
   
   #[allow(non_snake_case)]
-  pub fn set_description(&self, stateDescription: &D2D1_DRAWING_STATE_DESCRIPTION) -> () {
+  fn set_description(&self, stateDescription: &D2D1_DRAWING_STATE_DESCRIPTION) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DrawingStateBlock)).SetDescription(stateDescription) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1DrawingStateBlock)).SetDescription(stateDescription) };
     ()
   }
   
   //  Method SetTextRenderingParams
   
   #[allow(non_snake_case)]
-  pub fn set_text_rendering_params<T: HasIID>(&self, textRenderingParams: &T) -> () {
+  fn set_text_rendering_params<T: TDWriteRenderingParams>(&self, textRenderingParams: &T) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DrawingStateBlock)).SetTextRenderingParams(textRenderingParams.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1DrawingStateBlock)).SetTextRenderingParams(textRenderingParams.iptr() as *mut _ as *mut _ ) };
     ()
   }
   
   //  Method GetTextRenderingParams
   
   #[allow(non_snake_case)]
-  pub fn get_text_rendering_params(&self) -> DWriteRenderingParams {
+  fn get_text_rendering_params(&self) -> DWriteRenderingParams {
     let mut lv1: *mut IDWriteRenderingParams = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1DrawingStateBlock)).GetTextRenderingParams(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1DrawingStateBlock)).GetTextRenderingParams(&mut lv1 as *mut *mut _) };
     DWriteRenderingParams::new(lv1 as *mut _)
   }
   
   
 }
 
-pub struct D2D1EllipseGeometry(*mut ID2D1EllipseGeometry);
-
-impl HasIID for D2D1EllipseGeometry {
-  fn iid() -> REFGUID { &IID_ID2D1EllipseGeometry }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1EllipseGeometry(pp_vtbl as *mut _ as *mut ID2D1EllipseGeometry) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1EllipseGeometry {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1DrawingStateBlock {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1DrawingStateBlock(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1DrawingStateBlock {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1DrawingStateBlock {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1DrawingStateBlock {}
+impl TD2D1DrawingStateBlock for D2D1DrawingStateBlock {}
 
-impl Clone for D2D1EllipseGeometry {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1DrawingStateBlock(*mut ID2D1DrawingStateBlock);
+
+impl HasIID for D2D1DrawingStateBlock {
+  fn iid() -> REFGUID { &IID_ID2D1DrawingStateBlock }
 }
 
-
-
-impl D2D1EllipseGeometry {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method GetBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetWidenedBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method StrokeContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method FillContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method CompareWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
-    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method Simplify
-  
-  #[allow(non_snake_case)]
-  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Tessellate
-  
-  #[allow(non_snake_case)]
-  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method CombineWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Outline
-  
-  #[allow(non_snake_case)]
-  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method ComputeArea
-  
-  #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputeLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputePointAtLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
-    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
-    hr2ret(_hr,(lv1, lv2))
-  }
-  
-  //  Method Widen
-  
-  #[allow(non_snake_case)]
-  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD2D1EllipseGeometry: TD2D1Geometry {
   //  Method GetEllipse
   
   #[allow(non_snake_case)]
-  pub fn get_ellipse(&self) -> D2D1_ELLIPSE {
+  fn get_ellipse(&self) -> D2D1_ELLIPSE {
     let mut lv1: D2D1_ELLIPSE = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1EllipseGeometry)).GetEllipse(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1EllipseGeometry)).GetEllipse(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   
 }
 
-pub struct D2D1Factory(*mut ID2D1Factory);
-
-impl HasIID for D2D1Factory {
-  fn iid() -> REFGUID { &IID_ID2D1Factory }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Factory(pp_vtbl as *mut _ as *mut ID2D1Factory) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1Factory {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1EllipseGeometry {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1EllipseGeometry(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1EllipseGeometry {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1EllipseGeometry {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1EllipseGeometry {}
+impl TD2D1Geometry for D2D1EllipseGeometry {}
+impl TD2D1EllipseGeometry for D2D1EllipseGeometry {}
 
-impl Clone for D2D1Factory {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1EllipseGeometry(*mut ID2D1EllipseGeometry);
+
+impl HasIID for D2D1EllipseGeometry {
+  fn iid() -> REFGUID { &IID_ID2D1EllipseGeometry }
 }
 
-
-
-impl D2D1Factory {
+pub trait TD2D1Factory: TUnknown {
   //  Method ReloadSystemMetrics
   
   #[allow(non_snake_case)]
-  pub fn reload_system_metrics(&self) -> HResult<HRESULT> {
+  fn reload_system_metrics(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).ReloadSystemMetrics() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).ReloadSystemMetrics() };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetDesktopDpi
   
   #[allow(non_snake_case)]
-  pub fn get_desktop_dpi(&self) -> (FLOAT, FLOAT) {
+  fn get_desktop_dpi(&self) -> (FLOAT, FLOAT) {
     let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
     let mut lv2: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).GetDesktopDpi(&mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).GetDesktopDpi(&mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     (lv1, lv2)
   }
   
   //  Method CreateRectangleGeometry
   
   #[allow(non_snake_case)]
-  pub fn create_rectangle_geometry(&self, rectangle: &D2D1_RECT_F) -> HResult<D2D1RectangleGeometry> {
+  fn create_rectangle_geometry(&self, rectangle: &D2D1_RECT_F) -> HResult<D2D1RectangleGeometry> {
     let mut lv1: *mut ID2D1RectangleGeometry = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateRectangleGeometry(rectangle, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreateRectangleGeometry(rectangle, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1RectangleGeometry::new(lv1 as *mut _))
   }
   
   //  Method CreateRoundedRectangleGeometry
   
   #[allow(non_snake_case)]
-  pub fn create_rounded_rectangle_geometry(&self, roundedRectangle: &D2D1_ROUNDED_RECT) -> HResult<D2D1RoundedRectangleGeometry> {
+  fn create_rounded_rectangle_geometry(&self, roundedRectangle: &D2D1_ROUNDED_RECT) -> HResult<D2D1RoundedRectangleGeometry> {
     let mut lv1: *mut ID2D1RoundedRectangleGeometry = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateRoundedRectangleGeometry(roundedRectangle, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreateRoundedRectangleGeometry(roundedRectangle, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1RoundedRectangleGeometry::new(lv1 as *mut _))
   }
   
   //  Method CreateEllipseGeometry
   
   #[allow(non_snake_case)]
-  pub fn create_ellipse_geometry(&self, ellipse: &D2D1_ELLIPSE) -> HResult<D2D1EllipseGeometry> {
+  fn create_ellipse_geometry(&self, ellipse: &D2D1_ELLIPSE) -> HResult<D2D1EllipseGeometry> {
     let mut lv1: *mut ID2D1EllipseGeometry = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateEllipseGeometry(ellipse, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreateEllipseGeometry(ellipse, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1EllipseGeometry::new(lv1 as *mut _))
   }
   
   //  Method CreateGeometryGroup
   
   #[allow(non_snake_case)]
-  pub fn create_geometry_group<T: HasIID>(&self, fillMode: D2D1_FILL_MODE, geometries: &[&T]) -> HResult<D2D1GeometryGroup> {
+  fn create_geometry_group<T: TD2D1Geometry>(&self, fillMode: D2D1_FILL_MODE, geometries: &[&T]) -> HResult<D2D1GeometryGroup> {
     let mut lv1: Vec<*mut IUnknown> = geometries.iter().map(|o|o.iptr()).collect();
     let mut lv2: *mut ID2D1GeometryGroup = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateGeometryGroup(fillMode, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, geometries.len() as UINT32, &mut lv2 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreateGeometryGroup(fillMode, lv1.as_mut_ptr() as *mut *mut _ as *mut *mut _, geometries.len() as UINT32, &mut lv2 as *mut *mut _) };
     hr2ret(_hr,D2D1GeometryGroup::new(lv2 as *mut _))
   }
   
   //  Method CreateTransformedGeometry
   
   #[allow(non_snake_case)]
-  pub fn create_transformed_geometry<T: HasIID>(&self, sourceGeometry: &T, transform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1TransformedGeometry> {
+  fn create_transformed_geometry<T: TD2D1Geometry>(&self, sourceGeometry: &T, transform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1TransformedGeometry> {
     let mut lv1: *mut ID2D1TransformedGeometry = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateTransformedGeometry(sourceGeometry.iptr() as *mut _ as *mut _ , transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreateTransformedGeometry(sourceGeometry.iptr() as *mut _ as *mut _ , transform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1TransformedGeometry::new(lv1 as *mut _))
   }
   
   //  Method CreatePathGeometry
   
   #[allow(non_snake_case)]
-  pub fn create_path_geometry(&self) -> HResult<D2D1PathGeometry> {
+  fn create_path_geometry(&self) -> HResult<D2D1PathGeometry> {
     let mut lv1: *mut ID2D1PathGeometry = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreatePathGeometry(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreatePathGeometry(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1PathGeometry::new(lv1 as *mut _))
   }
   
   //  Method CreateStrokeStyle
   
   #[allow(non_snake_case)]
-  pub fn create_stroke_style(&self, strokeStyleProperties: &D2D1_STROKE_STYLE_PROPERTIES, dashes: Option<&[FLOAT]>) -> HResult<D2D1StrokeStyle> {
+  fn create_stroke_style(&self, strokeStyleProperties: &D2D1_STROKE_STYLE_PROPERTIES, dashes: Option<&[FLOAT]>) -> HResult<D2D1StrokeStyle> {
     let mut lv1: *mut ID2D1StrokeStyle = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateStrokeStyle(strokeStyleProperties, opt_arr_as_ptr(&dashes) as *const _, dashes.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreateStrokeStyle(strokeStyleProperties, opt_arr_as_ptr(&dashes) as *const _, dashes.as_ref().map(|a|a.len()).unwrap_or(0) as UINT32, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1StrokeStyle::new(lv1 as *mut _))
   }
   
   //  Method CreateDrawingStateBlock
   
   #[allow(non_snake_case)]
-  pub fn create_drawing_state_block(&self, drawingStateDescription: Option<&D2D1_DRAWING_STATE_DESCRIPTION>, textRenderingParams: Option<&DWriteRenderingParams>) -> HResult<D2D1DrawingStateBlock> {
+  fn create_drawing_state_block(&self, drawingStateDescription: Option<&D2D1_DRAWING_STATE_DESCRIPTION>, textRenderingParams: Option<&DWriteRenderingParams>) -> HResult<D2D1DrawingStateBlock> {
     let mut lv1: *mut ID2D1DrawingStateBlock = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateDrawingStateBlock(drawingStateDescription.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), textRenderingParams.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreateDrawingStateBlock(drawingStateDescription.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), textRenderingParams.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1DrawingStateBlock::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateWicBitmapRenderTarget
-  
-  #[allow(non_snake_case)]
-  pub fn create_wic_bitmap_render_target<T: HasIID>(&self, target: &T, renderTargetProperties: Option<&D2D1_RENDER_TARGET_PROPERTIES>) -> HResult<D2D1RenderTarget> {
-    let mut lv1: *mut ID2D1RenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateWicBitmapRenderTarget(target.iptr() as *mut _ as *mut _ , renderTargetProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1RenderTarget::new(lv1 as *mut _))
   }
   
   //  Method CreateHwndRenderTarget
   
   #[allow(non_snake_case)]
-  pub fn create_hwnd_render_target(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES, hwndRenderTargetProperties: &D2D1_HWND_RENDER_TARGET_PROPERTIES) -> HResult<D2D1HwndRenderTarget> {
+  fn create_hwnd_render_target(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES, hwndRenderTargetProperties: &D2D1_HWND_RENDER_TARGET_PROPERTIES) -> HResult<D2D1HwndRenderTarget> {
     let mut lv1: *mut ID2D1HwndRenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateHwndRenderTarget(renderTargetProperties, hwndRenderTargetProperties, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreateHwndRenderTarget(renderTargetProperties, hwndRenderTargetProperties, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1HwndRenderTarget::new(lv1 as *mut _))
   }
   
   //  Method CreateDxgiSurfaceRenderTarget
   
   #[allow(non_snake_case)]
-  pub fn create_dxgi_surface_render_target<T: HasIID>(&self, dxgiSurface: &T, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> HResult<D2D1RenderTarget> {
+  fn create_dxgi_surface_render_target<T: TDXGISurface>(&self, dxgiSurface: &T, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> HResult<D2D1RenderTarget> {
     let mut lv1: *mut ID2D1RenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateDxgiSurfaceRenderTarget(dxgiSurface.iptr() as *mut _ as *mut _ , renderTargetProperties, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreateDxgiSurfaceRenderTarget(dxgiSurface.iptr() as *mut _ as *mut _ , renderTargetProperties, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1RenderTarget::new(lv1 as *mut _))
   }
   
   //  Method CreateDCRenderTarget
   
   #[allow(non_snake_case)]
-  pub fn create_d_c_render_target(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> HResult<D2D1DCRenderTarget> {
+  fn create_d_c_render_target(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> HResult<D2D1DCRenderTarget> {
     let mut lv1: *mut ID2D1DCRenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Factory)).CreateDCRenderTarget(renderTargetProperties, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Factory)).CreateDCRenderTarget(renderTargetProperties, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1DCRenderTarget::new(lv1 as *mut _))
   }
   
   
 }
 
-pub struct D2D1GdiInteropRenderTarget(*mut ID2D1GdiInteropRenderTarget);
-
-impl HasIID for D2D1GdiInteropRenderTarget {
-  fn iid() -> REFGUID { &IID_ID2D1GdiInteropRenderTarget }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1GdiInteropRenderTarget(pp_vtbl as *mut _ as *mut ID2D1GdiInteropRenderTarget) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1GdiInteropRenderTarget {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1Factory {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1Factory(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1Factory {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1Factory {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Factory for D2D1Factory {}
 
-impl Clone for D2D1GdiInteropRenderTarget {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1Factory(*mut ID2D1Factory);
+
+impl HasIID for D2D1Factory {
+  fn iid() -> REFGUID { &IID_ID2D1Factory }
 }
 
-
-
-impl D2D1GdiInteropRenderTarget {
+pub trait TD2D1GdiInteropRenderTarget: TUnknown {
   //  Method GetDC
   
   #[allow(non_snake_case)]
-  pub fn get_dc(&self, mode: D2D1_DC_INITIALIZE_MODE) -> HResult<HDC> {
+  fn get_dc(&self, mode: D2D1_DC_INITIALIZE_MODE) -> HResult<HDC> {
     let mut lv1: HDC = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GdiInteropRenderTarget)).GetDC(mode, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GdiInteropRenderTarget)).GetDC(mode, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method ReleaseDC
   
   #[allow(non_snake_case)]
-  pub fn release_dc(&self, update: Option<&RECT>) -> HResult<HRESULT> {
+  fn release_dc(&self, update: Option<&RECT>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GdiInteropRenderTarget)).ReleaseDC(update.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GdiInteropRenderTarget)).ReleaseDC(update.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null())) };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
-pub struct D2D1GeometryGroup(*mut ID2D1GeometryGroup);
-
-impl HasIID for D2D1GeometryGroup {
-  fn iid() -> REFGUID { &IID_ID2D1GeometryGroup }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1GeometryGroup(pp_vtbl as *mut _ as *mut ID2D1GeometryGroup) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1GeometryGroup {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1GdiInteropRenderTarget {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1GdiInteropRenderTarget(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1GdiInteropRenderTarget {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1GdiInteropRenderTarget {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1GdiInteropRenderTarget for D2D1GdiInteropRenderTarget {}
 
-impl Clone for D2D1GeometryGroup {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1GdiInteropRenderTarget(*mut ID2D1GdiInteropRenderTarget);
+
+impl HasIID for D2D1GdiInteropRenderTarget {
+  fn iid() -> REFGUID { &IID_ID2D1GdiInteropRenderTarget }
 }
 
-
-
-impl D2D1GeometryGroup {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method GetBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetWidenedBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method StrokeContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method FillContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method CompareWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
-    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method Simplify
-  
-  #[allow(non_snake_case)]
-  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Tessellate
-  
-  #[allow(non_snake_case)]
-  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method CombineWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Outline
-  
-  #[allow(non_snake_case)]
-  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method ComputeArea
-  
-  #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputeLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputePointAtLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
-    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
-    hr2ret(_hr,(lv1, lv2))
-  }
-  
-  //  Method Widen
-  
-  #[allow(non_snake_case)]
-  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD2D1GeometryGroup: TD2D1Geometry {
   //  Method GetFillMode
   
   #[allow(non_snake_case)]
-  pub fn get_fill_mode(&self) -> D2D1_FILL_MODE {
+  fn get_fill_mode(&self) -> D2D1_FILL_MODE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GeometryGroup)).GetFillMode() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GeometryGroup)).GetFillMode() };
     _hr
   }
   
   //  Method GetSourceGeometryCount
   
   #[allow(non_snake_case)]
-  pub fn get_source_geometry_count(&self) -> UINT32 {
+  fn get_source_geometry_count(&self) -> UINT32 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GeometryGroup)).GetSourceGeometryCount() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GeometryGroup)).GetSourceGeometryCount() };
     _hr
   }
   
   
   #[allow(non_snake_case)]
-  pub fn get_source_geometries(&self) -> Vec<D2D1Geometry> {
+  fn get_source_geometries(&self) -> Vec<D2D1Geometry> {
     let cnt = self.get_source_geometry_count() as usize;
     let mut lv1: Vec<*mut ID2D1Geometry> = vec![ptr::null_mut(); cnt];
-    let _hr = unsafe { (*(self.0 as *mut ID2D1GeometryGroup)).GetSourceGeometries(lv1[..].as_mut_ptr(), cnt as u32) };
+    let _hr = unsafe { (*(self.iptr() as *mut ID2D1GeometryGroup)).GetSourceGeometries(lv1[..].as_mut_ptr(), cnt as u32) };
     lv1.iter().map(|&ptr|D2D1Geometry::new(ptr as *mut _)).collect()
   }  
   
 }
 
-pub struct D2D1GeometrySink(*mut ID2D1GeometrySink);
-
-impl HasIID for D2D1GeometrySink {
-  fn iid() -> REFGUID { &IID_ID2D1GeometrySink }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1GeometrySink(pp_vtbl as *mut _ as *mut ID2D1GeometrySink) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1GeometrySink {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1GeometryGroup {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1GeometryGroup(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1GeometryGroup {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1GeometryGroup {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1GeometryGroup {}
+impl TD2D1Geometry for D2D1GeometryGroup {}
+impl TD2D1GeometryGroup for D2D1GeometryGroup {}
 
-impl Clone for D2D1GeometrySink {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1GeometryGroup(*mut ID2D1GeometryGroup);
+
+impl HasIID for D2D1GeometryGroup {
+  fn iid() -> REFGUID { &IID_ID2D1GeometryGroup }
 }
 
-
-
-impl D2D1GeometrySink {
-  //  Method SetFillMode
-  
-  #[allow(non_snake_case)]
-  pub fn set_fill_mode(&self, fillMode: D2D1_FILL_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).SetFillMode(fillMode) };
-    ()
-  }
-  
-  //  Method SetSegmentFlags
-  
-  #[allow(non_snake_case)]
-  pub fn set_segment_flags(&self, vertexFlags: D2D1_PATH_SEGMENT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).SetSegmentFlags(vertexFlags) };
-    ()
-  }
-  
-  //  Method BeginFigure
-  
-  #[allow(non_snake_case)]
-  pub fn begin_figure(&self, startPoint: D2D1_POINT_2F, figureBegin: D2D1_FIGURE_BEGIN) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).BeginFigure(startPoint, figureBegin) };
-    ()
-  }
-  
-  //  Method AddLines
-  
-  #[allow(non_snake_case)]
-  pub fn add_lines(&self, points: &D2D1_POINT_2F, pointsCount: UINT32) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).AddLines(points, pointsCount) };
-    ()
-  }
-  
-  //  Method AddBeziers
-  
-  #[allow(non_snake_case)]
-  pub fn add_beziers(&self, beziers: &D2D1_BEZIER_SEGMENT, beziersCount: UINT32) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).AddBeziers(beziers, beziersCount) };
-    ()
-  }
-  
-  //  Method EndFigure
-  
-  #[allow(non_snake_case)]
-  pub fn end_figure(&self, figureEnd: D2D1_FIGURE_END) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).EndFigure(figureEnd) };
-    ()
-  }
-  
-  //  Method Close
-  
-  #[allow(non_snake_case)]
-  pub fn close(&self) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).Close() };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD2D1GeometrySink: TD2D1SimplifiedGeometrySink {
   //  Method AddLine
   
   #[allow(non_snake_case)]
-  pub fn add_line(&self, point: D2D1_POINT_2F) -> () {
+  fn add_line(&self, point: D2D1_POINT_2F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GeometrySink)).AddLine(point) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GeometrySink)).AddLine(point) };
     ()
   }
   
   //  Method AddBezier
   
   #[allow(non_snake_case)]
-  pub fn add_bezier(&self, bezier: &D2D1_BEZIER_SEGMENT) -> () {
+  fn add_bezier(&self, bezier: &D2D1_BEZIER_SEGMENT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GeometrySink)).AddBezier(bezier) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GeometrySink)).AddBezier(bezier) };
     ()
   }
   
   //  Method AddQuadraticBezier
   
   #[allow(non_snake_case)]
-  pub fn add_quadratic_bezier(&self, bezier: &D2D1_QUADRATIC_BEZIER_SEGMENT) -> () {
+  fn add_quadratic_bezier(&self, bezier: &D2D1_QUADRATIC_BEZIER_SEGMENT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GeometrySink)).AddQuadraticBezier(bezier) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GeometrySink)).AddQuadraticBezier(bezier) };
     ()
   }
   
   //  Method AddQuadraticBeziers
   
   #[allow(non_snake_case)]
-  pub fn add_quadratic_beziers(&self, beziers: &[D2D1_QUADRATIC_BEZIER_SEGMENT]) -> () {
+  fn add_quadratic_beziers(&self, beziers: &[D2D1_QUADRATIC_BEZIER_SEGMENT]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GeometrySink)).AddQuadraticBeziers(slice_as_ptr(beziers), beziers.len() as UINT32) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GeometrySink)).AddQuadraticBeziers(slice_as_ptr(beziers), beziers.len() as UINT32) };
     ()
   }
   
   //  Method AddArc
   
   #[allow(non_snake_case)]
-  pub fn add_arc(&self, arc: &D2D1_ARC_SEGMENT) -> () {
+  fn add_arc(&self, arc: &D2D1_ARC_SEGMENT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GeometrySink)).AddArc(arc) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GeometrySink)).AddArc(arc) };
     ()
   }
   
   
 }
 
-pub struct D2D1Geometry(*mut ID2D1Geometry);
-
-impl HasIID for D2D1Geometry {
-  fn iid() -> REFGUID { &IID_ID2D1Geometry }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Geometry(pp_vtbl as *mut _ as *mut ID2D1Geometry) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1Geometry {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1GeometrySink {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1GeometrySink(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1GeometrySink {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1GeometrySink {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1SimplifiedGeometrySink for D2D1GeometrySink {}
+impl TD2D1GeometrySink for D2D1GeometrySink {}
 
-impl Clone for D2D1Geometry {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1GeometrySink(*mut ID2D1GeometrySink);
+
+impl HasIID for D2D1GeometrySink {
+  fn iid() -> REFGUID { &IID_ID2D1GeometrySink }
 }
 
-
-
-impl D2D1Geometry {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
+pub trait TD2D1Geometry: TD2D1Resource {
   //  Method GetBounds
   
   #[allow(non_snake_case)]
-  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
+  fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
     let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetWidenedBounds
   
   #[allow(non_snake_case)]
-  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
+  fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
     let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method StrokeContainsPoint
   
   #[allow(non_snake_case)]
-  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+  fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
     let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method FillContainsPoint
   
   #[allow(non_snake_case)]
-  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
+  fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
     let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method CompareWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
+  fn compare_with_geometry<T: TD2D1Geometry>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
     let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method Simplify
   
   #[allow(non_snake_case)]
-  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
+  fn simplify<T: TD2D1SimplifiedGeometrySink>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Tessellate
   
   #[allow(non_snake_case)]
-  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
+  fn tessellate<T: TD2D1TessellationSink>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method CombineWithGeometry
   
   #[allow(non_snake_case)]
-  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
+  fn combine_with_geometry<T: TD2D1Geometry, T1: TD2D1SimplifiedGeometrySink>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method Outline
   
   #[allow(non_snake_case)]
-  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
+  fn outline<T: TD2D1SimplifiedGeometrySink>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method ComputeArea
   
   #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+  fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
     let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method ComputeLength
   
   #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
+  fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
     let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method ComputePointAtLength
   
   #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
+  fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
     let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
     let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
     hr2ret(_hr,(lv1, lv2))
   }
   
   //  Method Widen
   
   #[allow(non_snake_case)]
-  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
+  fn widen<T: TD2D1SimplifiedGeometrySink>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
-pub struct D2D1GradientStopCollection(*mut ID2D1GradientStopCollection);
-
-impl HasIID for D2D1GradientStopCollection {
-  fn iid() -> REFGUID { &IID_ID2D1GradientStopCollection }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1GradientStopCollection(pp_vtbl as *mut _ as *mut ID2D1GradientStopCollection) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1GradientStopCollection {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1Geometry {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1Geometry(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1Geometry {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1Geometry {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1Geometry {}
+impl TD2D1Geometry for D2D1Geometry {}
 
-impl Clone for D2D1GradientStopCollection {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1Geometry(*mut ID2D1Geometry);
+
+impl HasIID for D2D1Geometry {
+  fn iid() -> REFGUID { &IID_ID2D1Geometry }
 }
 
-
-
-impl D2D1GradientStopCollection {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
+pub trait TD2D1GradientStopCollection: TD2D1Resource {
   //  Method GetGradientStopCount
   
   #[allow(non_snake_case)]
-  pub fn get_gradient_stop_count(&self) -> UINT32 {
+  fn get_gradient_stop_count(&self) -> UINT32 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GradientStopCollection)).GetGradientStopCount() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GradientStopCollection)).GetGradientStopCount() };
     _hr
   }
   
   //  Method GetGradientStops
   
   #[allow(non_snake_case)]
-  pub fn get_gradient_stops(&self, gradientStops: &mut [D2D1_GRADIENT_STOP]) -> () {
+  fn get_gradient_stops(&self, gradientStops: &mut [D2D1_GRADIENT_STOP]) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GradientStopCollection)).GetGradientStops(slice_as_mut_ptr(gradientStops), gradientStops.len() as UINT32) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GradientStopCollection)).GetGradientStops(slice_as_mut_ptr(gradientStops), gradientStops.len() as UINT32) };
     ()
   }
   
   //  Method GetColorInterpolationGamma
   
   #[allow(non_snake_case)]
-  pub fn get_color_interpolation_gamma(&self) -> D2D1_GAMMA {
+  fn get_color_interpolation_gamma(&self) -> D2D1_GAMMA {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GradientStopCollection)).GetColorInterpolationGamma() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GradientStopCollection)).GetColorInterpolationGamma() };
     _hr
   }
   
   //  Method GetExtendMode
   
   #[allow(non_snake_case)]
-  pub fn get_extend_mode(&self) -> D2D1_EXTEND_MODE {
+  fn get_extend_mode(&self) -> D2D1_EXTEND_MODE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1GradientStopCollection)).GetExtendMode() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1GradientStopCollection)).GetExtendMode() };
     _hr
   }
   
   
 }
 
-pub struct D2D1HwndRenderTarget(*mut ID2D1HwndRenderTarget);
-
-impl HasIID for D2D1HwndRenderTarget {
-  fn iid() -> REFGUID { &IID_ID2D1HwndRenderTarget }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1HwndRenderTarget(pp_vtbl as *mut _ as *mut ID2D1HwndRenderTarget) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1HwndRenderTarget {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1GradientStopCollection {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1GradientStopCollection(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1GradientStopCollection {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1GradientStopCollection {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1GradientStopCollection {}
+impl TD2D1GradientStopCollection for D2D1GradientStopCollection {}
 
-impl Clone for D2D1HwndRenderTarget {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1GradientStopCollection(*mut ID2D1GradientStopCollection);
+
+impl HasIID for D2D1GradientStopCollection {
+  fn iid() -> REFGUID { &IID_ID2D1GradientStopCollection }
 }
 
-
-
-impl D2D1HwndRenderTarget {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method CreateBitmap
-  
-  #[allow(non_snake_case)]
-  pub unsafe fn create_bitmap<T>(&self, size: D2D1_SIZE_U, srcData: &[T], pitch: UINT32, bitmapProperties: &D2D1_BITMAP_PROPERTIES) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr= { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmap(size, srcData.as_ptr() as *const _, pitch, bitmapProperties, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateBitmapFromWicBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn create_bitmap_from_wic_bitmap<T: HasIID>(&self, wicBitmapSource: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapFromWicBitmap(wicBitmapSource.iptr() as *mut _ as *mut _ , bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateSharedBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn create_shared_bitmap<T: HasIID>(&self, data: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSharedBitmap(T::iid(), data.iptr() as *mut _ as *mut c_void, bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateBitmapBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_bitmap_brush<T: HasIID>(&self, bitmap: &T, bitmapBrushProperties: Option<&D2D1_BITMAP_BRUSH_PROPERTIES>, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1BitmapBrush> {
-    let mut lv1: *mut ID2D1BitmapBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapBrush(bitmap.iptr() as *mut _ as *mut _ , bitmapBrushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1BitmapBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateSolidColorBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_solid_color_brush(&self, color: &D2D1_COLOR_F, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1SolidColorBrush> {
-    let mut lv1: *mut ID2D1SolidColorBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSolidColorBrush(color, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1SolidColorBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateGradientStopCollection
-  
-  #[allow(non_snake_case)]
-  pub fn create_gradient_stop_collection(&self, gradientStops: &[D2D1_GRADIENT_STOP], colorInterpolationGamma: D2D1_GAMMA, extendMode: D2D1_EXTEND_MODE) -> HResult<D2D1GradientStopCollection> {
-    let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateGradientStopCollection(slice_as_ptr(gradientStops), gradientStops.len() as UINT32, colorInterpolationGamma, extendMode, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1GradientStopCollection::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateLinearGradientBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_linear_gradient_brush<T: HasIID>(&self, linearGradientBrushProperties: &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1LinearGradientBrush> {
-    let mut lv1: *mut ID2D1LinearGradientBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLinearGradientBrush(linearGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1LinearGradientBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateRadialGradientBrush
-  
-  #[allow(non_snake_case)]
-  pub fn create_radial_gradient_brush<T: HasIID>(&self, radialGradientBrushProperties: &D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1RadialGradientBrush> {
-    let mut lv1: *mut ID2D1RadialGradientBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateRadialGradientBrush(radialGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1RadialGradientBrush::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateCompatibleRenderTarget
-  
-  #[allow(non_snake_case)]
-  pub fn create_compatible_render_target(&self, desiredSize: Option<&D2D1_SIZE_F>, desiredPixelSize: Option<&D2D1_SIZE_U>, desiredFormat: Option<&D2D1_PIXEL_FORMAT>, options: D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS) -> HResult<D2D1BitmapRenderTarget> {
-    let mut lv1: *mut ID2D1BitmapRenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateCompatibleRenderTarget(desiredSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredPixelSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredFormat.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), options, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1BitmapRenderTarget::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateLayer
-  
-  #[allow(non_snake_case)]
-  pub fn create_layer(&self, size: Option<&D2D1_SIZE_F>) -> HResult<D2D1Layer> {
-    let mut lv1: *mut ID2D1Layer = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLayer(size.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Layer::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateMesh
-  
-  #[allow(non_snake_case)]
-  pub fn create_mesh(&self) -> HResult<D2D1Mesh> {
-    let mut lv1: *mut ID2D1Mesh = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateMesh(&mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Mesh::new(lv1 as *mut _))
-  }
-  
-  //  Method DrawLine
-  
-  #[allow(non_snake_case)]
-  pub fn draw_line<T: HasIID>(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    ()
-  }
-  
-  //  Method DrawRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn draw_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
-    ()
-  }
-  
-  //  Method FillRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn fill_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush.iptr() as *mut _ as *mut _ ) };
-    ()
-  }
-  
-  //  Method DrawRoundedRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn draw_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRoundedRectangle(roundedRect, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillRoundedRectangle
-  
-  #[allow(non_snake_case)]
-  pub fn fill_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRoundedRectangle(roundedRect, brush) };
-    ()
-  }
-  
-  //  Method DrawEllipse
-  
-  #[allow(non_snake_case)]
-  pub fn draw_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawEllipse(ellipse, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillEllipse
-  
-  #[allow(non_snake_case)]
-  pub fn fill_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillEllipse(ellipse, brush) };
-    ()
-  }
-  
-  //  Method DrawGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn draw_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawGeometry(geometry, brush, strokeWidth, strokeStyle) };
-    ()
-  }
-  
-  //  Method FillGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn fill_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, opacityBrush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillGeometry(geometry, brush, opacityBrush) };
-    ()
-  }
-  
-  //  Method FillMesh
-  
-  #[allow(non_snake_case)]
-  pub fn fill_mesh(&self, mesh: &mut ID2D1Mesh, brush: &mut ID2D1Brush) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillMesh(mesh, brush) };
-    ()
-  }
-  
-  //  Method FillOpacityMask
-  
-  #[allow(non_snake_case)]
-  pub fn fill_opacity_mask(&self, opacityMask: &mut ID2D1Bitmap, brush: &mut ID2D1Brush, content: D2D1_OPACITY_MASK_CONTENT, destinationRectangle: &D2D1_RECT_F, sourceRectangle: &D2D1_RECT_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillOpacityMask(opacityMask, brush, content, destinationRectangle, sourceRectangle) };
-    ()
-  }
-  
-  //  Method DrawBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn draw_bitmap(&self, bitmap: &mut ID2D1Bitmap, destinationRectangle: &D2D1_RECT_F, opacity: FLOAT, interpolationMode: D2D1_BITMAP_INTERPOLATION_MODE, sourceRectangle: &D2D1_RECT_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode, sourceRectangle) };
-    ()
-  }
-  
-  //  Method DrawText
-  
-  #[allow(non_snake_case)]
-  pub fn draw_text<T: HasIID, T1: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &T1, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutRect, defaultForegroundBrush.iptr() as *mut _ as *mut _ , options, measuringMode) };
-    ()
-  }
-  
-  //  Method DrawTextLayout
-  
-  #[allow(non_snake_case)]
-  pub fn draw_text_layout(&self, origin: D2D1_POINT_2F, textLayout: &mut IDWriteTextLayout, defaultForegroundBrush: &mut ID2D1Brush, options: D2D1_DRAW_TEXT_OPTIONS) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawTextLayout(origin, textLayout, defaultForegroundBrush, options) };
-    ()
-  }
-  
-  //  Method DrawGlyphRun
-  
-  #[allow(non_snake_case)]
-  pub fn draw_glyph_run(&self, baselineOrigin: D2D1_POINT_2F, glyphRun: &DWRITE_GLYPH_RUN, foregroundBrush: &mut ID2D1Brush, measuringMode: DWRITE_MEASURING_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawGlyphRun(baselineOrigin, glyphRun, foregroundBrush, measuringMode) };
-    ()
-  }
-  
-  //  Method SetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTransform(transform) };
-    ()
-  }
-  
-  //  Method GetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn get_transform(&self, transform: &mut D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTransform(transform) };
-    ()
-  }
-  
-  //  Method SetAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn set_antialias_mode(&self, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetAntialiasMode(antialiasMode) };
-    ()
-  }
-  
-  //  Method GetAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn get_antialias_mode(&self) -> D2D1_ANTIALIAS_MODE {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetAntialiasMode() };
-    _hr
-  }
-  
-  //  Method SetTextAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn set_text_antialias_mode(&self, textAntialiasMode: D2D1_TEXT_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTextAntialiasMode(textAntialiasMode) };
-    ()
-  }
-  
-  //  Method GetTextAntialiasMode
-  
-  #[allow(non_snake_case)]
-  pub fn get_text_antialias_mode(&self) -> D2D1_TEXT_ANTIALIAS_MODE {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTextAntialiasMode() };
-    _hr
-  }
-  
-  //  Method SetTextRenderingParams
-  
-  #[allow(non_snake_case)]
-  pub fn set_text_rendering_params(&self, textRenderingParams: &mut IDWriteRenderingParams) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTextRenderingParams(textRenderingParams) };
-    ()
-  }
-  
-  //  Method GetTextRenderingParams
-  //  Error: textRenderingParams parameter: ANone annotation cannot be used with double indirection
-  //  Method SetTags
-  
-  #[allow(non_snake_case)]
-  pub fn set_tags(&self, tag1: D2D1_TAG, tag2: D2D1_TAG) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTags(tag1, tag2) };
-    ()
-  }
-  
-  //  Method GetTags
-  
-  #[allow(non_snake_case)]
-  pub fn get_tags(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTags(tag1, tag2) };
-    ()
-  }
-  
-  //  Method PushLayer
-  
-  #[allow(non_snake_case)]
-  pub fn push_layer(&self, layerParameters: &D2D1_LAYER_PARAMETERS, layer: &mut ID2D1Layer) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PushLayer(layerParameters, layer) };
-    ()
-  }
-  
-  //  Method PopLayer
-  
-  #[allow(non_snake_case)]
-  pub fn pop_layer(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PopLayer() };
-    ()
-  }
-  
-  //  Method Flush
-  
-  #[allow(non_snake_case)]
-  pub fn flush(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method SaveDrawingState
-  
-  #[allow(non_snake_case)]
-  pub fn save_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SaveDrawingState(drawingStateBlock) };
-    ()
-  }
-  
-  //  Method RestoreDrawingState
-  
-  #[allow(non_snake_case)]
-  pub fn restore_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).RestoreDrawingState(drawingStateBlock) };
-    ()
-  }
-  
-  //  Method PushAxisAlignedClip
-  
-  #[allow(non_snake_case)]
-  pub fn push_axis_aligned_clip(&self, clipRect: &D2D1_RECT_F, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PushAxisAlignedClip(clipRect, antialiasMode) };
-    ()
-  }
-  
-  //  Method PopAxisAlignedClip
-  
-  #[allow(non_snake_case)]
-  pub fn pop_axis_aligned_clip(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PopAxisAlignedClip() };
-    ()
-  }
-  
-  //  Method Clear
-  
-  #[allow(non_snake_case)]
-  pub fn clear(&self, clearColor: &D2D1_COLOR_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Clear(clearColor) };
-    ()
-  }
-  
-  //  Method BeginDraw
-  
-  #[allow(non_snake_case)]
-  pub fn begin_draw(&self) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).BeginDraw() };
-    ()
-  }
-  
-  //  Method EndDraw
-  
-  #[allow(non_snake_case)]
-  pub fn end_draw(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method GetPixelFormat
-  
-  #[allow(non_snake_case)]
-  pub fn get_pixel_format(&self) -> D2D1_PIXEL_FORMAT {
-    let mut lv1: D2D1_PIXEL_FORMAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetPixelFormat(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method SetDpi
-  
-  #[allow(non_snake_case)]
-  pub fn set_dpi(&self, dpiX: FLOAT, dpiY: FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetDpi(dpiX, dpiY) };
-    ()
-  }
-  
-  //  Method GetDpi
-  
-  #[allow(non_snake_case)]
-  pub fn get_dpi(&self, dpiX: &mut FLOAT, dpiY: &mut FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetDpi(dpiX, dpiY) };
-    ()
-  }
-  
-  //  Method GetSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_size(&self) -> D2D1_SIZE_F {
-    let mut lv1: D2D1_SIZE_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetSize(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method GetPixelSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_pixel_size(&self) -> D2D1_SIZE_U {
-    let mut lv1: D2D1_SIZE_U = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetPixelSize(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  //  Method GetMaximumBitmapSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_maximum_bitmap_size(&self) -> UINT32 {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetMaximumBitmapSize() };
-    _hr
-  }
-  
-  //  Method IsSupported
-  
-  #[allow(non_snake_case)]
-  pub fn is_supported(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> BOOL {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).IsSupported(renderTargetProperties) };
-    _hr
-  }
-  
+pub trait TD2D1HwndRenderTarget: TD2D1RenderTarget {
   //  Method CheckWindowState
   
   #[allow(non_snake_case)]
-  pub fn check_window_state(&self) -> D2D1_WINDOW_STATE {
+  fn check_window_state(&self) -> D2D1_WINDOW_STATE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1HwndRenderTarget)).CheckWindowState() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1HwndRenderTarget)).CheckWindowState() };
     _hr
   }
   
   //  Method Resize
   
   #[allow(non_snake_case)]
-  pub fn resize(&self, pixelSize: &D2D1_SIZE_U) -> HResult<HRESULT> {
+  fn resize(&self, pixelSize: &D2D1_SIZE_U) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1HwndRenderTarget)).Resize(pixelSize) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1HwndRenderTarget)).Resize(pixelSize) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetHwnd
   
   #[allow(non_snake_case)]
-  pub fn get_hwnd(&self) -> HWND {
+  fn get_hwnd(&self) -> HWND {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1HwndRenderTarget)).GetHwnd() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1HwndRenderTarget)).GetHwnd() };
     _hr
   }
   
   
 }
+
+impl TUnknown for D2D1HwndRenderTarget {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1HwndRenderTarget(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1HwndRenderTarget {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1HwndRenderTarget {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1HwndRenderTarget {}
+impl TD2D1RenderTarget for D2D1HwndRenderTarget {}
+impl TD2D1HwndRenderTarget for D2D1HwndRenderTarget {}
+
+pub struct D2D1HwndRenderTarget(*mut ID2D1HwndRenderTarget);
+
+impl HasIID for D2D1HwndRenderTarget {
+  fn iid() -> REFGUID { &IID_ID2D1HwndRenderTarget }
+}
+
+pub trait TD2D1Image: TD2D1Resource {
+  
+}
+
+impl TUnknown for D2D1Image {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1Image(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1Image {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1Image {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1Image {}
+impl TD2D1Image for D2D1Image {}
 
 pub struct D2D1Image(*mut ID2D1Image);
 
 impl HasIID for D2D1Image {
   fn iid() -> REFGUID { &IID_ID2D1Image }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Image(pp_vtbl as *mut _ as *mut ID2D1Image) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1Image {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D2D1Image {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1Image {
-  //  Method GetFactory
+pub trait TD2D1Layer: TD2D1Resource {
+  //  Method GetSize
   
   #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
+  fn get_size(&self) -> D2D1_SIZE_F {
+    let mut lv1: D2D1_SIZE_F = unsafe {mem::uninitialized::<_>()};
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Layer)).GetSize(&mut lv1 as *mut _ as *mut _) };
+    lv1
   }
   
   
 }
+
+impl TUnknown for D2D1Layer {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1Layer(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1Layer {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1Layer {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1Layer {}
+impl TD2D1Layer for D2D1Layer {}
 
 pub struct D2D1Layer(*mut ID2D1Layer);
 
 impl HasIID for D2D1Layer {
   fn iid() -> REFGUID { &IID_ID2D1Layer }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Layer(pp_vtbl as *mut _ as *mut ID2D1Layer) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1Layer {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D2D1Layer {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1Layer {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method GetSize
-  
-  #[allow(non_snake_case)]
-  pub fn get_size(&self) -> D2D1_SIZE_F {
-    let mut lv1: D2D1_SIZE_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Layer)).GetSize(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
-  
-}
-
-pub struct D2D1LinearGradientBrush(*mut ID2D1LinearGradientBrush);
-
-impl HasIID for D2D1LinearGradientBrush {
-  fn iid() -> REFGUID { &IID_ID2D1LinearGradientBrush }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1LinearGradientBrush(pp_vtbl as *mut _ as *mut ID2D1LinearGradientBrush) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1LinearGradientBrush {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D2D1LinearGradientBrush {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1LinearGradientBrush {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method SetOpacity
-  
-  #[allow(non_snake_case)]
-  pub fn set_opacity(&self, opacity: FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).SetOpacity(opacity) };
-    ()
-  }
-  
-  //  Method SetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).SetTransform(transform) };
-    ()
-  }
-  
-  //  Method GetOpacity
-  
-  #[allow(non_snake_case)]
-  pub fn get_opacity(&self) -> FLOAT {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).GetOpacity() };
-    _hr
-  }
-  
-  //  Method GetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn get_transform(&self) -> D2D1_MATRIX_3X2_F {
-    let mut lv1: D2D1_MATRIX_3X2_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).GetTransform(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
+pub trait TD2D1LinearGradientBrush: TD2D1Brush {
   //  Method SetStartPoint
   
   #[allow(non_snake_case)]
-  pub fn set_start_point(&self, startPoint: D2D1_POINT_2F) -> () {
+  fn set_start_point(&self, startPoint: D2D1_POINT_2F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1LinearGradientBrush)).SetStartPoint(startPoint) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1LinearGradientBrush)).SetStartPoint(startPoint) };
     ()
   }
   
   //  Method SetEndPoint
   
   #[allow(non_snake_case)]
-  pub fn set_end_point(&self, endPoint: D2D1_POINT_2F) -> () {
+  fn set_end_point(&self, endPoint: D2D1_POINT_2F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1LinearGradientBrush)).SetEndPoint(endPoint) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1LinearGradientBrush)).SetEndPoint(endPoint) };
     ()
   }
   
   //  Method GetStartPoint
   
   #[allow(non_snake_case)]
-  pub fn get_start_point(&self) -> D2D1_POINT_2F {
+  fn get_start_point(&self) -> D2D1_POINT_2F {
     let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1LinearGradientBrush)).GetStartPoint(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1LinearGradientBrush)).GetStartPoint(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetEndPoint
   
   #[allow(non_snake_case)]
-  pub fn get_end_point(&self) -> D2D1_POINT_2F {
+  fn get_end_point(&self) -> D2D1_POINT_2F {
     let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1LinearGradientBrush)).GetEndPoint(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1LinearGradientBrush)).GetEndPoint(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetGradientStopCollection
   
   #[allow(non_snake_case)]
-  pub fn get_gradient_stop_collection(&self) -> D2D1GradientStopCollection {
+  fn get_gradient_stop_collection(&self) -> D2D1GradientStopCollection {
     let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1LinearGradientBrush)).GetGradientStopCollection(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1LinearGradientBrush)).GetGradientStopCollection(&mut lv1 as *mut *mut _) };
     D2D1GradientStopCollection::new(lv1 as *mut _)
   }
   
   
 }
 
-pub struct D2D1Mesh(*mut ID2D1Mesh);
-
-impl HasIID for D2D1Mesh {
-  fn iid() -> REFGUID { &IID_ID2D1Mesh }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Mesh(pp_vtbl as *mut _ as *mut ID2D1Mesh) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1Mesh {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1LinearGradientBrush {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1LinearGradientBrush(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1LinearGradientBrush {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1LinearGradientBrush {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1LinearGradientBrush {}
+impl TD2D1Brush for D2D1LinearGradientBrush {}
+impl TD2D1LinearGradientBrush for D2D1LinearGradientBrush {}
 
-impl Clone for D2D1Mesh {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1LinearGradientBrush(*mut ID2D1LinearGradientBrush);
+
+impl HasIID for D2D1LinearGradientBrush {
+  fn iid() -> REFGUID { &IID_ID2D1LinearGradientBrush }
 }
 
-
-
-impl D2D1Mesh {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
+pub trait TD2D1Mesh: TD2D1Resource {
   //  Method Open
   
   #[allow(non_snake_case)]
-  pub fn open(&self) -> HResult<D2D1TessellationSink> {
+  fn open(&self) -> HResult<D2D1TessellationSink> {
     let mut lv1: *mut ID2D1TessellationSink = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Mesh)).Open(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Mesh)).Open(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1TessellationSink::new(lv1 as *mut _))
   }
   
   
 }
 
-pub struct D2D1PathGeometry(*mut ID2D1PathGeometry);
-
-impl HasIID for D2D1PathGeometry {
-  fn iid() -> REFGUID { &IID_ID2D1PathGeometry }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1PathGeometry(pp_vtbl as *mut _ as *mut ID2D1PathGeometry) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1PathGeometry {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1Mesh {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1Mesh(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1Mesh {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1Mesh {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1Mesh {}
+impl TD2D1Mesh for D2D1Mesh {}
 
-impl Clone for D2D1PathGeometry {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1Mesh(*mut ID2D1Mesh);
+
+impl HasIID for D2D1Mesh {
+  fn iid() -> REFGUID { &IID_ID2D1Mesh }
 }
 
-
-
-impl D2D1PathGeometry {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method GetBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetWidenedBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method StrokeContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method FillContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method CompareWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
-    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method Simplify
-  
-  #[allow(non_snake_case)]
-  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Tessellate
-  
-  #[allow(non_snake_case)]
-  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method CombineWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Outline
-  
-  #[allow(non_snake_case)]
-  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method ComputeArea
-  
-  #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputeLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputePointAtLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
-    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
-    hr2ret(_hr,(lv1, lv2))
-  }
-  
-  //  Method Widen
-  
-  #[allow(non_snake_case)]
-  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD2D1PathGeometry: TD2D1Geometry {
   //  Method Open
   
   #[allow(non_snake_case)]
-  pub fn open(&self) -> HResult<D2D1GeometrySink> {
+  fn open(&self) -> HResult<D2D1GeometrySink> {
     let mut lv1: *mut ID2D1GeometrySink = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).Open(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1PathGeometry)).Open(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1GeometrySink::new(lv1 as *mut _))
   }
   
   //  Method Stream
   
   #[allow(non_snake_case)]
-  pub fn stream<T: HasIID>(&self, geometrySink: &T) -> HResult<HRESULT> {
+  fn stream<T: TD2D1GeometrySink>(&self, geometrySink: &T) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).Stream(geometrySink.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1PathGeometry)).Stream(geometrySink.iptr() as *mut _ as *mut _ ) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetSegmentCount
   
   #[allow(non_snake_case)]
-  pub fn get_segment_count(&self) -> HResult<UINT32> {
+  fn get_segment_count(&self) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).GetSegmentCount(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1PathGeometry)).GetSegmentCount(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   //  Method GetFigureCount
   
   #[allow(non_snake_case)]
-  pub fn get_figure_count(&self) -> HResult<UINT32> {
+  fn get_figure_count(&self) -> HResult<UINT32> {
     let mut lv1: UINT32 = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1PathGeometry)).GetFigureCount(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1PathGeometry)).GetFigureCount(&mut lv1 as *mut _ as *mut _) };
     hr2ret(_hr,lv1)
   }
   
   
 }
 
-pub struct D2D1RadialGradientBrush(*mut ID2D1RadialGradientBrush);
-
-impl HasIID for D2D1RadialGradientBrush {
-  fn iid() -> REFGUID { &IID_ID2D1RadialGradientBrush }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1RadialGradientBrush(pp_vtbl as *mut _ as *mut ID2D1RadialGradientBrush) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1RadialGradientBrush {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1PathGeometry {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1PathGeometry(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1PathGeometry {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1PathGeometry {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1PathGeometry {}
+impl TD2D1Geometry for D2D1PathGeometry {}
+impl TD2D1PathGeometry for D2D1PathGeometry {}
 
-impl Clone for D2D1RadialGradientBrush {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1PathGeometry(*mut ID2D1PathGeometry);
+
+impl HasIID for D2D1PathGeometry {
+  fn iid() -> REFGUID { &IID_ID2D1PathGeometry }
 }
 
-
-
-impl D2D1RadialGradientBrush {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method SetOpacity
-  
-  #[allow(non_snake_case)]
-  pub fn set_opacity(&self, opacity: FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).SetOpacity(opacity) };
-    ()
-  }
-  
-  //  Method SetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).SetTransform(transform) };
-    ()
-  }
-  
-  //  Method GetOpacity
-  
-  #[allow(non_snake_case)]
-  pub fn get_opacity(&self) -> FLOAT {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).GetOpacity() };
-    _hr
-  }
-  
-  //  Method GetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn get_transform(&self) -> D2D1_MATRIX_3X2_F {
-    let mut lv1: D2D1_MATRIX_3X2_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).GetTransform(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
+pub trait TD2D1RadialGradientBrush: TD2D1Brush {
   //  Method SetCenter
   
   #[allow(non_snake_case)]
-  pub fn set_center(&self, center: D2D1_POINT_2F) -> () {
+  fn set_center(&self, center: D2D1_POINT_2F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RadialGradientBrush)).SetCenter(center) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RadialGradientBrush)).SetCenter(center) };
     ()
   }
   
   //  Method SetGradientOriginOffset
   
   #[allow(non_snake_case)]
-  pub fn set_gradient_origin_offset(&self, gradientOriginOffset: D2D1_POINT_2F) -> () {
+  fn set_gradient_origin_offset(&self, gradientOriginOffset: D2D1_POINT_2F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RadialGradientBrush)).SetGradientOriginOffset(gradientOriginOffset) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RadialGradientBrush)).SetGradientOriginOffset(gradientOriginOffset) };
     ()
   }
   
   //  Method SetRadiusX
   
   #[allow(non_snake_case)]
-  pub fn set_radius_x(&self, radiusX: FLOAT) -> () {
+  fn set_radius_x(&self, radiusX: FLOAT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RadialGradientBrush)).SetRadiusX(radiusX) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RadialGradientBrush)).SetRadiusX(radiusX) };
     ()
   }
   
   //  Method SetRadiusY
   
   #[allow(non_snake_case)]
-  pub fn set_radius_y(&self, radiusY: FLOAT) -> () {
+  fn set_radius_y(&self, radiusY: FLOAT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RadialGradientBrush)).SetRadiusY(radiusY) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RadialGradientBrush)).SetRadiusY(radiusY) };
     ()
   }
   
   //  Method GetCenter
   
   #[allow(non_snake_case)]
-  pub fn get_center(&self) -> D2D1_POINT_2F {
+  fn get_center(&self) -> D2D1_POINT_2F {
     let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RadialGradientBrush)).GetCenter(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RadialGradientBrush)).GetCenter(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetGradientOriginOffset
   
   #[allow(non_snake_case)]
-  pub fn get_gradient_origin_offset(&self) -> D2D1_POINT_2F {
+  fn get_gradient_origin_offset(&self) -> D2D1_POINT_2F {
     let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RadialGradientBrush)).GetGradientOriginOffset(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RadialGradientBrush)).GetGradientOriginOffset(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetRadiusX
   
   #[allow(non_snake_case)]
-  pub fn get_radius_x(&self) -> FLOAT {
+  fn get_radius_x(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RadialGradientBrush)).GetRadiusX() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RadialGradientBrush)).GetRadiusX() };
     _hr
   }
   
   //  Method GetRadiusY
   
   #[allow(non_snake_case)]
-  pub fn get_radius_y(&self) -> FLOAT {
+  fn get_radius_y(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RadialGradientBrush)).GetRadiusY() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RadialGradientBrush)).GetRadiusY() };
     _hr
   }
   
   //  Method GetGradientStopCollection
   
   #[allow(non_snake_case)]
-  pub fn get_gradient_stop_collection(&self) -> D2D1GradientStopCollection {
+  fn get_gradient_stop_collection(&self) -> D2D1GradientStopCollection {
     let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RadialGradientBrush)).GetGradientStopCollection(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RadialGradientBrush)).GetGradientStopCollection(&mut lv1 as *mut *mut _) };
     D2D1GradientStopCollection::new(lv1 as *mut _)
   }
   
   
 }
 
-pub struct D2D1RectangleGeometry(*mut ID2D1RectangleGeometry);
-
-impl HasIID for D2D1RectangleGeometry {
-  fn iid() -> REFGUID { &IID_ID2D1RectangleGeometry }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1RectangleGeometry(pp_vtbl as *mut _ as *mut ID2D1RectangleGeometry) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1RectangleGeometry {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1RadialGradientBrush {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1RadialGradientBrush(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1RadialGradientBrush {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1RadialGradientBrush {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1RadialGradientBrush {}
+impl TD2D1Brush for D2D1RadialGradientBrush {}
+impl TD2D1RadialGradientBrush for D2D1RadialGradientBrush {}
 
-impl Clone for D2D1RectangleGeometry {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1RadialGradientBrush(*mut ID2D1RadialGradientBrush);
+
+impl HasIID for D2D1RadialGradientBrush {
+  fn iid() -> REFGUID { &IID_ID2D1RadialGradientBrush }
 }
 
-
-
-impl D2D1RectangleGeometry {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method GetBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetWidenedBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method StrokeContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method FillContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method CompareWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
-    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method Simplify
-  
-  #[allow(non_snake_case)]
-  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Tessellate
-  
-  #[allow(non_snake_case)]
-  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method CombineWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Outline
-  
-  #[allow(non_snake_case)]
-  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method ComputeArea
-  
-  #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputeLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputePointAtLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
-    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
-    hr2ret(_hr,(lv1, lv2))
-  }
-  
-  //  Method Widen
-  
-  #[allow(non_snake_case)]
-  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD2D1RectangleGeometry: TD2D1Geometry {
   //  Method GetRect
   
   #[allow(non_snake_case)]
-  pub fn get_rect(&self) -> D2D1_RECT_F {
+  fn get_rect(&self) -> D2D1_RECT_F {
     let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RectangleGeometry)).GetRect(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RectangleGeometry)).GetRect(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   
 }
 
-pub struct D2D1RenderTarget(*mut ID2D1RenderTarget);
-
-impl HasIID for D2D1RenderTarget {
-  fn iid() -> REFGUID { &IID_ID2D1RenderTarget }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1RenderTarget(pp_vtbl as *mut _ as *mut ID2D1RenderTarget) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1RenderTarget {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1RectangleGeometry {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1RectangleGeometry(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1RectangleGeometry {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1RectangleGeometry {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1RectangleGeometry {}
+impl TD2D1Geometry for D2D1RectangleGeometry {}
+impl TD2D1RectangleGeometry for D2D1RectangleGeometry {}
 
-impl Clone for D2D1RenderTarget {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1RectangleGeometry(*mut ID2D1RectangleGeometry);
+
+impl HasIID for D2D1RectangleGeometry {
+  fn iid() -> REFGUID { &IID_ID2D1RectangleGeometry }
 }
 
-
-
-impl D2D1RenderTarget {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
+pub trait TD2D1RenderTarget: TD2D1Resource {
   //  Method CreateBitmap
   
   #[allow(non_snake_case)]
-  pub unsafe fn create_bitmap<T>(&self, size: D2D1_SIZE_U, srcData: &[T], pitch: UINT32, bitmapProperties: &D2D1_BITMAP_PROPERTIES) -> HResult<D2D1Bitmap> {
+  unsafe fn create_bitmap<T>(&self, size: D2D1_SIZE_U, srcData: &[T], pitch: UINT32, bitmapProperties: &D2D1_BITMAP_PROPERTIES) -> HResult<D2D1Bitmap> {
     let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr= { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmap(size, srcData.as_ptr() as *const _, pitch, bitmapProperties, &mut lv1 as *mut *mut _) };
-    hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
-  }
-  
-  //  Method CreateBitmapFromWicBitmap
-  
-  #[allow(non_snake_case)]
-  pub fn create_bitmap_from_wic_bitmap<T: HasIID>(&self, wicBitmapSource: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
-    let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapFromWicBitmap(wicBitmapSource.iptr() as *mut _ as *mut _ , bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    let _hr= { (*(self.iptr() as *mut ID2D1RenderTarget)).CreateBitmap(size, srcData.as_ptr() as *const _, pitch, bitmapProperties, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
   }
   
   //  Method CreateSharedBitmap
   
   #[allow(non_snake_case)]
-  pub fn create_shared_bitmap<T: HasIID>(&self, data: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
+  fn create_shared_bitmap<T: TUnknown+HasIID>(&self, data: &T, bitmapProperties: Option<&D2D1_BITMAP_PROPERTIES>) -> HResult<D2D1Bitmap> {
     let mut lv1: *mut ID2D1Bitmap = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSharedBitmap(T::iid(), data.iptr() as *mut _ as *mut c_void, bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).CreateSharedBitmap(T::iid(), data.iptr() as *mut _ as *mut c_void, bitmapProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1Bitmap::new(lv1 as *mut _))
   }
   
   //  Method CreateBitmapBrush
   
   #[allow(non_snake_case)]
-  pub fn create_bitmap_brush<T: HasIID>(&self, bitmap: &T, bitmapBrushProperties: Option<&D2D1_BITMAP_BRUSH_PROPERTIES>, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1BitmapBrush> {
+  fn create_bitmap_brush<T: TD2D1Bitmap>(&self, bitmap: &T, bitmapBrushProperties: Option<&D2D1_BITMAP_BRUSH_PROPERTIES>, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1BitmapBrush> {
     let mut lv1: *mut ID2D1BitmapBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateBitmapBrush(bitmap.iptr() as *mut _ as *mut _ , bitmapBrushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).CreateBitmapBrush(bitmap.iptr() as *mut _ as *mut _ , bitmapBrushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1BitmapBrush::new(lv1 as *mut _))
   }
   
   //  Method CreateSolidColorBrush
   
   #[allow(non_snake_case)]
-  pub fn create_solid_color_brush(&self, color: &D2D1_COLOR_F, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1SolidColorBrush> {
+  fn create_solid_color_brush(&self, color: &D2D1_COLOR_F, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>) -> HResult<D2D1SolidColorBrush> {
     let mut lv1: *mut ID2D1SolidColorBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateSolidColorBrush(color, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).CreateSolidColorBrush(color, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1SolidColorBrush::new(lv1 as *mut _))
   }
   
   //  Method CreateGradientStopCollection
   
   #[allow(non_snake_case)]
-  pub fn create_gradient_stop_collection(&self, gradientStops: &[D2D1_GRADIENT_STOP], colorInterpolationGamma: D2D1_GAMMA, extendMode: D2D1_EXTEND_MODE) -> HResult<D2D1GradientStopCollection> {
+  fn create_gradient_stop_collection(&self, gradientStops: &[D2D1_GRADIENT_STOP], colorInterpolationGamma: D2D1_GAMMA, extendMode: D2D1_EXTEND_MODE) -> HResult<D2D1GradientStopCollection> {
     let mut lv1: *mut ID2D1GradientStopCollection = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateGradientStopCollection(slice_as_ptr(gradientStops), gradientStops.len() as UINT32, colorInterpolationGamma, extendMode, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).CreateGradientStopCollection(slice_as_ptr(gradientStops), gradientStops.len() as UINT32, colorInterpolationGamma, extendMode, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1GradientStopCollection::new(lv1 as *mut _))
   }
   
   //  Method CreateLinearGradientBrush
   
   #[allow(non_snake_case)]
-  pub fn create_linear_gradient_brush<T: HasIID>(&self, linearGradientBrushProperties: &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1LinearGradientBrush> {
+  fn create_linear_gradient_brush<T: TD2D1GradientStopCollection>(&self, linearGradientBrushProperties: &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1LinearGradientBrush> {
     let mut lv1: *mut ID2D1LinearGradientBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLinearGradientBrush(linearGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).CreateLinearGradientBrush(linearGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1LinearGradientBrush::new(lv1 as *mut _))
   }
   
   //  Method CreateRadialGradientBrush
   
   #[allow(non_snake_case)]
-  pub fn create_radial_gradient_brush<T: HasIID>(&self, radialGradientBrushProperties: &D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1RadialGradientBrush> {
+  fn create_radial_gradient_brush<T: TD2D1GradientStopCollection>(&self, radialGradientBrushProperties: &D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES, brushProperties: Option<&D2D1_BRUSH_PROPERTIES>, gradientStopCollection: &T) -> HResult<D2D1RadialGradientBrush> {
     let mut lv1: *mut ID2D1RadialGradientBrush = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateRadialGradientBrush(radialGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).CreateRadialGradientBrush(radialGradientBrushProperties, brushProperties.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), gradientStopCollection.iptr() as *mut _ as *mut _ , &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1RadialGradientBrush::new(lv1 as *mut _))
   }
   
   //  Method CreateCompatibleRenderTarget
   
   #[allow(non_snake_case)]
-  pub fn create_compatible_render_target(&self, desiredSize: Option<&D2D1_SIZE_F>, desiredPixelSize: Option<&D2D1_SIZE_U>, desiredFormat: Option<&D2D1_PIXEL_FORMAT>, options: D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS) -> HResult<D2D1BitmapRenderTarget> {
+  fn create_compatible_render_target(&self, desiredSize: Option<&D2D1_SIZE_F>, desiredPixelSize: Option<&D2D1_SIZE_U>, desiredFormat: Option<&D2D1_PIXEL_FORMAT>, options: D2D1_COMPATIBLE_RENDER_TARGET_OPTIONS) -> HResult<D2D1BitmapRenderTarget> {
     let mut lv1: *mut ID2D1BitmapRenderTarget = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateCompatibleRenderTarget(desiredSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredPixelSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredFormat.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), options, &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).CreateCompatibleRenderTarget(desiredSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredPixelSize.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), desiredFormat.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), options, &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1BitmapRenderTarget::new(lv1 as *mut _))
   }
   
   //  Method CreateLayer
   
   #[allow(non_snake_case)]
-  pub fn create_layer(&self, size: Option<&D2D1_SIZE_F>) -> HResult<D2D1Layer> {
+  fn create_layer(&self, size: Option<&D2D1_SIZE_F>) -> HResult<D2D1Layer> {
     let mut lv1: *mut ID2D1Layer = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateLayer(size.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).CreateLayer(size.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1Layer::new(lv1 as *mut _))
   }
   
   //  Method CreateMesh
   
   #[allow(non_snake_case)]
-  pub fn create_mesh(&self) -> HResult<D2D1Mesh> {
+  fn create_mesh(&self) -> HResult<D2D1Mesh> {
     let mut lv1: *mut ID2D1Mesh = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).CreateMesh(&mut lv1 as *mut *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).CreateMesh(&mut lv1 as *mut *mut _) };
     hr2ret(_hr,D2D1Mesh::new(lv1 as *mut _))
   }
   
   //  Method DrawLine
   
   #[allow(non_snake_case)]
-  pub fn draw_line<T: HasIID>(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
+  fn draw_line<T: TD2D1Brush>(&self, point0: D2D1_POINT_2F, point1: D2D1_POINT_2F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).DrawLine(point0, point1, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   
   //  Method DrawRectangle
   
   #[allow(non_snake_case)]
-  pub fn draw_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
+  fn draw_rectangle<T: TD2D1Brush>(&self, rect: &D2D1_RECT_F, brush: &T, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).DrawRectangle(rect, brush.iptr() as *mut _ as *mut _ , strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _) };
     ()
   }
   
   //  Method FillRectangle
   
   #[allow(non_snake_case)]
-  pub fn fill_rectangle<T: HasIID>(&self, rect: &D2D1_RECT_F, brush: &T) -> () {
+  fn fill_rectangle<T: TD2D1Brush>(&self, rect: &D2D1_RECT_F, brush: &T) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRectangle(rect, brush.iptr() as *mut _ as *mut _ ) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).FillRectangle(rect, brush.iptr() as *mut _ as *mut _ ) };
     ()
   }
   
   //  Method DrawRoundedRectangle
   
   #[allow(non_snake_case)]
-  pub fn draw_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  fn draw_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawRoundedRectangle(roundedRect, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).DrawRoundedRectangle(roundedRect, brush, strokeWidth, strokeStyle) };
     ()
   }
   
   //  Method FillRoundedRectangle
   
   #[allow(non_snake_case)]
-  pub fn fill_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush) -> () {
+  fn fill_rounded_rectangle(&self, roundedRect: &D2D1_ROUNDED_RECT, brush: &mut ID2D1Brush) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillRoundedRectangle(roundedRect, brush) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).FillRoundedRectangle(roundedRect, brush) };
     ()
   }
   
   //  Method DrawEllipse
   
   #[allow(non_snake_case)]
-  pub fn draw_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  fn draw_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawEllipse(ellipse, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).DrawEllipse(ellipse, brush, strokeWidth, strokeStyle) };
     ()
   }
   
   //  Method FillEllipse
   
   #[allow(non_snake_case)]
-  pub fn fill_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush) -> () {
+  fn fill_ellipse(&self, ellipse: &D2D1_ELLIPSE, brush: &mut ID2D1Brush) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillEllipse(ellipse, brush) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).FillEllipse(ellipse, brush) };
     ()
   }
   
   //  Method DrawGeometry
   
   #[allow(non_snake_case)]
-  pub fn draw_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
+  fn draw_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, strokeWidth: FLOAT, strokeStyle: &mut ID2D1StrokeStyle) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawGeometry(geometry, brush, strokeWidth, strokeStyle) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).DrawGeometry(geometry, brush, strokeWidth, strokeStyle) };
     ()
   }
   
   //  Method FillGeometry
   
   #[allow(non_snake_case)]
-  pub fn fill_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, opacityBrush: &mut ID2D1Brush) -> () {
+  fn fill_geometry(&self, geometry: &mut ID2D1Geometry, brush: &mut ID2D1Brush, opacityBrush: &mut ID2D1Brush) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillGeometry(geometry, brush, opacityBrush) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).FillGeometry(geometry, brush, opacityBrush) };
     ()
   }
   
   //  Method FillMesh
   
   #[allow(non_snake_case)]
-  pub fn fill_mesh(&self, mesh: &mut ID2D1Mesh, brush: &mut ID2D1Brush) -> () {
+  fn fill_mesh(&self, mesh: &mut ID2D1Mesh, brush: &mut ID2D1Brush) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillMesh(mesh, brush) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).FillMesh(mesh, brush) };
     ()
   }
   
   //  Method FillOpacityMask
   
   #[allow(non_snake_case)]
-  pub fn fill_opacity_mask(&self, opacityMask: &mut ID2D1Bitmap, brush: &mut ID2D1Brush, content: D2D1_OPACITY_MASK_CONTENT, destinationRectangle: &D2D1_RECT_F, sourceRectangle: &D2D1_RECT_F) -> () {
+  fn fill_opacity_mask(&self, opacityMask: &mut ID2D1Bitmap, brush: &mut ID2D1Brush, content: D2D1_OPACITY_MASK_CONTENT, destinationRectangle: &D2D1_RECT_F, sourceRectangle: &D2D1_RECT_F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).FillOpacityMask(opacityMask, brush, content, destinationRectangle, sourceRectangle) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).FillOpacityMask(opacityMask, brush, content, destinationRectangle, sourceRectangle) };
     ()
   }
   
   //  Method DrawBitmap
   
   #[allow(non_snake_case)]
-  pub fn draw_bitmap(&self, bitmap: &mut ID2D1Bitmap, destinationRectangle: &D2D1_RECT_F, opacity: FLOAT, interpolationMode: D2D1_BITMAP_INTERPOLATION_MODE, sourceRectangle: &D2D1_RECT_F) -> () {
+  fn draw_bitmap(&self, bitmap: &mut ID2D1Bitmap, destinationRectangle: &D2D1_RECT_F, opacity: FLOAT, interpolationMode: D2D1_BITMAP_INTERPOLATION_MODE, sourceRectangle: &D2D1_RECT_F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode, sourceRectangle) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).DrawBitmap(bitmap, destinationRectangle, opacity, interpolationMode, sourceRectangle) };
     ()
   }
   
   //  Method DrawText
   
   #[allow(non_snake_case)]
-  pub fn draw_text<T: HasIID, T1: HasIID>(&self, string: &[WCHAR], textFormat: &T, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &T1, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
+  fn draw_text<T: TDWriteTextFormat, T1: TD2D1Brush>(&self, string: &[WCHAR], textFormat: &T, layoutRect: &D2D1_RECT_F, defaultForegroundBrush: &T1, options: D2D1_DRAW_TEXT_OPTIONS, measuringMode: DWRITE_MEASURING_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawText(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutRect, defaultForegroundBrush.iptr() as *mut _ as *mut _ , options, measuringMode) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).DrawText(slice_as_ptr(string), string.len() as UINT32, textFormat.iptr() as *mut _ as *mut _ , layoutRect, defaultForegroundBrush.iptr() as *mut _ as *mut _ , options, measuringMode) };
     ()
   }
   
   //  Method DrawTextLayout
   
   #[allow(non_snake_case)]
-  pub fn draw_text_layout(&self, origin: D2D1_POINT_2F, textLayout: &mut IDWriteTextLayout, defaultForegroundBrush: &mut ID2D1Brush, options: D2D1_DRAW_TEXT_OPTIONS) -> () {
+  fn draw_text_layout(&self, origin: D2D1_POINT_2F, textLayout: &mut IDWriteTextLayout, defaultForegroundBrush: &mut ID2D1Brush, options: D2D1_DRAW_TEXT_OPTIONS) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawTextLayout(origin, textLayout, defaultForegroundBrush, options) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).DrawTextLayout(origin, textLayout, defaultForegroundBrush, options) };
     ()
   }
   
   //  Method DrawGlyphRun
   
   #[allow(non_snake_case)]
-  pub fn draw_glyph_run(&self, baselineOrigin: D2D1_POINT_2F, glyphRun: &DWRITE_GLYPH_RUN, foregroundBrush: &mut ID2D1Brush, measuringMode: DWRITE_MEASURING_MODE) -> () {
+  fn draw_glyph_run(&self, baselineOrigin: D2D1_POINT_2F, glyphRun: &DWRITE_GLYPH_RUN, foregroundBrush: &mut ID2D1Brush, measuringMode: DWRITE_MEASURING_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).DrawGlyphRun(baselineOrigin, glyphRun, foregroundBrush, measuringMode) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).DrawGlyphRun(baselineOrigin, glyphRun, foregroundBrush, measuringMode) };
     ()
   }
   
   //  Method SetTransform
   
   #[allow(non_snake_case)]
-  pub fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
+  fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTransform(transform) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).SetTransform(transform) };
     ()
   }
   
   //  Method GetTransform
   
   #[allow(non_snake_case)]
-  pub fn get_transform(&self, transform: &mut D2D1_MATRIX_3X2_F) -> () {
+  fn get_transform(&self, transform: &mut D2D1_MATRIX_3X2_F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTransform(transform) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).GetTransform(transform) };
     ()
   }
   
   //  Method SetAntialiasMode
   
   #[allow(non_snake_case)]
-  pub fn set_antialias_mode(&self, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
+  fn set_antialias_mode(&self, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetAntialiasMode(antialiasMode) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).SetAntialiasMode(antialiasMode) };
     ()
   }
   
   //  Method GetAntialiasMode
   
   #[allow(non_snake_case)]
-  pub fn get_antialias_mode(&self) -> D2D1_ANTIALIAS_MODE {
+  fn get_antialias_mode(&self) -> D2D1_ANTIALIAS_MODE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetAntialiasMode() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).GetAntialiasMode() };
     _hr
   }
   
   //  Method SetTextAntialiasMode
   
   #[allow(non_snake_case)]
-  pub fn set_text_antialias_mode(&self, textAntialiasMode: D2D1_TEXT_ANTIALIAS_MODE) -> () {
+  fn set_text_antialias_mode(&self, textAntialiasMode: D2D1_TEXT_ANTIALIAS_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTextAntialiasMode(textAntialiasMode) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).SetTextAntialiasMode(textAntialiasMode) };
     ()
   }
   
   //  Method GetTextAntialiasMode
   
   #[allow(non_snake_case)]
-  pub fn get_text_antialias_mode(&self) -> D2D1_TEXT_ANTIALIAS_MODE {
+  fn get_text_antialias_mode(&self) -> D2D1_TEXT_ANTIALIAS_MODE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTextAntialiasMode() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).GetTextAntialiasMode() };
     _hr
   }
   
   //  Method SetTextRenderingParams
   
   #[allow(non_snake_case)]
-  pub fn set_text_rendering_params(&self, textRenderingParams: &mut IDWriteRenderingParams) -> () {
+  fn set_text_rendering_params(&self, textRenderingParams: &mut IDWriteRenderingParams) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTextRenderingParams(textRenderingParams) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).SetTextRenderingParams(textRenderingParams) };
     ()
   }
   
@@ -3899,865 +1687,595 @@ impl D2D1RenderTarget {
   //  Method SetTags
   
   #[allow(non_snake_case)]
-  pub fn set_tags(&self, tag1: D2D1_TAG, tag2: D2D1_TAG) -> () {
+  fn set_tags(&self, tag1: D2D1_TAG, tag2: D2D1_TAG) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetTags(tag1, tag2) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).SetTags(tag1, tag2) };
     ()
   }
   
   //  Method GetTags
   
   #[allow(non_snake_case)]
-  pub fn get_tags(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> () {
+  fn get_tags(&self, tag1: &mut D2D1_TAG, tag2: &mut D2D1_TAG) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetTags(tag1, tag2) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).GetTags(tag1, tag2) };
     ()
   }
   
   //  Method PushLayer
   
   #[allow(non_snake_case)]
-  pub fn push_layer(&self, layerParameters: &D2D1_LAYER_PARAMETERS, layer: &mut ID2D1Layer) -> () {
+  fn push_layer(&self, layerParameters: &D2D1_LAYER_PARAMETERS, layer: &mut ID2D1Layer) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PushLayer(layerParameters, layer) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).PushLayer(layerParameters, layer) };
     ()
   }
   
   //  Method PopLayer
   
   #[allow(non_snake_case)]
-  pub fn pop_layer(&self) -> () {
+  fn pop_layer(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PopLayer() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).PopLayer() };
     ()
   }
   
   //  Method Flush
   
   #[allow(non_snake_case)]
-  pub fn flush(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
+  fn flush(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Flush(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).Flush(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
     hr2ret(_hr,_hr)
   }
   
   //  Method SaveDrawingState
   
   #[allow(non_snake_case)]
-  pub fn save_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
+  fn save_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SaveDrawingState(drawingStateBlock) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).SaveDrawingState(drawingStateBlock) };
     ()
   }
   
   //  Method RestoreDrawingState
   
   #[allow(non_snake_case)]
-  pub fn restore_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
+  fn restore_drawing_state(&self, drawingStateBlock: &mut ID2D1DrawingStateBlock) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).RestoreDrawingState(drawingStateBlock) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).RestoreDrawingState(drawingStateBlock) };
     ()
   }
   
   //  Method PushAxisAlignedClip
   
   #[allow(non_snake_case)]
-  pub fn push_axis_aligned_clip(&self, clipRect: &D2D1_RECT_F, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
+  fn push_axis_aligned_clip(&self, clipRect: &D2D1_RECT_F, antialiasMode: D2D1_ANTIALIAS_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PushAxisAlignedClip(clipRect, antialiasMode) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).PushAxisAlignedClip(clipRect, antialiasMode) };
     ()
   }
   
   //  Method PopAxisAlignedClip
   
   #[allow(non_snake_case)]
-  pub fn pop_axis_aligned_clip(&self) -> () {
+  fn pop_axis_aligned_clip(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).PopAxisAlignedClip() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).PopAxisAlignedClip() };
     ()
   }
   
   //  Method Clear
   
   #[allow(non_snake_case)]
-  pub fn clear(&self, clearColor: &D2D1_COLOR_F) -> () {
+  fn clear(&self, clearColor: &D2D1_COLOR_F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).Clear(clearColor) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).Clear(clearColor) };
     ()
   }
   
   //  Method BeginDraw
   
   #[allow(non_snake_case)]
-  pub fn begin_draw(&self) -> () {
+  fn begin_draw(&self) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).BeginDraw() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).BeginDraw() };
     ()
   }
   
   //  Method EndDraw
   
   #[allow(non_snake_case)]
-  pub fn end_draw(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
+  fn end_draw(&self, tag1: Option<&mut D2D1_TAG>, tag2: Option<&mut D2D1_TAG>) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).EndDraw(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).EndDraw(opt_as_mut_ptr(&tag1), opt_as_mut_ptr(&tag2)) };
     hr2ret(_hr,_hr)
   }
   
   //  Method GetPixelFormat
   
   #[allow(non_snake_case)]
-  pub fn get_pixel_format(&self) -> D2D1_PIXEL_FORMAT {
+  fn get_pixel_format(&self) -> D2D1_PIXEL_FORMAT {
     let mut lv1: D2D1_PIXEL_FORMAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetPixelFormat(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).GetPixelFormat(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method SetDpi
   
   #[allow(non_snake_case)]
-  pub fn set_dpi(&self, dpiX: FLOAT, dpiY: FLOAT) -> () {
+  fn set_dpi(&self, dpiX: FLOAT, dpiY: FLOAT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).SetDpi(dpiX, dpiY) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).SetDpi(dpiX, dpiY) };
     ()
   }
   
   //  Method GetDpi
   
   #[allow(non_snake_case)]
-  pub fn get_dpi(&self, dpiX: &mut FLOAT, dpiY: &mut FLOAT) -> () {
+  fn get_dpi(&self, dpiX: &mut FLOAT, dpiY: &mut FLOAT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetDpi(dpiX, dpiY) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).GetDpi(dpiX, dpiY) };
     ()
   }
   
   //  Method GetSize
   
   #[allow(non_snake_case)]
-  pub fn get_size(&self) -> D2D1_SIZE_F {
+  fn get_size(&self) -> D2D1_SIZE_F {
     let mut lv1: D2D1_SIZE_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetSize(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).GetSize(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetPixelSize
   
   #[allow(non_snake_case)]
-  pub fn get_pixel_size(&self) -> D2D1_SIZE_U {
+  fn get_pixel_size(&self) -> D2D1_SIZE_U {
     let mut lv1: D2D1_SIZE_U = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetPixelSize(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).GetPixelSize(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   //  Method GetMaximumBitmapSize
   
   #[allow(non_snake_case)]
-  pub fn get_maximum_bitmap_size(&self) -> UINT32 {
+  fn get_maximum_bitmap_size(&self) -> UINT32 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).GetMaximumBitmapSize() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).GetMaximumBitmapSize() };
     _hr
   }
   
   //  Method IsSupported
   
   #[allow(non_snake_case)]
-  pub fn is_supported(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> BOOL {
+  fn is_supported(&self, renderTargetProperties: &D2D1_RENDER_TARGET_PROPERTIES) -> BOOL {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RenderTarget)).IsSupported(renderTargetProperties) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RenderTarget)).IsSupported(renderTargetProperties) };
     _hr
   }
   
   
 }
 
+impl TUnknown for D2D1RenderTarget {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1RenderTarget(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1RenderTarget {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1RenderTarget {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1RenderTarget {}
+impl TD2D1RenderTarget for D2D1RenderTarget {}
+
+pub struct D2D1RenderTarget(*mut ID2D1RenderTarget);
+
+impl HasIID for D2D1RenderTarget {
+  fn iid() -> REFGUID { &IID_ID2D1RenderTarget }
+}
+
+pub trait TD2D1Resource: TUnknown {
+  //  Method GetFactory
+  
+  #[allow(non_snake_case)]
+  fn get_factory(&self) -> D2D1Factory {
+    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
+    D2D1Factory::new(lv1 as *mut _)
+  }
+  
+  
+}
+
+impl TUnknown for D2D1Resource {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1Resource(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1Resource {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1Resource {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1Resource {}
+
 pub struct D2D1Resource(*mut ID2D1Resource);
 
 impl HasIID for D2D1Resource {
   fn iid() -> REFGUID { &IID_ID2D1Resource }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1Resource(pp_vtbl as *mut _ as *mut ID2D1Resource) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1Resource {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
 }
 
-impl Clone for D2D1Resource {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1Resource {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  
-}
-
-pub struct D2D1RoundedRectangleGeometry(*mut ID2D1RoundedRectangleGeometry);
-
-impl HasIID for D2D1RoundedRectangleGeometry {
-  fn iid() -> REFGUID { &IID_ID2D1RoundedRectangleGeometry }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1RoundedRectangleGeometry(pp_vtbl as *mut _ as *mut ID2D1RoundedRectangleGeometry) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1RoundedRectangleGeometry {
-  fn drop(&mut self) {
-    release_com_ptr(self)
-  }
-}
-
-impl Clone for D2D1RoundedRectangleGeometry {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
-}
-
-
-
-impl D2D1RoundedRectangleGeometry {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method GetBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetWidenedBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method StrokeContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method FillContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method CompareWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
-    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method Simplify
-  
-  #[allow(non_snake_case)]
-  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Tessellate
-  
-  #[allow(non_snake_case)]
-  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method CombineWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Outline
-  
-  #[allow(non_snake_case)]
-  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method ComputeArea
-  
-  #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputeLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputePointAtLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
-    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
-    hr2ret(_hr,(lv1, lv2))
-  }
-  
-  //  Method Widen
-  
-  #[allow(non_snake_case)]
-  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD2D1RoundedRectangleGeometry: TD2D1Geometry {
   //  Method GetRoundedRect
   
   #[allow(non_snake_case)]
-  pub fn get_rounded_rect(&self, roundedRect: &mut D2D1_ROUNDED_RECT) -> () {
+  fn get_rounded_rect(&self, roundedRect: &mut D2D1_ROUNDED_RECT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1RoundedRectangleGeometry)).GetRoundedRect(roundedRect) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1RoundedRectangleGeometry)).GetRoundedRect(roundedRect) };
     ()
   }
   
   
 }
 
-pub struct D2D1SimplifiedGeometrySink(*mut ID2D1SimplifiedGeometrySink);
-
-impl HasIID for D2D1SimplifiedGeometrySink {
-  fn iid() -> REFGUID { &IID_ID2D1SimplifiedGeometrySink }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1SimplifiedGeometrySink(pp_vtbl as *mut _ as *mut ID2D1SimplifiedGeometrySink) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1SimplifiedGeometrySink {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1RoundedRectangleGeometry {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1RoundedRectangleGeometry(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1RoundedRectangleGeometry {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1RoundedRectangleGeometry {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1RoundedRectangleGeometry {}
+impl TD2D1Geometry for D2D1RoundedRectangleGeometry {}
+impl TD2D1RoundedRectangleGeometry for D2D1RoundedRectangleGeometry {}
 
-impl Clone for D2D1SimplifiedGeometrySink {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1RoundedRectangleGeometry(*mut ID2D1RoundedRectangleGeometry);
+
+impl HasIID for D2D1RoundedRectangleGeometry {
+  fn iid() -> REFGUID { &IID_ID2D1RoundedRectangleGeometry }
 }
 
-
-
-impl D2D1SimplifiedGeometrySink {
+pub trait TD2D1SimplifiedGeometrySink: TUnknown {
   //  Method SetFillMode
   
   #[allow(non_snake_case)]
-  pub fn set_fill_mode(&self, fillMode: D2D1_FILL_MODE) -> () {
+  fn set_fill_mode(&self, fillMode: D2D1_FILL_MODE) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).SetFillMode(fillMode) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1SimplifiedGeometrySink)).SetFillMode(fillMode) };
     ()
   }
   
   //  Method SetSegmentFlags
   
   #[allow(non_snake_case)]
-  pub fn set_segment_flags(&self, vertexFlags: D2D1_PATH_SEGMENT) -> () {
+  fn set_segment_flags(&self, vertexFlags: D2D1_PATH_SEGMENT) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).SetSegmentFlags(vertexFlags) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1SimplifiedGeometrySink)).SetSegmentFlags(vertexFlags) };
     ()
   }
   
   //  Method BeginFigure
   
   #[allow(non_snake_case)]
-  pub fn begin_figure(&self, startPoint: D2D1_POINT_2F, figureBegin: D2D1_FIGURE_BEGIN) -> () {
+  fn begin_figure(&self, startPoint: D2D1_POINT_2F, figureBegin: D2D1_FIGURE_BEGIN) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).BeginFigure(startPoint, figureBegin) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1SimplifiedGeometrySink)).BeginFigure(startPoint, figureBegin) };
     ()
   }
   
   //  Method AddLines
   
   #[allow(non_snake_case)]
-  pub fn add_lines(&self, points: &D2D1_POINT_2F, pointsCount: UINT32) -> () {
+  fn add_lines(&self, points: &D2D1_POINT_2F, pointsCount: UINT32) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).AddLines(points, pointsCount) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1SimplifiedGeometrySink)).AddLines(points, pointsCount) };
     ()
   }
   
   //  Method AddBeziers
   
   #[allow(non_snake_case)]
-  pub fn add_beziers(&self, beziers: &D2D1_BEZIER_SEGMENT, beziersCount: UINT32) -> () {
+  fn add_beziers(&self, beziers: &D2D1_BEZIER_SEGMENT, beziersCount: UINT32) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).AddBeziers(beziers, beziersCount) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1SimplifiedGeometrySink)).AddBeziers(beziers, beziersCount) };
     ()
   }
   
   //  Method EndFigure
   
   #[allow(non_snake_case)]
-  pub fn end_figure(&self, figureEnd: D2D1_FIGURE_END) -> () {
+  fn end_figure(&self, figureEnd: D2D1_FIGURE_END) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).EndFigure(figureEnd) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1SimplifiedGeometrySink)).EndFigure(figureEnd) };
     ()
   }
   
   //  Method Close
   
   #[allow(non_snake_case)]
-  pub fn close(&self) -> HResult<HRESULT> {
+  fn close(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SimplifiedGeometrySink)).Close() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1SimplifiedGeometrySink)).Close() };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
-pub struct D2D1SolidColorBrush(*mut ID2D1SolidColorBrush);
-
-impl HasIID for D2D1SolidColorBrush {
-  fn iid() -> REFGUID { &IID_ID2D1SolidColorBrush }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1SolidColorBrush(pp_vtbl as *mut _ as *mut ID2D1SolidColorBrush) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1SolidColorBrush {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1SimplifiedGeometrySink {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1SimplifiedGeometrySink(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1SimplifiedGeometrySink {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1SimplifiedGeometrySink {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1SimplifiedGeometrySink for D2D1SimplifiedGeometrySink {}
 
-impl Clone for D2D1SolidColorBrush {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1SimplifiedGeometrySink(*mut ID2D1SimplifiedGeometrySink);
+
+impl HasIID for D2D1SimplifiedGeometrySink {
+  fn iid() -> REFGUID { &IID_ID2D1SimplifiedGeometrySink }
 }
 
-
-
-impl D2D1SolidColorBrush {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method SetOpacity
-  
-  #[allow(non_snake_case)]
-  pub fn set_opacity(&self, opacity: FLOAT) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).SetOpacity(opacity) };
-    ()
-  }
-  
-  //  Method SetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn set_transform(&self, transform: &D2D1_MATRIX_3X2_F) -> () {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).SetTransform(transform) };
-    ()
-  }
-  
-  //  Method GetOpacity
-  
-  #[allow(non_snake_case)]
-  pub fn get_opacity(&self) -> FLOAT {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).GetOpacity() };
-    _hr
-  }
-  
-  //  Method GetTransform
-  
-  #[allow(non_snake_case)]
-  pub fn get_transform(&self) -> D2D1_MATRIX_3X2_F {
-    let mut lv1: D2D1_MATRIX_3X2_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Brush)).GetTransform(&mut lv1 as *mut _ as *mut _) };
-    lv1
-  }
-  
+pub trait TD2D1SolidColorBrush: TD2D1Brush {
   //  Method SetColor
   
   #[allow(non_snake_case)]
-  pub fn set_color(&self, color: &D2D1_COLOR_F) -> () {
+  fn set_color(&self, color: &D2D1_COLOR_F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SolidColorBrush)).SetColor(color) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1SolidColorBrush)).SetColor(color) };
     ()
   }
   
   //  Method GetColor
   
   #[allow(non_snake_case)]
-  pub fn get_color(&self) -> D2D1_COLOR_F {
+  fn get_color(&self) -> D2D1_COLOR_F {
     let mut lv1: D2D1_COLOR_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1SolidColorBrush)).GetColor(&mut lv1 as *mut _ as *mut _) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1SolidColorBrush)).GetColor(&mut lv1 as *mut _ as *mut _) };
     lv1
   }
   
   
 }
 
-pub struct D2D1StrokeStyle(*mut ID2D1StrokeStyle);
-
-impl HasIID for D2D1StrokeStyle {
-  fn iid() -> REFGUID { &IID_ID2D1StrokeStyle }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1StrokeStyle(pp_vtbl as *mut _ as *mut ID2D1StrokeStyle) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1StrokeStyle {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1SolidColorBrush {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1SolidColorBrush(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1SolidColorBrush {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1SolidColorBrush {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1SolidColorBrush {}
+impl TD2D1Brush for D2D1SolidColorBrush {}
+impl TD2D1SolidColorBrush for D2D1SolidColorBrush {}
 
-impl Clone for D2D1StrokeStyle {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1SolidColorBrush(*mut ID2D1SolidColorBrush);
+
+impl HasIID for D2D1SolidColorBrush {
+  fn iid() -> REFGUID { &IID_ID2D1SolidColorBrush }
 }
 
-
-
-impl D2D1StrokeStyle {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
+pub trait TD2D1StrokeStyle: TD2D1Resource {
   //  Method GetStartCap
   
   #[allow(non_snake_case)]
-  pub fn get_start_cap(&self) -> D2D1_CAP_STYLE {
+  fn get_start_cap(&self) -> D2D1_CAP_STYLE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1StrokeStyle)).GetStartCap() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1StrokeStyle)).GetStartCap() };
     _hr
   }
   
   //  Method GetEndCap
   
   #[allow(non_snake_case)]
-  pub fn get_end_cap(&self) -> D2D1_CAP_STYLE {
+  fn get_end_cap(&self) -> D2D1_CAP_STYLE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1StrokeStyle)).GetEndCap() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1StrokeStyle)).GetEndCap() };
     _hr
   }
   
   //  Method GetDashCap
   
   #[allow(non_snake_case)]
-  pub fn get_dash_cap(&self) -> D2D1_CAP_STYLE {
+  fn get_dash_cap(&self) -> D2D1_CAP_STYLE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1StrokeStyle)).GetDashCap() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1StrokeStyle)).GetDashCap() };
     _hr
   }
   
   //  Method GetMiterLimit
   
   #[allow(non_snake_case)]
-  pub fn get_miter_limit(&self) -> FLOAT {
+  fn get_miter_limit(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1StrokeStyle)).GetMiterLimit() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1StrokeStyle)).GetMiterLimit() };
     _hr
   }
   
   //  Method GetLineJoin
   
   #[allow(non_snake_case)]
-  pub fn get_line_join(&self) -> D2D1_LINE_JOIN {
+  fn get_line_join(&self) -> D2D1_LINE_JOIN {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1StrokeStyle)).GetLineJoin() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1StrokeStyle)).GetLineJoin() };
     _hr
   }
   
   //  Method GetDashOffset
   
   #[allow(non_snake_case)]
-  pub fn get_dash_offset(&self) -> FLOAT {
+  fn get_dash_offset(&self) -> FLOAT {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1StrokeStyle)).GetDashOffset() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1StrokeStyle)).GetDashOffset() };
     _hr
   }
   
   //  Method GetDashStyle
   
   #[allow(non_snake_case)]
-  pub fn get_dash_style(&self) -> D2D1_DASH_STYLE {
+  fn get_dash_style(&self) -> D2D1_DASH_STYLE {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1StrokeStyle)).GetDashStyle() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1StrokeStyle)).GetDashStyle() };
     _hr
   }
   
   //  Method GetDashesCount
   
   #[allow(non_snake_case)]
-  pub fn get_dashes_count(&self) -> UINT32 {
+  fn get_dashes_count(&self) -> UINT32 {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1StrokeStyle)).GetDashesCount() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1StrokeStyle)).GetDashesCount() };
     _hr
   }
   
   //  Method GetDashes
   
   #[allow(non_snake_case)]
-  pub fn get_dashes(&self, dashes: &mut FLOAT, dashesCount: UINT32) -> () {
+  fn get_dashes(&self, dashes: &mut FLOAT, dashesCount: UINT32) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1StrokeStyle)).GetDashes(dashes, dashesCount) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1StrokeStyle)).GetDashes(dashes, dashesCount) };
     ()
   }
   
   
 }
 
-pub struct D2D1TessellationSink(*mut ID2D1TessellationSink);
-
-impl HasIID for D2D1TessellationSink {
-  fn iid() -> REFGUID { &IID_ID2D1TessellationSink }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1TessellationSink(pp_vtbl as *mut _ as *mut ID2D1TessellationSink) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1TessellationSink {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1StrokeStyle {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1StrokeStyle(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1StrokeStyle {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1StrokeStyle {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1StrokeStyle {}
+impl TD2D1StrokeStyle for D2D1StrokeStyle {}
 
-impl Clone for D2D1TessellationSink {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1StrokeStyle(*mut ID2D1StrokeStyle);
+
+impl HasIID for D2D1StrokeStyle {
+  fn iid() -> REFGUID { &IID_ID2D1StrokeStyle }
 }
 
-
-
-impl D2D1TessellationSink {
+pub trait TD2D1TessellationSink: TUnknown {
   //  Method AddTriangles
   
   #[allow(non_snake_case)]
-  pub fn add_triangles(&self, triangles: &D2D1_TRIANGLE, trianglesCount: UINT32) -> () {
+  fn add_triangles(&self, triangles: &D2D1_TRIANGLE, trianglesCount: UINT32) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1TessellationSink)).AddTriangles(triangles, trianglesCount) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1TessellationSink)).AddTriangles(triangles, trianglesCount) };
     ()
   }
   
   //  Method Close
   
   #[allow(non_snake_case)]
-  pub fn close(&self) -> HResult<HRESULT> {
+  fn close(&self) -> HResult<HRESULT> {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1TessellationSink)).Close() };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1TessellationSink)).Close() };
     hr2ret(_hr,_hr)
   }
   
   
 }
 
-pub struct D2D1TransformedGeometry(*mut ID2D1TransformedGeometry);
-
-impl HasIID for D2D1TransformedGeometry {
-  fn iid() -> REFGUID { &IID_ID2D1TransformedGeometry }
-  fn new(pp_vtbl : *mut IUnknown) -> Self { D2D1TransformedGeometry(pp_vtbl as *mut _ as *mut ID2D1TransformedGeometry) }
-  fn iptr(&self) -> *mut IUnknown { self.0 as *mut _ as  *mut IUnknown}
-}
-impl Drop for D2D1TransformedGeometry {
-  fn drop(&mut self) {
-    release_com_ptr(self)
+impl TUnknown for D2D1TessellationSink {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1TessellationSink(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
   }
 }
+impl Drop for D2D1TessellationSink {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1TessellationSink {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1TessellationSink for D2D1TessellationSink {}
 
-impl Clone for D2D1TransformedGeometry {
-  fn clone(&self) -> Self {
-    clone_com_ptr(self)
-  }
+pub struct D2D1TessellationSink(*mut ID2D1TessellationSink);
+
+impl HasIID for D2D1TessellationSink {
+  fn iid() -> REFGUID { &IID_ID2D1TessellationSink }
 }
 
-
-
-impl D2D1TransformedGeometry {
-  //  Method GetFactory
-  
-  #[allow(non_snake_case)]
-  pub fn get_factory(&self) -> D2D1Factory {
-    let mut lv1: *mut ID2D1Factory = ptr::null_mut();
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Resource)).GetFactory(&mut lv1 as *mut *mut _) };
-    D2D1Factory::new(lv1 as *mut _)
-  }
-  
-  //  Method GetBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_bounds(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetBounds(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method GetWidenedBounds
-  
-  #[allow(non_snake_case)]
-  pub fn get_widened_bounds(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_RECT_F> {
-    let mut lv1: D2D1_RECT_F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).GetWidenedBounds(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method StrokeContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn stroke_contains_point(&self, point: D2D1_POINT_2F, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).StrokeContainsPoint(point, strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method FillContainsPoint
-  
-  #[allow(non_snake_case)]
-  pub fn fill_contains_point(&self, point: D2D1_POINT_2F, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<BOOL> {
-    let mut lv1: BOOL = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).FillContainsPoint(point, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method CompareWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn compare_with_geometry<T: HasIID>(&self, inputGeometry: &T, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<D2D1_GEOMETRY_RELATION> {
-    let mut lv1: D2D1_GEOMETRY_RELATION = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CompareWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method Simplify
-  
-  #[allow(non_snake_case)]
-  pub fn simplify<T: HasIID>(&self, simplificationOption: D2D1_GEOMETRY_SIMPLIFICATION_OPTION, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Simplify(simplificationOption, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Tessellate
-  
-  #[allow(non_snake_case)]
-  pub fn tessellate<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, tessellationSink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Tessellate(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, tessellationSink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method CombineWithGeometry
-  
-  #[allow(non_snake_case)]
-  pub fn combine_with_geometry<T: HasIID, T1: HasIID>(&self, inputGeometry: &T, combineMode: D2D1_COMBINE_MODE, inputGeometryTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T1) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).CombineWithGeometry(inputGeometry.iptr() as *mut _ as *mut _ , combineMode, inputGeometryTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method Outline
-  
-  #[allow(non_snake_case)]
-  pub fn outline<T: HasIID>(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Outline(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
-  //  Method ComputeArea
-  
-  #[allow(non_snake_case)]
-  pub fn compute_area(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeArea(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputeLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_length(&self, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<FLOAT> {
-    let mut lv1: FLOAT = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputeLength(worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _) };
-    hr2ret(_hr,lv1)
-  }
-  
-  //  Method ComputePointAtLength
-  
-  #[allow(non_snake_case)]
-  pub fn compute_point_at_length(&self, length: FLOAT, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT) -> HResult<(D2D1_POINT_2F, D2D1_POINT_2F)> {
-    let mut lv1: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let mut lv2: D2D1_POINT_2F = unsafe {mem::uninitialized::<_>()};
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).ComputePointAtLength(length, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, &mut lv1 as *mut _ as *mut _, &mut lv2 as *mut _ as *mut _) };
-    hr2ret(_hr,(lv1, lv2))
-  }
-  
-  //  Method Widen
-  
-  #[allow(non_snake_case)]
-  pub fn widen<T: HasIID>(&self, strokeWidth: FLOAT, strokeStyle: Option<&D2D1StrokeStyle>, worldTransform: Option<&D2D1_MATRIX_3X2_F>, flatteningTolerance: FLOAT, geometrySink: &T) -> HResult<HRESULT> {
-  
-    let _hr=unsafe { (*(self.0 as *mut ID2D1Geometry)).Widen(strokeWidth, strokeStyle.map(|i|i.iptr()).unwrap_or(ptr::null_mut()) as *mut _ as *mut _, worldTransform.as_ref().map(|p|*p as *const _ as *const _).unwrap_or(ptr::null()), flatteningTolerance, geometrySink.iptr() as *mut _ as *mut _ ) };
-    hr2ret(_hr,_hr)
-  }
-  
+pub trait TD2D1TransformedGeometry: TD2D1Geometry {
   //  Method GetSourceGeometry
   //  Error: sourceGeometry parameter: ANone annotation cannot be used with double indirection
   //  Method GetTransform
   
   #[allow(non_snake_case)]
-  pub fn get_transform(&self, transform: &mut D2D1_MATRIX_3X2_F) -> () {
+  fn get_transform(&self, transform: &mut D2D1_MATRIX_3X2_F) -> () {
   
-    let _hr=unsafe { (*(self.0 as *mut ID2D1TransformedGeometry)).GetTransform(transform) };
+    let _hr=unsafe { (*(self.iptr() as *mut ID2D1TransformedGeometry)).GetTransform(transform) };
     ()
   }
   
   
 }
+
+impl TUnknown for D2D1TransformedGeometry {
+  fn new(ptr: *mut IUnknown) -> Self {
+    D2D1TransformedGeometry(ptr as *mut _)
+  }
+  fn iptr(&self) -> *mut IUnknown {
+    self.0 as *mut _
+  }
+}
+impl Drop for D2D1TransformedGeometry {
+  fn drop(&mut self) { drop_unknown(self) }
+}
+impl Clone for D2D1TransformedGeometry {
+  fn clone(&self) -> Self { clone_unknown(self) }
+}
+impl TD2D1Resource for D2D1TransformedGeometry {}
+impl TD2D1Geometry for D2D1TransformedGeometry {}
+impl TD2D1TransformedGeometry for D2D1TransformedGeometry {}
+
+pub struct D2D1TransformedGeometry(*mut ID2D1TransformedGeometry);
+
+impl HasIID for D2D1TransformedGeometry {
+  fn iid() -> REFGUID { &IID_ID2D1TransformedGeometry }
+}
+

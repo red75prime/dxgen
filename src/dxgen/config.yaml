@@ -23,21 +23,25 @@ modules:
           - name: d2d1effectauthor.h
           - name: d2d1.h
             uses:
+              - dxgi_safe
               - dwrite_safe
           - name: d2d1_1.h
             uses:
               - d2d1_safe
+              - dxgi_safe
               - dwrite_safe
           - name: d2d1_2.h
             uses:
               - d2d1_safe
               - d2d1_1_safe
+              - dxgi_safe
               - dwrite_safe
           - name: d2d1_3.h
             uses:
               - d2d1_safe
               - d2d1_1_safe
               - d2d1_2_safe
+              - dxgi_safe
               - dwrite_safe
       no-winapi-gen: false
       no-enum-conversion: true
@@ -68,6 +72,8 @@ modules:
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - name: d3d11on12.h
+            uses:
+              - d3d11_safe
       no-winapi-gen: false
       no-enum-conversion: true
 
