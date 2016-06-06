@@ -226,6 +226,7 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
     }
     }
 
+    let mut fps = 0.0;
     // Initialization of cubes module data required to render all stuff
     let data=
     match cubes::AppData::on_init(&wnd, &dxgi_factory, Some(&adapter), FRAME_COUNT, parms) { 
@@ -370,7 +371,7 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
           // Error handling isn't implemented yet. on_render panics, if it needs to.
           // TODO: process error
           ::perf_start("total");
-          data.borrow_mut().on_render(pause);
+          data.borrow_mut().on_render(pause, fps);
           ::perf_end("total");
           // register rendered frame in performance collector
           ::perf_frame();
@@ -380,6 +381,7 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
           if frames>0 && now<start || now>=(start+1.0) {
               // Once per second show stats
               print!("Adapter {} FPS: {:4}", id, frames);
+              fps = frames as f32;
               PERFDATA.with(|p_data| {
                   let p_data = p_data.borrow();
                   let frames = p_data.frames as f64;

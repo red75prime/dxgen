@@ -55,6 +55,7 @@ pub struct DrawTextResources {
     glist: D3D12GraphicsCommandList,
     calloc: D3D12CommandAllocator,
     tbrush: D2D1SolidColorBrush,
+    bbrush: D2D1SolidColorBrush,
     tformat: DWriteTextFormat,
     
 }
@@ -104,8 +105,9 @@ impl DrawTextResources {
         try!(glist.close());
         
         let tbrush = try!(dt.devctxd2d.create_solid_color_brush(&color3(0.9, 0.9, 1.), None));
-        let tformat = try!(dt.factorydw.create_text_format("Lucida Sans Unicode".into(), None, DWRITE_FONT_WEIGHT_NORMAL,
-                                DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 16., "en-GB".into()));
+        let bbrush = try!(dt.devctxd2d.create_solid_color_brush(&color3(0.0, 0.0, 0.), None));
+        let tformat = try!(dt.factorydw.create_text_format("Lucida Sans Unicode".into(), None, DWRITE_FONT_WEIGHT_BOLD,
+                                DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 20., "en-GB".into()));
         
         Ok(DrawTextResources {
             d11context: dt.devcontext11.clone(),
@@ -114,11 +116,12 @@ impl DrawTextResources {
             calloc: calloc,
             glist: glist,
             tbrush: tbrush,
+            bbrush: bbrush,
             tformat: tformat,
         })
     }
     
-    pub fn render(&self, core: &DXCore, dt: &DrawText, rt: &D3D12Resource) -> HResult<()> {
+    pub fn render(&self, core: &DXCore, dt: &DrawText, rt: &D3D12Resource, fps: f32) -> HResult<()> {
         //return Ok(());
         trace!("DrawTextResources.render");
         trace!("calloc.reset()");
@@ -140,8 +143,13 @@ impl DrawTextResources {
         trace!("begin_draw");
         dt.devctxd2d.begin_draw();
         
-        let hello_vec = ::utils::str_to_vec_u16("DWrite and D3D12\nIt works at last\n你好，世界");
+        let text = format!("FPS: {}\nDWrite and D3D12\nIt works at last\n你好，世界", fps);
+        let hello_vec = ::utils::str_to_vec_u16(&text);
         trace!("draw_text");
+        for &(dx, dy) in &[(-1., 0.),(1., 0.),(0., -1.),(0., 1.)] {
+            dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35.+dx, 5.+dy, 300.+dx, 100.+dy), &self.bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
+        };
+        dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(34., 4., 299., 99.), &self.bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35., 5., 300., 100.), &self.tbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         
         trace!("end_draw");

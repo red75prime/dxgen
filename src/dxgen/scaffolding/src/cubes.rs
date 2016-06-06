@@ -509,7 +509,7 @@ impl FrameResources {
     }
     // rtvh - render target view descriptor handle
     fn render(&mut self, core: &DXCore, rt: &D3D12Resource, _rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, 
-                cr: &mut CommonResources, st: &State, camera: &Camera, pause: bool)
+                cr: &mut CommonResources, st: &State, camera: &Camera, pause: bool, fps: f32)
                 -> HResult<()> {
         ::perf_wait_start();
         try!(self.fence.wait_for_gpu());
@@ -659,7 +659,7 @@ impl FrameResources {
                 cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.002
             };
         ::perf_end("tonemap");
-        try!(self.dtr.render(core, cr.draw_text.as_ref().unwrap(), rt));
+        try!(self.dtr.render(core, cr.draw_text.as_ref().unwrap(), rt, fps));
 
         Ok(())
     }
@@ -723,8 +723,8 @@ impl AppData {
 
     // renders and presents scene
     // TODO: remove x,y
-    pub fn on_render(&mut self, pause: bool) {
-        on_render(self, pause)
+    pub fn on_render(&mut self, pause: bool, fps: f32) {
+        on_render(self, pause, fps)
     }
 
     pub fn is_minimized(&self) -> bool {
@@ -1017,7 +1017,7 @@ pub fn on_init(wnd: &Window,
 // -----------------------------------------------------------------------------------------------------
 // ----------------- on_render -------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------
-pub fn on_render(data: &mut AppData, pause: bool) {
+pub fn on_render(data: &mut AppData, pause: bool, fps: f32) {
     if cfg!(debug_assertions) {
         trace!("on_render")
     };
@@ -1043,7 +1043,7 @@ pub fn on_render(data: &mut AppData, pause: bool) {
         &mut data.common_resources, 
         &data.state,
         &data.camera,
-        pause
+        pause, fps,
     ).dump(&data.core).unwrap();
 
     ::perf_present_start();
