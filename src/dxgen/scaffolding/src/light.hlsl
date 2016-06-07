@@ -21,7 +21,6 @@ StructuredBuffer<float3> normals: register(t3);
 struct VS_OUTPUT
 {
     float4 pos: SV_Position;
-    float4 color: COLOR;
 };
 
 [RootSignature(RSD)]
@@ -32,7 +31,6 @@ VS_OUTPUT VSMain(uint vtx: SV_VertexID) {
   ret.pos = mul(ret.pos, view);
   ret.pos = mul(ret.pos, proj);
 
-  ret.color = float4(200, 200, 200, 1);
   return ret;
 }
 

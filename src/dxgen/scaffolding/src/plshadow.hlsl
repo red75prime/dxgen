@@ -11,6 +11,7 @@ struct InstanceData {
   float4x4 world;
   float3x3 n_world;
   float3 color;
+  uint blink;
 };
 
 StructuredBuffer<InstanceData> instances : register(t0);

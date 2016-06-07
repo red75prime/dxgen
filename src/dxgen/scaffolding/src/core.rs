@@ -144,6 +144,8 @@ pub fn create_core(dxgi_factory: &DXGIFactory4, adapter: Option<&DXGIAdapter1>,
         try!(get_debug_interface())
             .enable_debug_layer();
     };
+
+
     let dev = try!(d3d12_create_device(adapter, feature_level));
 
     let info_queue = if enable_debug {

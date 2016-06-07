@@ -43,8 +43,7 @@ impl LightSource {
         let root_sig = try!(dev.create_root_signature(0, &rsig_bc[..]));
 
         let cons_raster = {
-            let mut opts: D3D12_FEATURE_DATA_D3D12_OPTIONS = unsafe{ mem::uninitialized() };
-            try!(dev.check_feature_support_options(&mut opts));
+            let opts = try!(dev.check_feature_support_options());
             opts.ConservativeRasterizationTier != D3D12_CONSERVATIVE_RASTERIZATION_TIER_NOT_SUPPORTED
         };
 

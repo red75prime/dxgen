@@ -23,6 +23,8 @@ extern crate obj;
 extern crate itertools;
 extern crate d2d1 as d2d1_sys;
 extern crate dwrite as dwrite_sys;
+extern crate ncollide;
+extern crate nalgebra;
 
 #[macro_use] mod macros;
 mod create_device;
@@ -158,12 +160,12 @@ fn main() {
   let mutex=Arc::new(Mutex::new(()));
   crossbeam::scope(|scope| {
 
-    // d2d1 test window
-    scope.spawn(|| {
-      if let Err(err) = d2d1test::main() {
-        error!("d2d1test::main() error 0x{:x}", err);
-      }
-    });
+    //// d2d1 test window
+    // scope.spawn(|| {
+    //   if let Err(err) = d2d1test::main() {
+    //     error!("d2d1test::main() error 0x{:x}", err);
+    //   }
+    // });
 
     for (id,a) in adapters.into_iter().enumerate() {
       let mutex = mutex.clone();
@@ -179,14 +181,10 @@ fn main() {
 
 fn print_adapter_info(adapter: &DXGIAdapter1) {
   if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_11_0) {
-    let mut data = unsafe { ::std::mem::uninitialized() };
-    if let Ok(_) = dev.check_feature_support_virtual_address(&mut data) {
-      // data is guarantied to be initialized here
+    if let Ok(data) = dev.check_feature_support_virtual_address() {
       println!("   {:#?}", data);
     }
-    let mut data = unsafe { ::std::mem::uninitialized() };
-    if let Ok(_) = dev.check_feature_support_options(&mut data) {
-      // data is guarantied to be initialized here
+    if let Ok(data) = dev.check_feature_support_options() {
       println!("   {:#?}", data);
     }
   }
@@ -212,12 +210,7 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
     // This block of code is not required. I just checked some stuff
     if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_12_0) {
         let format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        let mut fsup = D3D12_FEATURE_DATA_FORMAT_SUPPORT {
-            Format: format,
-            Support1: D3D12_FORMAT_SUPPORT1_NONE,
-            Support2: D3D12_FORMAT_SUPPORT2_NONE,
-        };
-        if let Ok(_) = dev.check_feature_support_format_support(&mut fsup) {
+        if let Ok(fsup) = dev.check_feature_support_format_support(format) {
             // We could have few threads running, so take a lock to prevent line interleaving
             let _ = mutex.lock();
             println!("{}", descr);

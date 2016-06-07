@@ -78,6 +78,7 @@ struct InstanceData {
     world: [[f32; 4]; 4],
     n_world: [[f32; 3]; 3],
     color: [f32; 3],
+    blink: u32,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -540,6 +541,7 @@ impl FrameResources {
                         world: rotshift3_to_4x4(&cs.rot, &cs.pos),
                         n_world: rot3_to_3x3(&cs.rot),
                         color: [cs.color.x, cs.color.y, cs.color.z],
+                        blink: if cs.blink { 1 } else { 0 }
                     });
                 }
                 //*inst_ref = InstanceData {

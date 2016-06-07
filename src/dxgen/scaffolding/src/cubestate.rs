@@ -3,6 +3,10 @@ use crossbeam;
 use rand;
 use rand::Rng;
 use utils::v3;
+use ncollide as nc;
+use ncollide::broad_phase::BroadPhase;
+use ncollide::bounding_volume;
+use nalgebra as na;
 
 pub type V3 = Vector3<f32>;
 
@@ -12,6 +16,7 @@ pub struct CubeState {
     pub rot: Basis3<f32>,
     pub spd: V3,
     pub color: V3,
+    pub blink: bool,
     pub rot_axe: V3,
     pub rot_spd: f32,
 }
@@ -24,6 +29,10 @@ pub struct State {
 }
 
 const CUBE_SPAN : f32 = 200.;
+
+fn fmin(a: (f32, f32), b: (f32, f32)) -> (f32, f32) {
+    if a.0 < b.0 { a } else { b }
+}
 
 impl State {
     pub fn new(object_count: u32) -> Self {
@@ -38,6 +47,7 @@ impl State {
                              (y - 0.5) * CUBE_SPAN,
                              (z - 1.) * CUBE_SPAN),
                 color: v3(x, y, z),
+                blink: false,
                 rot: <Basis3<f32> as Rotation<_>>::one(),
                 spd: v3(rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5,
@@ -60,6 +70,9 @@ impl State {
     fn update_one(cube: &CubeState, dt: f32) -> CubeState {
         let mut new_spd = cube.spd;
         let mut new_pos = cube.pos + cube.spd * dt;
+        let (dist, sprj) = fmin(((new_pos.x - (-CUBE_SPAN/2.)).abs(), new_spd.x), fmin(((new_pos.x - CUBE_SPAN/2.).abs(), new_spd.x), 
+                    fmin(((new_pos.y - (-CUBE_SPAN/2.)).abs(), new_spd.y), fmin(((new_pos.y - (CUBE_SPAN/2.)).abs(), new_spd.y), 
+                    fmin(((new_pos.z - (-CUBE_SPAN)).abs(), new_spd.z), ((new_pos.z - 0.).abs(), new_spd.z))))));
         if new_pos.x < -CUBE_SPAN/2. {
             new_pos.x = -CUBE_SPAN/2.;
             new_spd.x = -new_spd.x;
@@ -88,6 +101,7 @@ impl State {
             pos: new_pos,
             spd: new_spd,
             rot: Basis3::from_axis_angle(cube.rot_axe, deg(cube.rot_spd * dt).into()).concat(&cube.rot),
+            blink: dist.abs() < sprj.abs(),
             .. *cube
         }
     }
@@ -116,6 +130,32 @@ impl State {
                 };
             });
         }
+        let mut broad_phase = nc::broad_phase::DBVTBroadPhase::new(10.0f32, true);
+        for (i, c) in self.cubes.iter().enumerate() {
+            let bv = bounding_volume::bounding_sphere(&nc::shape::Cuboid::new(na::Vector3::new(0.5, 0.5, 0.5)), &na::Vector3::new(c.pos.x, c.pos.y, c.pos.z));
+            //println!("{:?}", bv);
+            broad_phase.deferred_add(i, bv, i);
+        }
+        let mut ccount = 0;
+        broad_phase.update(&mut |&i1, &i2| {(self.cubes[i1].pos - self.cubes[i2].pos).magnitude2() < 36.0}, &mut |&i1, &i2, c|{
+            if c {
+                let dp = (cubes[i2].pos - cubes[i1].pos).normalize();
+                let ds = (cubes[i2].spd - cubes[i1].spd).normalize();
+                let ci_spd = ds.dot(dp); 
+                if ci_spd < 0. {
+                    // closing in
+                    cubes[i1].spd += dp*(ci_spd/2.0);
+                    cubes[i1].rot_spd /= 2.;
+                    cubes[i1].blink = true;
+                    cubes[i2].spd -= dp*(ci_spd/2.0);
+                    cubes[i2].rot_spd /= 2.;
+                    cubes[i2].blink = true;
+                }
+            }
+            //ccount += 1;
+        });
+        //println!("Comparisons: {}", ccount);
+
         let (lx, ly) = f64::sin_cos(self.tick*0.05);
         let (lx, ly) = (lx as f32, ly as f32);
         let light_pos = v3(lx*50., ly*50., -0.);//v3(0., 0., -100.);

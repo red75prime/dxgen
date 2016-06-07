@@ -11,6 +11,7 @@ struct InstanceData {
   float4x4 world;
   float3x3 n_world;
   float3 color;
+  uint blink;
 };
 
 StructuredBuffer <InstanceData> instances : register(t1);
@@ -28,6 +29,7 @@ struct VS_OUTPUT
     float4 vPosition : SV_Position;
     float4 vDiffuse : COLOR;
     float2 texc0 : TEXCOORD0;
+    float blink: TEXCOORD2;
     float3 norm : NORMAL;
     float3 w_pos : TEXCOORD1;
 };
@@ -44,6 +46,7 @@ VS_OUTPUT VSMain(VS_INPUT vtx, uint iidx : SV_InstanceID){
   ret.vDiffuse = float4(instances[iidx].color, 1);
   ret.texc0 = vtx.texc0;
   ret.norm.xyz = mul(vtx.norm, instances[iidx].n_world);
+  ret.blink = (float)instances[iidx].blink;
   return ret;
 }
 
@@ -96,7 +99,9 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   //float shadowDist = sampleCubemap(shadowMap, -light_off);
   float shadowDist = k2/(shadowMapCube.Sample(pointSamp, -light_off).r-k1);
   float4 ambientTerm = float4(texel.rgb*(float3(0.01,0.01,0.02)+float3(0.05,0.07,0.05)/(1+length(light_off)/10)),1);
-  if (shadowDist < mlen(light_off)) {
+  if (pv.blink == 1) {
+    ambientTerm = pv.vDiffuse; 
+  } else if (shadowDist < mlen(light_off)) {
     return ambientTerm;
   }
   float light_invd = 10. / (1. + length(light_off)/10);
