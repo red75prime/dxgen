@@ -1097,17 +1097,17 @@ let d3d12annotations=
         ],MANone);
         ("CheckFeatureSupport",[
           ("This",AThis);
-          ("Feature",TypeSelector("pFeatureSupportData",[("Options","D3D12_FEATURE_D3D12_OPTIONS",Ptr(StructRef "D3D12_FEATURE_DATA_D3D12_OPTIONS"), InOutOfSize "FeatureSupportDataSize");
+          ("Feature",TypeSelector("pFeatureSupportData",[("Options","D3D12_FEATURE_D3D12_OPTIONS",Ptr(StructRef "D3D12_FEATURE_DATA_D3D12_OPTIONS"), OutReturnOfSize "FeatureSupportDataSize");
                                                          ("Arch","D3D12_FEATURE_ARCHITECTURE",Ptr(StructRef "D3D12_FEATURE_DATA_ARCHITECTURE"), InOutOfSize "FeatureSupportDataSize");
                                                          ("FeatureLevels","D3D12_FEATURE_FEATURE_LEVELS",Ptr(StructRef "D3D12_FEATURE_DATA_FEATURE_LEVELS"), InOutOfSize "FeatureSupportDataSize");
                                                          ("FormatSupport","D3D12_FEATURE_FORMAT_SUPPORT",Ptr(StructRef "D3D12_FEATURE_DATA_FORMAT_SUPPORT"), InOutOfSize "FeatureSupportDataSize");
                                                          ("MultisampleQualityLevels","D3D12_FEATURE_MULTISAMPLE_QUALITY_LEVELS",Ptr(StructRef "D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS"), InOutOfSize "FeatureSupportDataSize");
                                                          ("FormatInfo","D3D12_FEATURE_FORMAT_INFO",Ptr(StructRef "D3D12_FEATURE_DATA_FORMAT_INFO"), InOutOfSize "FeatureSupportDataSize");
-                                                         ("VirtualAddress","D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT",Ptr(StructRef "D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT"), InOutOfSize "FeatureSupportDataSize");
+                                                         ("VirtualAddress","D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT",Ptr(StructRef "D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT"), OutReturnOfSize "FeatureSupportDataSize");
                                                          ]));
-          ("pFeatureSupportData",InOutOfSize "FeatureSupportDataSize");
+          ("pFeatureSupportData",OutReturnOfSize "FeatureSupportDataSize");
           ("FeatureSupportDataSize",ANone);
-        ],MANone);
+        ],MACustom id3d12checkfeaturesupport); /// Custom implementation. Above ^^^^ code is here just for reference
         ("CreateDescriptorHeap",[
           ("This",AThis);
           ("pDescriptorHeapDesc",ANone);

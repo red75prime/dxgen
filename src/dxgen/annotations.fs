@@ -95,6 +95,7 @@ type ParamAnnotation=
   |OutReturnCombine of string*string // struct type, struct field
   |OutReturnInterface of string // parameter name of iid
   |OutReturnKnownInterface of string*string // parameter name of iid, interface type
+  |OutReturnOfSize of string
   |InIUnknown // TODO: delete it
   |InByteArrayOfSize of string*uint32 // name of array lenght parameter
   |InOptional
@@ -131,6 +132,7 @@ let getReferencedParameters parameterAnnotation=
   |OutOptionalArrayOfSize p -> [p]
   |InArrayOfSize p -> [p]
   |InComPtrArrayOfSize p -> [p]
+  |OutReturnOfSize p -> [p]
   |OutArrayOfSize p -> [p]
   |InOutArrayOfSize p -> [p]
   |InByteArrayOfSize (p,_) -> [p]
@@ -159,6 +161,7 @@ let getReturnDesc parmAnnot=
   |OutReturnKnownInterface _ -> [parmAnnot]
   |OutReturnComPtr -> [parmAnnot]
   |OutReturnOptionalComPtr -> [parmAnnot]
+  |OutReturnOfSize _ -> [parmAnnot]
   |InIUnknown -> []
   |InOptionalArrayOfSize _ -> []
   |InArrayOfSize _ -> []

@@ -407,6 +407,8 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
 
     // Let's generate routing
     for (pname, pannot, pty, refs) in parmsr do
+      let typeOfNativeParm pname = parmsr |> List.choose (fun (name,_,ty,_) -> if name = pname then Some(ty) else None) |> List.head
+
       let safeParmName=toRustParmName pname // TODO: Process prefixes ("p", "pp" and such)
       match pannot with
       |AThis ->
@@ -472,7 +474,8 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           |_ -> 
             addSafeParm safeParmName (convertTypeToRustNoArray pty pannot)
             addNativeParm pname (Some(safeParmName)) safeParmName
-        |[(rname, OutReturnInterface _, _)] |[(rname, OutReturnKnownInterface _, _)] |[(rname, InInterface _, _)] ->
+        |[(rname, OutReturnInterface _, _)] |[(rname, OutReturnKnownInterface _, _)] |[(rname, InInterface _, _)] 
+        |[(rname, OutReturnOfSize _, _)]->
           () // processed in referenced paramerer
         |[(rname, InOutOfSize _, _)] |[(rname, OutOfSize _, _)] |[(rname, InOfSize _, _)] ->
           // this parameter conveys the size of another parameter
@@ -871,6 +874,22 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: OutReturnInterface shouldn't have references. But references are %A" pname refs)
+// -----------------------------------------------------------------------------------------------------------------------------------------
+      |OutReturnOfSize(rname) ->
+        match refs with 
+        |[] ->
+          match pty with
+          |Ptr(TypedefRef structname)
+          |Ptr(StructRef structname) ->
+            let sizety = typeOfNativeParm rname |> tyToRust
+            let rty = RType structname
+            let lv=newLocalVar true rty (fun m -> "unsafe{ mem::uninitialized() }")
+            addNativeParm pname None ("&mut "+lv+" as *mut _ as *mut c_void")
+            addNativeParm rname None ("mem::size_of_val(&"+lv+") as "+sizety)
+            addReturnExpression lv rty
+          |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
+        |_ ->
+          addError (sprintf "%s parameter: OutReturnOfSize shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |InInterface rname ->
         match refs with 
