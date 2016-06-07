@@ -11,6 +11,7 @@ pub struct CubeState {
     pub pos: V3,
     pub rot: Basis3<f32>,
     pub spd: V3,
+    pub color: V3,
     pub rot_axe: V3,
     pub rot_spd: f32,
 }
@@ -29,10 +30,14 @@ impl State {
         let mut rng = rand::XorShiftRng::new_unseeded();
         let mut cubes = Vec::with_capacity(object_count as usize);
         for _ in 0 .. object_count {
+            let x = rng.next_f32();
+            let y = rng.next_f32();
+            let z = rng.next_f32();
             let cube_state = CubeState {
-                pos: v3((rng.next_f32() - 0.5) * CUBE_SPAN,
-                             (rng.next_f32() - 0.5) * CUBE_SPAN,
-                             (rng.next_f32() - 1.) * CUBE_SPAN),
+                pos: v3((x - 0.5) * CUBE_SPAN,
+                             (y - 0.5) * CUBE_SPAN,
+                             (z - 1.) * CUBE_SPAN),
+                color: v3(x, y, z),
                 rot: <Basis3<f32> as Rotation<_>>::one(),
                 spd: v3(rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5,
@@ -111,9 +116,9 @@ impl State {
                 };
             });
         }
-        let (lx, ly) = f64::sin_cos(self.tick*0.1);
+        let (lx, ly) = f64::sin_cos(self.tick*0.05);
         let (lx, ly) = (lx as f32, ly as f32);
-        let light_pos = v3(0., 0., -100.);//v3(lx*50., ly*50., -201.);
+        let light_pos = v3(lx*50., ly*50., -0.);//v3(0., 0., -100.);
         State {
             tick: self.tick + dt as f64,
             cubes: cubes,

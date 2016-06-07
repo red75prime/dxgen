@@ -7,6 +7,7 @@ use dx_safe::*;
 use dx_safe::structwrappers::*;
 use dxsems::VertexFormat;
 use obj;
+use std::mem;
 use obj::SimplePolygon;
 use std::path::Path;
 use std::io::{self, BufReader};
@@ -41,12 +42,24 @@ impl LightSource {
         trace!("Root signature creation");
         let root_sig = try!(dev.create_root_signature(0, &rsig_bc[..]));
 
+        let cons_raster = {
+            let mut opts: D3D12_FEATURE_DATA_D3D12_OPTIONS = unsafe{ mem::uninitialized() };
+            try!(dev.check_feature_support_options(&mut opts));
+            opts.ConservativeRasterizationTier != D3D12_CONSERVATIVE_RASTERIZATION_TIER_NOT_SUPPORTED
+        };
+
         // pso_desc contains pointers to local data, so I mustn't pass it around, but I can. Unsafe.
         let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
             pRootSignature: root_sig.iptr() as *mut _,
             VS: ShaderBytecode::from_vec(&vshader_bc).get(),
             PS: ShaderBytecode::from_vec(&pshader_bc).get(),
             RasterizerState: D3D12_RASTERIZER_DESC {
+                ConservativeRaster: 
+                    if cons_raster {
+                        D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON
+                    } else {
+                        D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
+                    },
                 ..rasterizer_desc_default()
             },
             PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,

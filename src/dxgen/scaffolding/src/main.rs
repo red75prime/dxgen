@@ -325,14 +325,14 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
           // MSDN suggest to use MsgWaitForMultipleObjects here, but 10ms sleep shouldn't create problems
               std::thread::sleep(Duration::from_millis(10));
           } else {
-          {
-              let cur_frame_time = time::precise_time_s();
-              let frame_dt = cur_frame_time - prev_frame_time;
-              prev_frame_time = cur_frame_time;
-              // data is Rc<RefCell<cubes::AppData>>
-              // Rc is not really needed. I didn't pass it around.
-              // Take a mutable reference to cubes::AppData
-              let mut data = data.borrow_mut();
+            let cur_frame_time = time::precise_time_s();
+            let frame_dt = cur_frame_time - prev_frame_time;
+            prev_frame_time = cur_frame_time;
+            // data is Rc<RefCell<cubes::AppData>>
+            // Rc is not really needed. I didn't pass it around.
+            // Take a mutable reference to cubes::AppData
+            let mut data = data.borrow_mut();
+            {
               // Process WASD keys
               let camera = data.camera();
               
@@ -365,39 +365,40 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
               if edown {
               camera.rotz(step);
               };
-          }
-          // For this simple program I don't separate update and render steps.
-          // State change and rendering is done inside on_render.
-          // Error handling isn't implemented yet. on_render panics, if it needs to.
-          // TODO: process error
-          ::perf_start("total");
-          data.borrow_mut().on_render(pause, fps);
-          ::perf_end("total");
-          // register rendered frame in performance collector
-          ::perf_frame();
-          // fps counting stuff
-          let now = time::precise_time_s();
-          let frames = PERFDATA.with(|p_data| p_data.borrow().frames);
-          if frames>0 && now<start || now>=(start+1.0) {
-              // Once per second show stats
-              print!("Adapter {} FPS: {:4}", id, frames);
-              fps = frames as f32;
-              PERFDATA.with(|p_data| {
-                  let p_data = p_data.borrow();
-                  let frames = p_data.frames as f64;
-                  for (&pname, val) in p_data.perf.iter().sorted_by(|&(&n1,_),&(&n2,_)| n1.cmp(n2)) {
-                      print!(" {}:{:.2}", pname, val*1000./frames);
-                  };
-                  println!("");
-              });
-              //println!("Adapter {} FPS: {:3} clear:{:.2} fill:{:.2} exec:{:.2} present:{:.2} wait:{:.2}  ", id, frames, clear, fill, exec, present, wait);
-              let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
-              perf_reset();
-              start = now;
-          }
-        }
-      }
-    }
+            }
+            // For this simple program I don't separate update and render steps.
+            // State change and rendering is done inside on_render.
+            // Error handling isn't implemented yet. on_render panics, if it needs to.
+            // TODO: process error
+            ::perf_start("total");
+            let render_dt = if frame_dt>0.1 { 0.1 } else { frame_dt as f32 };
+            data.on_render(pause, fps, render_dt);
+            ::perf_end("total");
+            // register rendered frame in performance collector
+            ::perf_frame();
+            // fps counting stuff
+            let now = time::precise_time_s();
+            let frames = PERFDATA.with(|p_data| p_data.borrow().frames);
+            if frames>0 && now<start || now>=(start+1.0) {
+                // Once per second show stats
+                print!("Adapter {} FPS: {:4}", id, frames);
+                fps = frames as f32;
+                PERFDATA.with(|p_data| {
+                    let p_data = p_data.borrow();
+                    let frames = p_data.frames as f64;
+                    for (&pname, val) in p_data.perf.iter().sorted_by(|&(&n1,_),&(&n2,_)| n1.cmp(n2)) {
+                        print!(" {}:{:.2}", pname, val*1000./frames);
+                    };
+                    println!("");
+                });
+                //println!("Adapter {} FPS: {:3} clear:{:.2} fill:{:.2} exec:{:.2} present:{:.2} wait:{:.2}  ", id, frames, clear, fill, exec, present, wait);
+                let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
+                perf_reset();
+                start = now;
+            } // stats
+          } // do not render
+        } // no window message
+    } // message loop
     // Application should exit fullscreen state before terminating. 
     data.borrow().set_fullscreen(false).expect("Fullscreen mode isn't supported");
     // wait for all GPU processing to stop
