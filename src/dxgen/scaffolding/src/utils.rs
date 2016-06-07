@@ -38,7 +38,6 @@ pub fn rot3_to_3x3(m: &Basis3<f32>) -> [[f32; 3]; 3] {
      [m.x.z, m.y.z, m.z.z]]
 }
 
-
 pub fn v3(x: f32, y: f32, z: f32) -> Vector3<f32> {
     Vector3::new(x, y, z)
 }
@@ -72,7 +71,8 @@ pub fn upload_into_buffer<T>(buf: &D3D12Resource, data: &[T]) -> HResult<()> {
     assert!(buf_sz < sz);
     let mut p_buf: *mut u8 = ptr::null_mut();
     unsafe {
-        try!(buf.map(0, None, Some(&mut p_buf))) ;
+        let read_range = D3D12_RANGE { Begin: 0, End: 0 };
+        try!(buf.map(0, Some(&read_range), Some(&mut p_buf))) ;
         let buf_slice = slice::from_raw_parts_mut(p_buf, sz);
         buf_slice.clone_from_slice(slice::from_raw_parts(data.as_ptr() as *const u8, sz));
     };

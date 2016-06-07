@@ -10,6 +10,7 @@
 struct InstanceData {
   float4x4 world;
   float3x3 n_world;
+  float3 color;
 };
 
 StructuredBuffer <InstanceData> instances : register(t1);
@@ -40,9 +41,7 @@ VS_OUTPUT VSMain(VS_INPUT vtx, uint iidx : SV_InstanceID){
   ret.vPosition = mul(ret.vPosition, view);
   ret.vPosition = mul(ret.vPosition, proj);
   
-  ret.vDiffuse.rgb = vtx.vColor;
-  ret.vDiffuse.r += z;
-  ret.vDiffuse.a = 1;
+  ret.vDiffuse = float4(instances[iidx].color, 1);
   ret.texc0 = vtx.texc0;
   ret.norm.xyz = mul(vtx.norm, instances[iidx].n_world);
   return ret;
@@ -90,7 +89,7 @@ float mlen(float3 v) {
 
 [RootSignature(RSD)]
 float4 PSMain(VS_OUTPUT pv) : SV_Target {
-  float4 texel = testTex.Sample(testSamp, pv.texc0.xy);
+  float4 texel = testTex.Sample(testSamp, pv.texc0.xy)*pv.vDiffuse;
   float3 eye_off = eye_pos - pv.w_pos;
   float3 eye_n = normalize(eye_off);
   float3 light_off = light_pos - pv.w_pos;

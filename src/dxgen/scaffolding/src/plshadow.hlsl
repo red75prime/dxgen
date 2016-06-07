@@ -10,6 +10,7 @@ cbuffer cb0 : register(b0) {
 struct InstanceData {
   float4x4 world;
   float3x3 n_world;
+  float3 color;
 };
 
 StructuredBuffer<InstanceData> instances : register(t0);

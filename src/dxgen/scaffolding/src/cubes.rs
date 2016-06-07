@@ -62,7 +62,7 @@ type M4 = [[f32; 4]; 4];
 // thus its memory layout should be defined. repr(C) does that.
 #[repr(C)]
 #[derive(Clone)]
-struct Constants {
+pub struct Constants {
     view: M4,
     proj: M4,
     eye_pos: [f32; 3],
@@ -77,6 +77,7 @@ struct Constants {
 struct InstanceData {
     world: [[f32; 4]; 4],
     n_world: [[f32; 3]; 3],
+    color: [f32; 3],
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -517,13 +518,15 @@ impl FrameResources {
     
         ::perf_fillbuf_start();
 
-        *self.constants_mapped = Constants {
+        let constants =  Constants {
             view: matrix4_to_4x4(&camera.view_matrix()),
             proj: matrix4_to_4x4(&camera.projection_matrix()),
             eye_pos: camera.eye.clone().into(),
             _padding1: 0.,
             light_pos: st.light_pos.clone().into(),
         };
+        
+        *self.constants_mapped = constants;
 
         //don't update cube positions, when animation is paused
         if !pause {
@@ -536,6 +539,7 @@ impl FrameResources {
                     ptr::write(inst_ref as *mut _, InstanceData {
                         world: rotshift3_to_4x4(&cs.rot, &cs.pos),
                         n_world: rot3_to_3x3(&cs.rot),
+                        color: [cs.color.x, cs.color.y, cs.color.z],
                     });
                 }
                 //*inst_ref = InstanceData {
@@ -660,6 +664,8 @@ impl FrameResources {
             };
         ::perf_end("tonemap");
         try!(self.dtr.render(core, cr.draw_text.as_ref().unwrap(), rt, fps));
+        let fence_val = core.next_fence_value();
+        try!(core.graphics_queue.signal(&self.tm_fence, fence_val));
 
         Ok(())
     }
@@ -689,7 +695,7 @@ pub struct AppData {
     minimized: bool,
     object_count: u32,
     frame_count: u32,
-    update_step: f32,
+    speed_mult: f32,
     parameters: CubeParms,
     state: Arc<State>,
     common_resources: CommonResources,
@@ -723,8 +729,8 @@ impl AppData {
 
     // renders and presents scene
     // TODO: remove x,y
-    pub fn on_render(&mut self, pause: bool, fps: f32) {
-        on_render(self, pause, fps)
+    pub fn on_render(&mut self, pause: bool, fps: f32, dt: f32) {
+        on_render(self, pause, fps, dt)
     }
 
     pub fn is_minimized(&self) -> bool {
@@ -1000,7 +1006,7 @@ pub fn on_init(wnd: &Window,
         frame_count: frame_count,
         common_resources: common_resources,
         frame_resources: frame_resources,
-        update_step: parameters.speed_mult,
+        speed_mult: parameters.speed_mult,
         parameters: *parameters,
         state: Arc::new(State::new(parameters.object_count)),
         camera: Camera::new(),
@@ -1017,14 +1023,14 @@ pub fn on_init(wnd: &Window,
 // -----------------------------------------------------------------------------------------------------
 // ----------------- on_render -------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------
-pub fn on_render(data: &mut AppData, pause: bool, fps: f32) {
+pub fn on_render(data: &mut AppData, pause: bool, fps: f32, dt: f32) {
     if cfg!(debug_assertions) {
         trace!("on_render")
     };
     let maybe_future_state = 
         if data.parameters.concurrent_state_update && !pause {
             ::perf_start("state_update_start");
-            let ret = Some(data.su_agent.start_update(data.state.clone(), data.update_step));
+            let ret = Some(data.su_agent.start_update(data.state.clone(), data.speed_mult*dt));
             ::perf_end("state_update_start");
             ret
         } else {
@@ -1088,7 +1094,7 @@ pub fn on_render(data: &mut AppData, pause: bool, fps: f32) {
         data.state = Arc::new(future_state.get());
     } else {
         if !pause {
-          data.state = Arc::new(data.state.update(data.update_step, data.common_resources.thread_cnt));
+          data.state = Arc::new(data.state.update(data.speed_mult*dt, data.common_resources.thread_cnt));
         }
     }
     ::perf_end("state_update");
