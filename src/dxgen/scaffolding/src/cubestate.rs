@@ -68,40 +68,53 @@ impl State {
     }
 
     fn update_one(cube: &CubeState, dt: f32) -> CubeState {
-        let mut new_spd = cube.spd;
-        let mut new_pos = cube.pos + cube.spd * dt;
+        let a = v3(0., -9.8, 0.);
+        let mut new_spd = cube.spd + a*dt;
+        let dp = cube.spd * dt + a * dt * dt / 2.;
+        let mut new_pos = cube.pos + dp;
+        let mut bounce = false;
         let (dist, sprj) = fmin(((new_pos.x - (-CUBE_SPAN/2.)).abs(), new_spd.x), fmin(((new_pos.x - CUBE_SPAN/2.).abs(), new_spd.x), 
                     fmin(((new_pos.y - (-CUBE_SPAN/2.)).abs(), new_spd.y), fmin(((new_pos.y - (CUBE_SPAN/2.)).abs(), new_spd.y), 
                     fmin(((new_pos.z - (-CUBE_SPAN)).abs(), new_spd.z), ((new_pos.z - 0.).abs(), new_spd.z))))));
         if new_pos.x < -CUBE_SPAN/2. {
-            new_pos.x = -CUBE_SPAN/2.;
+            new_pos.x = -CUBE_SPAN - new_pos.x;
             new_spd.x = -new_spd.x;
+            bounce = true;
         }
         if new_pos.x > CUBE_SPAN/2. {
-            new_pos.x = CUBE_SPAN/2.;
+            new_pos.x = CUBE_SPAN - new_pos.x;
             new_spd.x = -new_spd.x;
+            bounce = true;
         }
         if new_pos.y < -CUBE_SPAN/2. {
-            new_pos.y = -CUBE_SPAN/2.;
+            new_pos.y = -CUBE_SPAN - new_pos.y;
             new_spd.y = -new_spd.y;
+            bounce = true;
         }
         if new_pos.y > CUBE_SPAN/2. {
-            new_pos.y = CUBE_SPAN/2.;
+            new_pos.y = CUBE_SPAN - new_pos.y;
             new_spd.y = -new_spd.y;
+            bounce = true;
         }
         if new_pos.z < -CUBE_SPAN {
-            new_pos.z = -CUBE_SPAN;
+            new_pos.z = -CUBE_SPAN*2. - new_pos.z;
             new_spd.z = -new_spd.z;
+            bounce = true;
         }
         if new_pos.z > 0. {
-            new_pos.z = 0.;
+            new_pos.z = -new_pos.z;
             new_spd.z = -new_spd.z;
+            bounce = true;
+        }
+        if bounce { new_spd *= 0.95 };
+        if bounce && new_spd.magnitude2() < 0.8 {
+            new_spd = v3(0., 0., 0.);
         }
         CubeState {
             pos: new_pos,
             spd: new_spd,
             rot: Basis3::from_axis_angle(cube.rot_axe, deg(cube.rot_spd * dt).into()).concat(&cube.rot),
-            blink: dist.abs() < sprj.abs(),
+            blink: dist.abs() < sprj.abs()/4. && new_spd.magnitude2()>4.,
             .. *cube
         }
     }
@@ -130,26 +143,24 @@ impl State {
                 };
             });
         }
-        let mut broad_phase = nc::broad_phase::DBVTBroadPhase::new(10.0f32, true);
+        let mut broad_phase = nc::broad_phase::DBVTBroadPhase::new(0.1f32, true);
         for (i, c) in self.cubes.iter().enumerate() {
             let bv = bounding_volume::bounding_sphere(&nc::shape::Cuboid::new(na::Vector3::new(0.5, 0.5, 0.5)), &na::Vector3::new(c.pos.x, c.pos.y, c.pos.z));
             //println!("{:?}", bv);
             broad_phase.deferred_add(i, bv, i);
         }
         let mut ccount = 0;
-        broad_phase.update(&mut |&i1, &i2| {(self.cubes[i1].pos - self.cubes[i2].pos).magnitude2() < 36.0}, &mut |&i1, &i2, c|{
+        broad_phase.update(&mut |&i1, &i2| {(self.cubes[i1].pos - self.cubes[i2].pos).magnitude2() < 4.0}, &mut |&i1, &i2, c|{
             if c {
                 let dp = (cubes[i2].pos - cubes[i1].pos).normalize();
-                let ds = (cubes[i2].spd - cubes[i1].spd).normalize();
+                let ds = (cubes[i2].spd - cubes[i1].spd);
                 let ci_spd = ds.dot(dp); 
                 if ci_spd < 0. {
                     // closing in
-                    cubes[i1].spd += dp*(ci_spd/2.0);
+                    cubes[i1].spd += dp*(ci_spd/2.01);
                     cubes[i1].rot_spd /= 2.;
-                    cubes[i1].blink = true;
-                    cubes[i2].spd -= dp*(ci_spd/2.0);
+                    cubes[i2].spd -= dp*(ci_spd/2.01);
                     cubes[i2].rot_spd /= 2.;
-                    cubes[i2].blink = true;
                 }
             }
             //ccount += 1;
