@@ -28,7 +28,7 @@ pub struct State {
     pub light_pos: V3,
 }
 
-const CUBE_SPAN : f32 = 200.;
+const CUBE_SPAN : f32 = 100.;
 
 fn fmin(a: (f32, f32), b: (f32, f32)) -> (f32, f32) {
     if a.0 < b.0 { a } else { b }
@@ -73,40 +73,40 @@ impl State {
         let dp = cube.spd * dt + a * dt * dt / 2.;
         let mut new_pos = cube.pos + dp;
         let mut bounce = false;
-        let (dist, sprj) = fmin(((new_pos.x - (-CUBE_SPAN/2.)).abs(), new_spd.x), fmin(((new_pos.x - CUBE_SPAN/2.).abs(), new_spd.x), 
-                    fmin(((new_pos.y - (-CUBE_SPAN/2.)).abs(), new_spd.y), fmin(((new_pos.y - (CUBE_SPAN/2.)).abs(), new_spd.y), 
-                    fmin(((new_pos.z - (-CUBE_SPAN)).abs(), new_spd.z), ((new_pos.z - 0.).abs(), new_spd.z))))));
+        let (dist, sprj) = fmin(((new_pos.x - (-CUBE_SPAN/2.)).abs(), new_spd.x), fmin(((new_pos.x - CUBE_SPAN/2.).abs(), -new_spd.x), 
+                    fmin(((new_pos.y - (-CUBE_SPAN/2.)).abs(), new_spd.y), fmin(((new_pos.y - (CUBE_SPAN/2.)).abs(), -new_spd.y), 
+                    fmin(((new_pos.z - (-CUBE_SPAN)).abs(), new_spd.z), ((new_pos.z - 0.).abs(), -new_spd.z))))));
         if new_pos.x < -CUBE_SPAN/2. {
             new_pos.x = -CUBE_SPAN - new_pos.x;
-            new_spd.x = -new_spd.x;
+            new_spd.x = -new_spd.x*0.95;
             bounce = true;
         }
         if new_pos.x > CUBE_SPAN/2. {
             new_pos.x = CUBE_SPAN - new_pos.x;
-            new_spd.x = -new_spd.x;
+            new_spd.x = -new_spd.x*0.95;
             bounce = true;
         }
         if new_pos.y < -CUBE_SPAN/2. {
             new_pos.y = -CUBE_SPAN - new_pos.y;
-            new_spd.y = -new_spd.y;
+            new_spd.y = -new_spd.y*0.95;
             bounce = true;
         }
         if new_pos.y > CUBE_SPAN/2. {
             new_pos.y = CUBE_SPAN - new_pos.y;
-            new_spd.y = -new_spd.y;
+            new_spd.y = -new_spd.y*0.95;
             bounce = true;
         }
         if new_pos.z < -CUBE_SPAN {
             new_pos.z = -CUBE_SPAN*2. - new_pos.z;
-            new_spd.z = -new_spd.z;
+            new_spd.z = -new_spd.z*0.95;
             bounce = true;
         }
         if new_pos.z > 0. {
             new_pos.z = -new_pos.z;
-            new_spd.z = -new_spd.z;
+            new_spd.z = -new_spd.z*0.95;
             bounce = true;
         }
-        if bounce { new_spd *= 0.95 };
+
         if bounce && new_spd.magnitude2() < 0.8 {
             new_spd = v3(0., 0., 0.);
         }
@@ -114,7 +114,7 @@ impl State {
             pos: new_pos,
             spd: new_spd,
             rot: Basis3::from_axis_angle(cube.rot_axe, deg(cube.rot_spd * dt).into()).concat(&cube.rot),
-            blink: dist.abs() < sprj.abs()/4. && new_spd.magnitude2()>4.,
+            blink: dist.abs() < sprj/4. && new_spd.magnitude2()>4.,
             .. *cube
         }
     }
@@ -150,17 +150,23 @@ impl State {
             broad_phase.deferred_add(i, bv, i);
         }
         let mut ccount = 0;
-        broad_phase.update(&mut |&i1, &i2| {(self.cubes[i1].pos - self.cubes[i2].pos).magnitude2() < 0.8}, &mut |&i1, &i2, c|{
+        broad_phase.update(&mut |&i1, &i2| {(self.cubes[i1].pos - self.cubes[i2].pos).magnitude2() < 3.}, &mut |&i1, &i2, c|{
             if c {
-                let dp = (cubes[i2].pos - cubes[i1].pos).normalize();
-                let ds = (cubes[i2].spd - cubes[i1].spd);
+                let dc = cubes[i2].pos - cubes[i1].pos;
+                let dp = dc.normalize();
+                let ds = cubes[i2].spd - cubes[i1].spd;
                 let ci_spd = ds.dot(dp); 
                 if ci_spd < 0. {
                     // closing in
-                    cubes[i1].spd += dp*(ci_spd/2.01);
-                    cubes[i1].rot_spd /= 2.;
-                    cubes[i2].spd -= dp*(ci_spd/2.01);
-                    cubes[i2].rot_spd /= 2.;
+                    cubes[i1].spd += dp*(ci_spd/2.002);
+                    cubes[i1].rot_spd /= 1.1;
+                    cubes[i2].spd -= dp*(ci_spd/2.002);
+                    cubes[i2].rot_spd /= 1.1;
+                }
+                if dc.magnitude2()<3. {
+                    let penetration = 1.732 - dc.magnitude();
+                    cubes[i1].pos -= dp*penetration*0.2;
+                    cubes[i2].pos += dp*penetration*0.2;
                 }
             }
             //ccount += 1;
@@ -169,7 +175,7 @@ impl State {
 
         let (lx, ly) = f64::sin_cos(self.tick*0.05);
         let (lx, ly) = (lx as f32, ly as f32);
-        let light_pos = v3(lx*50., ly*50., -0.);//v3(0., 0., -100.);
+        let light_pos = v3(lx*50., ly*50., 2.);//v3(0., 0., -100.);
         State {
             tick: self.tick + dt as f64,
             cubes: cubes,

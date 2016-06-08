@@ -191,4 +191,5 @@ fn sphere_test() {
   assert_eq!(pos.len(), 362);
   assert_eq!(nrm.len(), 362);
   assert_eq!(idx.len(), 2160);
+  assert_eq!(pos[idx[0].crd as usize], ::utils::v3(0., 0.983024, -0.183479));
 }
