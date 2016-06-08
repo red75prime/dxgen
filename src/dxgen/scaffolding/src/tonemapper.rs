@@ -330,7 +330,7 @@ impl Tonemapper {
         ::perf_start("tbr");
         if cfg!(debug_assertions) { trace!("calloc.reset") };
         try!(res.calloc.reset());
-        core.dump_info_queue();
+        core.dump_info_queue_tagged("tonemapper");
         if cfg!(debug_assertions) { trace!("clear_list.reset") };
         try!(res.clear_list.reset(&res.calloc, None));
 
@@ -539,7 +539,7 @@ impl Tonemapper {
         ]);
         if cfg!(debug_assertions) { trace!("Close compute list") };
         try!(clist.close().map_err(|hr| {
-            core.dump_info_queue();
+            core.dump_info_queue_tagged("tonemap2");
             hr
         }));
         core.compute_queue.execute_command_lists(&[clist]);
@@ -553,7 +553,7 @@ impl Tonemapper {
         // Swapchain back buffers are special. Only graphics queue associated with swapchain can write them.
         if cfg!(debug_assertions) { trace!("gralloc.reset") };
         try!(res.gralloc.reset());
-        core.dump_info_queue();
+        core.dump_info_queue_tagged("tonemap3");
         try!(res.grlist.reset(&res.gralloc, None));
         let grlist = &res.grlist;
 
@@ -584,16 +584,17 @@ impl Tonemapper {
 
         if cfg!(debug_assertions) { trace!("Close graphics list") };
         try!(grlist.close().map_err(|hr| {
-            core.dump_info_queue();
+            core.dump_info_queue_tagged("tonemap4");
             hr
         }));
         core.graphics_queue.execute_command_lists(&[grlist]);
 
-        let fence_val = core.next_fence_value();
-        try!(t_fence.signal(&core.graphics_queue, fence_val));
+//// Resource barriers should be enough, I guess
+//        let fence_val = core.next_fence_value();
+//        try!(t_fence.signal(&core.graphics_queue, fence_val));
 
         if cfg!(debug_assertions) { trace!("dump_info_queue") };
-        core.dump_info_queue();
+        core.dump_info_queue_tagged("tonamep5");
 
         Ok(avg_brightness)
     }

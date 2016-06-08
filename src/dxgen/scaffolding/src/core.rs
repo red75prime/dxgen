@@ -97,7 +97,7 @@ impl DXCore {
     pub fn dump_info_queue_tagged(&self, tag: &str) {
         if let Some(ref iq) = self.info_queue {
             if iq.get_num_stored_messages_allowed_by_retrieval_filter() != 0 {
-                println!("{}", tag);
+                info!("{}", tag);
             };
             dump_info_queue(iq);
         }
@@ -126,7 +126,9 @@ pub fn dump_info_queue(iq: &D3D12InfoQueue) {
             let descr = String::from_utf8_lossy(cdescr.to_bytes()).to_owned();
             match msg.Severity {
                 D3D12_MESSAGE_SEVERITY_CORRUPTION |
-                D3D12_MESSAGE_SEVERITY_ERROR => error!("{:}", descr),
+                D3D12_MESSAGE_SEVERITY_ERROR => { 
+                    error!("{:}", descr);
+                },
                 D3D12_MESSAGE_SEVERITY_WARNING => warn!("{:}", descr),
                 _ => debug!("{:}", descr),
             }

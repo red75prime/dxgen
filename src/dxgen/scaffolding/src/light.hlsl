@@ -11,11 +11,8 @@ struct Indices {
 };
 
 StructuredBuffer<Indices> indices : register(t1);
-
 StructuredBuffer<float3> coords: register(t2);
-
 StructuredBuffer<float3> normals: register(t3);
-
 //StructuredBuffer<float2> tex_coord: register(t4); 
 
 struct VS_OUTPUT

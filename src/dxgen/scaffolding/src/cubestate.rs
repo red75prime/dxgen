@@ -150,7 +150,7 @@ impl State {
             broad_phase.deferred_add(i, bv, i);
         }
         let mut ccount = 0;
-        broad_phase.update(&mut |&i1, &i2| {(self.cubes[i1].pos - self.cubes[i2].pos).magnitude2() < 4.0}, &mut |&i1, &i2, c|{
+        broad_phase.update(&mut |&i1, &i2| {(self.cubes[i1].pos - self.cubes[i2].pos).magnitude2() < 0.8}, &mut |&i1, &i2, c|{
             if c {
                 let dp = (cubes[i2].pos - cubes[i1].pos).normalize();
                 let ds = (cubes[i2].spd - cubes[i1].spd);

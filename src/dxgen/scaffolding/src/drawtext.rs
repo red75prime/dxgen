@@ -29,7 +29,7 @@ impl DrawText {
         let factoryd2d = try!(create::create_d2d1_factory_single_threaded::<D2D1Factory3>());
         trace!("Call dev11on12.query_interface::<DXGIDevice>");
         let devdxgi = try!(dev11on12.query_interface::<DXGIDevice>());
-        core.dump_info_queue();
+        core.dump_info_queue_tagged("drawtext1");
         trace!("Call factoryd2d.create_device3");
         let devd2d = try!(factoryd2d.create_device3(&devdxgi));
         trace!("Call devd2d.create_device_context2");
@@ -124,6 +124,7 @@ impl DrawTextResources {
     pub fn render(&self, core: &DXCore, dt: &DrawText, rt: &D3D12Resource, fps: f32) -> HResult<()> {
         //return Ok(());
         trace!("DrawTextResources.render");
+        core.dump_info_queue_tagged("DrawText. Before calloc.reset()");
         trace!("calloc.reset()");
         try!(self.calloc.reset());
         let glist = &self.glist;
@@ -135,7 +136,7 @@ impl DrawTextResources {
         trace!("execute");
         core.graphics_queue.execute_command_lists(&[glist]);
         
-        core.dump_info_queue();
+        core.dump_info_queue_tagged("DrawText. After execute_command_lists (barrier)");
         trace!("acquire");
         dt.dev11on12.acquire_wrapped_resources(&[&self.d11back]);
         trace!("set_target");
@@ -160,6 +161,7 @@ impl DrawTextResources {
         dt.dev11on12.release_wrapped_resources(&[&self.d11back]);
         trace!("flush");
         dt.devcontext11.flush();                                        
+        core.dump_info_queue_tagged("DrawText. End");
         
         Ok(())
     }

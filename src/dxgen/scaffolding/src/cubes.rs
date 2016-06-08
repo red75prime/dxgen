@@ -667,7 +667,7 @@ impl FrameResources {
         ::perf_end("tonemap");
         try!(self.dtr.render(core, cr.draw_text.as_ref().unwrap(), rt, fps));
         let fence_val = core.next_fence_value();
-        try!(core.graphics_queue.signal(&self.tm_fence, fence_val));
+        try!(self.fence.signal(&core.graphics_queue, fence_val));
 
         Ok(())
     }

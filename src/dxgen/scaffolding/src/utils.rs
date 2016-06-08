@@ -220,7 +220,7 @@ pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &
     match wait_for_queue(&core.graphics_queue, fence_value, fence, fence_event) {
         Ok(_) => (),
         Err(hr) => {
-            core.dump_info_queue();
+            core.dump_info_queue_tagged("wait_for_graphics_queue");
             panic!("set_event_on_completion error: 0x{:x}", hr);
         }
     }
@@ -233,7 +233,7 @@ pub fn wait_for_compute_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &E
     match wait_for_queue(&core.compute_queue, fence_value, fence, fence_event) {
         Ok(_) => (),
         Err(hr) => {
-            core.dump_info_queue();
+            core.dump_info_queue_tagged("wait_for_compute_queue");
             panic!("set_event_on_completion error: 0x{:x}", hr);
         }
     }
@@ -246,7 +246,7 @@ pub fn wait_for_copy_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Even
     match wait_for_queue(&core.copy_queue, fence_value, fence, fence_event) {
         Ok(_) => (),
         Err(hr) => {
-            core.dump_info_queue();
+            core.dump_info_queue_tagged("wait_for_copy_queue");
             panic!("set_event_on_completion error: 0x{:x}", hr);
         }
     }
