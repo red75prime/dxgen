@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use winapi::*;
-use dx_safe::*;
+use dxsafe::*;
 use std::ptr;
 //use d3d12_sys::*;
 use dxgi_sys::*;

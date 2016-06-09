@@ -1,6 +1,6 @@
 use winapi::*;
-use dx_safe::*;
-use dx_safe::structwrappers::*;
+use dxsafe::*;
+use dxsafe::structwrappers::*;
 use window::{self, Window};
 use create_device as create;
 use utils;

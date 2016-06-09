@@ -1,9 +1,9 @@
 use winapi::*;
-use dx_safe::*;
+use dxsafe::*;
 use core::DXCore;
 use create_device as create;
 use std::ptr;
-use dx_safe::structwrappers::*;
+use dxsafe::structwrappers::*;
 use utils::d2d::*;
 
 pub struct DrawText {

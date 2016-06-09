@@ -2,12 +2,12 @@ use std::fmt;
 use std::mem;
 use std::ptr;
 use winapi::*;
-use dx_safe::*;
+use dxsafe::*;
 use core;
 use core::{DXCore, DXSwapChain, Event, DumpOnError};
 use utils::*;
 use cgmath::*;
-use dx_safe::structwrappers::*;
+use dxsafe::structwrappers::*;
 use window::*;
 use create_device::*;
 

@@ -2,8 +2,8 @@ use winapi::*;
 use core::DXCore;
 use create_device;
 use utils;
-use dx_safe::*;
-use dx_safe::structwrappers::*;
+use dxsafe::*;
+use dxsafe::structwrappers::*;
 use dxsems::VertexFormat;
 use std::marker::PhantomData;
 

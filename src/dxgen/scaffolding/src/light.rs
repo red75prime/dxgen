@@ -3,8 +3,8 @@ use cgmath::Vector3;
 use core::DXCore;
 use create_device;
 use utils;
-use dx_safe::*;
-use dx_safe::structwrappers::*;
+use dxsafe::*;
+use dxsafe::structwrappers::*;
 use dxsems::VertexFormat;
 use obj;
 use std::mem;
@@ -30,7 +30,7 @@ impl LightSource {
                     ("VSMain", "vs_5_0", &mut vshader_bc),
                     ("PSMain", "ps_5_0", &mut pshader_bc),
                     ("RSD", "rootsig_1_0", &mut rsig_bc),
-                ], D3DCOMPILE_OPTIMIZATION_LEVEL3) {
+                ], D3DCOMPILE_OPTIMIZATION_LEVEL0) {
             Err(err) => {
                 error!("Error compiling 'light.hlsl': {}", err);
                 return Err(E_FAIL);
@@ -169,9 +169,12 @@ fn sphere<P: AsRef<Path>>(path: P) -> (Vec<V3>, Vec<V3>, Vec<ShaderIndices>) {
         if let Some(group) = obj.group_iter().next() {
           let mut indices = vec![];
           for p in group.indices.iter() {
+            assert_eq!(p.len(), 3); // Accept only triangles
             for i in p {
               match i {
-                &(v, Some(t), Some(n)) => indices.push(ShaderIndices{crd: v as u32, nrm: n as u32, tex: t as u32}),
+                &(v, Some(t), Some(n)) => {
+                    indices.push(ShaderIndices{crd: v as u32, nrm: n as u32, tex: t as u32})
+                },
                 _ => panic!("Missing normal or texture coord"),
               };
             };

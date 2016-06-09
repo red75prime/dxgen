@@ -2,7 +2,7 @@ use std::fmt;
 use std::mem;
 use std::ptr;
 use winapi::*;
-use dx_safe::*;
+use dxsafe::*;
 use core::*;
 use utils::*;
 use cgmath::*;

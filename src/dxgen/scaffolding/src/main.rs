@@ -8,7 +8,7 @@
 extern crate env_logger;
 extern crate libc;
 extern crate winapi;
-extern crate dx_safe;
+extern crate dxsafe;
 //extern crate dxguid_sys;
 extern crate dxgi as dxgi_sys;
 extern crate kernel32;
@@ -53,7 +53,7 @@ mod drawtext;
 #[cfg(not(feature = "openal"))] use nosound as sound;
 
 use winapi::*;
-use dx_safe::*;
+use dxsafe::*;
 use create_device::*;
 use std::env;
 use std::cell::RefCell;
