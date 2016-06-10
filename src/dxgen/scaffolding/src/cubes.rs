@@ -1030,9 +1030,9 @@ pub fn on_render(data: &mut AppData, pause: bool, fps: f32, dt: f32) {
         trace!("on_render")
     };
     let maybe_future_state = 
-        if data.parameters.concurrent_state_update && !pause {
+        if !pause {
             ::perf_start("state_update_start");
-            let ret = Some(data.su_agent.start_update(data.state.clone(), data.speed_mult*dt));
+            let ret = Some(data.su_agent.start_update(data.state.clone(), data.speed_mult*dt, data.camera.eye));
             ::perf_end("state_update_start");
             ret
         } else {
@@ -1094,10 +1094,6 @@ pub fn on_render(data: &mut AppData, pause: bool, fps: f32, dt: f32) {
     ::perf_start("state_update");
     if let Some(mut future_state) = maybe_future_state {
         data.state = Arc::new(future_state.get());
-    } else {
-        if !pause {
-          data.state = Arc::new(data.state.update(data.speed_mult*dt, data.common_resources.thread_cnt));
-        }
     }
     ::perf_end("state_update");
     data.core.dump_info_queue();

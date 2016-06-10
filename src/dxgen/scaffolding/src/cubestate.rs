@@ -19,6 +19,8 @@ pub struct CubeState {
     pub blink: bool,
     pub rot_axe: V3,
     pub rot_spd: f32,
+    pub p_accel: V3,
+    pub p_time: f32,
 }
 
 #[derive(Clone)]
@@ -224,6 +226,7 @@ fn sphere_planes_collision(cp: &CollisionParms, dt: f32, p: V3, v: V3, a: V3, r:
     // Enforce constraints. Acceleration should not force sphere into disallowed volume
     let mut a = a;
     let mut v = v;
+    let mut friction_mult = 0.;
     for plane in plns.iter().cloned() {
         let (pp, n) = plane;
         if (plane_dist(p, plane)-r).abs() < TOUCH_TOLERANCE {
@@ -239,12 +242,14 @@ fn sphere_planes_collision(cp: &CollisionParms, dt: f32, p: V3, v: V3, a: V3, r:
                 v -= nv*n;
                 // add friction
                 if v.magnitude() != 0. {
-                    a -= v.normalize()*cp.friction;
+                    friction_mult += na.abs();
                 }
                 //println!("av correction after: a: {:?} v: {:?}", a, v);
             }
         }
     }
+    // friction
+    a -= v.normalize()*friction_mult*cp.friction;
 
     // Spere is inside allowed volume, let's check if it will hit anything in this time step
     // Checking final point is not enough. Top of the parabola could be outside allowed volume.
@@ -273,6 +278,12 @@ static BOUNCE_PLANES: [(V3,V3);6] = [
     (Vector3{x:0., y:-CUBE_SPAN/2., z:0.}, Vector3{x:0.1, y:0.9949874371, z:0.}),
 ];
 
+#[derive(Debug, Clone, Copy)]
+enum ObjType {
+    Cam,
+    Cub(usize),
+}
+use self::ObjType::{Cam, Cub};
 
 impl State {
     pub fn new(object_count: u32) -> Self {
@@ -297,6 +308,8 @@ impl State {
                              rng.next_f32() - 0.5)
                               .normalize(),
                 rot_spd: rng.next_f32()*30.0,
+                p_accel: v3(0., 0., 0.),
+                p_time: 0.,
             };
             cubes.push(cube_state);
         };
@@ -311,14 +324,21 @@ impl State {
         let r = 0.866;
         let a = v3(0., -9.8, 0.);
         let cp = CollisionParms {
-            normal_bounciness: 0.9,
-            min_speed: 0.1,
-            friction: 0.1,
+            normal_bounciness: 0.99,
+            min_speed: 0.05,
+            friction: 0.2,
         };
         // bounce_planes is vec of tuples (point on plane, plane normal pointing inside allowed volume) 
         let mut pos = cube.pos;
         let mut spd = cube.spd;
         let mut rt = dt;
+        if cube.p_time > 0. {
+            let ptime = f32::min(rt, cube.p_time);
+            let (t, p, v, maybe_plane) = sphere_planes_collision(&cp, ptime, pos, spd, a+cube.p_accel, r, &BOUNCE_PLANES);
+            rt -= t;
+            pos = p;
+            spd = v;
+        }
         for i in 0..5 { // prevent too many bounces in one time step 
             let (t, p, v, maybe_plane) = sphere_planes_collision(&cp, rt, pos, spd, a, r, &BOUNCE_PLANES);
             //println!("Step: {:?}, dt: {:?}, p: {:?}, v: {:?}, {:?}", i, t, p, v, maybe_plane);
@@ -335,11 +355,13 @@ impl State {
             spd: spd,
             rot: Basis3::from_axis_angle(cube.rot_axe, deg(cube.rot_spd * dt).into()).concat(&cube.rot),
             blink: false,
+            p_accel: v3(0., 0., 0.),
+            p_time: 0.,
             .. *cube
         }
     }
 
-    pub fn update(&self, dt: f32, thread_cnt: u32) -> Self {
+    pub fn update(&self, dt: f32, thread_cnt: u32, camera: Point3<f32>) -> Self {
         if dt == 0.0 {
           return (*self).clone();
         }
@@ -363,32 +385,58 @@ impl State {
                 };
             });
         }
+        // creation of broad_phase searcher on each update should be less efficient than keeping it around and updating,
+        // but test results proved otherwise. After several seconds updates became very slow.
         let mut broad_phase = nc::broad_phase::DBVTBroadPhase::new(0.1f32, true);
+        let cuboid = nc::shape::Cuboid::new(na::Vector3::new(0.5, 0.5, 0.5));
+        let bv = bounding_volume::bounding_sphere(&cuboid, &na::Vector3::new(camera.x, camera.y, camera.z));
+        broad_phase.deferred_add(self.cubes.len(), bv, Cam);
         for (i, c) in self.cubes.iter().enumerate() {
-            let bv = bounding_volume::bounding_sphere(&nc::shape::Cuboid::new(na::Vector3::new(0.5, 0.5, 0.5)), &na::Vector3::new(c.pos.x, c.pos.y, c.pos.z));
+            let bv = bounding_volume::bounding_sphere(&cuboid, &na::Vector3::new(c.pos.x, c.pos.y, c.pos.z));
             //println!("{:?}", bv);
-            broad_phase.deferred_add(i, bv, i);
+            broad_phase.deferred_add(i, bv, Cub(i));
         }
         let mut ccount = 0;
-        broad_phase.update(&mut |&i1, &i2| {(self.cubes[i1].pos - self.cubes[i2].pos).magnitude2() < 3.}, &mut |&i1, &i2, c|{
-            if c {
-                let dc = cubes[i2].pos - cubes[i1].pos;
-                let dp = dc.normalize();
-                let ds = cubes[i2].spd - cubes[i1].spd;
-                let ci_spd = ds.dot(dp); 
-                if ci_spd < 0. {
-                    // closing in
-                    cubes[i1].spd += dp*(ci_spd/2.002);
-                    cubes[i1].rot_spd /= 1.1;
-                    cubes[i2].spd -= dp*(ci_spd/2.002);
-                    cubes[i2].rot_spd /= 1.1;
-                }
-                if dc.magnitude2()<3. {
-                    let penetration = 1.732 - dc.magnitude();
-                    cubes[i1].pos -= dp*penetration*0.5;
-                    cubes[i2].pos += dp*penetration*0.5;
-                }
-            }
+        broad_phase.update(&mut |&i1, &i2| true, &mut |&i1, &i2, c|{
+            match (i1, i2) {
+                (Cam, Cam) => {},
+                (Cub(i), Cam) | (Cam, Cub(i)) => {
+                    let pos = cubes[i].pos;
+                    let cpos = v3(camera.x, camera.y, camera.z);
+                    if (pos-cpos).magnitude2() <= 3. {
+                        let dc = pos - cpos;
+                        if dc != v3(0., 0., 0.) {
+                            let dp = dc.normalize();
+                            let penetration = 1.732 - dc.magnitude();
+                            cubes[i].p_accel += dp*penetration*100.;
+                            cubes[i].p_time = 0.1;
+                        }
+                    }
+                },
+                (Cub(i1), Cub(i2)) => {
+                    let c = (cubes[i1].pos - cubes[i2].pos).magnitude2() <= 3.;
+                    if c {
+                        let dc = cubes[i2].pos - cubes[i1].pos;
+                        let dp = dc.normalize();
+                        let ds = cubes[i2].spd - cubes[i1].spd;
+                        let ci_spd = ds.dot(dp); 
+                        if ci_spd < 0. {
+                            // closing in
+                            cubes[i1].spd += dp*(ci_spd/2.002);
+                            cubes[i1].rot_spd /= 1.1;
+                            cubes[i2].spd -= dp*(ci_spd/2.002);
+                            cubes[i2].rot_spd /= 1.1;
+                        }
+                        if dc.magnitude2()<3. && dc.magnitude2() != 0. {
+                            let penetration = 1.732 - dc.magnitude();
+                            cubes[i1].p_accel -= dp*penetration*100.;
+                            cubes[i1].p_time = -penetration/ci_spd;
+                            cubes[i2].p_accel += dp*penetration*100.;
+                            cubes[i2].p_time = -penetration/ci_spd;
+                        }
+                    }
+                },
+            };
             //ccount += 1;
         });
         //println!("Comparisons: {}", ccount);
@@ -408,10 +456,10 @@ use std::thread;
 use std::sync::Arc;
 use std::sync::mpsc::{channel, Receiver, Sender};
 
-fn state_update_agent(thread_cnt: u32, rx: Receiver<(Arc<State>, f32)>, tx: Sender<State>) {
+fn state_update_agent(thread_cnt: u32, rx: Receiver<(Arc<State>, f32, Point3<f32>)>, tx: Sender<State>) {
     loop {
-        if let Ok((state_ref, dt)) = rx.recv() {
-            if let Err(_) = tx.send(state_ref.update(dt, thread_cnt)) {
+        if let Ok((state_ref, dt, camera)) = rx.recv() {
+            if let Err(_) = tx.send(state_ref.update(dt, thread_cnt, camera)) {
                 return ();
             }
         } else {
@@ -421,7 +469,7 @@ fn state_update_agent(thread_cnt: u32, rx: Receiver<(Arc<State>, f32)>, tx: Send
 }
 
 pub struct StateUpdateAgent {
-    tx: Sender<(Arc<State>, f32)>,
+    tx: Sender<(Arc<State>, f32, Point3<f32>)>,
     rx: Receiver<State>,
 }
 
@@ -436,8 +484,8 @@ impl StateUpdateAgent {
         }
     }
 
-    pub fn start_update<'a>(&'a self, state: Arc<State>, dt: f32) -> UpdateResult<'a> {
-        self.tx.send((state, dt)).unwrap();
+    pub fn start_update<'a>(&'a self, state: Arc<State>, dt: f32, camera: Point3<f32>) -> UpdateResult<'a> {
+        self.tx.send((state, dt, camera)).unwrap();
         UpdateResult{
             agent: self,
             result_aquired: false,
