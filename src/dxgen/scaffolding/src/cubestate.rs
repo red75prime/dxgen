@@ -30,9 +30,249 @@ pub struct State {
 
 const CUBE_SPAN : f32 = 100.;
 
-fn fmin(a: (f32, f32), b: (f32, f32)) -> (f32, f32) {
-    if a.0 < b.0 { a } else { b }
+fn min_f32_pair<T: Iterator<Item=(f32,P)>, P: Copy>(mut it: T) -> Option<(f32, P)> {
+    match it.next() {
+        None => None,
+        Some((v, p)) => {
+            let mut mv = v;
+            let mut mp = p;
+            while let Some((v, p)) = it.next() {
+                if mv.is_nan() || mv>v {
+                    mv = v;
+                    mp = p;
+                }
+            };
+            if mv.is_nan() {
+                None
+            } else {
+                Some((mv, mp))
+            }
+        }
+    }
 }
+
+#[test]
+fn min_f32_pair_test() {
+    assert_eq!(min_f32_pair::<_,()>([].iter().cloned()), None);
+    assert_eq!(min_f32_pair([(0., ()), (1., ())].iter().cloned()), Some((0., ())));
+    assert_eq!(min_f32_pair([(1., ()), (0., ())].iter().cloned()), Some((0., ())));
+    assert_eq!(min_f32_pair([(1., ()), (0., ()), (1., ())].iter().cloned()), Some((0., ())));
+    assert_eq!(min_f32_pair([(0., ()), (0., ()), (1., ())].iter().cloned()), Some((0., ())));
+    assert_eq!(min_f32_pair([(0., ()), (0., ()), (0., ())].iter().cloned()), Some((0., ())));
+    assert_eq!(min_f32_pair([(0./0., ()), (0., ()), (1., ())].iter().cloned()), Some((0., ())));
+    assert_eq!(min_f32_pair([(0./0., ()), (2., ()), (1., ())].iter().cloned()), Some((1., ())));
+    assert_eq!(min_f32_pair([(0./0., ())].iter().cloned()), None);
+}
+
+#[derive(Debug)]
+struct CollisionParms {
+    normal_bounciness: f32,
+    min_speed: f32,
+    friction: f32,
+}
+
+// Distance from point p to the oriented plane (pp, n), positive if point on the same side as a normal 
+// "Oriented plane" isn't a proper mathematical term, I don't know how it is commonly called. 
+#[inline]
+fn plane_dist(p: V3, (pp, n): (V3, V3)) -> f32 {
+    (p-pp).dot(n)
+}
+
+// returns distance from point to the nearest oriented plane.
+// Plane's normal points into allowed volume, points outside allowed volume is nearer to the plane, than points inside allowed volume. 
+fn nearest_plane(p: V3, plns: &[(V3,V3)]) -> (f32, (V3, V3)) {
+    assert!(plns.len()>0);
+    if let Some(dppn) = min_f32_pair(plns.iter().cloned().map(|plane|(plane_dist(p, plane), plane))) {
+        dppn // Distance, Plane Point, Normal 
+    } else {
+        // if plns slice is non-empty, then the only reason for min_f32_pair to return None is NaN somewhere  
+        panic!("nearest_plane: NaNs! NaNs everywhere!");
+    }
+}
+
+// roots of quadratic equation
+#[derive(Debug, Clone, Copy)]
+enum QERoot {
+    NoRoot, 
+    OneRoot(f32),
+    TwoRoots(f32, f32),
+}
+use self::QERoot::{NoRoot, OneRoot, TwoRoots};
+
+impl PartialEq<QERoot> for QERoot {
+    fn eq(&self, other: &QERoot) -> bool {
+        match (*self, *other) {
+            (NoRoot, NoRoot) => true,
+            (OneRoot(s1), OneRoot(o1)) => s1 == o1,
+            (TwoRoots(s1, s2), TwoRoots(o1, o2)) => (s1==o1 && s2==o2) || (s1==o2 && s2==o1), // order independent equality. For test, mostly
+            _ => false, 
+        }
+    } 
+}
+
+// solves quadratic equation a*x*x + b*x + c = 0
+// TwoRoots are in unspecified order
+fn qe_roots(a: f32, b: f32, c: f32) -> QERoot {
+    if a == 0. {
+        // linear equation
+        OneRoot(-c/b)
+    } else {
+        let detsq = b*b - 4.*a*c;
+        if detsq < 0. {
+            NoRoot // complex root, no physical sense 
+        } else if detsq == 0. {
+            OneRoot(-b/(2.*a))
+        } else {
+            let det = detsq.sqrt();
+            // avoid close subtraction
+            if b <= 0. {
+                TwoRoots((-b+det)/(2.*a), 2.*c/(-b+det))
+            } else {
+                TwoRoots((-b-det)/(2.*a), 2.*c/(-b-det))
+            }
+        }
+    }
+}
+
+#[test]
+fn qe_roots_test() {
+    assert_eq!(qe_roots(1., 0., 0.), OneRoot(0.));
+    assert_eq!(qe_roots(1., 0., 1.), NoRoot);
+    assert_eq!(qe_roots(1., 0., -1.), TwoRoots(-1., 1.));
+    assert_eq!(qe_roots(2., 5., -25.), TwoRoots(-5., 2.5));
+    assert_eq!(qe_roots(2., -5., 0.), TwoRoots(0., 2.5));
+    assert_eq!(qe_roots(0., 5., -25.), OneRoot(5.));
+}
+
+
+// Returns smallest of roots, which is greater than zero.
+// NaNs... are a possibility. In this context (collisions) 
+// it makes sense to ignore them, as they should be caused only
+// by sphere which touches the plane and moves parallel to it,
+// so sphere isn't really colliding with plane 
+fn nearest_physical_time(qer: QERoot) -> Option<f32> {
+    match qer {
+        NoRoot => None,
+        OneRoot(r) => {
+            if r.is_nan() || r <= 0. { None } else { Some(r) }
+        },
+        TwoRoots(r1, r2) => {
+            if r1.is_nan() || r1 <= 0. {
+                if r2.is_nan() || r2 <= 0. {
+                    // both NaNs or less then zero
+                    None
+                } else {
+                    // r1 isn't acceptable, r2 is
+                    Some(r2)
+                }
+            } else if r2.is_nan() || r2 <= 0. {
+                // r1 is acceptable, r2 isn't
+                Some(r1)
+            } else {
+                // both are acceptable
+                Some(f32::min(r1, r2))
+            }
+        }
+    }
+}
+
+static TOUCH_TOLERANCE: f32 = 0.0001;
+static EPS: f32 = 0.000001;
+
+// p - initial position
+// v - initial speed
+// a - acceleration
+// r - sphere radius
+// (pp, n) - point on plane, normal pointing into allowed volume
+fn time_to_hit(p: V3, v: V3, a: V3, r: f32, (pp, n): (V3, V3)) -> Option<f32> {
+    // we care only about motion along normal, so let't project everything onto it.
+    let nd = (p-pp).dot(n); // distance from center of sphere to the plane
+    let nv = v.dot(n); // speed along nornal (positive - into allowed space)
+    if (nd-r).abs() < TOUCH_TOLERANCE && nv < EPS {
+        // sphere is moving alongside plane. skip it
+        return None;
+    };
+    if nd-r < 0. {
+        // sphere is in restricted space, skip this plane
+        return None;
+    }
+    let na = a.dot(n); // acceleration (positive - into allowed space)
+    // motion equation x = na*t*t/2 + nv*t + nd
+    // solve na*t*t/2 + nv*t + (nd-r) = 0
+    // and return physical root
+    nearest_physical_time(qe_roots(na/2., nv, nd-r))
+}
+
+// dt - time step
+// p - initial position
+// v - initial speed
+// a - acceleration
+// r - radius
+// plns - planes (point, interior normal)
+// returns time to collision or dt, position at collision point, speed after collision  
+fn sphere_planes_collision(cp: &CollisionParms, dt: f32, p: V3, v: V3, a: V3, r: f32, plns: &[(V3,V3)]) -> (f32, V3, V3, Option<(V3,V3)>) {
+    // recovery step if sphere is penetrating some plane(s)
+    // TODO: do something more intelligent. 
+    let (d, (pp, n)) = nearest_plane(p, plns);
+    if d+TOUCH_TOLERANCE < r {
+        // distance to the nearest plane is less than sphere radius
+        let pcorr = p + (r - d)*n; // move sphere into allowed volume (possibly), and be done with it for this step
+        //println!("correction");
+        return (dt, pcorr, v, Some((pp, n))); 
+    };
+
+    // Enforce constraints. Acceleration should not force sphere into disallowed volume
+    let mut a = a;
+    let mut v = v;
+    for plane in plns.iter().cloned() {
+        let (pp, n) = plane;
+        if (plane_dist(p, plane)-r).abs() < TOUCH_TOLERANCE {
+            let na = n.dot(a); // normal acceleration
+            let nv = n.dot(v); // normal speed
+            if na < 0. && nv < cp.min_speed {
+                // sphere moves toward or parrallel to disallowed volume and 
+                // acceleration forces sphere into disallowed volume,
+                // correct it (apply reaction force)
+                //println!("av correction before: a: {:?} v: {:?} na: {:?} nv:{:?} {:?}", a, v, na, nv, plane);
+                a -= na*n;
+                // correct speed to make the sphere move along the plane
+                v -= nv*n;
+                // add friction
+                if v.magnitude() != 0. {
+                    a -= v.normalize()*cp.friction;
+                }
+                //println!("av correction after: a: {:?} v: {:?}", a, v);
+            }
+        }
+    }
+
+    // Spere is inside allowed volume, let's check if it will hit anything in this time step
+    // Checking final point is not enough. Top of the parabola could be outside allowed volume.
+    // So we need to compute time-to-hit for all planes, select first one, then if it is greater than dt, we have no collisions
+    if let Some((t,(pp,n))) = min_f32_pair(plns.iter().cloned().filter_map(|(pp, n)|time_to_hit(p, v, a, r, (pp, n)).map(|t|(t,(pp, n))))) {
+        if t > dt {
+            // collision after time step
+            (dt, p+v*dt+a*dt*dt/2., v+a*dt, None)
+        } else {
+            let v1 = v+a*t; // speed at impact 
+            let vb = (v1-v1.dot(n)*2.*n)*cp.normal_bounciness;  // speed after bounce 
+            (t, p+v*t+a*t*t/2., vb, Some((pp, n)))
+        }
+    } else {
+        // No collisions. Allowed space is unbounded
+        (dt, p+v*dt+a*dt*dt/2., v+a*dt, None)
+    }
+}
+
+static BOUNCE_PLANES: [(V3,V3);6] = [
+    (Vector3{x:0., y:0., z:0.}, Vector3{x:0., y:0., z:-1.}), // z = 0 plane
+    (Vector3{x:0., y:0., z:-CUBE_SPAN}, Vector3{x:0., y:0., z:1.}), // z = -CUBE_SPAN
+    (Vector3{x:CUBE_SPAN/2.,  y:0., z:0.}, Vector3{x:-1., y:0., z:0.}), // and so on
+    (Vector3{x:-CUBE_SPAN/2., y:0., z:0.}, Vector3{x:1., y:0., z:0.}),
+    (Vector3{x:0., y:CUBE_SPAN/2., z:0.}, Vector3{x:0., y:-1., z:0.}),
+    (Vector3{x:0., y:-CUBE_SPAN/2., z:0.}, Vector3{x:0.1, y:0.9949874371, z:0.}),
+];
+
 
 impl State {
     pub fn new(object_count: u32) -> Self {
@@ -68,53 +308,33 @@ impl State {
     }
 
     fn update_one(cube: &CubeState, dt: f32) -> CubeState {
+        let r = 0.866;
         let a = v3(0., -9.8, 0.);
-        let mut new_spd = cube.spd + a*dt;
-        let dp = cube.spd * dt + a * dt * dt / 2.;
-        let mut new_pos = cube.pos + dp;
-        let mut bounce = false;
-        let (dist, sprj) = fmin(((new_pos.x - (-CUBE_SPAN/2.)).abs(), new_spd.x), fmin(((new_pos.x - CUBE_SPAN/2.).abs(), -new_spd.x), 
-                    fmin(((new_pos.y - (-CUBE_SPAN/2.)).abs(), new_spd.y), fmin(((new_pos.y - (CUBE_SPAN/2.)).abs(), -new_spd.y), 
-                    fmin(((new_pos.z - (-CUBE_SPAN)).abs(), new_spd.z), ((new_pos.z - 0.).abs(), -new_spd.z))))));
-        if new_pos.x < -CUBE_SPAN/2. {
-            new_pos.x = -CUBE_SPAN - new_pos.x;
-            new_spd.x = -new_spd.x*0.95;
-            bounce = true;
-        }
-        if new_pos.x > CUBE_SPAN/2. {
-            new_pos.x = CUBE_SPAN - new_pos.x;
-            new_spd.x = -new_spd.x*0.95;
-            bounce = true;
-        }
-        if new_pos.y < -CUBE_SPAN/2. {
-            new_pos.y = -CUBE_SPAN - new_pos.y;
-            new_spd.y = -new_spd.y*0.95;
-            bounce = true;
-        }
-        if new_pos.y > CUBE_SPAN/2. {
-            new_pos.y = CUBE_SPAN - new_pos.y;
-            new_spd.y = -new_spd.y*0.95;
-            bounce = true;
-        }
-        if new_pos.z < -CUBE_SPAN {
-            new_pos.z = -CUBE_SPAN*2. - new_pos.z;
-            new_spd.z = -new_spd.z*0.95;
-            bounce = true;
-        }
-        if new_pos.z > 0. {
-            new_pos.z = -new_pos.z;
-            new_spd.z = -new_spd.z*0.95;
-            bounce = true;
+        let cp = CollisionParms {
+            normal_bounciness: 0.9,
+            min_speed: 0.1,
+            friction: 0.1,
+        };
+        // bounce_planes is vec of tuples (point on plane, plane normal pointing inside allowed volume) 
+        let mut pos = cube.pos;
+        let mut spd = cube.spd;
+        let mut rt = dt;
+        for i in 0..5 { // prevent too many bounces in one time step 
+            let (t, p, v, maybe_plane) = sphere_planes_collision(&cp, rt, pos, spd, a, r, &BOUNCE_PLANES);
+            //println!("Step: {:?}, dt: {:?}, p: {:?}, v: {:?}, {:?}", i, t, p, v, maybe_plane);
+            rt -= t;
+            pos = p;
+            spd = v;
+            if rt <= 0. || maybe_plane.is_none() {
+                break;
+            }
         }
 
-        if bounce && new_spd.magnitude2() < 0.8 {
-            new_spd = v3(0., 0., 0.);
-        }
         CubeState {
-            pos: new_pos,
-            spd: new_spd,
+            pos: pos,
+            spd: spd,
             rot: Basis3::from_axis_angle(cube.rot_axe, deg(cube.rot_spd * dt).into()).concat(&cube.rot),
-            blink: dist.abs() < sprj/4. && new_spd.magnitude2()>4.,
+            blink: false,
             .. *cube
         }
     }
@@ -165,8 +385,8 @@ impl State {
                 }
                 if dc.magnitude2()<3. {
                     let penetration = 1.732 - dc.magnitude();
-                    cubes[i1].pos -= dp*penetration*0.2;
-                    cubes[i2].pos += dp*penetration*0.2;
+                    cubes[i1].pos -= dp*penetration*0.5;
+                    cubes[i2].pos += dp*penetration*0.5;
                 }
             }
             //ccount += 1;
