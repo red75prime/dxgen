@@ -79,7 +79,7 @@ fn main() {
   let mut parms = CubeParms {
         thread_count: 2, 
         object_count: 2_000, 
-        speed_mult: 0.01, 
+        speed_mult: 1.0, 
         concurrent_state_update: true,
         debug_layer: cfg!(debug_assertions), 
         rt_format: DXGI_FORMAT_R16G16B16A16_FLOAT,
@@ -329,7 +329,7 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
               // Process WASD keys
               let camera = data.camera();
               
-              //camera.restore_up((45.*frame_dt) as f32);
+              camera.restore_up((90.*frame_dt) as f32);
 
               let step=if shdown {1.0} else if ctdown {0.01} else {0.1};
 
