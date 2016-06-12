@@ -32,6 +32,7 @@ VS_OUTPUT VSMain(uint vtx: SV_VertexID) {
 }
 
 [RootSignature(RSD)]
+[earlydepthstencil]
 float4 PSMain() : SV_TARGET {
   return float4(200, 200, 200, 1);
 }

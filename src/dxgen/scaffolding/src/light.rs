@@ -30,7 +30,7 @@ impl LightSource {
                     ("VSMain", "vs_5_0", &mut vshader_bc),
                     ("PSMain", "ps_5_0", &mut pshader_bc),
                     ("RSD", "rootsig_1_0", &mut rsig_bc),
-                ], D3DCOMPILE_OPTIMIZATION_LEVEL0) {
+                ], D3DCOMPILE_OPTIMIZATION_LEVEL3) {
             Err(err) => {
                 error!("Error compiling 'light.hlsl': {}", err);
                 return Err(E_FAIL);

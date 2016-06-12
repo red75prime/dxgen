@@ -3,7 +3,8 @@
             "CBV(b0)," \
             "DescriptorTable(SRV(t0), SRV(t2))," \
             "StaticSampler(s0)," \
-            "StaticSampler(s1, filter=FILTER_MIN_MAG_MIP_POINT)"
+            "StaticSampler(s1, filter=FILTER_MIN_MAG_MIP_POINT)," \
+            "StaticSampler(s2, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, ComparisonFunc = COMPARISON_LESS, visibility = SHADER_VISIBILITY_PIXEL)"
 
 #include "view_constants.hlsl"
 
@@ -27,10 +28,10 @@ struct VS_INPUT
 struct VS_OUTPUT
 {
     float4 vPosition : SV_Position;
-    float4 vDiffuse : COLOR;
+    nointerpolation float4 vDiffuse : COLOR;
     float2 texc0 : TEXCOORD0;
     float blink: TEXCOORD2;
-    float3 norm : NORMAL;
+    nointerpolation float3 norm : NORMAL;
     float3 w_pos : TEXCOORD1;
 };
 
@@ -52,9 +53,10 @@ VS_OUTPUT VSMain(VS_INPUT vtx, uint iidx : SV_InstanceID){
 
 Texture2D   testTex : register(t0);
 Texture2DArray shadowMap : register(t2);
-TextureCube shadowMapCube : register(t2);
+TextureCube<float> shadowMapCube : register(t2);
 SamplerState  testSamp : register(s0);
 SamplerState  pointSamp : register(s1);
+SamplerComparisonState shadowSamp: register(s2);
 
 #include "shadow_constants.hlsl"
 
@@ -91,23 +93,23 @@ float mlen(float3 v) {
 }
 
 [RootSignature(RSD)]
+[earlydepthstencil]
 float4 PSMain(VS_OUTPUT pv) : SV_Target {
   float4 texel = testTex.Sample(testSamp, pv.texc0.xy)*pv.vDiffuse;
   float3 eye_off = eye_pos - pv.w_pos;
   float3 eye_n = normalize(eye_off);
   float3 light_off = light_pos - pv.w_pos;
   //float shadowDist = sampleCubemap(shadowMap, -light_off);
-  float shadowDist = k2/(shadowMapCube.Sample(pointSamp, -light_off).r-k1);
-  float4 ambientTerm = float4(texel.rgb*(float3(0.01,0.01,0.02)+float3(0.05,0.07,0.05)/(1+length(light_off)/10)),1);
+  float shdist = k2/(mlen(light_off))+k1;
+  float shadowCoverage = shadowMapCube.SampleCmp(shadowSamp, -light_off, shdist);
+  float4 ambientTerm = float4(texel.rgb*(float3(0.01,0.01,0.02)+float3(0.05,0.05,0.05)/(1+length(light_off)/20)),1);
   if (pv.blink == 1) {
     ambientTerm = pv.vDiffuse; 
-  } else if (shadowDist < mlen(light_off)) {
-    return ambientTerm;
-  }
+  };
   float light_invd = 10. / (1. + length(light_off)/10);
   float3 light_n = normalize(light_off);
   float3 light_r = reflect(-light_n, normalize(pv.norm));
   float sb=1.-clamp(1.-dot(light_r,eye_n),0,0.0001)/0.0001;
   float l=clamp(dot(light_n,pv.norm),0,1);
-  return texel*l*0.6*light_invd+sb*float4(10,10,300,1)/(0.1+(length(light_off)+length(eye_off))/1000)+ambientTerm;
+  return (texel*l*0.6*light_invd+sb*float4(10,10,300,1)/(0.1+(length(light_off)+length(eye_off))/1000))*shadowCoverage+ambientTerm;
 }
