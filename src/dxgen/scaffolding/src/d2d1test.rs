@@ -22,7 +22,7 @@ pub fn main() -> HResult<()> {
   let wnd = window::create_window("d2d1 test", w, h);
   
   trace!("enable_debug_layer");
-  try!(create::get_debug_interface()).enable_debug_layer();
+  try!(create::d3d12_get_debug_interface()).enable_debug_layer();
   trace!("dxgi_factory");
   let dxgi_factory = try!(create::create_dxgi_factory2::<DXGIFactory4>(true));
   trace!("adapter");

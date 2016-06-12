@@ -83,7 +83,7 @@ pub fn create_dxgi_factory2<T: HasIID+TUnknown>(debug: bool) -> HResult<T> {
     }
 }
 
-pub fn create_dxgi_factory1<T: HasIID+TUnknown>(debug: bool) -> HResult<T> {
+pub fn create_dxgi_factory1<T: HasIID+TUnknown>() -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
     let hr = unsafe {
         CreateDXGIFactory1(T::iid(), &mut p_fac as *mut *mut _ as *mut *mut _)
@@ -134,7 +134,7 @@ pub fn create_dwrite_factory_shared() -> HResult<DWriteFactory> {
     }
 }
 
-pub fn get_debug_interface() -> HResult<D3D12Debug> {
+pub fn d3d12_get_debug_interface() -> HResult<D3D12Debug> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
     let hr = unsafe {
         D3D12GetDebugInterface(&IID_ID3D12Debug, &mut p_fac as *mut *mut _ as *mut *mut _)

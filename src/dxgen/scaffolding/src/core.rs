@@ -143,7 +143,7 @@ pub fn create_core(dxgi_factory: &DXGIFactory4, adapter: Option<&DXGIAdapter1>,
                    -> Result<DXCore, HRESULT> {
     if enable_debug {
         trace!("get_debug_interface");
-        try!(get_debug_interface())
+        try!(d3d12_get_debug_interface())
             .enable_debug_layer();
     };
 
