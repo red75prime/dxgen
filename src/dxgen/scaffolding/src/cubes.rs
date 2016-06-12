@@ -19,7 +19,6 @@ use downsampler::Downsampler;
 use tonemapper::{Tonemapper, TonemapperResources};
 use plshadow::PLShadow;
 
-use std::io::prelude::*;
 use std::slice;
 use std::sync::Arc;
 use cubestate::{State, StateUpdateAgent};

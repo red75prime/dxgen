@@ -19,6 +19,7 @@ pub struct Window {
     _nosync_nosend: PhantomData<Rc<u32>>,
 }
 
+#[allow(dead_code)]
 pub struct BlockingEventIterator<'a> {
     wnd: &'a Window,
 }
@@ -109,6 +110,7 @@ impl Window {
     pub fn poll_events<'a>(&'a self) -> PollEventIterator<'a> {
         PollEventIterator { wnd: &self }
     }
+    #[allow(dead_code)]
     pub fn events<'a>(&'a self) -> BlockingEventIterator<'a> {
         BlockingEventIterator { wnd: &self }
     }

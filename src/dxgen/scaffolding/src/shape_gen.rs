@@ -69,9 +69,10 @@ use obj;
 use obj::SimplePolygon;
 use std::path::Path;
 
+#[allow(dead_code)]
 pub fn figurine<V: GenVertex>(path: &Path) -> (Vec<V>, Vec<u32>) {
     let scene = obj::load::<SimplePolygon>(path).expect("3d model load failed");
-    if let Some(obj) = scene.object_iter().next() {
+    if let Some(_) = scene.object_iter().next() {
 
         return (vec![], vec![]);
     }

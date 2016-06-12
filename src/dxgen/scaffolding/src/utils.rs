@@ -287,6 +287,7 @@ impl Fence {
     }
 
     // Fence takes ownership of res
+    #[allow(dead_code)]
     pub fn hold(&mut self, res: D3D12Resource) -> &mut Self {
         self.temp_resources.push(res);
         self
@@ -302,6 +303,7 @@ impl Fence {
         queue.signal(&self.dxfence, fence_value).map(|_| ())
     }
 
+    #[allow(dead_code)]
     pub fn wait(&mut self, queue: &D3D12CommandQueue) -> HResult<()> {
         if let Some(fence_value) = self.fence_value {
             return queue.wait(&self.dxfence, fence_value).map(|_|());
