@@ -161,3 +161,6 @@ $RECYCLE.BIN/
 
 # Enable obj files in scaffolding source
 !src/dxgen/scaffolding/src/*.obj
+
+# VSCode configs
+.vscode
