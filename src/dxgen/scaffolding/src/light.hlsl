@@ -18,6 +18,7 @@ StructuredBuffer<float3> normals: register(t3);
 struct VS_OUTPUT
 {
     float4 pos: SV_Position;
+    float4 col: COLOR;
 };
 
 [RootSignature(RSD)]
@@ -27,12 +28,12 @@ VS_OUTPUT VSMain(uint vtx: SV_VertexID) {
   ret.pos = float4(coords[indices[vtx].crd]/10 + light_pos, 1);
   ret.pos = mul(ret.pos, view);
   ret.pos = mul(ret.pos, proj);
-
+  ret.col = float4(200, 200, 200, 1);
   return ret;
 }
 
 [RootSignature(RSD)]
 [earlydepthstencil]
-float4 PSMain() : SV_TARGET {
-  return float4(200, 200, 200, 1);
+float4 PSMain(VS_OUTPUT v) : SV_TARGET {
+  return v.col;
 }

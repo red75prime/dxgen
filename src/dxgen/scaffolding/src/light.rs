@@ -1,23 +1,17 @@
 use winapi::*;
 use cgmath::Vector3;
-use core::DXCore;
 use create_device;
 use utils;
 use dxsafe::*;
 use dxsafe::structwrappers::*;
-use dxsems::VertexFormat;
 use obj;
-use std::mem;
 use obj::SimplePolygon;
 use std::path::Path;
-use std::io::{self, BufReader};
-use std::io::prelude::*;
-use std::fs::File;
 
 pub struct LightSource {
     pso: D3D12PipelineState,
     root_sig: D3D12RootSignature,
-    luid: Luid,
+    _luid: Luid,
 }
 
 impl LightSource {
@@ -75,7 +69,7 @@ impl LightSource {
         Ok(LightSource {
             pso: pso,
             root_sig: root_sig,
-            luid: Luid(dev.get_adapter_luid()),
+            _luid: Luid(dev.get_adapter_luid()),
         })
     }
 }

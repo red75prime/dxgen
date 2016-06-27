@@ -1,7 +1,5 @@
 use winapi::*;
-use core::DXCore;
 use create_device;
-use utils;
 use dxsafe::*;
 use dxsafe::structwrappers::*;
 use dxsems::VertexFormat;
@@ -12,7 +10,7 @@ use std::marker::PhantomData;
 pub struct PLShadow<T: VertexFormat> {
     pub pso: D3D12PipelineState,
     pub root_sig: D3D12RootSignature,
-    luid: Luid,
+    _luid: Luid,
     _phd: PhantomData<T>,
 }
 
@@ -72,7 +70,7 @@ impl<T: VertexFormat> PLShadow<T> {
         Ok(PLShadow::<T> {
             pso: pso,
             root_sig: root_sig,
-            luid: Luid(dev.get_adapter_luid()),
+            _luid: Luid(dev.get_adapter_luid()),
             _phd: PhantomData,
         })
     }

@@ -7,10 +7,10 @@ use dxsafe::structwrappers::*;
 use utils::d2d::*;
 
 pub struct DrawText {
-    dev11: D3D11Device,
+    _dev11: D3D11Device,
     devcontext11: D3D11DeviceContext,
     dev11on12: D3D11On12Device,
-    devd2d: D2D1Device2,
+    _devd2d: D2D1Device2,
     factoryd2d: D2D1Factory3,
     devctxd2d: D2D1DeviceContext2,
     factorydw: DWriteFactory,
@@ -37,10 +37,10 @@ impl DrawText {
         trace!("Call create_dwrite_factory_shared");
         let factorydw = try!(create::create_dwrite_factory_shared());
         Ok(DrawText {
-            dev11: dev11,
+            _dev11: dev11,
             devcontext11: devcontext11,
             dev11on12: dev11on12,
-            devd2d: devd2d,
+            _devd2d: devd2d,
             factoryd2d: factoryd2d,
             devctxd2d: devctxd2d,
             factorydw: factorydw,
@@ -67,7 +67,7 @@ impl Drop for DrawTextResources {
 }
 
 impl DrawTextResources {
-    pub fn new(core: &DXCore, dt: &DrawText, rt: &D3D12Resource, format: DXGI_FORMAT) -> HResult<DrawTextResources> {
+    pub fn new(core: &DXCore, dt: &DrawText, rt: &D3D12Resource, _format: DXGI_FORMAT) -> HResult<DrawTextResources> {
         let d3d11_res_flags = D3D11_RESOURCE_FLAGS {
             BindFlags: D3D11_BIND_RENDER_TARGET.0,
             MiscFlags: 0,

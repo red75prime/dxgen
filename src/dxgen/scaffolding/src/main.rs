@@ -44,7 +44,7 @@ mod plshadow;
 //mod collision;
 mod cubestate;
 mod light;
-mod d2d1test;
+//mod d2d1test;
 mod drawtext;
 
 #[cfg(feature = "openal")] mod sound;

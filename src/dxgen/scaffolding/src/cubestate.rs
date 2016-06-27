@@ -17,7 +17,7 @@ pub struct CubeState {
     pub spd: V3,
     pub color: V3,
     pub blink: bool,
-    pub rot_axe: V3,
+    pub rot_axis: V3,
     pub rot_spd: f32,
     pub p_accel: V3,
     pub p_time: f32,
@@ -228,7 +228,7 @@ fn sphere_planes_collision(cp: &CollisionParms, dt: f32, p: V3, v: V3, a: V3, r:
     let mut v = v;
     let mut friction_mult = 0.;
     for plane in plns.iter().cloned() {
-        let (pp, n) = plane;
+        let (_, n) = plane;
         if (plane_dist(p, plane)-r).abs() < TOUCH_TOLERANCE {
             let na = n.dot(a); // normal acceleration
             let nv = n.dot(v); // normal speed
@@ -303,7 +303,7 @@ impl State {
                 spd: v3(rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5).normalize()*rng.next_f32()*1.,
-                rot_axe: v3(rng.next_f32() - 0.5,
+                rot_axis: v3(rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5)
                               .normalize(),
@@ -334,12 +334,12 @@ impl State {
         let mut rt = dt;
         if cube.p_time > 0. {
             let ptime = f32::min(rt, cube.p_time);
-            let (t, p, v, maybe_plane) = sphere_planes_collision(&cp, ptime, pos, spd, a+cube.p_accel, r, &BOUNCE_PLANES);
+            let (t, p, v, _) = sphere_planes_collision(&cp, ptime, pos, spd, a+cube.p_accel, r, &BOUNCE_PLANES);
             rt -= t;
             pos = p;
             spd = v;
         }
-        for i in 0..5 { // prevent too many bounces in one time step 
+        for _ in 0..5 { // prevent too many bounces in one time step 
             let (t, p, v, maybe_plane) = sphere_planes_collision(&cp, rt, pos, spd, a, r, &BOUNCE_PLANES);
             //println!("Step: {:?}, dt: {:?}, p: {:?}, v: {:?}, {:?}", i, t, p, v, maybe_plane);
             rt -= t;
@@ -353,7 +353,7 @@ impl State {
         CubeState {
             pos: pos,
             spd: spd,
-            rot: Basis3::from_axis_angle(cube.rot_axe, deg(cube.rot_spd * dt).into()).concat(&cube.rot),
+            rot: Basis3::from_axis_angle(cube.rot_axis, rad(cube.rot_spd * dt).into()).concat(&cube.rot),
             blink: false,
             p_accel: v3(0., 0., 0.),
             p_time: 0.,
@@ -396,8 +396,7 @@ impl State {
             //println!("{:?}", bv);
             broad_phase.deferred_add(i, bv, Cub(i));
         }
-        let mut ccount = 0;
-        broad_phase.update(&mut |&i1, &i2| true, &mut |&i1, &i2, c|{
+        broad_phase.update(&mut |_, _| true, &mut |&i1, &i2, _|{
             match (i1, i2) {
                 (Cam, Cam) => {},
                 (Cub(i), Cam) | (Cam, Cub(i)) => {
@@ -437,9 +436,7 @@ impl State {
                     }
                 },
             };
-            //ccount += 1;
         });
-        //println!("Comparisons: {}", ccount);
 
         let (lx, ly) = f64::sin_cos(self.tick*0.05);
         let (lx, ly) = (lx as f32, ly as f32);

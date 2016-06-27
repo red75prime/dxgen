@@ -303,7 +303,7 @@ impl Tonemapper {
                    res: &mut TonemapperResources,
                    src: &D3D12Resource,
                    dst: &D3D12Resource,
-                   t_fence: &mut Fence,
+                   _t_fence: &mut Fence,
                    avg_brightness_in: f32)
                    -> HResult<f32> {
         if cfg!(debug_assertions) { trace!("tonemap") };
