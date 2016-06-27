@@ -80,12 +80,13 @@ pub fn upload_into_buffer<T>(buf: &D3D12Resource, data: &[T]) -> HResult<()> {
     Ok(())
 }
 
-pub fn upload_into_texture(core: &DXCore,
+pub fn upload_into_texture<T: Sized+Clone>(core: &DXCore,
                            tex: &D3D12Resource,
                            w: u32,
                            _: u32,
-                           data: &[u32])
+                           data: &[T])
                            -> HResult<()> {
+    let tsize = mem::size_of::<T>();
     let w = w as usize; 
     trace!("upload_into_texture");
     trace!("get_desc tex.iptr(): 0x{:x}, vtbl: 0x{:x}, vtbl[0]: 0x{:x}",
@@ -112,9 +113,12 @@ pub fn upload_into_texture(core: &DXCore,
                                 Some(&mut row_size_bytes),
                                 Some(&mut total_size_bytes));
     let rows = num_rows[0] as usize;
-    let row_len = (row_size_bytes[0] / 4) as usize;
-    let row_pitch = (psfp[0].Footprint.RowPitch / 4) as usize;
-    let total_len = (total_size_bytes / 4) as usize;
+    assert_eq!(row_size_bytes[0] as usize % tsize, 0);
+    let row_len = row_size_bytes[0] as usize / tsize;
+    assert_eq!(psfp[0].Footprint.RowPitch as usize % tsize, 0);
+    let row_pitch = psfp[0].Footprint.RowPitch as usize / tsize;
+    assert_eq!(total_size_bytes as usize % tsize, 0);
+    let total_len = total_size_bytes as usize / tsize;
     debug!("Placed subres. footprint:{:?}", psfp[0]);
     debug!("Rows:{}, Row len:{}, Row pitch:{}  Total len:{}",
            rows,
@@ -130,12 +134,11 @@ pub fn upload_into_texture(core: &DXCore,
                                                      None));
     res_buf.set_name("Temporary texture buffer".into()).unwrap();
 
-    let mut temp_buf = Vec::with_capacity(total_len);
-    unsafe {
-        temp_buf.set_len(total_len);
+    let mut temp_buf = unsafe {
+        uninitialized_vec(total_len)
     };
     for y in 0..rows {
-        &temp_buf[y * row_pitch..y * row_pitch + w].clone_from_slice(&data[y * w .. (y+1) * w]);
+        &temp_buf[y * row_pitch .. y * row_pitch + w].clone_from_slice(&data[y * w .. y * w + w]);
     }
 
     try!(upload_into_buffer(&res_buf, &temp_buf[..]));
@@ -343,4 +346,15 @@ pub mod d2d {
     pub fn color3(r: f32, g: f32, b: f32) -> D3DCOLORVALUE {
     D3DCOLORVALUE { r: r, g: g, b: b, a: 1.0 }
     }    
+}
+
+// Sometimes I neen uninitialized vector. 
+// Passing wrong value to ```set_len``` can be disastrous.
+// Let's make sure it is the same value as in ```with_capacity``` 
+pub unsafe fn uninitialized_vec<T: Sized>(len : usize) -> Vec<T> {
+    let mut ret = Vec::with_capacity(len);
+    unsafe {
+        ret.set_len(len);
+    }
+    ret
 }

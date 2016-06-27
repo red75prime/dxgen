@@ -46,6 +46,7 @@ mod cubestate;
 mod light;
 //mod d2d1test;
 mod drawtext;
+mod skybox;
 
 #[cfg(feature = "openal")] mod sound;
 

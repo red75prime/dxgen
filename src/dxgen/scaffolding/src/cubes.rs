@@ -5,7 +5,7 @@ use winapi::*;
 use dxsafe::*;
 use core;
 use core::{DXCore, DXSwapChain, Event, DumpOnError};
-use utils::*;
+use utils::{self, Fence};
 use cgmath::*;
 use dxsafe::structwrappers::*;
 use window::*;
@@ -223,7 +223,7 @@ impl CommonResources {
 
         // Transfer data from vtc into GPU memory allocated for vbuf
         trace!("Upload vertices");
-        try!(upload_into_buffer(&vertex_buffer, &vtc[..]));
+        try!(utils::upload_into_buffer(&vertex_buffer, &vtc[..]));
 
         // Unlike shader resource views or constant buffer views,
         // vertex buffer views don't go into descriptor heaps.
@@ -244,7 +244,7 @@ impl CommonResources {
                                                               D3D12_RESOURCE_STATE_GENERIC_READ,
                                                               None));
         trace!("Upload indices");
-        try!(upload_into_buffer(&index_buffer, &idx[..]));
+        try!(utils::upload_into_buffer(&index_buffer, &idx[..]));
 
         // D3D12GraphicsCommandList::ia_set_index_buffer() binds index buffer to graphics pipeline.
         let index_buffer_view = D3D12_INDEX_BUFFER_VIEW {
@@ -437,7 +437,7 @@ impl FrameResources {
         // utils::create_depth_stencil() functions handles creation of depth-stencil resource
         // and depth-stencil view, and it places depth-stencil view into dsd_heap descriptor heap
         trace!("Create depth stencil");
-        let depth_stencil = try!(create_depth_stencil(dev,
+        let depth_stencil = try!(utils::create_depth_stencil(dev,
                                                       w as u64,
                                                       h as u32,
                                                       ds_format,
@@ -519,8 +519,8 @@ impl FrameResources {
         ::perf_fillbuf_start();
 
         let constants =  Constants {
-            view: matrix4_to_4x4(&camera.view_matrix()),
-            proj: matrix4_to_4x4(&camera.projection_matrix()),
+            view: utils::matrix4_to_4x4(&camera.view_matrix()),
+            proj: utils::matrix4_to_4x4(&camera.projection_matrix()),
             eye_pos: camera.eye.clone().into(),
             _padding1: 0.,
             light_pos: st.light_pos.clone().into(),
@@ -537,8 +537,8 @@ impl FrameResources {
                     // memory at inst_ref is write-only. ptr::write ensures that it is not read.
                     // There should be no performance inprovement compared to "*inst_ref =", but somehow there is small speedup.
                     ptr::write(inst_ref as *mut _, InstanceData {
-                        world: rotshift3_to_4x4(&cs.rot, &cs.pos),
-                        n_world: rot3_to_3x3(&cs.rot),
+                        world: utils::rotshift3_to_4x4(&cs.rot, &cs.pos),
+                        n_world: utils::rot3_to_3x3(&cs.rot),
                         color: [cs.color.x, cs.color.y, cs.color.z],
                         blink: if cs.blink { 1 } else { 0 }
                     });
@@ -573,7 +573,6 @@ impl FrameResources {
                D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ)]);
 
         // ----------------  SHADOW PASS START ------------------------------------
-        //cr.plshadow.fill_command_list(core, &glist, &self.dsd_heap, );
         glist.set_graphics_root_signature(&cr.plshadow.root_sig);
         core.dump_info_queue_tagged("plshadow after set_graphics_root_signature"); 
         glist.set_pipeline_state(&cr.plshadow.pso);
@@ -748,7 +747,7 @@ impl AppData {
     }
 
     pub fn wait_frame(&self) {
-        wait_for_graphics_queue(&self.core, &self.fence, &self.fence_event);
+        utils::wait_for_graphics_queue(&self.core, &self.fence, &self.fence_event);
     }
 
     pub fn take_info_queue(&self) -> Option<D3D12InfoQueue> {
@@ -777,12 +776,11 @@ fn get_display_mode_list1(output: &DXGIOutput4,
     loop {
         match output.get_display_mode_list1(format, flags, None) {
             Ok(mode_count) => {
-                let mut modes = Vec::with_capacity(mode_count as usize);
+                let mut modes = unsafe {
+                    utils::uninitialized_vec(mode_count as usize)
+                };
                 // DXGI_MODE_DESC1 is POD. Uninitialized content will be overwritten immediately
                 // So it's safe to set_len here
-                unsafe {
-                    modes.set_len(mode_count as usize);
-                };
                 match output.get_display_mode_list1(format, flags, Some(&mut modes[..])) {
                     Ok(mode_count_actual) => {
                         assert!(mode_count == mode_count_actual);
@@ -881,7 +879,7 @@ pub fn on_init(wnd: &Window,
         while let Ok(output) = adapter.enum_outputs(i)
                                       .and_then(|o| o.query_interface::<DXGIOutput4>()) {
             if let Ok(output_desc) = output.get_desc() {
-                let output_device_name = wchar_array_to_string_lossy(&output_desc.DeviceName[..]);
+                let output_device_name = utils::wchar_array_to_string_lossy(&output_desc.DeviceName[..]);
                 info!("Output {}: {}", i, output_device_name);
             } else {
                 error!("Output {}: Unbelievable! DXGIOutput4::get_desc() returned an error.",
@@ -968,7 +966,7 @@ pub fn on_init(wnd: &Window,
     // utils::upload_into_texture() transfers texdata into upload buffer resource,
     // then executed copy command on core.copy_queue
     trace!("upload_into_texture");
-    try!(upload_into_texture(&core, tex!(), tex_w, tex_h, &texdata[..]).dump(&core));
+    try!(utils::upload_into_texture(&core, tex!(), tex_w, tex_h, &texdata[..]).dump(&core));
     trace!("Downsampler::generate_mips");
     try!(common_resources.downsampler.generate_mips(tex!(), &core).dump(&core));
 
@@ -987,7 +985,7 @@ pub fn on_init(wnd: &Window,
     core.graphics_queue.execute_command_lists(&[&glist]);
 
     trace!("wait_for_prev_frame");
-    wait_for_graphics_queue(&core, &fence, &fence_event);
+    utils::wait_for_graphics_queue(&core, &fence, &fence_event);
 
     let mut frame_resources = vec![];
     for i in 0 .. frame_count {
@@ -1118,9 +1116,9 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
     data.minimized = false;
     // Before we can resize back buffers, we need to make sure that GPU
     // no longer draws on them.
-    wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
-    wait_for_compute_queue(&data.core, &data.fence, &data.fence_event);
-    wait_for_copy_queue(&data.core, &data.fence, &data.fence_event);
+    utils::wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
+    utils::wait_for_compute_queue(&data.core, &data.fence, &data.fence_event);
+    utils::wait_for_copy_queue(&data.core, &data.fence, &data.fence_event);
 
     data.frame_resources.truncate(0);
     data.common_resources.draw_text = None;

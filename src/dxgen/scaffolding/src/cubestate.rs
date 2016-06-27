@@ -2,7 +2,7 @@ use cgmath::*;
 use crossbeam;
 use rand;
 use rand::Rng;
-use utils::v3;
+use utils::{self, v3};
 use ncollide as nc;
 use ncollide::broad_phase::BroadPhase;
 use ncollide::bounding_volume;
@@ -366,14 +366,15 @@ impl State {
           return (*self).clone();
         }
         // advance position of cubes
-        let mut cubes = Vec::with_capacity(self.cubes.len());
+        // Uninitialized content of cubes will be immediately overwritten
+        let mut cubes = unsafe {
+            utils::uninitialized_vec(self.cubes.len())
+        };
         if thread_cnt == 1 {
-            for cube in &self.cubes[..] {
-                cubes.push(State::update_one(cube, dt));
+            for (dst, cube) in cubes.iter_mut().zip(&self.cubes[..]) {
+                *dst = State::update_one(cube, dt);
             }
         } else {
-            // Uninitialized content of cubes will be immediately overwritten
-            unsafe{ cubes.set_len(self.cubes.len()) };
             crossbeam::scope(|scope| {
                 let chunk_len = (cubes.len()/thread_cnt as usize)+1;
                 for (chunk, chunk_src) in cubes[..].chunks_mut(chunk_len).zip(self.cubes[..].chunks(chunk_len)) {

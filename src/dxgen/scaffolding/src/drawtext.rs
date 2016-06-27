@@ -122,44 +122,43 @@ impl DrawTextResources {
     }
     
     pub fn render(&self, core: &DXCore, dt: &DrawText, rt: &D3D12Resource, fps: f32) -> HResult<()> {
-        //return Ok(());
-        trace!("DrawTextResources.render");
+        let da = cfg!(debug_assertions);
+        if da { trace!("DrawTextResources.render"); }
         core.dump_info_queue_tagged("DrawText. Before calloc.reset()");
-        trace!("calloc.reset()");
+        if da { trace!("calloc.reset()"); }
         try!(self.calloc.reset());
         let glist = &self.glist;
-        trace!("glist.reset");
+        if da { trace!("glist.reset"); }
         try!(glist.reset(&self.calloc, None));
         glist.resource_barrier(&[*ResourceBarrier::transition(rt, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET)]);
-        trace!("glist.close");
+        if da { trace!("glist.close"); }
         try!(glist.close());
-        trace!("execute");
+        if da { trace!("execute"); }
         core.graphics_queue.execute_command_lists(&[glist]);
         
         core.dump_info_queue_tagged("DrawText. After execute_command_lists (barrier)");
-        trace!("acquire");
+        if da { trace!("acquire"); }
         dt.dev11on12.acquire_wrapped_resources(&[&self.d11back]);
-        trace!("set_target");
+        if da { trace!("set_target"); }
         dt.devctxd2d.set_target(Some(&try!(self.d2drt.query_interface())));
-        trace!("begin_draw");
+        if da { trace!("begin_draw"); }
         dt.devctxd2d.begin_draw();
         
         let text = format!("FPS: {}\nDWrite and D3D12\nIt works at last\n你好，世界", fps);
         let hello_vec = ::utils::str_to_vec_u16(&text);
-        trace!("draw_text");
+        if da { trace!("draw_text"); }
         for &(dx, dy) in &[(-1., 0.),(1., 0.),(0., -1.),(0., 1.)] {
             dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35.+dx, 5.+dy, 300.+dx, 100.+dy), &self.bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         };
-        dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(34., 4., 299., 99.), &self.bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35., 5., 300., 100.), &self.tbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         
-        trace!("end_draw");
+        if da { trace!("end_draw"); }
         try!(dt.devctxd2d.end_draw(None, None));
-        trace!("set_target");
+        if da { trace!("set_target"); }
         dt.devctxd2d.set_target(None);
-        trace!("release_wrapped_resources");
+        if da { trace!("release_wrapped_resources"); }
         dt.dev11on12.release_wrapped_resources(&[&self.d11back]);
-        trace!("flush");
+        if da { trace!("flush"); }
         dt.devcontext11.flush();                                        
         core.dump_info_queue_tagged("DrawText. End");
         
