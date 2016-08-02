@@ -386,24 +386,6 @@ impl From<::std::str::Utf8Error> for ShaderCompileError {
     }
 }
 
-pub trait TryCollect<I,E> {
-    fn try_collect(self) -> Result<Vec<I>,E>
-        where Self: Iterator<Item=Result<I,E>> + Sized;
-}
-
-impl<T,I,E> TryCollect<I,E> for T where T: Iterator<Item=Result<I,E>> {
-    fn try_collect(self) -> Result<Vec<I>,E> {
-        let mut ret = vec![];
-        for item in self {
-            match item {
-                Ok(v) => ret.push(v),
-                Err(e) => return Err(e),
-            }
-        }
-        Ok(ret)
-    }
-}
-
 pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static str, &mut Vec<u8>)], flags: u32) 
                         -> Result<(), ShaderCompileError> {
     let mut f = try!(File::open(file_name));
@@ -411,7 +393,7 @@ pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static
     try!(f.read_to_end(&mut content));
     let shader = try!(::std::str::from_utf8(&content[..]));
 
-    let all_ok = func_names.iter_mut().map(|&mut(fname, target, ref mut bytecode)|{
+    let all_ok: Result<Vec<_>,_> = func_names.iter_mut().map(|&mut(fname, target, ref mut bytecode)|{
         match d3d_compile_from_str(shader, file_name, fname, target, flags) {
             Ok(mut bc) => {
                     bytecode.truncate(0);
@@ -422,7 +404,7 @@ pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static
                     inner: ShaderInnerError::Compile(format!("{}: {}", fname, err)),
                 }),
         }
-        }).try_collect();
+        }).collect();
     match all_ok {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
