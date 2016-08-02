@@ -306,11 +306,12 @@ impl Tonemapper {
                    _t_fence: &mut Fence,
                    avg_brightness_in: f32)
                    -> HResult<f32> {
-        if cfg!(debug_assertions) { trace!("tonemap") };
-        if cfg!(debug_assertions) { trace!("Assert same adapter") };
+        let da = cfg!(debug_assertions); 
+        if da { trace!("tonemap") };
+        if da { trace!("Assert same adapter") };
         assert!(&self.luid == &Luid(core.dev.get_adapter_luid()));
 
-        if cfg!(debug_assertions) { trace!("srcdesc") };
+        if da { trace!("srcdesc") };
         let srcdesc = src.get_desc();
         let (cw, ch) = (srcdesc.Width as u32, srcdesc.Height);
 
@@ -328,13 +329,13 @@ impl Tonemapper {
         //wait_for_copy_queue(core, &res.fence, &self.tb_event);
 
         ::perf_start("tbr");
-        if cfg!(debug_assertions) { trace!("calloc.reset") };
+        if da { trace!("calloc.reset") };
         try!(res.calloc.reset());
         core.dump_info_queue_tagged("tonemapper");
-        if cfg!(debug_assertions) { trace!("clear_list.reset") };
+        if da { trace!("clear_list.reset") };
         try!(res.clear_list.reset(&res.calloc, None));
 
-        if cfg!(debug_assertions) { trace!("dstdesc") };
+        if da { trace!("dstdesc") };
         let dstdesc = dst.get_desc();
 
         let clear_list = &res.clear_list;
@@ -342,7 +343,7 @@ impl Tonemapper {
         try!(clear_list.close());
 
         let clist = &res.clist;
-        if cfg!(debug_assertions) { trace!("clist.reset") };
+        if da { trace!("clist.reset") };
         try!(clist.reset(&res.calloc, Some(&self.total_cpso)));
         // Total brightness
         clist.set_descriptor_heaps(&[res.total_dheap.get()]);
@@ -356,7 +357,7 @@ impl Tonemapper {
         ]);
 
         // UAV for CPU handle MUST be in shader inaccessible descriptor heap
-        if cfg!(debug_assertions) { trace!("Clear unordered access view") };
+        if da { trace!("Clear unordered access view") };
         //clear_list.clear_unordered_access_view_float(res.total_cuav_dheap.gpu_handle(0), res.total_cuav_dheap.cpu_handle(0), &res.rw_total, &[0.,0.,0.,0.], &[]);
         clist.clear_unordered_access_view_float(res.total_cuav_dheap.gpu_handle(1), res.total_cuav_dheap.cpu_handle(1), &res.rw_buf_total, &[0.,0.,0.,0.], &[]);
         //clear_list.clear_unordered_access_view_uint(res.total_cuav_dheap.gpu_handle(1), res.total_cuav_dheap.cpu_handle(1), &res.rw_buf_total, &[0,0,0,0], &[]);
@@ -426,10 +427,10 @@ impl Tonemapper {
           *ResourceBarrier::transition(&res.rw_buf_total,
             D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON),
         ]);
-        if cfg!(debug_assertions) { trace!("clist.close") };
+        if da { trace!("clist.close") };
         try!(clist.close());
         core.dump_info_queue_tagged("Before execute total brightness");
-        if cfg!(debug_assertions) { trace!("Execute total brightness") };
+        if da { trace!("Execute total brightness") };
         core.compute_queue.execute_command_lists(&[clist]);
         core.dump_info_queue_tagged("After execute total brightness");
 
@@ -537,7 +538,7 @@ impl Tonemapper {
           *ResourceBarrier::transition(&res.im_tex, 
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
         ]);
-        if cfg!(debug_assertions) { trace!("Close compute list") };
+        if da { trace!("Close compute list") };
         try!(clist.close().map_err(|hr| {
             core.dump_info_queue_tagged("tonemap2");
             hr
@@ -551,7 +552,7 @@ impl Tonemapper {
         
 
         // Swapchain back buffers are special. Only graphics queue associated with swapchain can write them.
-        if cfg!(debug_assertions) { trace!("gralloc.reset") };
+        if da { trace!("gralloc.reset") };
         try!(res.gralloc.reset());
         core.dump_info_queue_tagged("tonemap3");
         try!(res.grlist.reset(&res.gralloc, None));
@@ -582,7 +583,7 @@ impl Tonemapper {
                                                                D3D12_RESOURCE_STATE_COPY_DEST,
                                                                D3D12_RESOURCE_STATE_COMMON)]);
 
-        if cfg!(debug_assertions) { trace!("Close graphics list") };
+        if da { trace!("Close graphics list") };
         try!(grlist.close().map_err(|hr| {
             core.dump_info_queue_tagged("tonemap4");
             hr
@@ -593,8 +594,8 @@ impl Tonemapper {
 //        let fence_val = core.next_fence_value();
 //        try!(t_fence.signal(&core.graphics_queue, fence_val));
 
-        if cfg!(debug_assertions) { trace!("dump_info_queue") };
-        core.dump_info_queue_tagged("tonamep5");
+        if da { trace!("dump_info_queue") };
+        core.dump_info_queue_tagged("tonemap5");
 
         Ok(avg_brightness)
     }
