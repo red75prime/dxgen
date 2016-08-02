@@ -34,10 +34,10 @@ ncollide = "0.9"
 nalgebra = "0.8"
 
 [dependencies.image]
-git = "https://github.com/red75prime/image/"
+git = "https://github.com/PistonDevelopers/image/"
 default-features = false
 features = ["hdr"]
-branch = "hdr_pr"
+branch = "master"
 
 [dependencies.winapi]
 git = "https://github.com/red75prime/winapi-rs/"

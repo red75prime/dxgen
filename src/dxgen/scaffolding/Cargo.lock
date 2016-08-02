@@ -11,7 +11,7 @@ dependencies = [
  "dxguid-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "dxsafe 0.3.2 (git+https://github.com/red75prime/rusty-com-port/)",
  "env_logger 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "image 0.10.0 (git+https://github.com/red75prime/image/?branch=hdr_pr)",
+ "image 0.10.1 (git+https://github.com/PistonDevelopers/image/)",
  "itertools 0.4.15 (registry+https://github.com/rust-lang/crates.io-index)",
  "kernel32-sys 0.2.2 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "lazy_static 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -133,8 +133,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "image"
-version = "0.10.0"
-source = "git+https://github.com/red75prime/image/?branch=hdr_pr#8d21a164f52a18e924acec94264f92ca1e13dc92"
+version = "0.10.1"
+source = "git+https://github.com/PistonDevelopers/image/#0e133ed6b6c10bd40c5309cc81db363c905bf702"
 dependencies = [
  "byteorder 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum_primitive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
