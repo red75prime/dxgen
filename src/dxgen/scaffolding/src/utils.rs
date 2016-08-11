@@ -344,7 +344,7 @@ pub mod d2d {
     }
 
     pub fn color3(r: f32, g: f32, b: f32) -> D3DCOLORVALUE {
-    D3DCOLORVALUE { r: r, g: g, b: b, a: 1.0 }
+        D3DCOLORVALUE { r: r, g: g, b: b, a: 1.0 }
     }    
 }
 
@@ -353,8 +353,6 @@ pub mod d2d {
 // Let's make sure it is the same value as in ```with_capacity``` 
 pub unsafe fn uninitialized_vec<T: Sized>(len : usize) -> Vec<T> {
     let mut ret = Vec::with_capacity(len);
-    unsafe {
-        ret.set_len(len);
-    }
+    ret.set_len(len); // unsafe part
     ret
 }
