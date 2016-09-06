@@ -30,8 +30,8 @@ itertools = "0.4.6"
 #d2d1-sys = "0.0"
 #dwrite-sys = "0.2"
 openal-rs = { version = "0.1", optional = true }
-ncollide = "0.9"
-nalgebra = "0.8"
+ncollide = "0.10"
+nalgebra = "0.9"
 
 [dependencies.image]
 git = "https://github.com/PistonDevelopers/image/"
