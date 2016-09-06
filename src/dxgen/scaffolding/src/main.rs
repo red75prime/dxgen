@@ -334,31 +334,15 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
 
               let step=if shdown {1.0} else if ctdown {0.01} else {0.1};
 
-              if wdown {
-              camera.go(step, 0., 0.);
-              };
-              if sdown {
-              camera.go(-step, 0., 0.);
-              };
-              if adown {
-              camera.go(0., -step, 0.); 
-              };
-              if ddown {
-              camera.go(0., step, 0.);
-              };
-              if rdown {
-              camera.go(0., 0., step); 
-              };
-              if fdown {
-              camera.go(0., 0.0, -step);
-              };
+              if wdown { camera.go(step , 0.   , 0.   ); };
+              if sdown { camera.go(-step, 0.   , 0.   ); };
+              if adown { camera.go(0.   , -step, 0.   ); };
+              if ddown { camera.go(0.   , step , 0.   ); };
+              if rdown { camera.go(0.   , 0.   , step ); };
+              if fdown { camera.go(0.   , 0.   , -step); };
               // Process Q and E keys. They control camera's roll
-              if qdown {
-              camera.rotz(-step);
-              };
-              if edown {
-              camera.rotz(step);
-              };
+              if qdown { camera.rotz(-step); };
+              if edown { camera.rotz(step);  };
             }
             // For this simple program I don't separate update and render steps.
             // State change and rendering is done inside on_render.
