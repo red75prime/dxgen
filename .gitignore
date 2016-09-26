@@ -10,6 +10,7 @@
 
 [Dd]ebug/
 [Rr]elease/
+incremental_dir/
 x64/
 build/
 test/
