@@ -1,10 +1,11 @@
-use winapi::*;
-use dxsafe::*;
 use core::DXCore;
 use create_device as create;
-use std::ptr;
+use dxsafe::*;
 use dxsafe::structwrappers::*;
+use std::panic;
+use std::ptr;
 use utils::d2d::*;
+use winapi::*;
 
 pub struct DrawText {
     _dev11: D3D11Device,
@@ -57,7 +58,7 @@ pub struct DrawTextResources {
     tbrush: D2D1SolidColorBrush,
     bbrush: D2D1SolidColorBrush,
     tformat: DWriteTextFormat,
-    
+    render_trace: bool,
 }
 
 impl Drop for DrawTextResources {
@@ -67,7 +68,7 @@ impl Drop for DrawTextResources {
 }
 
 impl DrawTextResources {
-    pub fn new(core: &DXCore, dt: &DrawText, rt: &D3D12Resource, _format: DXGI_FORMAT) -> HResult<DrawTextResources> {
+    pub fn new(core: &DXCore, dt: &DrawText, rt: &D3D12Resource, _format: DXGI_FORMAT, render_trace: bool) -> HResult<DrawTextResources> {
         let d3d11_res_flags = D3D11_RESOURCE_FLAGS {
             BindFlags: D3D11_BIND_RENDER_TARGET.0,
             MiscFlags: 0,
@@ -118,11 +119,12 @@ impl DrawTextResources {
             tbrush: tbrush,
             bbrush: bbrush,
             tformat: tformat,
+            render_trace: render_trace,
         })
     }
     
     pub fn render(&self, core: &DXCore, dt: &DrawText, rt: &D3D12Resource, fps: f32) -> HResult<()> {
-        let da = cfg!(debug_assertions);
+        let da = cfg!(debug_assertions) || self.render_trace;
         if da { trace!("DrawTextResources.render"); }
         core.dump_info_queue_tagged("DrawText. Before calloc.reset()");
         if da { trace!("calloc.reset()"); }

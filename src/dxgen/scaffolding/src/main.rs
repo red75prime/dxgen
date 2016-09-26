@@ -84,6 +84,7 @@ fn main() {
         concurrent_state_update: true,
         debug_layer: cfg!(debug_assertions), 
         rt_format: DXGI_FORMAT_R16G16B16A16_FLOAT,
+        render_trace: false,
     };
   let mut adapters_to_test = vec![];
   let mut adapters_info = false;
@@ -101,6 +102,8 @@ fn main() {
         parms.debug_layer = true;
     } else if arg == "--nodebug" {
         parms.debug_layer = false;
+    } else if arg == "--trace" {
+        parms.render_trace = true;
     } else if arg.starts_with("-o") {
       // Command line parameter -o<N> sets number of objects to draw
       // Note, that 2 in arg[2..] is a number of bytes, not characters. 

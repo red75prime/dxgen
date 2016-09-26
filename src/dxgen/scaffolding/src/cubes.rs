@@ -88,6 +88,7 @@ pub struct CubeParms {
     pub concurrent_state_update: bool,
     pub debug_layer: bool,
     pub rt_format: DXGI_FORMAT,
+    pub render_trace: bool,
 }
 
 static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.02, 1.0];
@@ -367,6 +368,7 @@ impl FrameResources {
         trace!("Create glist");
         let glist: D3D12GraphicsCommandList =
             try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &calloc, None));
+        glist.set_name("Cubes graphics commang list".into());
         try!(glist.close());
         trace!("Create fence");
         let fence = Fence::new(try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE)));
@@ -481,7 +483,7 @@ impl FrameResources {
             left: 0,
             top: 0,
         };
-        let dtr = try!(DrawTextResources::new(core, cr.draw_text.as_ref().unwrap(), rt, format));
+        let dtr = try!(DrawTextResources::new(core, cr.draw_text.as_ref().unwrap(), rt, format, parameters.render_trace));
 
         trace!("Create FrameResources done");
         Ok(FrameResources {
@@ -512,6 +514,8 @@ impl FrameResources {
     fn render(&mut self, core: &DXCore, rt: &D3D12Resource, _rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, 
                 cr: &mut CommonResources, st: &State, camera: &Camera, pause: bool, fps: f32)
                 -> HResult<()> {
+        let da = cfg!(debug_assertions);
+        if da {trace!("render start");}
         ::perf_wait_start();
         try!(self.fence.wait_for_gpu());
         ::perf_wait_end();
@@ -997,7 +1001,7 @@ pub fn on_init(wnd: &Window,
         frame_resources.push(try!(FrameResources::new(&core, &common_resources, w, h, swap_chain.render_target(i), DXGI_FORMAT_R8G8B8A8_UNORM, parameters).dump(&core)));
     };
 
-
+    trace!("pack AppData");
     // Pack all created objects into AppData
     let mut ret = AppData {
         core: core,
