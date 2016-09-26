@@ -86,7 +86,7 @@ impl Downsampler {
                                                              &tex_desc,
                                                              D3D12_RESOURCE_STATE_COMMON,
                                                              None));
-        im_tex.set_name("generate_mips intermediate texture".into());
+        try!(im_tex.set_name("generate_mips intermediate texture"));
 
         trace!("uav_desc");
         let uav_desc = uav_tex2d_desc(rdesc.Format, 0, 0);

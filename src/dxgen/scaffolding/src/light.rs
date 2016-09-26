@@ -97,7 +97,7 @@ impl LightSourceResources {
                                   &resource_desc_buffer(buf_size as u64),
                                   D3D12_RESOURCE_STATE_GENERIC_READ, // Must be GENERIC_READ for upload heap
                                   None));
-        try!(crd_buffer.set_name("Light source coordinates buffer".into()));
+        try!(crd_buffer.set_name("Light source coordinates buffer"));
         try!(utils::upload_into_buffer(&crd_buffer, &crd[..]));
 
         let buf_size = ::std::mem::size_of::<[f32;3]>() * nrm.len();
@@ -108,7 +108,7 @@ impl LightSourceResources {
                                   &resource_desc_buffer(buf_size as u64),
                                   D3D12_RESOURCE_STATE_GENERIC_READ, // Must be GENERIC_READ for upload heap
                                   None));
-        try!(nrm_buffer.set_name("Light source normals buffer".into()));
+        try!(nrm_buffer.set_name("Light source normals buffer"));
         try!(utils::upload_into_buffer(&nrm_buffer, &nrm[..]));
         
         let idx_cnt = idx.len();
@@ -120,7 +120,7 @@ impl LightSourceResources {
                                   &resource_desc_buffer(buf_size as u64),
                                   D3D12_RESOURCE_STATE_GENERIC_READ, // Must be GENERIC_READ for upload heap
                                   None));
-        try!(idx_buffer.set_name("Light source index buffer".into()));
+        try!(idx_buffer.set_name("Light source index buffer"));
         try!(utils::upload_into_buffer(&idx_buffer, &idx[..]));
 
         Ok(LightSourceResources {

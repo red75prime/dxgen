@@ -4,6 +4,9 @@ version = "0.3.0"
 authors = ["red75prime <red75prim@gmail.com>"]
 build = "build.rs"
 
+#[profile.release]
+#debug = true
+
 [features]
 default = []
 openal = ["openal-rs"]

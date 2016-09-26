@@ -152,7 +152,9 @@ pub fn create_core(dxgi_factory: &DXGIFactory4, adapter: Option<&DXGIAdapter1>,
 
     let info_queue = if enable_debug {
         trace!("get D3D12InfoQueue");
-        Some(try!(dev.query_interface::<D3D12InfoQueue>()))
+        let iq = try!(dev.query_interface::<D3D12InfoQueue>());
+        try!(iq.set_break_on_severity(D3D12_MESSAGE_SEVERITY_CORRUPTION, 0));
+        Some(iq)
     } else {
         None
     };
@@ -167,16 +169,16 @@ pub fn create_core(dxgi_factory: &DXGIFactory4, adapter: Option<&DXGIAdapter1>,
     };
 
     let gr_q = try!(dev.create_command_queue(&gqd));
-    try!(gr_q.set_name("Graphics command queue".into()));
+    try!(gr_q.set_name("Graphics command queue"));
 
     let cqd = D3D12_COMMAND_QUEUE_DESC { Type: D3D12_COMMAND_LIST_TYPE_COMPUTE, ..gqd };
     let cm_q = try!(dev.create_command_queue(&cqd));
-    try!(cm_q.set_name("Compute command queue".into()));
+    try!(cm_q.set_name("Compute command queue"));
 
     let pqd = D3D12_COMMAND_QUEUE_DESC { Type: D3D12_COMMAND_LIST_TYPE_COPY, ..gqd };
 
     let cp_q = try!(dev.create_command_queue(&pqd));
-    try!(cp_q.set_name("Copy command queue".into()));
+    try!(cp_q.set_name("Copy command queue"));
 
     Ok(DXCore {
         dev: dev,

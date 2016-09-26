@@ -48,14 +48,14 @@ impl TonemapperResources {
           &resource_desc_tex2d_nomip(temp_w as u64, temp_h as u32, 
               srcformat, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS), 
           D3D12_RESOURCE_STATE_COMMON, None));
-        try!(h_tex.set_name("h_tex".into()));
+        try!(h_tex.set_name("h_tex"));
         trace!("Create texture for resulting gaussian kernel convolution storage");
         let hv_tex = try!(dev.create_committed_resource(
           &heap_properties_default(), D3D12_HEAP_FLAG_NONE, 
           &resource_desc_tex2d_nomip(temp_w as u64, temp_h as u32, 
               srcformat, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS), 
           D3D12_RESOURCE_STATE_COMMON, None));
-        try!(hv_tex.set_name("hv_tex".into()));
+        try!(hv_tex.set_name("hv_tex"));
 
         trace!("Create buffer for brightness values");
         let rw_total_len = ((w-1)/TOTAL_CHUNK_SIZE+1)*((h-1)/TOTAL_CHUNK_SIZE+1);
@@ -63,21 +63,21 @@ impl TonemapperResources {
           &heap_properties_default(), D3D12_HEAP_FLAG_NONE, 
           &resource_desc_buffer_uav((rw_total_len*4) as u64), 
           D3D12_RESOURCE_STATE_COMMON, None));
-        try!(rw_total.set_name("rw_total".into()));
+        try!(rw_total.set_name("rw_total"));
 
         trace!("Create buffer for brightness value");
         let rw_buf_total = try!(dev.create_committed_resource(
           &heap_properties_default(), D3D12_HEAP_FLAG_NONE, 
           &resource_desc_buffer_uav(16), 
           D3D12_RESOURCE_STATE_COMMON, None));
-        try!(rw_buf_total.set_name("rw_buf_total".into()));
+        try!(rw_buf_total.set_name("rw_buf_total"));
 
         trace!("Create read-back buffer for total brightness values");
         let rb_total = try!(dev.create_committed_resource(
           &heap_properties_readback(), D3D12_HEAP_FLAG_NONE, 
           &resource_desc_const_buffer(4*rw_total_len as u64), 
           D3D12_RESOURCE_STATE_COPY_DEST, None));
-        try!(rb_total.set_name("rb_total".into()));
+        try!(rb_total.set_name("rb_total"));
         debug!("rb_total GPU VA:0x{:x}", rb_total.get_gpu_virtual_address());
 
         trace!("Create read-back buffer for total brightness value");
@@ -85,7 +85,7 @@ impl TonemapperResources {
           &heap_properties_readback(), D3D12_HEAP_FLAG_NONE, 
           &resource_desc_const_buffer(16),
           D3D12_RESOURCE_STATE_COPY_DEST, None));
-        try!(rb_one_total.set_name("rb_one_total".into()));
+        try!(rb_one_total.set_name("rb_one_total"));
 
         let tex_desc = resource_desc_tex2d_nomip(w as u64,
                                                  h as u32,
@@ -98,7 +98,7 @@ impl TonemapperResources {
                                                         &tex_desc,
                                                         D3D12_RESOURCE_STATE_COMMON,
                                                         None));
-        try!(im_tex.set_name("Intermediate texture for copying into back-buffer".into()));
+        try!(im_tex.set_name("Intermediate texture for copying into back-buffer"));
         trace!("Create fence");
         let fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_SHARED));
         trace!("Create dheap");
@@ -257,9 +257,9 @@ impl Tonemapper {
                 ("RSDH",        "rootsig_1_0", &mut hpass_rs_bc),
                 ("RSDV",        "rootsig_1_0", &mut vpass_rs_bc),
                 ("RSD",         "rootsig_1_0", &mut final_rs_bc),
-                ("CSHorizontal","cs_5_1", &mut hpass_shader_bc),
-                ("CSVertical",  "cs_5_1", &mut vpass_shader_bc),
-                ("CSMain",      "cs_5_1", &mut final_shader_bc),
+                ("CSHorizontal","cs_5_0", &mut hpass_shader_bc),
+                ("CSVertical",  "cs_5_0", &mut vpass_shader_bc),
+                ("CSMain",      "cs_5_0", &mut final_shader_bc),
             ], D3DCOMPILE_OPTIMIZATION_LEVEL3).unwrap();
         trace!("Done");
         trace!("Create root signatures...");

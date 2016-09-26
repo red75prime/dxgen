@@ -107,8 +107,8 @@ impl DrawTextResources {
         
         let tbrush = try!(dt.devctxd2d.create_solid_color_brush(&color3(0.9, 0.9, 1.), None));
         let bbrush = try!(dt.devctxd2d.create_solid_color_brush(&color3(0.0, 0.0, 0.), None));
-        let tformat = try!(dt.factorydw.create_text_format("Lucida Sans Unicode".into(), None, DWRITE_FONT_WEIGHT_BOLD,
-                                DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 20., "en-GB".into()));
+        let tformat = try!(dt.factorydw.create_text_format("Lucida Sans Unicode", None, DWRITE_FONT_WEIGHT_BOLD,
+                                DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, 20., "en-GB"));
         
         Ok(DrawTextResources {
             d11context: dt.devcontext11.clone(),

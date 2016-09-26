@@ -132,7 +132,7 @@ pub fn upload_into_texture<T: Sized+Clone>(core: &DXCore,
                                                      &resource_desc_buffer(total_size_bytes),
                                                      D3D12_RESOURCE_STATE_GENERIC_READ,
                                                      None));
-    res_buf.set_name("Temporary texture buffer".into()).unwrap();
+    res_buf.set_name("Temporary texture buffer").unwrap();
 
     let mut temp_buf = unsafe {
         uninitialized_vec(total_len)

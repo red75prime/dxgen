@@ -368,7 +368,7 @@ impl FrameResources {
         trace!("Create glist");
         let glist: D3D12GraphicsCommandList =
             try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &calloc, None));
-        glist.set_name("Cubes graphics commang list".into());
+        try!(glist.set_name("Cubes graphics commang list"));
         try!(glist.close());
         trace!("Create fence");
         let fence = Fence::new(try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE)));
@@ -384,7 +384,7 @@ impl FrameResources {
                                                           &resource_desc_buffer(i_buffer_size as u64),
                                                           D3D12_RESOURCE_STATE_COMMON,
                                                           None));
-        try!(ir_buffer.set_name("Instance data buffer".into()));
+        try!(ir_buffer.set_name("Instance data buffer"));
 
         trace!("Create i_buffer");
         let i_buffer = try!(dev.create_committed_resource(&heap_properties_upload(),
@@ -392,7 +392,7 @@ impl FrameResources {
                                                           &resource_desc_buffer(i_buffer_size as u64),
                                                           D3D12_RESOURCE_STATE_GENERIC_READ,
                                                           None));
-        try!(i_buffer.set_name("Instance data upload buffer".into()));
+        try!(i_buffer.set_name("Instance data upload buffer"));
 
 
 
@@ -414,7 +414,7 @@ impl FrameResources {
                                                           &resource_desc_const_buffer(c_buffer_size as u64),
                                                           D3D12_RESOURCE_STATE_GENERIC_READ,
                                                           None));
-        try!(c_buffer.set_name("Constants buffer".into()));
+        try!(c_buffer.set_name("Constants buffer"));
 
         trace!("Map c_buffer");
         let cpu_c_ptr = unsafe {
