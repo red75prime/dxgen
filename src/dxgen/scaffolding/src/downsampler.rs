@@ -86,6 +86,7 @@ impl Downsampler {
                                                              &tex_desc,
                                                              D3D12_RESOURCE_STATE_COMMON,
                                                              None));
+        im_tex.set_name("generate_mips intermediate texture".into());
 
         trace!("uav_desc");
         let uav_desc = uav_tex2d_desc(rdesc.Format, 0, 0);
@@ -135,10 +136,10 @@ impl Downsampler {
 
             trace!("clist.resource_barrier");
             clist.resource_barrier(&[
-              // Transition source mip-map slice
+              // Transition source mip-map slice (resource state promotion doesn't apply. texture isn't marked as Simultaneous-Access)
               *ResourceBarrier::transition_subresource(&tex, i,
                 D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
-              // Transition intermediate texture 
+              // Transition intermediate texture (resource state promotion doesn't apply. texture isn't marked as Simultaneous-Access)
               *ResourceBarrier::transition(&im_tex, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
             ]);
             trace!("dispatch");

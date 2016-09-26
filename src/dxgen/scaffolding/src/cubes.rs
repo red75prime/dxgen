@@ -380,7 +380,7 @@ impl FrameResources {
         let ir_buffer = try!(dev.create_committed_resource(&heap_properties_default(),
                                                           D3D12_HEAP_FLAG_NONE,
                                                           &resource_desc_buffer(i_buffer_size as u64),
-                                                          D3D12_RESOURCE_STATE_GENERIC_READ,
+                                                          D3D12_RESOURCE_STATE_COMMON,
                                                           None));
         try!(ir_buffer.set_name("Instance data buffer".into()));
 
@@ -562,15 +562,19 @@ impl FrameResources {
         let glist = &self.glist;
         glist.resource_barrier(
             &[*ResourceBarrier::transition(&self.hdr_render_target,
-               D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET),
-              *ResourceBarrier::transition(&self.ir_buffer,
-               D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST)]);
-	// Copy instance data buffer i_buffer located in UPLOAD heap 
-	// into instance data buffer ir_buffer located in DEFAULT heap
+                D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET),]);
+        //Resource state promotion makes this unnecessary
+        //      *ResourceBarrier::transition(&self.ir_buffer,
+        //       D3D12_RESOURCE_STATE_GENERIC_READ, D3D12_RESOURCE_STATE_COPY_DEST)]);
+
+	    // Copy instance data buffer i_buffer located in UPLOAD heap 
+	    // into instance data buffer ir_buffer located in DEFAULT heap
         glist.copy_resource(&self.ir_buffer, &self.i_buffer);
-        glist.resource_barrier(
-            &[*ResourceBarrier::transition(&self.ir_buffer,
-               D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ)]);
+
+        //Resource state promotion makes this unnecessary
+        //glist.resource_barrier(
+        //    &[*ResourceBarrier::transition(&self.ir_buffer,
+        //       D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ)]);
 
         // ----------------  SHADOW PASS START ------------------------------------
         glist.set_graphics_root_signature(&cr.plshadow.root_sig);
@@ -977,7 +981,8 @@ pub fn on_init(wnd: &Window,
     let glist: D3D12GraphicsCommandList =
         try!(core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_DIRECT, &calloc, None));
     trace!("resource_barrier");
-    glist.resource_barrier(&[*ResourceBarrier::transition(tex!(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
+    //  This line is unnecessary, resource state promotion takes care of changing state to D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+    //glist.resource_barrier(&[*ResourceBarrier::transition(tex!(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
     trace!("Command list Close");
     try!(glist.close().dump(&core));

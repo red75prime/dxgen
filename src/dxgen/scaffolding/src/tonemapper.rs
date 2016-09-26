@@ -349,12 +349,13 @@ impl Tonemapper {
         clist.set_descriptor_heaps(&[res.total_dheap.get()]);
         //clist.set_pipeline_state(&self.total_cpso);
 
-        clist.resource_barrier(&[
-          *ResourceBarrier::transition(&res.rw_total,
-            D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
-          *ResourceBarrier::transition(&res.rw_buf_total,
-            D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
-        ]);
+        // State transition for buffers is unnecessary thanks to resource state promotion
+        // clist.resource_barrier(&[
+        //   *ResourceBarrier::transition(&res.rw_total,
+        //     D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
+        //   *ResourceBarrier::transition(&res.rw_buf_total,
+        //     D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
+        // ]);
 
         // UAV for CPU handle MUST be in shader inaccessible descriptor heap
         if da { trace!("Clear unordered access view") };
@@ -421,12 +422,14 @@ impl Tonemapper {
         // copy_resource cannot be used here. buffers have different sizes.
         clist.copy_buffer_region(&res.rb_one_total, 0, &res.rw_buf_total, 0, 4);
         //clist.copy_buffer_region(&res.rb_total, 0, &res.rw_total, 0, 4);
-        clist.resource_barrier(&[
-          *ResourceBarrier::transition(&res.rw_total,
-            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
-          *ResourceBarrier::transition(&res.rw_buf_total,
-            D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON),
-        ]);
+
+        // State transition for buffers is unnecessary thanks to resource state promotion
+        // clist.resource_barrier(&[
+        //   *ResourceBarrier::transition(&res.rw_total,
+        //     D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
+        //   *ResourceBarrier::transition(&res.rw_buf_total,
+        //     D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON),
+        // ]);
         if da { trace!("clist.close") };
         try!(clist.close());
         core.dump_info_queue_tagged("Before execute total brightness");
