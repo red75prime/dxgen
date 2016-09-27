@@ -634,8 +634,8 @@ let d2d1 =
     ("DrawTextLayout",[
       ("This",AThis);
       ("origin",ANone);
-      ("textLayout",ANone);
-      ("defaultForegroundBrush",ANone);
+      ("textLayout",InComPtr);
+      ("defaultForegroundBrush",InComPtr);
       ("options",ANone);
     ],MANone);
     ("DrawGlyphRun",[

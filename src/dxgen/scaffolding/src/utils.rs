@@ -345,7 +345,17 @@ pub mod d2d {
 
     pub fn color3(r: f32, g: f32, b: f32) -> D3DCOLORVALUE {
         D3DCOLORVALUE { r: r, g: g, b: b, a: 1.0 }
-    }    
+    }
+
+    pub fn point2f(x: f32, y: f32) -> D2D1_POINT_2F {
+        D2D1_POINT_2F {x: x, y: y,}
+    }
+
+    pub fn text_range(start: u32, len: u32) -> DWRITE_TEXT_RANGE {
+        DWRITE_TEXT_RANGE {
+            startPosition: start, length: len,
+        }
+    }     
 }
 
 // Sometimes I neen uninitialized vector. 

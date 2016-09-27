@@ -4,6 +4,7 @@ use dxsafe::*;
 use dxsafe::structwrappers::*;
 use std::panic;
 use std::ptr;
+use utils;
 use utils::d2d::*;
 use winapi::*;
 
@@ -147,13 +148,30 @@ impl DrawTextResources {
         if da { trace!("begin_draw"); }
         dt.devctxd2d.begin_draw();
         
-        let text = format!("FPS: {}\nDWrite and D3D12\nIt works at last\n你好，世界", fps);
-        let hello_vec = ::utils::str_to_vec_u16(&text);
+        let text = format!("FPS: {}\nDWrite and D3D12\n早人间", fps);
+        let hello_vec = utils::str_to_vec_u16(&text);
+
+        if da { trace!("create_text_layout"); }
+        let tla = try!(dt.factorydw.create_text_layout(&hello_vec[..], &self.tformat, 265., 95.));
+        try!(tla.set_font_size(40., text_range(0, 4)));
+
+        let gradient_stops = [D2D1_GRADIENT_STOP {color: color3(0., 1., 0.), position: 0.},
+                             D2D1_GRADIENT_STOP {color: color3(0., 0., 1.), position: 1.},];
+        let gsc = try!(dt.devctxd2d.create_gradient_stop_collection(&gradient_stops[..], D2D1_GAMMA_2_2,D2D1_EXTEND_MODE_CLAMP));
+        let gbrush = try!(dt.devctxd2d.create_linear_gradient_brush(
+                        &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES{startPoint: point2f(0., 5.), endPoint: point2f(0., 45.)}, 
+                        None, &gsc));
+
+
         if da { trace!("draw_text"); }
-        for &(dx, dy) in &[(-1., 0.),(1., 0.),(0., -1.),(0., 1.)] {
-            dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35.+dx, 5.+dy, 300.+dx, 100.+dy), &self.bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
+        let d = 1.5;
+        for &(dx, dy) in &[(-d, 0.),(d, 0.),(0., -d),(0., d)] {
+            dt.devctxd2d.draw_text_layout(point2f(35.+dx, 5.+dy), &tla, &self.bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE);
+            //dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35.+dx, 5.+dy, 300.+dx, 100.+dy), &self.bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         };
-        dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35., 5., 300., 100.), &self.tbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
+        try!(tla.set_drawing_effect(&gbrush, text_range(0, 4)));
+        dt.devctxd2d.draw_text_layout(point2f(35., 5.), &tla, &self.tbrush, D2D1_DRAW_TEXT_OPTIONS_NONE);
+        //dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35., 5., 300., 100.), &self.tbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         
         if da { trace!("end_draw"); }
         try!(dt.devctxd2d.end_draw(None, None));
