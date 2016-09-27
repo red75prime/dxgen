@@ -374,13 +374,12 @@ let d2d1 =
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID2D1ImageVtbl",IAAutogen(Set.ofList []), "ID2D1ResourceVtbl", [
-  ]);
+  ("ID2D1ImageVtbl",IAAutogen(Set.ofList []), "ID2D1ResourceVtbl", [  ]);
   ("ID2D1LayerVtbl",IAAutogen(Set.ofList []), "ID2D1ResourceVtbl", [
-    ("GetSize",[
-      ("This",AThis);
-      ("__ret_val",OutReturn);
-    ],MANone);
+      ("GetSize",[
+          ("This",AThis);
+          ("__ret_val",OutReturn);
+        ],MANone);
   ]);
   ("ID2D1LinearGradientBrushVtbl",IAAutogen(Set.ofList []), "ID2D1BrushVtbl", [
     ("SetStartPoint",[
@@ -1594,8 +1593,7 @@ let d2d1_2=[
       ("d2dDevice1",OutReturnComPtr);
     ],MAMangle "CreateDevice2");
   ]);
-  ("ID2D1GeometryRealizationVtbl",IAManual, "ID2D1ResourceVtbl", [
-  ]);
+  ("ID2D1GeometryRealizationVtbl",IAManual, "ID2D1ResourceVtbl", [ ]);
   ]
 
 let d2d1_3 = [
@@ -1830,8 +1828,7 @@ let d2d1_3 = [
       ("bounds",ANone);
     ],MANone);
   ]);
-  ("ID2D1LookupTable3DVtbl",IAManual, "ID2D1ResourceVtbl", [
-  ]);
+  ("ID2D1LookupTable3DVtbl",IAManual, "ID2D1ResourceVtbl", [  ]);
   ("ID2D1TransformedImageSourceVtbl",IAManual, "ID2D1ImageVtbl", [
     ("GetSource",[
       ("This",AThis);

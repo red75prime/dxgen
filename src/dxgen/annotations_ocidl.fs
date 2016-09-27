@@ -119,10 +119,8 @@ let ocidl=[
       ("ppEnum",ANone);
     ],MANone);
   ]);
-  ("IFontDispVtbl",IAManual, "IDispatchVtbl", [
-  ]);
-  ("IFontEventsDispVtbl",IAManual, "IDispatchVtbl", [
-  ]);
+  ("IFontDispVtbl",IAManual, "IDispatchVtbl", [  ]);
+  ("IFontEventsDispVtbl",IAManual, "IDispatchVtbl", [  ]);
   ("IFontVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("get_Name",[
       ("This",AThis);
@@ -631,8 +629,7 @@ let ocidl=[
       ("pDwAttr",ANone);
     ],MANone);
   ]);
-  ("IPictureDispVtbl",IAManual, "IDispatchVtbl", [
-  ]);
+  ("IPictureDispVtbl",IAManual, "IDispatchVtbl", [  ]);
   ("IPictureVtbl",IAManual, "IUnknownVtbl", [
     ("get_Handle",[
       ("This",AThis);

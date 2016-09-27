@@ -548,7 +548,9 @@ let tokenizeFS cursor=
 let visitChildrenFS<'t> (cursor:Cursor) (visitor: Cursor -> Cursor -> 't -> ChildVisitResult) (data:'t) =
   let handle=GCHandle.Alloc (box data)
   try
-    let vis1=fun cursor parent param -> visitor cursor parent (unbox<'t>((GCHandle.FromIntPtr param).Target))
+    let vis1 = fun cursor parent param -> 
+                let handle = GCHandle.FromIntPtr param
+                visitor cursor parent (unbox(handle.Target))
     visitChildren(cursor,new CursorVisitor(vis1),GCHandle.ToIntPtr handle)
   finally
     handle.Free()

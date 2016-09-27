@@ -81,7 +81,7 @@ let dwrite = [
       ("This",AThis);
       ("fontFaceType",ANone);
       ("numberOfFiles",ANone);
-      ("fontFiles",InComPtrArrayOfSize "numberOfFiles"); // TODO: check if it is array
+      ("fontFiles",InComPtrArrayOfSize "numberOfFiles"); // It is array indeed. MSDN shows wrong type for this parameter
       ("faceIndex",ANone);
       ("fontFaceSimulationFlags",ANone);
       ("fontFace",OutReturnComPtr);
@@ -133,7 +133,7 @@ let dwrite = [
     ],MANone);
     ("CreateTextLayout",[
       ("This",AThis);
-      ("string",InArrayOfSize "stringLength"); // TODO: String conversion?
+      ("string", InArrayOfSize "stringLength"); // TODO: String conversion?
       ("stringLength",ANone);
       ("textFormat",InComPtr);
       ("maxWidth",ANone);
@@ -568,8 +568,7 @@ let dwrite = [
       ("size",ANone);
     ],MANone);
   ]);
-  ("IDWriteNumberSubstitutionVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
-  ]);
+  ("IDWriteNumberSubstitutionVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [  ]);
   ("IDWritePixelSnappingVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("IsPixelSnappingDisabled",[
       ("This",AThis);

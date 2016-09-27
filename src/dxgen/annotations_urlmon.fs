@@ -623,8 +623,7 @@ let urlmon=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("IInternetVtbl",IAManual, "IUnknownVtbl", [
-  ]);
+  ("IInternetVtbl",IAManual, "IUnknownVtbl", [  ]);
   ("IInternetZoneManagerEx2Vtbl",IAManual, "IInternetZoneManagerExVtbl", [
     ("GetZoneAttributesEx",[
       ("This",AThis);

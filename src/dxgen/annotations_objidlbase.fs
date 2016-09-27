@@ -98,8 +98,7 @@ let objidlbase=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("IAgileObjectVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
-  ]);
+  ("IAgileObjectVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [  ]);
   ("IAgileReferenceVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("Resolve",[
       ("This",AThis);
@@ -304,8 +303,7 @@ let objidlbase=[
       ("fLastReleaseCloses",ANone);
     ],MANone);
   ]);
-  ("IFastRundownVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
-  ]);
+  ("IFastRundownVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [  ]);
   ("IGlobalInterfaceTableVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("RegisterInterfaceInGlobal",[
       ("This",AThis);
@@ -369,8 +367,7 @@ let objidlbase=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("IMarshal2Vtbl",IAAutogen(Set.ofList []), "IMarshalVtbl", [
-  ]);
+  ("IMarshal2Vtbl",IAAutogen(Set.ofList []), "IMarshalVtbl", [  ]);
   ("IMarshalVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("GetUnmarshalClass",[
       ("This",AThis);
@@ -428,8 +425,7 @@ let objidlbase=[
       ("pMQIs",ANone);
     ],MANone);
   ]);
-  ("INoMarshalVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
-  ]);
+  ("INoMarshalVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [  ]);
   ("IPSFactoryBufferVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
     ("CreateProxy",[
       ("This",AThis);

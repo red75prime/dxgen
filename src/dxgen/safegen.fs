@@ -31,21 +31,26 @@ let emptyAnnotationsGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<stri
   apl("let d3d12annotations=[")
   let vtbls=structs |> List.ofSeq |> List.collect (fun (KeyValue(name,(ty,_))) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl)))
   for (name, (mths, bas)) in vtbls do
-    apl(sprintf "  (\"%s\",IAManual, \"%s\", [" name (if bas="" then "" else bas+"Vtbl"))
-    for (mname,args,ty) in mths |> List.choose (function |CStructElem(mname, Ptr(Function(CFuncDesc(args,ty,_))), _)-> Some(mname,args,ty)  |_ -> None) do
-      if Set.contains mname iUnknownFuncs then
-        apl(sprintf "    (\"%s\",[],MAIUnknown);" mname)
-      else
-        apl(sprintf "    (\"%s\",[" mname)
-        for (aname, ty, sPAn) in args do
-          let pa=
-            if aname="This" then
-              "AThis"
-            else
-              "ANone" 
-          apl(sprintf "      (\"%s\",%s);" aname pa)
-        apl("    ],MANone);")
-    apl(sprintf "  ]);")
+    let methods = mths |> List.choose (function |CStructElem(mname, Ptr(Function(CFuncDesc(args,ty,_))), _)-> Some(mname,args,ty)  |_ -> None)
+    let firstline = sprintf "  (\"%s\",IAManual, \"%s\", [" name (if bas="" then "" else bas+"Vtbl")
+    if List.isEmpty methods then
+        apl(firstline+" ]);")
+    else
+        apl(firstline)
+        for (mname,args,ty) in methods do
+          if Set.contains mname iUnknownFuncs then
+            apl(sprintf "    (\"%s\",[],MAIUnknown);" mname)
+          else
+            apl(sprintf "    (\"%s\",[" mname)
+            for (aname, ty, sPAn) in args do
+              let pa=
+                if aname="This" then
+                  "AThis"
+                else
+                  "ANone" 
+              apl(sprintf "      (\"%s\",%s);" aname pa)
+            apl("    ],MANone);")
+        apl(sprintf "  ]);")
   apl("  ]")
 
   apl "/*"
@@ -921,9 +926,6 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
           |_ -> addError (sprintf "%s parameter: Unexpected type %A" pname pty)
         |_ ->
           addError (sprintf "%s parameter: OutReturnKnownInterface shouldn't have references. But references are %A" pname refs)
-// -----------------------------------------------------------------------------------------------------------------------------------------
-      |InIUnknown ->
-        addError (sprintf "%s parameter: InIUnknown is not implemented" pname)
 // -----------------------------------------------------------------------------------------------------------------------------------------
       |_ -> raise <| new System.Exception("Unimplemented")
   

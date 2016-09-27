@@ -924,8 +924,6 @@ let objidl=[
       ("flags",ANone);
     ],MANone);
   ]);
-  ("tagBIND_OPTS2Vtbl",IAAutogen(Set.ofList []), "tagBIND_OPTSVtbl", [
-  ]);
-  ("tagBIND_OPTS3Vtbl",IAAutogen(Set.ofList []), "tagBIND_OPTS2Vtbl", [
-  ]);
+  ("tagBIND_OPTS2Vtbl",IAAutogen(Set.ofList []), "tagBIND_OPTSVtbl", [  ]);
+  ("tagBIND_OPTS3Vtbl",IAAutogen(Set.ofList []), "tagBIND_OPTS2Vtbl", [  ]);
   ]

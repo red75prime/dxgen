@@ -1647,7 +1647,7 @@ let d3d12annotations=
         ("SetPrivateDataInterface",[
             ("This",AThis);
             ("guid",ANone);
-            ("pData",InIUnknown);
+            ("pData", InInterface "guid");
           ],MADontImplement); // Not useful without full-blown COM-support
         ("SetName",[
             ("This",AThis);
@@ -1660,7 +1660,7 @@ let d3d12annotations=
         ("GetCachedBlob",[
           ("This",AThis);
           ("ppBlob",OutReturnComPtr); // TODO: do something with typedefs like 'typedef ID3D10Blob ID3DBlob;' E.g. type D3DBlob=D3D10Blob;
-        ],MADontImplement); // TODO: do todo above, then replace with MANone
+        ],MANone); // TODO: do todo above, then replace with MANone
       ]);
       ("ID3D12QueryHeapVtbl",IAAutogen(Set.ofList []), "ID3D12PageableVtbl",  []);
       ("ID3D12ResourceVtbl",IAAutogen(Set.ofList [IOSend;IOSync]), "ID3D12PageableVtbl",  [

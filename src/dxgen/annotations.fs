@@ -31,12 +31,6 @@ type InterfaceAnnotation=
 //      hr2ret(hr,p1)
 //    }
 
-// InIUnknown : makes function generic, transforms struct that has HasIID trait into *mut *mut IUnknownVtbl
-//    SetPrivateInterface(AThis ID3D* this, ANone REFGUID guid, InIUnknown IUnknown* pInterface) =>
-//    fn set_private_interface<T:HasIID>(&self, REFGUID guid, interface : T) -> () {
-//      (...SetPrivateData)(..., guid, interface.expose_iptr());
-//    }
-
 // InOptional : for C-type T, *T => Option<&T>
 
 // InOutOfSize s : C-type should be void*, makes a function generic on T, *mut c_void => &mut T, routes mem::size_of::<T>() to parameter s
@@ -96,7 +90,6 @@ type ParamAnnotation=
   |OutReturnInterface of string // parameter name of iid
   |OutReturnKnownInterface of string*string // parameter name of iid, interface type
   |OutReturnOfSize of string
-  |InIUnknown // TODO: delete it
   |InByteArrayOfSize of string*uint32 // name of array lenght parameter
   |InOptional
   |InComPtr
@@ -162,7 +155,6 @@ let getReturnDesc parmAnnot=
   |OutReturnComPtr -> [parmAnnot]
   |OutReturnOptionalComPtr -> [parmAnnot]
   |OutReturnOfSize _ -> [parmAnnot]
-  |InIUnknown -> []
   |InOptionalArrayOfSize _ -> []
   |InArrayOfSize _ -> []
   |InComPtrArrayOfSize _ -> []

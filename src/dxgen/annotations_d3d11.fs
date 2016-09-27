@@ -77,8 +77,7 @@ let d3d11=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D11ComputeShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [
-  ]);
+  ("ID3D11ComputeShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [  ]);
   ("ID3D11CounterVtbl",IAManual, "ID3D11AsynchronousVtbl", [
     ("GetDesc",[
       ("This",AThis);
@@ -998,18 +997,12 @@ let d3d11=[
       ("This",AThis);
     ],MANone);
   ]);
-  ("ID3D11DomainShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [
-  ]);
-  ("ID3D11GeometryShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [
-  ]);
-  ("ID3D11HullShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [
-  ]);
-  ("ID3D11InputLayoutVtbl",IAManual, "ID3D11DeviceChildVtbl", [
-  ]);
-  ("ID3D11PixelShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [
-  ]);
-  ("ID3D11PredicateVtbl",IAManual, "ID3D11QueryVtbl", [
-  ]);
+  ("ID3D11DomainShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [  ]);
+  ("ID3D11GeometryShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [  ]);
+  ("ID3D11HullShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [  ]);
+  ("ID3D11InputLayoutVtbl",IAManual, "ID3D11DeviceChildVtbl", [  ]);
+  ("ID3D11PixelShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [  ]);
+  ("ID3D11PredicateVtbl",IAManual, "ID3D11QueryVtbl", [  ]);
   ("ID3D11QueryVtbl",IAManual, "ID3D11AsynchronousVtbl", [
     ("GetDesc",[
       ("This",AThis);
@@ -1077,8 +1070,7 @@ let d3d11=[
       ("pDesc",ANone);
     ],MANone);
   ]);
-  ("ID3D11VertexShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [
-  ]);
+  ("ID3D11VertexShaderVtbl",IAManual, "ID3D11DeviceChildVtbl", [  ]);
   ("ID3D11VideoContextVtbl",IAManual, "ID3D11DeviceChildVtbl", [
     ("GetDecoderBuffer",[
       ("This",AThis);

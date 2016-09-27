@@ -628,12 +628,6 @@ impl FrameResources {
         glist.set_graphics_root_constant_buffer_view(1, self.c_buffer.get_gpu_virtual_address());
         glist.set_graphics_root_descriptor_table(2, self.srv_heap.gpu_handle(0));
         core.dump_info_queue_tagged("After set_graphics_root_descriptor_table"); 
-        //glist.set_graphics_root_constant_buffer_view(0, gpu_cbuf_ptr);
-        // When working over RDP after window resizing debug layer complains 
-        // that "Total brightness read-back" buffer from tonemapper.rs cannot 
-        // be set as constant buffer. Weird.
-        //core.dump_info_queue_tagged("After set_graphics_root_constant_buffer_view"); 
-        //glist.set_graphics_root_shader_resource_view(2, self.i_buffer.get_gpu_virtual_address());
         glist.rs_set_viewports(&[self.viewport]);
         glist.rs_set_scissor_rects(&[self.sci_rect]);
         glist.om_set_render_targets(1, &hdr_rtvh, Some(&dsvh));
