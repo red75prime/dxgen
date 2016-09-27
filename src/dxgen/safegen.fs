@@ -195,7 +195,6 @@ let deKeyword name=
   |_ -> name
 
 let toRustParmName(s:string)=
-  // TODO: process prefixes (p, pp)
   let depp=
     if s.StartsWith("pp") && s.Length>2 && System.Char.IsUpper(s.Chars(2)) then
       s.Substring(2)
@@ -414,7 +413,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
     for (pname, pannot, pty, refs) in parmsr do
       let typeOfNativeParm pname = parmsr |> List.choose (fun (name,_,ty,_) -> if name = pname then Some(ty) else None) |> List.head
 
-      let safeParmName=toRustParmName pname // TODO: Process prefixes ("p", "pp" and such)
+      let safeParmName=toRustParmName pname
       match pannot with
       |AThis ->
         if List.isEmpty refs then
@@ -1110,8 +1109,6 @@ use utils::*;
 
 let joinMaps a b =
   Map.ofSeq (Seq.concat [Map.toSeq a; Map.toSeq b])
-
-// TODO: Use hierarchy of traits to be able to express "parameter receives interfaceA or descendant interfaces"
 
 let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInterfaces noEnumConversion (types:Map<string,CTypeDesc*CodeLocation>, enums:Map<string,CTypeDesc*CodeLocation>, structs:Map<string,CTypeDesc*CodeLocation>, funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) 
                         (annotations: Annotations) =
