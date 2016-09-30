@@ -324,46 +324,49 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                   |_ -> None
                 )
           
-          // incomplete pattern matches warning is ok
-          for (fname,parms,rty)::next in fseq |> utils.seqPairwise do
-            let p1 = "    fn "+fname+"("
-            let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
-            let parts = 
-              seq {
-                  yield "&mut self"
-                  yield! parms |> Seq.tail |> Seq.map (fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty))
-              } |> utils.seqPairwise |> Seq.map (function |[p;_] -> (p+",") |[p] -> p |_ -> "")
-            let v1=p1+System.String.Join(" ",parts)+pend
-            if v1.Length > eolAfter then
-              let indent = "        "
-              let indentm1="       "
-              apl p1
-              let ll=
-                parts |> Seq.fold
-                  (fun cl p ->
-                    if cl="" then
-                      let c = indent+p
-                      if c.Length>eolAfter then
-                        apl c
-                        ""
-                      else
-                        c
-                    else
-                      let c=cl+" "+p
-                      if c.Length>maxLineLen then
-                        apl cl
-                        indent+p
-                      else if c.Length>eolAfter then
-                        apl c
-                        ""
-                      else
-                        c
-                  ) ""
-              if ll<>"" then
-                apl ll
-              apl ("    "+pend)
-            else
-              apl v1
+          // Format code according to winapi-rs rules
+          for twofield in fseq |> utils.seqPairwise do
+            match twofield with
+            |[] -> raise <| new System.Exception("unreachable")
+            |(fname,parms,rty)::next ->
+                let p1 = "    fn "+fname+"("
+                let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
+                let parts = 
+                  seq {
+                      yield "&mut self"
+                      yield! parms |> Seq.tail |> Seq.map (fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty))
+                  } |> utils.seqPairwise |> Seq.map (function |[p;_] -> (p+",") |[p] -> p |_ -> "")
+                let v1=p1+System.String.Join(" ",parts)+pend
+                if v1.Length > eolAfter then
+                  let indent = "        "
+                  let indentm1="       "
+                  apl p1
+                  let ll=
+                    parts |> Seq.fold
+                      (fun cl p ->
+                        if cl="" then
+                          let c = indent+p
+                          if c.Length>eolAfter then
+                            apl c
+                            ""
+                          else
+                            c
+                        else
+                          let c=cl+" "+p
+                          if c.Length>maxLineLen then
+                            apl cl
+                            indent+p
+                          else if c.Length>eolAfter then
+                            apl c
+                            ""
+                          else
+                            c
+                      ) ""
+                  if ll<>"" then
+                    apl ll
+                  apl ("    "+pend)
+                else
+                  apl v1
 
           apl "});"
           apl ""

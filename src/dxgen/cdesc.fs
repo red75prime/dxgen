@@ -129,8 +129,10 @@ let rec subtypes ty =
     (elems, gen)
   let subtypesFunc (CFuncDesc(plist,rety,cc))=
     let elems = rety :: (plist |> List.map (fun (_,ty,_) -> ty))
-    // incomplete pattern matches warning is ok
-    let gen (rety :: sts) = CFuncDesc(List.map2 (fun (pname, _ , pannot) ty -> (pname, ty, pannot)) plist sts,rety,cc)
+    let gen list =
+        match list with
+        |[] -> raise <| new System.Exception("Unreachable")
+        |rety :: sts -> CFuncDesc(List.map2 (fun (pname, _ , pannot) ty -> (pname, ty, pannot)) plist sts,rety,cc)
     (elems, gen)
   let unwrap sts=
     match sts with

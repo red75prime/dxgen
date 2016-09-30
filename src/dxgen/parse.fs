@@ -293,25 +293,26 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     (Struct(List.rev !fields, !bas), !itIsAClass)
   
   let parseMacro (cursor:Cursor) locInfo =
-    // incomplete pattern matches warning is ok
-    let mname :: tokens = (tokenizeFS cursor)
-    // rudimentary parsing of macro defined constants
-    // expressions aren't supported
-    let cv=
-      match tokens with
-      |"(" :: value :: ")" :: _ :: [] // last token doesn't belong to macro. libclang bug?
-      |value :: _ :: [] ->
-        tryParse value
-      |"(" :: "-" :: value :: ")" :: _ :: [] 
-      |"-" :: value :: _ :: [] ->
-        tryParse ("-" + value)
-      |_ -> None
-    match cv with
-    |Some(v,orgs) ->
-      //printfn "%A %s" v (System.String.Join(" ", tokens))
-      defines := !defines |> Map.add mname (v, orgs, locInfo)
-    |None ->
-      ()
+    match tokenizeFS cursor with
+    |[] -> raise <| new System.Exception("unreachable")
+    |mname :: tokens ->
+        // rudimentary parsing of macro defined constants
+        // expressions aren't supported
+        let cv=
+          match tokens with
+          |"(" :: value :: ")" :: _ :: [] // last token doesn't belong to macro. libclang bug?
+          |value :: _ :: [] ->
+            tryParse value
+          |"(" :: "-" :: value :: ")" :: _ :: [] 
+          |"-" :: value :: _ :: [] ->
+            tryParse ("-" + value)
+          |_ -> None
+        match cv with
+        |Some(v,orgs) ->
+          //printfn "%A %s" v (System.String.Join(" ", tokens))
+          defines := !defines |> Map.add mname (v, orgs, locInfo)
+        |None ->
+          ()
     
   // main parser callback
   let rec childVisitor cursor _ _ =
@@ -351,16 +352,17 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 
         if cursorKind=CursorKind.StructDecl then
           let structName=cursor |> getCursorDisplayNameFS
-          // Incomplete pattern matches warning is ok
-          let (Struct(ses, bas) as strct, itIsAClass) = parseStruct cursor structName
-          if itIsAClass then
-            // Transform class into struct and vtable
-            let vtblName = structName+"Vtbl"
+          match parseStruct cursor structName with
+          |(Struct(ses, bas) as strct, itIsAClass) ->
+              if itIsAClass then
+                // Transform class into struct and vtable
+                let vtblName = structName+"Vtbl"
 
-            structs := !structs |> Map.add vtblName (strct, locInfo)
-            structs := !structs |> Map.add (structName) (Struct([CStructElem("pVtbl", Ptr(StructRef vtblName), None)], ""), locInfo)
-          else
-            structs := !structs |> Map.add structName (strct, locInfo)
+                structs := !structs |> Map.add vtblName (strct, locInfo)
+                structs := !structs |> Map.add (structName) (Struct([CStructElem("pVtbl", Ptr(StructRef vtblName), None)], ""), locInfo)
+              else
+                structs := !structs |> Map.add structName (strct, locInfo)
+          |_ -> raise <| new System.Exception("unreachable")
 
         if cursorKind=CursorKind.FunctionDecl then
           let funcName = cursor |> getCursorSpellingFS
