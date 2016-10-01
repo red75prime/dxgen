@@ -392,19 +392,24 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
     for KeyValue(name,(mc,orgs,(fname,_,_,_))) in defines do
       let f=rsfilename fname
       let apl=apl f
-      match mc with
-      |MCUInt64(_) -> 
-        apl <| sprintf "pub const %s: ::UINT64 = %s;" name orgs
-      |MCInt64(_) -> 
-        apl <| sprintf "pub const %s: ::INT64 = %s;" name orgs
-      |MCUInt32(_) -> 
-        apl <| sprintf "pub const %s: ::UINT = %s;" name orgs
-      |MCInt32(_) -> 
-        apl <| sprintf "pub const %s: ::INT = %s;" name orgs
-      |MCFloat(_) -> 
-        apl <| sprintf "pub const %s: ::FLOAT = %s;" name orgs
-      |MCDouble(_) -> 
-        apl <| sprintf "pub const %s: ::DOUBLE = %s;" name orgs
+      match Map.tryFind name annotations.defines with
+      |Some(Exclude) -> ()
+      |Some(UseType(t)) ->
+        apl <| sprintf "pub const %s: %s = %s;" name t orgs
+      |None ->
+          match mc with
+          |MCUInt64(_) -> 
+            apl <| sprintf "pub const %s: ::UINT64 = %s;" name orgs
+          |MCInt64(_) -> 
+            apl <| sprintf "pub const %s: ::INT64 = %s;" name orgs
+          |MCUInt32(_) -> 
+            apl <| sprintf "pub const %s: ::UINT = %s;" name orgs
+          |MCInt32(_) -> 
+            apl <| sprintf "pub const %s: ::INT = %s;" name orgs
+          |MCFloat(_) -> 
+            apl <| sprintf "pub const %s: ::FLOAT = %s;" name orgs
+          |MCDouble(_) -> 
+            apl <| sprintf "pub const %s: ::DOUBLE = %s;" name orgs
         
 
   let createFunctions()=

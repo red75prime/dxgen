@@ -194,12 +194,17 @@ type FieldAnnotation=
   |FANone
 
 type StructAnnotation=StructFlags*((string*FieldAnnotation) list)
+
+type DefineAnnotation =
+    |Exclude
+    |UseType of string
  
 type Annotations = {
   interfaces: (string*InterfaceAnnotation*string*(string*(string*ParamAnnotation)list*MethodAnnotation)list)list
   enums: Map<string, EnumAnnotation>
   structs: Map<string, (StructFlags*(string*FieldAnnotation)list)>
   dependencies: string list
+  defines: Map<string, DefineAnnotation> 
 }
 
 let iUnknown=[

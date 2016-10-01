@@ -24,7 +24,7 @@ modules:
               - dxgi_safe
               - dxgi1_2_safe
               - dxgi1_3_safe
-      no-winapi-gen: true
+      no-winapi-gen: false
       no-enum-conversion: false
 
     - name: d3d11

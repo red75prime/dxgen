@@ -3,6 +3,12 @@ open annotations
 open cdesc  
 open custom_impls
 
+let d3d12DefineAnnotations = 
+    [
+        ("__REQUIRED_RPCNDR_H_VERSION__", Exclude);
+        ("__REQUIRED_RPCSAL_H_VERSION__", Exclude);
+    ] |> Map.ofList
+
 let wincodec = annotations_wincodec.wincodec
 
 let d3dcommon = 
