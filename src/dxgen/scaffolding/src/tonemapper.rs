@@ -183,7 +183,7 @@ impl TonemapperResources {
 
     #[allow(dead_code)]
     fn total_brightness_full(&self) -> (f32,f32,f32) {
-        let read_range = D3D12_RANGE { Begin: 0, End: 4*self.rw_total_len as u64 };
+        let read_range = D3D12_RANGE { Begin: 0, End: 4*self.rw_total_len as SIZE_T };
 
         let arr = unsafe {
             let mut ptr: *mut u8 = ptr::null_mut();
