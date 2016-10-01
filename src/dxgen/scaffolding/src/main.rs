@@ -79,11 +79,13 @@ fn main() {
   // Set default values of cubes module parameters
   let mut parms = CubeParms {
         thread_count: 2, 
-        object_count: 2_000, 
+        object_count: 2_000,
+        backbuffer_count: FRAME_COUNT, 
         speed_mult: 1.0, 
         concurrent_state_update: true,
         debug_layer: cfg!(debug_assertions), 
         rt_format: DXGI_FORMAT_R16G16B16A16_FLOAT,
+        enable_srgb: false,
         render_trace: false,
     };
   let mut adapters_to_test = vec![];
@@ -98,6 +100,8 @@ fn main() {
         parms.rt_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     } else if arg == "--seq" {
         parms.concurrent_state_update = false;
+    } else if arg == "--srgb" {
+        parms.enable_srgb = true;
     } else if arg == "-d" || arg == "--debug" {
         parms.debug_layer = true;
     } else if arg == "--nodebug" {
@@ -118,6 +122,15 @@ fn main() {
       // to use for sending workload to GPU
       if let Ok(n) = (&arg[2..]).parse::<u32>() {
         parms.thread_count = n;
+      }
+    } else if arg.starts_with("-b") {
+      // Command line parameter -b<N> sets number of back buffers
+      if let Ok(n) = (&arg[2..]).parse::<u32>() {
+        if n<2 || n>5 {
+          println!("Backbuffer count ignored, falling back to {}", parms.backbuffer_count);
+        } else {
+          parms.backbuffer_count = n;
+        }
       }
     } else if arg.starts_with("-s") {
       // Command line parameter -s<f32> sets cube speed multiplier
@@ -226,7 +239,7 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
     let mut fps = 0.0;
     // Initialization of cubes module data required to render all stuff
     let data=
-    match cubes::AppData::on_init(&wnd, &dxgi_factory, Some(&adapter), FRAME_COUNT, parms) { 
+    match cubes::AppData::on_init(&wnd, &dxgi_factory, Some(&adapter), parms) { 
         Ok(appdata) => {
             Rc::new(RefCell::new(appdata))
         },
