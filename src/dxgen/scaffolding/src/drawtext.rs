@@ -19,11 +19,12 @@ pub struct DrawText {
 }
 
 impl DrawText {
-    pub fn new(core: &DXCore) -> HResult<DrawText> {
+    pub fn new(core: &DXCore, debug: bool) -> HResult<DrawText> {
         trace!("Call d3d11on12_create_device");
+        let debug_flag = if debug {D3D11_CREATE_DEVICE_DEBUG} else {D3D11_CREATE_DEVICE_FLAG(0)};
         let (dev11, devcontext11) = try!(create::d3d11on12_create_device(
                     &core.dev, 
-                    D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_DEBUG, 
+                    D3D11_CREATE_DEVICE_BGRA_SUPPORT | debug_flag, 
                     &core.graphics_queue));
         trace!("Call dev11.query_interface::<D3D11On12Device>()");
         let dev11on12 = try!(dev11.query_interface::<D3D11On12Device>());
@@ -155,11 +156,12 @@ impl DrawTextResources {
         let tla = try!(dt.factorydw.create_text_layout(&hello_vec[..], &self.tformat, 265., 95.));
         try!(tla.set_font_size(40., text_range(0, 4)));
 
-        let gradient_stops = [D2D1_GRADIENT_STOP {color: color3(0., 1., 0.), position: 0.},
-                             D2D1_GRADIENT_STOP {color: color3(0., 0., 1.), position: 1.},];
+        let gradient_stops = [D2D1_GRADIENT_STOP {color: color3(0.2, 1., 0.2), position: 0.},
+                             D2D1_GRADIENT_STOP {color: color3(1., 0.2, 0.2), position: 0.5},
+                             D2D1_GRADIENT_STOP {color: color3(0.2, 0.2, 1.), position: 1.},];
         let gsc = try!(dt.devctxd2d.create_gradient_stop_collection(&gradient_stops[..], D2D1_GAMMA_2_2,D2D1_EXTEND_MODE_CLAMP));
         let gbrush = try!(dt.devctxd2d.create_linear_gradient_brush(
-                        &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES{startPoint: point2f(0., 5.), endPoint: point2f(0., 45.)}, 
+                        &D2D1_LINEAR_GRADIENT_BRUSH_PROPERTIES{startPoint: point2f(0., 20.), endPoint: point2f(0., 45.)}, 
                         None, &gsc));
 
 
@@ -171,6 +173,7 @@ impl DrawTextResources {
         };
         try!(tla.set_drawing_effect(&gbrush, text_range(0, 4)));
         dt.devctxd2d.draw_text_layout(point2f(35., 5.), &tla, &self.tbrush, D2D1_DRAW_TEXT_OPTIONS_NONE);
+        dt.devctxd2d.draw_rectangle(&rectf(35.-0.5, 5.-0.5, 35.+265.+0.5, 5.+95.+0.5), &self.tbrush, 1., None);
         //dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35., 5., 300., 100.), &self.tbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
         
         if da { trace!("end_draw"); }

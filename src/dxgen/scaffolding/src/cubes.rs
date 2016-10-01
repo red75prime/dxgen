@@ -84,11 +84,13 @@ struct InstanceData {
 pub struct CubeParms {
     pub object_count: u32,
     pub thread_count: u32,
+    pub backbuffer_count: u32,
     pub speed_mult: f32,
     pub concurrent_state_update: bool,
     pub debug_layer: bool,
     pub rt_format: DXGI_FORMAT,
     pub render_trace: bool,
+    pub enable_srgb: bool,
 }
 
 static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.02, 1.0];
@@ -123,11 +125,12 @@ pub fn create_hdr_render_target
                                   dheap.cpu_handle(0));
 
     trace!("Create tonemapper_resource");
+    let dstformat = DXGI_FORMAT_R8G8B8A8_UNORM;
     let tonemapper_resource = try!(TonemapperResources::new(dev, tonemapper,
                                                             w,
                                                             h,
                                                             hdr_format,
-                                                            DXGI_FORMAT_R8G8B8A8_UNORM));
+                                                            dstformat));
 
     trace!("create_hdr_render_target done");
     Ok((render_target, dheap, tonemapper_resource))
@@ -292,7 +295,7 @@ impl CommonResources {
 
         let light_res = try!(LightSourceResources::new(dev!()));
         
-        let draw_text = try!(DrawText::new(core));
+        let draw_text = try!(DrawText::new(core, parameters.debug_layer));
 
         Ok(CommonResources {
             pipeline_state: pipeline_state,
@@ -665,7 +668,9 @@ impl FrameResources {
                 cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.002
             };
         ::perf_end("tonemap");
+        ::perf_start("drawtext");
         try!(self.dtr.render(core, cr.draw_text.as_ref().unwrap(), rt, fps));
+        ::perf_end("drawtext");
         let fence_val = core.next_fence_value();
         try!(self.fence.signal(&core.graphics_queue, fence_val));
 
@@ -717,10 +722,9 @@ impl AppData {
     pub fn on_init(wnd: &Window,
                    dxgi_factory: &DXGIFactory4,
                    adapter: Option<&DXGIAdapter1>,
-                   frame_count: u32,
                    parameters: &CubeParms)
                    -> HResult<AppData> {
-        on_init(wnd, dxgi_factory, adapter, frame_count, parameters)
+        on_init(wnd, dxgi_factory, adapter, parameters)
     }
 
     // Allows rendering module to change backbuffers'/depth-stencil buffer's size when window size is changed
@@ -863,15 +867,23 @@ fn clamp(x: f32, l:f32, h:f32) -> u32 {
 pub fn on_init(wnd: &Window,
                dxgi_factory: &DXGIFactory4,
                adapter: Option<&DXGIAdapter1>,
-               frame_count: u32,
                parameters: &CubeParms)
                -> HResult<AppData> {
+    let frame_count = parameters.backbuffer_count;
     let hwnd = wnd.get_hwnd();
     let (w, h) = wnd.size();
 
     // core::create_core creates structure that contains D3D12Device, command queues and so on
     // which are required for creation of all other objects
-    let core = try!(core::create_core(dxgi_factory, adapter, D3D_FEATURE_LEVEL_11_0, parameters.debug_layer));
+    trace!("create_core");
+    let core = match core::create_core(dxgi_factory, adapter, D3D_FEATURE_LEVEL_11_0, parameters.debug_layer) {
+        Err(err @ DXGI_ERROR_UNSUPPORTED) => {
+            println!("Adapter doesn't support DirectX 12");
+            return Err(err);
+        },
+        Err(err) => return Err(err),
+        Ok(core) => core,
+    };
 
     // Get adapter the device was created on
     let adapter_luid = core.dev.get_adapter_luid();
@@ -917,9 +929,11 @@ pub fn on_init(wnd: &Window,
         Flags: 0, // DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH.0,
     };
 
+    let bbformat = if parameters.enable_srgb {DXGI_FORMAT_R8G8B8A8_UNORM_SRGB} else {DXGI_FORMAT_R8G8B8A8_UNORM};
+    trace!("create_swap_chain");
     let swap_chain = try!(core::create_swap_chain(&core,
                                             &sc_desc,
-                                            DXGI_FORMAT_R8G8B8A8_UNORM,
+                                            bbformat,
                                             hwnd,
                                             None,
                                             None)
@@ -1128,7 +1142,7 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
 
     data.swap_chain.resize(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM).dump(&data.core).expect("swap_chain.resize failed");
 
-    data.common_resources.draw_text = Some(DrawText::new(&data.core).expect("Cannot create DrawText"));
+    data.common_resources.draw_text = Some(DrawText::new(&data.core, data.parameters.debug_layer).expect("Cannot create DrawText"));
     data.camera().aspect = (w as f32) / (h as f32);
 
     for i in 0 .. data.frame_count {

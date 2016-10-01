@@ -28,6 +28,7 @@ pub struct TonemapperResources {
     vpass_dheap: DescriptorHeap,
     dheap: DescriptorHeap,
     tb_fence_val: Option<u64>, // fence value for total brightness calculation finish
+    dstformat: DXGI_FORMAT,
 }
 
 // Holds intermediate variables for Tonemapper function.
@@ -116,6 +117,7 @@ impl TonemapperResources {
         trace!("Create clist");
         let clist: D3D12GraphicsCommandList =
             try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, &calloc, Some(&tonemapper.total_cpso)));
+        try!(clist.set_name("tonemapper command list"));
         trace!("Close clist");
         try!(clist.close());
         trace!("Create clear_list");
@@ -164,6 +166,7 @@ impl TonemapperResources {
             gralloc: gralloc,
             grlist: grlist,
             tb_fence_val: None,
+            dstformat: dstformat,
         })
     }
 
@@ -347,7 +350,6 @@ impl Tonemapper {
         try!(clist.reset(&res.calloc, Some(&self.total_cpso)));
         // Total brightness
         clist.set_descriptor_heaps(&[res.total_dheap.get()]);
-        //clist.set_pipeline_state(&self.total_cpso);
 
         // State transition for buffers is unnecessary thanks to resource state promotion
         // clist.resource_barrier(&[
@@ -359,16 +361,10 @@ impl Tonemapper {
 
         // UAV for CPU handle MUST be in shader inaccessible descriptor heap
         if da { trace!("Clear unordered access view") };
-        //clear_list.clear_unordered_access_view_float(res.total_cuav_dheap.gpu_handle(0), res.total_cuav_dheap.cpu_handle(0), &res.rw_total, &[0.,0.,0.,0.], &[]);
         clist.clear_unordered_access_view_float(res.total_cuav_dheap.gpu_handle(1), res.total_cuav_dheap.cpu_handle(1), &res.rw_buf_total, &[0.,0.,0.,0.], &[]);
-        //clear_list.clear_unordered_access_view_uint(res.total_cuav_dheap.gpu_handle(1), res.total_cuav_dheap.cpu_handle(1), &res.rw_buf_total, &[0,0,0,0], &[]);
         clist.resource_barrier(&[
           *ResourceBarrier::uav(&res.rw_total),
           *ResourceBarrier::uav(&res.rw_buf_total),
-          //*ResourceBarrier::transition(&res.rw_total,
-          //  D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
-          //*ResourceBarrier::transition(&res.rw_buf_total,
-          //  D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
         ]);
 
         let src_desc = srv_tex2d_default_slice_mip(srcdesc.Format, 0, 1);
@@ -378,14 +374,10 @@ impl Tonemapper {
         clist.set_compute_root_signature(&self.total_rs);
         clist.set_compute_root_descriptor_table(1, res.total_dheap.gpu_handle(0));
 
-        clist.resource_barrier(&[
-          *ResourceBarrier::transition(&src,
-            D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
-          //*ResourceBarrier::transition(&res.rw_total,
-          //  D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
-          //*ResourceBarrier::transition(&res.rw_buf_total,
-          //  D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
-        ]);
+        // clist.resource_barrier(&[
+        //   *ResourceBarrier::transition(&src,
+        //     D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
+        // ]);
 
         let hdispatch = (cw-1) / TOTAL_CHUNK_SIZE + 1;
         let vdispatch = (ch-1) / TOTAL_CHUNK_SIZE + 1;
@@ -397,15 +389,6 @@ impl Tonemapper {
         clist.resource_barrier(&[
           *ResourceBarrier::uav(&res.rw_total),
         ]);
-        //clist.resource_barrier(&[
-        //  *ResourceBarrier::transition(&res.rw_total,
-        //    D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE),
-        //]);
-        //clist.copy_resource(&res.rb_total, &res.rw_total);
-        //clist.resource_barrier(&[
-        //  *ResourceBarrier::transition(&res.rw_total,
-        //    D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
-        //]);
 
         clist.set_pipeline_state(&self.buf_total_cpso);
         clist.set_compute_root_signature(&self.total_rs);
@@ -445,12 +428,9 @@ impl Tonemapper {
         //wait_for_graphics_queue(core, &res.fence, &self.tb_event);
         //wait_for_copy_queue(core, &res.fence, &self.tb_event);
         ::perf_end("tbr");
-
-        //let total_one = res.total_brightness();
-        //let total_brightness = res.total_brightness_full();
-        //let avg_brightness = f32::exp(total_one / cw as f32 / ch as f32 + f32::ln(0.0001));
-        print!("Average brightness: {:.3} Dispatch treads: {}*{}={} rw_total size: {:4} bdispatch: {}         \r", avg_brightness, hdispatch, vdispatch, hdispatch*vdispatch, res.rw_total.get_desc().Width/4, bdispatch);
-        let _ = ::std::io::Write::flush(&mut ::std::io::stdout());
+        
+        //print!("Average brightness: {:.3} Dispatch treads: {}*{}={} rw_total size: {:4} bdispatch: {}         \r", avg_brightness, hdispatch, vdispatch, hdispatch*vdispatch, res.rw_total.get_desc().Width/4, bdispatch);
+        //let _ = ::std::io::Write::flush(&mut ::std::io::stdout());
 
         //let key = (0.1 + f32::max(0., 1.5 - 1.5/(avg_brightness*0.1+1.)))/avg_brightness;
         let key = (1.03 - 2./(2.+f32::log10(avg_brightness_in+1.)))/avg_brightness_in;
@@ -479,7 +459,7 @@ impl Tonemapper {
         clist.dispatch(cw / HTGROUPS + 1, ch/2, 1);
         clist.resource_barrier(&[
           *ResourceBarrier::transition(&res.h_tex, 
-            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
+            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),//D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
         ]);
 
         // Vertical pass
@@ -501,10 +481,10 @@ impl Tonemapper {
 
         clist.dispatch(cw/2, ch/2/VTGROUPS+1, 1);
         clist.resource_barrier(&[
-          *ResourceBarrier::transition(&res.h_tex, 
-            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
-          *ResourceBarrier::transition(&res.hv_tex, 
-            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
+        //   *ResourceBarrier::transition(&res.h_tex, 
+        //     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
+           *ResourceBarrier::transition(&res.hv_tex, 
+           D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),//D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
           *ResourceBarrier::transition(&res.im_tex, 
             D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
         ]);
@@ -515,10 +495,10 @@ impl Tonemapper {
         core.dev.create_shader_resource_view(Some(&src), Some(&srv_desc), res.dheap.cpu_handle(0));
 
         let hv_desc = srv_tex2d_default_slice_mip(srcdesc.Format, 0, 1);
-        core.dev
-            .create_shader_resource_view(Some(&res.hv_tex), Some(&hv_desc), res.dheap.cpu_handle(1));
+        core.dev.create_shader_resource_view(Some(&res.hv_tex), Some(&hv_desc), res.dheap.cpu_handle(1));
 
-        let uav_desc = uav_tex2d_desc(dstdesc.Format, 0, 0);
+        if da { trace!("create_unordered_access_view") };
+        let uav_desc = uav_tex2d_desc(res.dstformat, 0, 0);
         core.dev.create_unordered_access_view(Some(&res.im_tex),
                                               None,
                                               Some(&uav_desc),
@@ -534,10 +514,10 @@ impl Tonemapper {
 
         clist.dispatch(cw / COMBINE_GROUPS + 1, ch / COMBINE_GROUPS + 1, 1);
         clist.resource_barrier(&[
-          *ResourceBarrier::transition(&src,
-            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
-          *ResourceBarrier::transition(&res.hv_tex, 
-            D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
+        //   *ResourceBarrier::transition(&src,
+        //     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
+        //   *ResourceBarrier::transition(&res.hv_tex, 
+        //     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
           *ResourceBarrier::transition(&res.im_tex, 
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
         ]);
@@ -572,6 +552,7 @@ impl Tonemapper {
             bottom: ch,
             back: 1,
         };
+
         grlist.resource_barrier(&[*ResourceBarrier::transition(&res.im_tex,
                                                                D3D12_RESOURCE_STATE_COMMON,
                                                                D3D12_RESOURCE_STATE_COPY_SOURCE),
