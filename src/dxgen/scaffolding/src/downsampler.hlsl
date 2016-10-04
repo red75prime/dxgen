@@ -3,8 +3,7 @@
 Texture2D<float4> mip0: register(t0);
 RWTexture2D<float4> mip1: register(u0);
 
-// static const float coefs[4] doesn't work on HD Graphics 4600
-static float coefs[4] = {1./8., 3./8., 3./8., 1./8.};
+static const float coefs[4] = {1./8., 3./8., 3./8., 1./8.};
 groupshared float4 color_accum[4][4];
 
 [RootSignature(RSD)]
