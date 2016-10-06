@@ -155,12 +155,12 @@ pub fn blob_to_string(blob: &D3D10Blob) -> String {
                                          blob.get_buffer_size() as usize)
         };
         let mut ret = vec![];
-        ret.extend(blob_slice);
+        ret.extend_from_slice(blob_slice);
         String::from_utf8_lossy(&ret[..]).into_owned()
     }
 }
 
-pub fn blob_as_slice<'a>(blob: &'a D3D10Blob) -> &'a [u8] {
+pub fn blob_as_slice(blob: &D3D10Blob) -> &[u8] {
     if blob.get_buffer_size() == 0 {
         &[]
     } else {
@@ -189,7 +189,7 @@ pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC
     if SUCCEEDED(hr) {
         Ok(D3D10Blob::new(p_blob))
     } else {
-        if p_err != ptr::null_mut() {
+        if !p_err.is_null() {
             error!("{}", blob_to_string(&D3D10Blob::new(p_err)));
         }
         Err(hr)
@@ -222,13 +222,13 @@ pub fn d3d_compile_from_str(shader_text: &str, shader_name: &str,
                     &mut error_blob)
     };
     if SUCCEEDED(hr) {
-        if error_blob != ptr::null_mut() {
+        if !error_blob.is_null() {
             warn!("{}", blob_to_string(&D3DBlob::new(error_blob as *mut _)));
         };
-        assert!(code_blob != ptr::null_mut());
+        assert!(!code_blob.is_null());
         Ok(blob_to_vec(&D3DBlob::new(code_blob as *mut _)))
     } else {
-        assert!(error_blob != ptr::null_mut());
+        assert!(!error_blob.is_null());
         Err(blob_to_string(&D3DBlob::new(error_blob as *mut _)))
     }
 }
@@ -272,17 +272,15 @@ pub fn d3d_compile_from_file(file_name: &str,
                            &mut blob1,
                            &mut blob2)
     };
-    if blob2 != ptr::null_mut() {
+    if !blob2.is_null() {
         let blob = D3D10Blob::new(blob2 as *mut _);
         Err(blob_to_string(&blob))
+    } else if hr == 0 {
+        assert!(!blob1.is_null());
+        let blob = D3D10Blob::new(blob1 as *mut _);
+        Ok(blob_to_vec(&blob))
     } else {
-        if hr == 0 {
-            assert!(blob1 != ptr::null_mut());
-            let blob = D3D10Blob::new(blob1 as *mut _);
-            Ok(blob_to_vec(&blob))
-        } else {
-            Err("".into())
-        }
+        Err("".into())
     }
 }
 

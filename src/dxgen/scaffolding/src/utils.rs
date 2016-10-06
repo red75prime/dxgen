@@ -138,12 +138,12 @@ pub fn upload_into_texture<T: Sized+Clone>(core: &DXCore,
         uninitialized_vec(total_len)
     };
     for y in 0..rows {
-        &temp_buf[y * row_pitch .. y * row_pitch + w].clone_from_slice(&data[y * w .. y * w + w]);
+        temp_buf[y * row_pitch .. y * row_pitch + w].clone_from_slice(&data[y * w .. y * w + w]);
     }
 
     try!(upload_into_buffer(&res_buf, &temp_buf[..]));
 
-    let dest = texture_copy_location_index(&tex, 0);
+    let dest = texture_copy_location_index(tex, 0);
     let src = texture_copy_location_footprint(&res_buf, &psfp[0]);
 
     trace!("create_command_allocator");
@@ -151,11 +151,11 @@ pub fn upload_into_texture<T: Sized+Clone>(core: &DXCore,
     trace!("create_command_list");
     let clist: D3D12GraphicsCommandList =
         try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COPY, &callocator, None));
-    clist.resource_barrier(&mut [*ResourceBarrier::transition(&tex,
+    clist.resource_barrier(&[*ResourceBarrier::transition(tex,
                                                               D3D12_RESOURCE_STATE_COMMON,
                                                               D3D12_RESOURCE_STATE_COPY_DEST)]);
     clist.copy_texture_region(&dest, 0, 0, 0, &src, None);
-    clist.resource_barrier(&mut [*ResourceBarrier::transition(&tex,
+    clist.resource_barrier(&[*ResourceBarrier::transition(tex,
                                                               D3D12_RESOURCE_STATE_COPY_DEST,
                                                               D3D12_RESOURCE_STATE_COMMON)]);
 

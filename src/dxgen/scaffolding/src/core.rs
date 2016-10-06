@@ -56,7 +56,7 @@ impl Handle for Event {
 impl Drop for Event {
     fn drop(&mut self) {
         let handle = self.handle();
-        if handle != ptr::null_mut() {
+        if !handle.is_null() {
             unsafe {
                 kernel32::CloseHandle(handle);
             }
@@ -66,7 +66,7 @@ impl Drop for Event {
 
 pub fn create_event() -> Event {
     let event_handle = unsafe { kernel32::CreateEventW(ptr::null_mut(), 0, 0, ptr::null_mut()) };
-    if event_handle == ptr::null_mut() {
+    if event_handle.is_null() {
         panic!("Cannot create event.");
     }
     Event(event_handle)
@@ -117,7 +117,7 @@ pub fn dump_info_queue(iq: &D3D12InfoQueue) {
         unsafe {
             // get_message expects Option<&mut D3D12_MESSAGE> as second parameter
             // it should be Option<&[u8]>, but I don't have annotation for that yet.
-            let _ = iq.get_message(i, Some(mem::transmute(arr.as_ptr())), &mut sz1);
+            let _ = iq.get_message(i, Some(&mut *(arr.as_ptr() as *mut D3D12_MESSAGE)), &mut sz1);
             assert_eq!(sz, sz1); // just to be sure. hr is Err(1) on success.
             // Reinterpret first chunk of arr as D3D12_MESSAGE, and byte-copy it into msg
             let msg: D3D12_MESSAGE = mem::transmute_copy(&(*arr.as_ptr()));

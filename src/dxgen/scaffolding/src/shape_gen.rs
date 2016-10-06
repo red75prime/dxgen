@@ -20,7 +20,7 @@ pub fn cube<V: GenVertex>(sz: f32) -> (D3D_PRIMITIVE_TOPOLOGY, Vec<V>) {
     (v3(0.,1.,0.), v3(0.,0.,1.)),
     (v3(0.,-1.,0.), v3(0.,0.,1.)),
   ];
-    for &(n, up) in facevecs.iter() {
+    for &(n, up) in &facevecs {
         let rt = Vector3::cross(up, n);
         let p1 = (n - up - rt) * sz;
         let p2 = (n + up - rt) * sz;
@@ -48,7 +48,7 @@ pub fn cube_indexed<V: GenVertex>(sz: f32) -> (Vec<V>, Vec<u32>) {
     (v3(0.,1.,0.), v3(0.,0.,1.)),
     (v3(0.,-1.,0.), v3(0.,0.,1.)),
   ];
-    for &(n, up) in facevecs.iter() {
+    for &(n, up) in &facevecs {
         let rt = Vector3::cross(up, n);
         let p1 = (n - up - rt) * sz;
         let p2 = (n + up - rt) * sz;

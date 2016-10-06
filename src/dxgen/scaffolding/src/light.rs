@@ -162,11 +162,11 @@ fn sphere<P: AsRef<Path>>(path: P) -> (Vec<V3>, Vec<V3>, Vec<ShaderIndices>) {
     if let Some(obj) = scene.object_iter().next() {
         if let Some(group) = obj.group_iter().next() {
           let mut indices = vec![];
-          for p in group.indices.iter() {
+          for p in &group.indices {
             assert_eq!(p.len(), 3); // Accept only triangles
             for i in p {
-              match i {
-                &(v, Some(t), Some(n)) => {
+              match *i {
+                (v, Some(t), Some(n)) => {
                     indices.push(ShaderIndices{crd: v as u32, nrm: n as u32, tex: t as u32})
                 },
                 _ => panic!("Missing normal or texture coord"),

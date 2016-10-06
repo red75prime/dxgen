@@ -156,7 +156,7 @@ fn main() {
     println!("Adapter {}: {}", i, wchar_array_to_string_lossy(&descr.Description));
     println!("   Dedicated video memory: {}MiB", descr.DedicatedVideoMemory/1024/1024);
     
-    if adapters_to_test.len()==0 || adapters_to_test[..].contains(&i) {
+    if adapters_to_test.is_empty() || adapters_to_test[..].contains(&i) {
       // If there's no numbers in command line add each and every available adapter,
       // otherwise use adapter numbers from command line
       if adapters_info {

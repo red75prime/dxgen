@@ -14,6 +14,7 @@ use std::marker::PhantomData;
 use user32::{TranslateMessage, DispatchMessageW, PeekMessageW, GetMessageW};
 // use kernel32::{Sleep};
 
+#[derive(Clone, Copy)]
 pub struct Window {
     hwnd: HWND,
     _nosync_nosend: PhantomData<Rc<u32>>,
@@ -49,8 +50,8 @@ impl<'a> Iterator for BlockingEventIterator<'a> {
             } else if msg.message == WM_PAINT {
                 return Some(msg);
             } else if msg.hwnd == self.wnd.hwnd {
-                unsafe { TranslateMessage(&mut msg) };
-                unsafe { DispatchMessageW(&mut msg) };
+                unsafe { TranslateMessage(&msg) };
+                unsafe { DispatchMessageW(&msg) };
                 return Some(msg);
             } else {
                 // Wrong window. Broadcast?
@@ -85,17 +86,14 @@ impl<'a> Iterator for PollEventIterator<'a> {
         let ret = unsafe { PeekMessageW(&mut msg, ptr::null_mut(), 0, 0, PM_REMOVE) };
         if ret == 0 {
             Some(None)
+        } else if msg.message == WM_QUIT {
+            None
+        } else if msg.hwnd == self.wnd.hwnd {
+            unsafe { TranslateMessage(&msg) };
+            unsafe { DispatchMessageW(&msg) };
+            Some(Some(msg))
         } else {
-            // debug!("Windows message:{}", msg.message);
-            if msg.message == WM_QUIT {
-                None
-            } else if msg.hwnd == self.wnd.hwnd {
-                unsafe { TranslateMessage(&mut msg) };
-                unsafe { DispatchMessageW(&mut msg) };
-                Some(Some(msg))
-            } else {
-                Some(None)
-            }
+            Some(None)
         }
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -107,12 +105,12 @@ impl Window {
     pub fn get_hwnd(&self) -> HWND {
         self.hwnd
     }
-    pub fn poll_events<'a>(&'a self) -> PollEventIterator<'a> {
-        PollEventIterator { wnd: &self }
+    pub fn poll_events(&self) -> PollEventIterator {
+        PollEventIterator { wnd: self }
     }
     #[allow(dead_code)]
-    pub fn events<'a>(&'a self) -> BlockingEventIterator<'a> {
-        BlockingEventIterator { wnd: &self }
+    pub fn events(&self) -> BlockingEventIterator {
+        BlockingEventIterator { wnd: self }
     }
     pub fn size(&self) -> (u32, u32) {
         let mut rect = RECT {
@@ -129,12 +127,6 @@ impl Window {
     }
 }
 
-impl Clone for Window {
-    fn clone(&self) -> Self {
-        Window { hwnd: self.hwnd, _nosync_nosend: self._nosync_nosend }
-    }
-}
-impl Copy for Window {}
 //Doesn't work in stable Rust 1.7.0
 //impl !Send for Window {}
 //impl !Sync for Window {}
@@ -226,7 +218,7 @@ pub fn create_window(title: &str, width: i32, height: i32) -> Window {
                         h_module,
                         ptr::null_mut())
     };
-    if hwnd == ptr::null_mut() {
+    if hwnd.is_null() {
         panic!("CreateWindowExW failed.");
     }
     WINDOW.with(|rc| {

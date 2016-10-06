@@ -38,7 +38,7 @@ fn min_f32_pair<T: Iterator<Item=(f32,P)>, P: Copy>(mut it: T) -> Option<(f32, P
         Some((v, p)) => {
             let mut mv = v;
             let mut mp = p;
-            while let Some((v, p)) = it.next() {
+            for (v, p) in it {
                 if mv.is_nan() || mv>v {
                     mv = v;
                     mp = p;
@@ -482,7 +482,7 @@ impl StateUpdateAgent {
         }
     }
 
-    pub fn start_update<'a>(&'a self, state: Arc<State>, dt: f32, camera: Point3<f32>) -> UpdateResult<'a> {
+    pub fn start_update(&self, state: Arc<State>, dt: f32, camera: Point3<f32>) -> UpdateResult {
         self.tx.send((state, dt, camera)).unwrap();
         UpdateResult{
             agent: self,

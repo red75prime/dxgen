@@ -528,9 +528,9 @@ impl FrameResources {
         let constants =  Constants {
             view: utils::matrix4_to_4x4(&camera.view_matrix()),
             proj: utils::matrix4_to_4x4(&camera.projection_matrix()),
-            eye_pos: camera.eye.clone().into(),
+            eye_pos: camera.eye.into(),
             _padding1: 0.,
-            light_pos: st.light_pos.clone().into(),
+            light_pos: st.light_pos.into(),
         };
         
         *self.constants_mapped = constants;
@@ -946,8 +946,8 @@ pub fn on_init(wnd: &Window,
 
     // Create pattern to set as texture data
     let mut texdata: Vec<u32> = vec![0xff00ffff; (tex_w*tex_h) as usize];
-    let mut i = 0;
-    for v in &mut texdata[..] {
+    for (i, v) in texdata.iter_mut().enumerate() {
+        let i = i as u32;
         let (x, y) = (i % tex_w, i / tex_w);
         let (tex_w, tex_h) = (tex_w as f32, tex_h as f32);
         let (fx, fy) = (x as f32, y as f32);
@@ -959,7 +959,6 @@ pub fn on_init(wnd: &Window,
             let b = clamp((f32::sin(d)*0.5+0.51)*255., 0., 255.);
             0xff009090 + b * 65536
         };
-        i += 1;
     }
 
     // Fences synchronize CPU and GPU.
