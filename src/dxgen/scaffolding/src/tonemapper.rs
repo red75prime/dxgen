@@ -481,8 +481,8 @@ impl Tonemapper {
 
         clist.dispatch(cw/2, ch/2/VTGROUPS+1, 1);
         clist.resource_barrier(&[
-        //   *ResourceBarrier::transition(&res.h_tex, 
-        //     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
+           *ResourceBarrier::transition(&res.h_tex, 
+             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
            *ResourceBarrier::transition(&res.hv_tex, 
            D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),//D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
           *ResourceBarrier::transition(&res.im_tex, 
@@ -514,10 +514,10 @@ impl Tonemapper {
 
         clist.dispatch(cw / COMBINE_GROUPS + 1, ch / COMBINE_GROUPS + 1, 1);
         clist.resource_barrier(&[
-        //   *ResourceBarrier::transition(&src,
-        //     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
-        //   *ResourceBarrier::transition(&res.hv_tex, 
-        //     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
+           *ResourceBarrier::transition(&src,
+             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
+           *ResourceBarrier::transition(&res.hv_tex, 
+             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
           *ResourceBarrier::transition(&res.im_tex, 
             D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
         ]);

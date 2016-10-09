@@ -119,6 +119,7 @@ pub fn create_hdr_render_target
                                            &tex_desc,
                                            D3D12_RESOURCE_STATE_COMMON,
                                            Some(&rt_rgba_clear_value(hdr_format, CLEAR_COLOR))));
+    try!(render_target.set_name("HDR render target"));
     trace!("create_render_target_view");
     dev.create_render_target_view(Some(&render_target),
                                   Some(&render_target_view_desc_tex2d_default(hdr_format)),
@@ -197,6 +198,7 @@ impl CommonResources {
                                                                       &pshader_bc[..],
                                                                       &root_signature,
                                                                       parameters.rt_format));
+        try!(pipeline_state.set_name("Cubes main pipeline state"));
 
         // ------------------- Vertex and index buffer resource init begin ----------------------------
 
@@ -379,6 +381,7 @@ impl FrameResources {
         let tm_fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
 
         let srv_heap = try!(DescriptorHeap::new(dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+        try!(srv_heap.get().set_name("Cubes SRV descriptor heap"));
 
         let i_buffer_size = mem::size_of::<InstanceData>() * parameters.object_count as usize;
         trace!("Create ir_buffer");
@@ -437,6 +440,7 @@ impl FrameResources {
 
         trace!("Create depth stencil descriptor heap");
         let dsd_heap = try!(DescriptorHeap::new(dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false, 0));
+        try!(dsd_heap.get().set_name("Cubes depth stencil descriptor heap"));
 
         let ds_format = DXGI_FORMAT_D32_FLOAT;
         // utils::create_depth_stencil() functions handles creation of depth-stencil resource
@@ -578,10 +582,10 @@ impl FrameResources {
 	    // into instance data buffer ir_buffer located in DEFAULT heap
         glist.copy_resource(&self.ir_buffer, &self.i_buffer);
 
-        //Resource state promotion makes this unnecessary
-        //glist.resource_barrier(
-        //    &[*ResourceBarrier::transition(&self.ir_buffer,
-        //       D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ)]);
+        //I expected that resource state decay makes this unnecessary, but decay happens after command list execution. 
+        glist.resource_barrier(
+            &[*ResourceBarrier::transition(&self.ir_buffer,
+               D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON)]);
 
         // ----------------  SHADOW PASS START ------------------------------------
         glist.set_graphics_root_signature(&cr.plshadow.root_sig);
