@@ -47,6 +47,7 @@ mod light;
 //mod d2d1test;
 mod drawtext;
 mod skybox;
+mod seh;
 
 #[cfg(feature = "openal")] mod sound;
 
@@ -70,6 +71,8 @@ use itertools::Itertools;
 const FRAME_COUNT : u32 = 3;
 
 fn main() {
+  // install SEH guard to continue on continuable structured exception 
+  let _seh_guard = seh::SehGuard::new();
   // Initialize logger
   env_logger::init().unwrap();
 
