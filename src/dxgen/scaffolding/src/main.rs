@@ -200,7 +200,7 @@ fn main() {
 }
 
 fn print_adapter_info(adapter: &DXGIAdapter1) {
-  if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_11_0) {
+  if let Ok(dev)=d3d12_create_device(Some(adapter), D3D_FEATURE_LEVEL_11_0) {
     if let Ok(data) = dev.check_feature_support_virtual_address() {
       println!("   {:#?}", data);
     }
@@ -220,24 +220,45 @@ const VK_E: i32 = b'E' as i32;
 const VK_R: i32 = b'R' as i32;
 const VK_P: i32 = b'P' as i32;
 
-fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mutex: Arc<Mutex<()>>, parms: &CubeParms) {
+const KEYS_LEN: usize = 256;
+struct KeyState {
+  keys: [bool; KEYS_LEN],
+}
+
+impl KeyState {
+  pub fn set(&mut self, vk: i32) {
+    if vk >= 0 && vk < self.keys.len() as i32 {
+      self.keys[vk as usize] = true;
+    }
+  }
+  pub fn unset(&mut self, vk: i32) {
+    if vk >= 0 && vk < self.keys.len() as i32 {
+      self.keys[vk as usize] = false;
+    }
+  }
+
+  pub fn pressed(&self, vk: i32) -> bool {
+    if vk >= 0 && vk < self.keys.len() as i32 {
+      self.keys[vk as usize]
+    } else {
+      false
+    }
+  }  
+}
+
+impl Default for KeyState {
+    fn default() -> KeyState {
+        KeyState {
+            keys: [false; KEYS_LEN],
+        }
+    }
+}
+
+fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mutex: Arc<Mutex<()>>, parms: &CubeParms) {
     // Setup window. Currently window module supports only one window per thread.
     let descr=wchar_array_to_string_lossy(&adapter.get_desc1().unwrap().Description);
     let title=format!("D3D12 Hello, rusty world! ({})", descr);
     let wnd=create_window(&title, 512, 256);
-
-    {
-    // This block of code is not required. I just checked some stuff
-    if let Ok(dev)=d3d12_create_device(Some(&adapter), D3D_FEATURE_LEVEL_12_0) {
-        let format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        if let Ok(fsup) = dev.check_feature_support_format_support(format) {
-            // We could have few threads running, so take a lock to prevent line interleaving
-            let _ = mutex.lock();
-            println!("{}", descr);
-            println!("Format support for {:?} is {:x}, {:x}", format, fsup.Support1.0, fsup.Support2.0);
-        }
-    }
-    }
 
     let mut fps = 0.0;
     // Initialization of cubes module data required to render all stuff
@@ -255,10 +276,10 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
     // x and y store last mouse coords from WM_MOUSEMOVE
     let mut x:i32=0;
     let mut y:i32=0;
-    // TODO: Make this horror go away
-    // Simple and crude way to track state of keyboard keys
-    let (mut wdown, mut sdown, mut adown, mut ddown, mut qdown, mut edown, mut rdown, mut fdown, mut shdown, mut ctdown) = (false, false, false, false, false, false, false, false, false, false);
-    // and state of left mouse button
+
+    let mut keys = KeyState::default();
+
+    // state of left mouse button
     let mut mouse_down = false;
     let mut pause = false;
     // Profiling stuff
@@ -285,42 +306,19 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
               x = x1;
               y = y1;
               if mouse_down {
-              let mut data = data.borrow_mut();
-              let camera = data.camera();
-              camera.rotx(-dx as f32/6.);
-              camera.roty(dy as f32/6.);
+                  let mut data = data.borrow_mut();
+                  let camera = data.camera();
+                  camera.rotx(-dx as f32/6.);
+                  camera.roty(dy as f32/6.);
               }
           },
           WM_KEYDOWN => {
-              match msg.wParam as i32 {
-              VK_A => adown = true,
-              VK_S => sdown = true,
-              VK_D => ddown = true,
-              VK_W => wdown = true,
-              VK_Q => qdown = true,
-              VK_E => edown = true,
-              VK_R => rdown = true,
-              VK_F => fdown = true,
-              VK_SHIFT => shdown = true,
-              VK_CONTROL => ctdown = true,
-              _ => {},
-              }
+              keys.set(msg.wParam as i32);
           },
           WM_KEYUP => {
-              match msg.wParam as i32 {
-              VK_A => adown = false,
-              VK_S => sdown = false,
-              VK_D => ddown = false,
-              VK_W => wdown = false,
-              VK_Q => qdown = false,
-              VK_E => edown = false,
-              VK_R => rdown = false,
-              VK_F => fdown = false,
-              VK_P => pause = !pause,
-              VK_SHIFT => shdown = false,
-              VK_CONTROL => ctdown = false,
-              _ => {},
-              }
+              let vk = msg.wParam as i32;
+              keys.unset(vk);
+              if vk == VK_P { pause = !pause; };
           },
           WM_LBUTTONDOWN => {
               mouse_down = true;
@@ -351,17 +349,17 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, mute
               
               camera.restore_up((90.*frame_dt) as f32);
 
-              let step=if shdown {1.0} else if ctdown {0.01} else {0.1};
+              let step=if keys.pressed(VK_SHIFT) {1.0} else if keys.pressed(VK_CONTROL) {0.01} else {0.1};
 
-              if wdown { camera.go(step , 0.   , 0.   ); };
-              if sdown { camera.go(-step, 0.   , 0.   ); };
-              if adown { camera.go(0.   , -step, 0.   ); };
-              if ddown { camera.go(0.   , step , 0.   ); };
-              if rdown { camera.go(0.   , 0.   , step ); };
-              if fdown { camera.go(0.   , 0.   , -step); };
+              if keys.pressed(VK_W) { camera.go(step , 0.   , 0.   ); };
+              if keys.pressed(VK_S) { camera.go(-step, 0.   , 0.   ); };
+              if keys.pressed(VK_A) { camera.go(0.   , -step, 0.   ); };
+              if keys.pressed(VK_D) { camera.go(0.   , step , 0.   ); };
+              if keys.pressed(VK_R) { camera.go(0.   , 0.   , step ); };
+              if keys.pressed(VK_F) { camera.go(0.   , 0.   , -step); };
               // Process Q and E keys. They control camera's roll
-              if qdown { camera.rotz(-step); };
-              if edown { camera.rotz(step);  };
+              if keys.pressed(VK_Q) { camera.rotz(-step); };
+              if keys.pressed(VK_E) { camera.rotz(step);  };
             }
             // For this simple program I don't separate update and render steps.
             // State change and rendering is done inside on_render.

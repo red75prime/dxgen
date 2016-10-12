@@ -114,9 +114,9 @@ fn convert_to_rgb(core: &DXCore, src: &D3D12Resource, src_srv_desc: &D3D12_SHADE
     clist.set_compute_root_descriptor_table(0, dheap.gpu_handle(0));
 
     clist.resource_barrier(&[
-        *ResourceBarrier::transition(&src,
+        *ResourceBarrier::transition(src,
         D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
-        *ResourceBarrier::transition(&dst,
+        *ResourceBarrier::transition(dst,
         D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
     ]);
 
@@ -125,9 +125,9 @@ fn convert_to_rgb(core: &DXCore, src: &D3D12Resource, src_srv_desc: &D3D12_SHADE
     clist.dispatch(src_desc.Width as u32, src_desc.Height, 1);
 
     clist.resource_barrier(&[
-        *ResourceBarrier::transition(&src,
+        *ResourceBarrier::transition(src,
         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
-        *ResourceBarrier::transition(&dst,
+        *ResourceBarrier::transition(dst,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
     ]);
 
