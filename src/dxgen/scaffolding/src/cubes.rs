@@ -96,8 +96,8 @@ pub struct CubeParms {
 static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.02, 1.0];
 const SHADOW_MAP_SIZE: u32 = 2048;
 
-pub fn create_hdr_render_target
-    (dev: &D3D12Device, tonemapper: &Tonemapper,
+pub fn create_hdr_render_target(
+     dev: &D3D12Device, tonemapper: &Tonemapper,
      w: u32,
      h: u32,
      parameters: &CubeParms)
@@ -455,15 +455,17 @@ impl FrameResources {
         // create shadow resource.
         let shadow_desc = resource_desc_tex2darray_nomip(SHADOW_MAP_SIZE as u64, SHADOW_MAP_SIZE, 6, DXGI_FORMAT_R32_TYPELESS, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
         debug!("Create depth stencil shadow resource");
-        let shadow_map = try!(dev.create_committed_resource(&heap_properties_default(),
-                                                        D3D12_HEAP_FLAG_NONE,
-                                                        &shadow_desc,
-                                                        D3D12_RESOURCE_STATE_DEPTH_WRITE,
-                                                        Some(&depth_stencil_clear_value_depth_f32(1.0)))
-                             .map_err(|hr| {
-                                 error!("create_commited_resource failed with 0x{:x}", hr);
-                                 hr
-                             }));
+        let shadow_map = 
+            try!(dev.create_committed_resource(
+                                &heap_properties_default(),
+                                D3D12_HEAP_FLAG_NONE,
+                                &shadow_desc,
+                                D3D12_RESOURCE_STATE_DEPTH_WRITE,
+                                Some(&depth_stencil_clear_value_depth_f32(1.0)))
+                    .map_err(|hr| {
+                        error!("create_commited_resource failed with 0x{:x}", hr);
+                        hr
+                    }));
 
         let shadow_desc = depth_stencil_view_desc_tex2darray_default(DXGI_FORMAT_D32_FLOAT, 6);
         debug!("Shadow depth stencil view");
@@ -517,6 +519,7 @@ impl FrameResources {
             dtr: dtr,
         })
     }
+
     // rtvh - render target view descriptor handle
     fn render(&mut self, core: &DXCore, rt: &D3D12Resource, _rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, 
                 cr: &mut CommonResources, st: &State, camera: &Camera, pause: bool, fps: f32)
@@ -892,16 +895,13 @@ pub fn on_init(wnd: &Window,
     // Get adapter the device was created on
     let adapter_luid = core.dev.get_adapter_luid();
     if let Ok(adapter) = core.dxgi_factory.enum_adapter_by_luid::<DXGIAdapter3>(adapter_luid) {
-        let mut i = 0;
         // Enumerate adapter's outputs
-        while let Ok(output) = adapter.enum_outputs(i)
-                                      .and_then(|o| o.query_interface::<DXGIOutput4>()) {
+        for output in adapter.into_iter().filter_map(|o| o.query_interface::<DXGIOutput4>().ok()) {
             if let Ok(output_desc) = output.get_desc() {
                 let output_device_name = utils::wchar_array_to_string_lossy(&output_desc.DeviceName[..]);
-                info!("Output {}: {}", i, output_device_name);
+                info!("Output: {}", output_device_name);
             } else {
-                error!("Output {}: Unbelievable! DXGIOutput4::get_desc() returned an error.",
-                       i);
+                error!("Output: Unbelievable! DXGIOutput4::get_desc() returned an error.");
             };
             // Enumerate display modes
             if let Ok(modes) = get_display_mode_list1(&output, DXGI_FORMAT_R8G8B8A8_UNORM, 0) {
@@ -915,7 +915,6 @@ pub fn on_init(wnd: &Window,
                           mode.Scaling);
                 }
             };
-            i += 1;
         }
     };
 
@@ -1143,14 +1142,21 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
     data.frame_resources.truncate(0);
     data.common_resources.draw_text = None;
 
-    data.swap_chain.resize(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM).dump(&data.core).expect("swap_chain.resize failed");
+    data.swap_chain.resize(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM)
+                   .dump(&data.core)
+                   .expect("swap_chain.resize failed");
 
-    data.common_resources.draw_text = Some(DrawText::new(&data.core, data.parameters.debug_layer).expect("Cannot create DrawText"));
+    data.common_resources.draw_text = 
+        Some(DrawText::new(&data.core, data.parameters.debug_layer)
+             .expect("Cannot create DrawText"));
+             
     data.camera().aspect = (w as f32) / (h as f32);
 
     for i in 0 .. data.frame_count {
         data.frame_resources.push(
-            FrameResources::new(&data.core, &data.common_resources, w, h, data.swap_chain.render_target(i), DXGI_FORMAT_R8G8B8A8_UNORM, &data.parameters).unwrap());
+            FrameResources::new(&data.core, &data.common_resources, w, h, 
+                    data.swap_chain.render_target(i), DXGI_FORMAT_R8G8B8A8_UNORM, &data.parameters)
+            .unwrap());
     }
 
     // on_render(data, 1, 1);
