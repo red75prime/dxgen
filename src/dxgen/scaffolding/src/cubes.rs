@@ -62,8 +62,7 @@ type M4 = [[f32; 4]; 4];
 #[repr(C)]
 #[derive(Clone)]
 pub struct Constants {
-    view: M4,
-    proj: M4,
+    viewproj: M4,
     eye_pos: [f32; 3],
     // HLSL shader constants have some alignment rules. I need padding here
     // TODO: Use shader reflection API
@@ -532,9 +531,10 @@ impl FrameResources {
     
         ::perf_fillbuf_start();
 
+        let viewproj = camera.projection_matrix() * camera.view_matrix();
+
         let constants =  Constants {
-            view: utils::matrix4_to_4x4(&camera.view_matrix()),
-            proj: utils::matrix4_to_4x4(&camera.projection_matrix()),
+            viewproj: utils::matrix4_to_4x4(&viewproj),
             eye_pos: camera.eye.into(),
             _padding1: 0.,
             light_pos: st.light_pos.into(),

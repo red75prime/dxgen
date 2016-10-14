@@ -41,8 +41,7 @@ VS_OUTPUT VSMain(VS_INPUT vtx, uint iidx : SV_InstanceID){
   ret.vPosition = mul(float4(vtx.vPosition, 1), instances[iidx].world);
   ret.w_pos = ret.vPosition.xyz;
   float z = ret.vPosition.z;
-  ret.vPosition = mul(ret.vPosition, view);
-  ret.vPosition = mul(ret.vPosition, proj);
+  ret.vPosition = mul(ret.vPosition, viewproj);
   
   ret.vDiffuse = float4(instances[iidx].color, 1);
   ret.texc0 = vtx.texc0;

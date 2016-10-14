@@ -349,7 +349,12 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
               
               camera.restore_up((90.*frame_dt) as f32);
 
-              let step=if keys.pressed(VK_SHIFT) {1.0} else if keys.pressed(VK_CONTROL) {0.01} else {0.1};
+              let step = match (keys.pressed(VK_SHIFT), keys.pressed(VK_CONTROL)) {
+                (false, false) => 0.1,
+                (true,  false) => 1.0,
+                (false, true ) => 0.01,
+                (true,  true ) => 0.001,
+              };
 
               if keys.pressed(VK_W) { camera.go(step , 0.   , 0.   ); };
               if keys.pressed(VK_S) { camera.go(-step, 0.   , 0.   ); };
@@ -407,7 +412,6 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
         core::dump_info_queue(&iq);
     };
 }
-
 
 // Simple render statistics collector
 pub struct PerfData {

@@ -1,11 +1,6 @@
 #define RSD "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | ALLOW_STREAM_OUTPUT),CBV(b0),SRV(t0)"
 
-cbuffer cb0 : register(b0) {
-  float4x4 view;
-  float4x4 proj;
-  float3 eye_pos;
-  float3 light_pos;
-}
+#include "view_constants.hlsl"
 
 struct InstanceData {
   float4x4 world;

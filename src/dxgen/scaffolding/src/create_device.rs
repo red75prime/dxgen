@@ -391,18 +391,21 @@ pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static
     try!(f.read_to_end(&mut content));
     let shader = try!(::std::str::from_utf8(&content[..]));
 
-    let all_ok: Result<Vec<_>,_> = func_names.iter_mut().map(|&mut(fname, target, ref mut bytecode)|{
-        match d3d_compile_from_str(shader, file_name, fname, target, flags) {
-            Ok(mut bc) => {
-                    bytecode.truncate(0);
-                    bytecode.append(&mut bc);
-                    Ok(())
-                },
-            Err(err) => Err(ShaderCompileError{ 
-                    inner: ShaderInnerError::Compile(format!("{}: {}", fname, err)),
-                }),
-        }
-        }).collect();
+    let all_ok: Result<Vec<_>,_> = 
+        func_names
+        .iter_mut()
+        .map(|&mut(fname, target, ref mut bytecode)| {
+            match d3d_compile_from_str(shader, file_name, fname, target, flags) {
+                Ok(mut bc) => {
+                        bytecode.truncate(0);
+                        bytecode.append(&mut bc);
+                        Ok(())
+                    },
+                Err(err) => Err(ShaderCompileError{ 
+                        inner: ShaderInnerError::Compile(format!("{}: {}", fname, err)),
+                    }),
+            }})
+        .collect();
     match all_ok {
         Ok(_) => Ok(()),
         Err(e) => Err(e),

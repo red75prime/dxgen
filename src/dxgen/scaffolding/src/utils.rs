@@ -217,7 +217,6 @@ pub fn wait_for_queue(queue: &D3D12CommandQueue,
 }
 
 pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
-    // TODO: Look for overflow behaviour of atomics
     let fence_value = core.next_fence_value();
 
     match wait_for_queue(&core.graphics_queue, fence_value, fence, fence_event) {
@@ -230,7 +229,6 @@ pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &
 }
 
 pub fn wait_for_compute_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
-    // TODO: Look for overflow behaviour of atomics
     let fence_value = core.next_fence_value();
 
     match wait_for_queue(&core.compute_queue, fence_value, fence, fence_event) {
@@ -243,7 +241,6 @@ pub fn wait_for_compute_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &E
 }
 
 pub fn wait_for_copy_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
-    // TODO: Look for overflow behaviour of atomics
     let fence_value = core.next_fence_value();
 
     match wait_for_queue(&core.copy_queue, fence_value, fence, fence_event) {
