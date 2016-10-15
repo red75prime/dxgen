@@ -9,13 +9,13 @@ dependencies = [
  "dwrite-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "dxgi-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "dxguid-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
- "dxsafe 0.4.5 (git+https://github.com/red75prime/rusty-com-port/)",
+ "dxsafe 0.5.5 (git+https://github.com/red75prime/rusty-com-port/)",
  "env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.10.3 (git+https://github.com/PistonDevelopers/image/)",
  "itertools 0.4.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "kernel32-sys 0.2.2 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "lazy_static 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "nalgebra 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ncollide 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -101,11 +101,11 @@ dependencies = [
 
 [[package]]
 name = "dxsafe"
-version = "0.4.5"
-source = "git+https://github.com/red75prime/rusty-com-port/#a419e261e7f790448aca140eacddf721d90319c4"
+version = "0.5.5"
+source = "git+https://github.com/red75prime/rusty-com-port/#9a181e37868c7f579d7fda2079f477f2da700a10"
 dependencies = [
  "dxguid-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
- "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.2.7 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
 ]
 
@@ -175,7 +175,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "libc"
-version = "0.2.16"
+version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -188,7 +188,7 @@ name = "memchr"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -363,7 +363,7 @@ name = "openal-rs"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -371,7 +371,7 @@ name = "rand"
 version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -407,7 +407,7 @@ version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -424,7 +424,7 @@ version = "0.1.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -472,7 +472,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum dwrite-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)" = "<none>"
 "checksum dxgi-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)" = "<none>"
 "checksum dxguid-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)" = "<none>"
-"checksum dxsafe 0.4.5 (git+https://github.com/red75prime/rusty-com-port/)" = "<none>"
+"checksum dxsafe 0.5.5 (git+https://github.com/red75prime/rusty-com-port/)" = "<none>"
 "checksum enum_primitive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f79eff5be92a4d7d5bddf7daa7d650717ea71628634efe6ca7bcda85b2183c23"
 "checksum env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "15abd780e45b3ea4f76b4e9a26ff4843258dd8a3eed2775a0e7368c2e7936c2f"
 "checksum glob 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)" = "8be18de09a56b60ed0edf84bc9df007e30040691af7acd1c41874faac5895bfb"
@@ -481,7 +481,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum kernel32-sys 0.2.2 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)" = "<none>"
 "checksum kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 "checksum lazy_static 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)" = "cf186d1a8aa5f5bee5fd662bc9c1b949e0259e1bcc379d1f006847b0080c7417"
-"checksum libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)" = "408014cace30ee0f767b1c4517980646a573ec61a57957aeeabcac8ac0a02e8d"
+"checksum libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)" = "044d1360593a78f5c8e5e710beccdc24ab71d1f01bc19a29bcacdba22e8475d8"
 "checksum log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "ab83497bf8bf4ed2a74259c1c802351fcd67a65baa86394b6ba73c36f4838054"
 "checksum memchr 0.1.11 (registry+https://github.com/rust-lang/crates.io-index)" = "d8b629fb514376c675b98c1421e80b151d3817ac42d7c667717d282761418d20"
 "checksum nalgebra 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a962b5bbc0c281a284e419a118f781754ed5efeb703953d9a6a790d7f5e1dff8"

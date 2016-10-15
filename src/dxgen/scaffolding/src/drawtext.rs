@@ -168,10 +168,11 @@ impl DrawTextResources {
         try!(tla.set_font_size(40., text_range(0, 4)));
 
         if da { trace!("draw_text"); }
-        let d = 1.5;
-        for &(dx, dy) in &[(-d, 0.),(d, 0.),(0., -d),(0., d)] {
-            dt.devctxd2d.draw_text_layout(point2f(35.+dx, 5.+dy), &tla, &self.bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE);
-            //dt.devctxd2d.draw_text(&hello_vec[..], &self.tformat, &rectf(35.+dx, 5.+dy, 300.+dx, 100.+dy), &self.bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE, DWRITE_MEASURING_MODE_NATURAL);
+        let d = 1.0f32;
+        for dx in [-d, 0., d].into_iter() {
+            for dy in [-d, 0., d].into_iter() {
+                dt.devctxd2d.draw_text_layout(point2f(35.+dx, 5.+dy), &tla, &self.bbrush, D2D1_DRAW_TEXT_OPTIONS_NONE);
+            };
         };
         try!(tla.set_drawing_effect(&self.gbrush, text_range(0, 4)));
         dt.devctxd2d.draw_text_layout(point2f(35., 5.), &tla, &self.tbrush, D2D1_DRAW_TEXT_OPTIONS_NONE);

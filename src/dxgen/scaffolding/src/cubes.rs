@@ -159,7 +159,7 @@ struct CommonResources {
     avg_brightness_smoothed: f32,
     light: LightSource,
     light_res: LightSourceResources,
-    draw_text: Option<DrawText>, // Option to dump everything before resize
+    draw_text: Option<DrawText>, // Option to be able to drop DrawText before resize
 }
 
 impl CommonResources {
@@ -896,27 +896,29 @@ pub fn on_init(wnd: &Window,
     let adapter_luid = core.dev.get_adapter_luid();
     if let Ok(adapter) = core.dxgi_factory.enum_adapter_by_luid::<DXGIAdapter3>(adapter_luid) {
         // Enumerate adapter's outputs
-        for output in adapter.into_iter().filter_map(|o| o.query_interface::<DXGIOutput4>().ok()) {
-            if let Ok(output_desc) = output.get_desc() {
-                let output_device_name = utils::wchar_array_to_string_lossy(&output_desc.DeviceName[..]);
-                info!("Output: {}", output_device_name);
-            } else {
-                error!("Output: Unbelievable! DXGIOutput4::get_desc() returned an error.");
-            };
-            // Enumerate display modes
-            if let Ok(modes) = get_display_mode_list1(&output, DXGI_FORMAT_R8G8B8A8_UNORM, 0) {
-                for mode in &modes {
-                    info!("  {}x{} @ {}/{}Hz {:?} {:?} ",
-                          mode.Width,
-                          mode.Height,
-                          mode.RefreshRate.Numerator,
-                          mode.RefreshRate.Denominator,
-                          mode.ScanlineOrdering,
-                          mode.Scaling);
+        for (i, output) in &adapter {
+            if let Ok(output) = output.query_interface::<DXGIOutput4>() {
+                if let Ok(output_desc) = output.get_desc() {
+                    let output_device_name = utils::wchar_array_to_string_lossy(&output_desc.DeviceName[..]);
+                    info!("Output{}: {}", i, output_device_name);
+                } else {
+                    error!("Output{}: Unbelievable! DXGIOutput4::get_desc() returned an error.", i);
+                };
+                // Enumerate display modes
+                if let Ok(modes) = get_display_mode_list1(&output, DXGI_FORMAT_R8G8B8A8_UNORM, 0) {
+                    for mode in &modes {
+                        info!("  {}x{} @ {}/{}Hz {:?} {:?} ",
+                            mode.Width,
+                            mode.Height,
+                            mode.RefreshRate.Numerator,
+                            mode.RefreshRate.Denominator,
+                            mode.ScanlineOrdering,
+                            mode.Scaling);
+                    }
                 }
-            };
+            }
         }
-    };
+    }
 
     let sc_desc = DXGI_SWAP_CHAIN_DESC1 {
         Width: w as u32,

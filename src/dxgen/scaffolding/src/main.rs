@@ -151,10 +151,9 @@ fn main() {
       Ok(fact) => fact,
       Err(hr) => panic!("Cannot create DXGIFactory4 (0x{:x}). No can do.",hr),
     };
-  let mut i=0;
   let mut adapters = vec![];
   // Iterate over available GPUs 
-  while let Ok(adapter)=factory.enum_adapters1(i) {
+  for (i, adapter) in &factory {
     let descr=adapter.get_desc1().unwrap();
     println!("Adapter {}: {}", i, wchar_array_to_string_lossy(&descr.Description));
     println!("   Dedicated video memory: {}MiB", descr.DedicatedVideoMemory/1024/1024);
@@ -167,8 +166,6 @@ fn main() {
       }
       adapters.push(adapter);
     }
-    // It's easy to forget this.
-    i+=1;
   }
 
   if adapters_info {
