@@ -9,7 +9,7 @@ dependencies = [
  "dwrite-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "dxgi-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "dxguid-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
- "dxsafe 0.5.5 (git+https://github.com/red75prime/rusty-com-port/)",
+ "dxsafe 0.5.6 (git+https://github.com/red75prime/rusty-com-port/)",
  "env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.10.3 (git+https://github.com/PistonDevelopers/image/)",
  "itertools 0.4.19 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -101,8 +101,8 @@ dependencies = [
 
 [[package]]
 name = "dxsafe"
-version = "0.5.5"
-source = "git+https://github.com/red75prime/rusty-com-port/#9a181e37868c7f579d7fda2079f477f2da700a10"
+version = "0.5.6"
+source = "git+https://github.com/red75prime/rusty-com-port/#aad8f66f09413a87a7743045510f4250c6d70298"
 dependencies = [
  "dxguid-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)",
  "libc 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -472,7 +472,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum dwrite-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)" = "<none>"
 "checksum dxgi-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)" = "<none>"
 "checksum dxguid-sys 0.2.0 (git+https://github.com/red75prime/winapi-rs/?branch=D2D1_IIDs)" = "<none>"
-"checksum dxsafe 0.5.5 (git+https://github.com/red75prime/rusty-com-port/)" = "<none>"
+"checksum dxsafe 0.5.6 (git+https://github.com/red75prime/rusty-com-port/)" = "<none>"
 "checksum enum_primitive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f79eff5be92a4d7d5bddf7daa7d650717ea71628634efe6ca7bcda85b2183c23"
 "checksum env_logger 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "15abd780e45b3ea4f76b4e9a26ff4843258dd8a3eed2775a0e7368c2e7936c2f"
 "checksum glob 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)" = "8be18de09a56b60ed0edf84bc9df007e30040691af7acd1c41874faac5895bfb"
