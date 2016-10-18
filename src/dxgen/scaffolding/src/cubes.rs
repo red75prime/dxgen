@@ -24,6 +24,7 @@ use std::sync::Arc;
 use cubestate::{State, StateUpdateAgent};
 use light::{LightSource, LightSourceResources};
 use drawtext::{DrawText, DrawTextResources};
+use skybox::Skybox;
 
 // dx_vertex! macro implement dxsems::VertexFormat trait for given structure
 // VertexFormat::generate(&self, register_space: u32) -> Vec<D3D12_INPUT_ELEMENT_DESC>
@@ -160,6 +161,7 @@ struct CommonResources {
     light: LightSource,
     light_res: LightSourceResources,
     draw_text: Option<DrawText>, // Option to be able to drop DrawText before resize
+    skybox: Option<Skybox>, // creation of skybox can fail if there's no "skybox.hdr"
 }
 
 impl CommonResources {
@@ -298,6 +300,8 @@ impl CommonResources {
         
         let draw_text = try!(DrawText::new(core, parameters.debug_layer));
 
+        let skybox = Skybox::new(core, &downsampler, parameters.rt_format).ok();
+
         Ok(CommonResources {
             pipeline_state: pipeline_state,
             root_signature: root_signature,
@@ -322,6 +326,7 @@ impl CommonResources {
             light: light,
             light_res: light_res,
             draw_text: Some(draw_text),
+            skybox: skybox,
         })
     }
 }
@@ -650,6 +655,8 @@ impl FrameResources {
         glist.draw_indexed_instanced(cr.index_count, st.cubes.len() as u32, 0, 0, 0);
         
         cr.light_res.populate_command_list(glist, &cr.light, &self.c_buffer);
+
+        cr.skybox.as_ref().map(|s| s.populate_command_list(glist, &self.c_buffer) );
 
         glist.resource_barrier(
             &[*ResourceBarrier::transition(&self.hdr_render_target,

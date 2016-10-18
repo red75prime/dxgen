@@ -77,7 +77,7 @@ impl Downsampler {
             // D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS is required for generating mip-maps (at least it required for my method of generating mip-maps)
             ..resource_desc_tex2d_nomip(cw as u64,
                                         ch as u32,
-                                        DXGI_FORMAT_R8G8B8A8_UNORM,
+                                        rdesc.Format,
                                         D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
         };
         trace!("Create intermediate texture");

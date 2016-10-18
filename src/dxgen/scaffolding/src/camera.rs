@@ -1,7 +1,7 @@
 use cgmath::*;
 use utils::*;
 
-#[derive(Clone)] // no Debug for Basis3
+#[derive(Debug, Clone)]
 pub struct Camera {
     pub eye: Point3<f32>,
     pub fwd: Vector3<f32>,

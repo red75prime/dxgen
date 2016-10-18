@@ -48,7 +48,7 @@ impl<T: VertexFormat> PLShadow<T> {
             PS: ShaderBytecode::from_vec(&pshader_bc).get(),
             RasterizerState: D3D12_RASTERIZER_DESC {
                 CullMode: D3D12_CULL_MODE_NONE,
-                DepthBias: 10,
+                DepthBias: 550,
                 SlopeScaledDepthBias: 1.5, 
                 ..rasterizer_desc_default()
             },

@@ -18,7 +18,7 @@ RWStructuredBuffer<float> total : register(u0);
 groupshared float4 bpacked[TotalGroups*TotalGroups];
 
 float brightness(float4 cl) {
-  return log(dot(float3(0.2126, 0.7152, 0.0722), cl.rgb)+0.0001)-log(0.0001);
+  return log(abs(dot(float3(0.2126, 0.7152, 0.0722), cl.rgb))+0.0001)-log(0.0001);
 }
 
 float br(uint x, uint y) {

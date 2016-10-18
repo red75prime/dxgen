@@ -1,6 +1,6 @@
 extern crate image;
 
-use core::{self, DXCore};
+use core::{self, DXCore, DumpOnError};
 use create_device as cdev;
 use downsampler::Downsampler;
 use dxsafe::*;
@@ -8,25 +8,93 @@ use dxsafe::structwrappers::*;
 use self::image::hdr;
 use std::fs;
 use std::io;
+use std::ptr;
 use utils;
 use winapi::*;
 
 // Skybox per frame resources to be exact
 pub struct SkyboxResources {
-    dheap: D3D12DescriptorHeap,
 }
 
 pub struct Skybox {
     root_sig: D3D12RootSignature,
     pso: D3D12PipelineState,
-    skytex: D3D12Resource,
+    _skytex: D3D12Resource,
+    dheap: DescriptorHeap,
 }
 
 impl Skybox {
-    pub fn new(core: &DXCore, downsampler: &Downsampler) -> HResult<Skybox> {
-        let (tex, srv_desc) = try!(load_skybox_texture(core, downsampler));
+    pub fn new(core: &DXCore, downsampler: &Downsampler, rt_format: DXGI_FORMAT) -> HResult<Skybox> {
+        core.dump_info_queue_tagged("Skybox::new() start. Infoqueue cleanup");
+        trace!("load_skybox_texture()");
+        let (tex, srv_desc) = try!(load_skybox_texture(core, downsampler).dump(core));
 
-        unimplemented!()
+        let dheap = try!(DescriptorHeap::new(&core.dev, 1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+
+        core.dev.create_shader_resource_view(Some(&tex), Some(&srv_desc), dheap.cpu_handle(0));
+
+        let mut root_sig_bc = vec![];
+        let mut v_shader_bc = vec![];
+        let mut p_shader_bc = vec![];
+
+        trace!("compile_shaders(\"skybox.hlsl\", ...)");
+        try!(cdev::compile_shaders("skybox.hlsl", 
+                &mut[
+                    ("SBRS", "rootsig_1_0", &mut root_sig_bc),
+                    ("VSMain", "vs_5_1", &mut v_shader_bc),
+                    ("PSMain", "ps_5_1", &mut p_shader_bc),
+                ], D3DCOMPILE_OPTIMIZATION_LEVEL3)
+            .map_err(|err|{ error!("{}", err) ; DXGI_ERROR_INVALID_CALL }));
+
+        trace!("create_root_signature()");
+        let root_signature = try!(core.dev.create_root_signature(0, &root_sig_bc[..]));
+
+        let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+            pRootSignature: root_signature.iptr() as *mut _,
+            VS: ShaderBytecode::from_vec(&v_shader_bc).get(),
+            PS: ShaderBytecode::from_vec(&p_shader_bc).get(),
+            RasterizerState: D3D12_RASTERIZER_DESC {
+                CullMode: D3D12_CULL_MODE_NONE,
+                ..rasterizer_desc_default()
+            },
+            DepthStencilState: D3D12_DEPTH_STENCIL_DESC {
+                DepthFunc: D3D12_COMPARISON_FUNC_LESS_EQUAL,
+                ..depth_stencil_state_default()
+            },
+            InputLayout: D3D12_INPUT_LAYOUT_DESC {
+                pInputElementDescs: ptr::null(),
+                NumElements: 0,
+            },
+            PrimitiveTopologyType: D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
+            NumRenderTargets: 1,
+            DSVFormat: DXGI_FORMAT_D32_FLOAT,
+            Flags: D3D12_PIPELINE_STATE_FLAG_NONE,
+            ..graphics_pipeline_state_desc_default()
+        };
+        pso_desc.RTVFormats[0] = rt_format;
+
+        let pso = try!(core.dev.create_graphics_pipeline_state(&pso_desc));
+
+        Ok(Skybox {
+            _skytex: tex,
+            root_sig: root_signature,
+            pso: pso,
+            dheap: dheap,
+        })
+    }
+
+    pub fn populate_command_list(&self, glist: &D3D12GraphicsCommandList, view_const: &D3D12Resource) {
+        glist.set_pipeline_state(&self.pso);
+        glist.set_graphics_root_signature(&self.root_sig);
+        glist.ia_set_primitive_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+        glist.ia_set_vertex_buffers(0, None);
+        glist.ia_set_index_buffer(None);
+        glist.set_descriptor_heaps(&[self.dheap.get()]);
+        glist.set_graphics_root_constant_buffer_view(0, view_const.get_gpu_virtual_address());
+        glist.set_graphics_root_descriptor_table(1, self.dheap.gpu_handle(0));
+
+        glist.draw_instanced(4, 1, 0, 0);
+
     }
 }
 
@@ -39,6 +107,8 @@ fn load_skybox_texture(core: &DXCore, downsampler: &Downsampler) -> HResult<(D3D
     let meta = decoder.metadata();
     let data = try!(decoder.read_image_native()
             .map_err(|err|{ error!("Cannot read 'skybox.hdr': {}", err); ERROR_INVALID_DATA as HRESULT }));
+
+    println!("First data point: {} {} {} {}", data[0].c[0], data[0].c[1], data[0].c[2], data[0].e);
 
     let rgbe8_tex_desc = resource_desc_tex2d_nomip(
                                     meta.width as u64,
@@ -63,7 +133,7 @@ fn load_skybox_texture(core: &DXCore, downsampler: &Downsampler) -> HResult<(D3D
         ..resource_desc_tex2d_nomip(meta.width as u64,
                                     meta.height as u32,
                                     DXGI_FORMAT_R16G16B16A16_FLOAT,
-                                    D3D12_RESOURCE_FLAG_NONE)
+                                    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
     };
 
     let tex = try!(core.dev.create_committed_resource(
@@ -138,6 +208,8 @@ fn convert_to_rgb(core: &DXCore, src: &D3D12Resource, src_srv_desc: &D3D12_SHADE
     let fence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
 
     utils::wait_for_compute_queue(core, &fence, &core::create_event());
+
+    core.dump_info_queue_tagged("Dump at the end of convert_to_rgb");
 
     Ok(())
 }

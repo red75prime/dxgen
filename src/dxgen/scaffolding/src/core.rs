@@ -107,6 +107,7 @@ impl DXCore {
 pub fn dump_info_queue(iq: &D3D12InfoQueue) {
     let mnum = iq.get_num_stored_messages_allowed_by_retrieval_filter();
     // println!("Number of debug messages is {}", mnum);
+    if mnum != 0 { debug!("Start of infoqueue dump"); };
     for i in 0..mnum {
         let mut sz = 0;
         let _ = iq.get_message(i, None, &mut sz);
@@ -135,6 +136,7 @@ pub fn dump_info_queue(iq: &D3D12InfoQueue) {
         }
     }
     iq.clear_stored_messages();
+    if mnum != 0 { debug!("End of infoqueue dump"); };
 }
 
 pub fn create_core(dxgi_factory: &DXGIFactory4, adapter: Option<&DXGIAdapter1>,

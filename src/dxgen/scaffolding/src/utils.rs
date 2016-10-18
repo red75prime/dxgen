@@ -148,9 +148,11 @@ pub fn upload_into_texture<T: Sized+Clone>(core: &DXCore,
 
     trace!("create_command_allocator");
     let callocator = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COPY));
+    try!(callocator.set_name("upload_into_texture allocator"));
     trace!("create_command_list");
     let clist: D3D12GraphicsCommandList =
         try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COPY, &callocator, None));
+    try!(clist.set_name("upload_into_texture command list"));
     clist.resource_barrier(&[*ResourceBarrier::transition(tex,
                                                               D3D12_RESOURCE_STATE_COMMON,
                                                               D3D12_RESOURCE_STATE_COPY_DEST)]);
