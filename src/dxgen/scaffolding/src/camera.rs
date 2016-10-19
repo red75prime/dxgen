@@ -86,6 +86,6 @@ impl Camera {
     }
 
     pub fn tn_half_fov(&self) -> [f32; 2] {
-        [f32::tan(self.hfov_deg.to_radians()/2.), f32::tan(self.hfov_deg.to_radians()/2.)/self.aspect]
+        [f32::tan(self.hfov_deg.to_radians()/2.)*self.aspect, f32::tan(self.hfov_deg.to_radians()/2.)]
     }
 }
