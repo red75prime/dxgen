@@ -73,6 +73,8 @@ const FRAME_COUNT : u32 = 3;
 fn main() {
   // install SEH guard to continue on continuable structured exception 
   let _seh_guard = seh::SehGuard::new();
+  // install ctrl-C handler to shutdown gracefully
+  seh::install_ctrl_c_handler();
   // Initialize logger
   env_logger::init().unwrap();
 
@@ -401,6 +403,9 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
             } // stats
           } // do not render
         } // no window message
+        if seh::ctrl_c_is_triggered() {
+          break;
+        };
     } // message loop
     // Application should exit fullscreen state before terminating. 
     data.borrow().set_fullscreen(false).expect("Fullscreen mode isn't supported");
