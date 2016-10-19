@@ -64,11 +64,14 @@ type M4 = [[f32; 4]; 4];
 #[derive(Clone)]
 pub struct Constants {
     viewproj: M4,
+    view: M4,
     eye_pos: [f32; 3],
     // HLSL shader constants have some alignment rules. I need padding here
     // TODO: Use shader reflection API
     _padding1: f32,
     light_pos: [f32; 3],
+    _padding2: f32,
+    tfov_xy: [f32; 2],
 }
 
 #[repr(C)]
@@ -536,13 +539,17 @@ impl FrameResources {
     
         ::perf_fillbuf_start();
 
-        let viewproj = camera.projection_matrix() * camera.view_matrix();
+        let view = camera.view_matrix();
+        let viewproj = camera.projection_matrix() * view;
 
         let constants =  Constants {
             viewproj: utils::matrix4_to_4x4(&viewproj),
+            view: utils::matrix4_to_4x4(&view),
             eye_pos: camera.eye.into(),
             _padding1: 0.,
             light_pos: st.light_pos.into(),
+            _padding2: 0.,
+            tfov_xy: camera.tn_half_fov(),
         };
         
         *self.constants_mapped = constants;
@@ -1041,7 +1048,7 @@ pub fn on_init(wnd: &Window,
     };
 
     ret.camera.go(-3., 0., 0.);
-    ret.camera.aspect = (w as f32) / (h as f32);
+    ret.camera.set_aspect((w as f32) / (h as f32));
 
     // Done
     Ok(ret)
@@ -1159,7 +1166,7 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
         Some(DrawText::new(&data.core, data.parameters.debug_layer)
              .expect("Cannot create DrawText"));
              
-    data.camera().aspect = (w as f32) / (h as f32);
+    data.camera().set_aspect((w as f32) / (h as f32));
 
     for i in 0 .. data.frame_count {
         data.frame_resources.push(

@@ -9,7 +9,7 @@ pub struct Camera {
     pub right: Vector3<f32>,
     pub rot: Basis3<f32>,
     pub hfov_deg: f32,
-    pub aspect: f32,
+    aspect: f32,
     pub near: f32,
     pub far: f32,
 }
@@ -79,5 +79,13 @@ impl Camera {
 
     pub fn projection_matrix(&self) -> Matrix4<f32> {
         perspective(deg(self.hfov_deg), self.aspect, self.near, self.far)
+    }
+
+    pub fn set_aspect(&mut self, aspect: f32) {
+        self.aspect = aspect;
+    }
+
+    pub fn tn_half_fov(&self) -> [f32; 2] {
+        [f32::tan(self.hfov_deg.to_radians()/2.), f32::tan(self.hfov_deg.to_radians()/2.)/self.aspect]
     }
 }

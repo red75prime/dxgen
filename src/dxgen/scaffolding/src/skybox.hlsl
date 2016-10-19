@@ -20,25 +20,27 @@ struct PS_IN {
 	float2 ncrd: TEXCOORD;
 };
 
+#include "view_constants.hlsl"
+
 [RootSignature(SBRS)]
 PS_IN VSMain(uint vtx: SV_VertexID) {
 	PS_IN ret = { float4(0,0,0,0), float2(0,0) };
 	switch(vtx) {
 		case 0:
 			ret.pos = float4(-1, -1, 1, 1);
-			ret.ncrd = float2(-2, -1);
+			ret.ncrd = float2(tfov_xy.x, tfov_xy.y);
 			break;
 		case 1:
 			ret.pos = float4(1, -1, 1, 1);
-			ret.ncrd = float2(2, -1);
+			ret.ncrd = float2(-tfov_xy.x, tfov_xy.y);
 			break;
 		case 2:
 			ret.pos = float4(-1, 1, 1, 1);
-			ret.ncrd = float2(-2, 1);
+			ret.ncrd = float2(tfov_xy.x, -tfov_xy.y);
 			break;
 		case 3:
 			ret.pos = float4(1, 1, 1, 1);
-			ret.ncrd = float2(2, 1);
+			ret.ncrd = float2(-tfov_xy.x, -tfov_xy.y);
 			break;
 	}
 	return ret;
@@ -47,13 +49,11 @@ PS_IN VSMain(uint vtx: SV_VertexID) {
 Texture2D<float4> skytex: register(t0);
 SamplerState default_sampler: register(s0);
 
-#include "view_constants.hlsl"
-
 [RootSignature(SBRS)]
 [earlydepthstencil]
 float4 PSMain(PS_IN dat) : SV_TARGET {
-	float3 r = mul(viewproj, float4(dat.ncrd, 1, 0)).xyz;
-	float2 p = float2(0.5 - atan2(r.x, r.z)/6.2832, 0.5 - atan2(r.y,sqrt(r.x*r.x+r.z*r.z))/3.1416);
+	float3 r = mul(view, float4(dat.ncrd, 1, 0)).xyz;
+	float2 p = float2(0.5 - atan2(r.x, r.z)/6.2832, 0.5 + atan2(r.y,sqrt(r.x*r.x+r.z*r.z))/3.1416);
 	//return float4(p.x, p.y, 1, 1);
 	return skytex.Sample(default_sampler, p);
 }
