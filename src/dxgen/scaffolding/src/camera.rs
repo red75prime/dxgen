@@ -8,7 +8,7 @@ pub struct Camera {
     pub up: Vector3<f32>,
     pub right: Vector3<f32>,
     pub rot: Basis3<f32>,
-    pub hfov_deg: f32,
+    pub vfov_deg: f32,
     aspect: f32,
     pub near: f32,
     pub far: f32,
@@ -22,7 +22,7 @@ impl Camera {
             up: v3(0., 1., 0.),
             right: v3(1., 0., 0.),
             rot: <Basis3<f32> as Rotation<_>>::one(),
-            hfov_deg: 60.,
+            vfov_deg: 60.,
             aspect: 1.,
             near: 0.1,
             far: 10000.,
@@ -78,14 +78,18 @@ impl Camera {
     }
 
     pub fn projection_matrix(&self) -> Matrix4<f32> {
-        perspective(deg(self.hfov_deg), self.aspect, self.near, self.far)
+        perspective(deg(self.vfov_deg), self.aspect, self.near, self.far)
     }
 
     pub fn set_aspect(&mut self, aspect: f32) {
         self.aspect = aspect;
     }
 
+    pub fn set_fov(&mut self, fovy_deg: f32) {
+        self.vfov_deg = fovy_deg;
+    }
+
     pub fn tn_half_fov(&self) -> [f32; 2] {
-        [f32::tan(self.hfov_deg.to_radians()/2.)*self.aspect, f32::tan(self.hfov_deg.to_radians()/2.)]
+        [f32::tan(self.vfov_deg.to_radians()/2.)*self.aspect, f32::tan(self.vfov_deg.to_radians()/2.)]
     }
 }

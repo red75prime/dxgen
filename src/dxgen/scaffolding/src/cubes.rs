@@ -94,6 +94,7 @@ pub struct CubeParms {
     pub rt_format: DXGI_FORMAT,
     pub render_trace: bool,
     pub enable_srgb: bool,
+    pub fovy_deg: f32,
 }
 
 static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.02, 1.0];
@@ -1049,6 +1050,7 @@ pub fn on_init(wnd: &Window,
 
     ret.camera.go(-3., 0., 0.);
     ret.camera.set_aspect((w as f32) / (h as f32));
+    ret.camera.set_fov(parameters.fovy_deg);
 
     // Done
     Ok(ret)

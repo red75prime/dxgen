@@ -95,7 +95,7 @@ void CSHorizontal(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
   uint srcx = gid.x * HTGroups + gtid.x - KernelSize;
   uint srcy = gid.y * 2;
   float3 scl = (src[uint2(srcx, srcy)].rgb + src[uint2(srcx, srcy + 1)].rgb);
-  tmp1[gtid.x] = brightness(scl)>avg_brightness*4 ? scl : float3(0, 0, 0);
+  tmp1[gtid.x] = brightness(scl)>avg_brightness*40 ? scl : float3(0, 0, 0);
 
   AllMemoryBarrierWithGroupSync();
 

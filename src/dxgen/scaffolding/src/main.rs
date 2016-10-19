@@ -90,6 +90,7 @@ fn main() {
         rt_format: DXGI_FORMAT_R16G16B16A16_FLOAT,
         enable_srgb: false,
         render_trace: false,
+        fovy_deg: 60.,
     };
   let mut adapters_to_test = vec![];
   let mut adapters_info = false;
@@ -139,6 +140,11 @@ fn main() {
       // Command line parameter -s<f32> sets cube speed multiplier
       if let Ok(s) = (&arg[2..]).parse::<f32>() {
         parms.speed_mult = s;
+      }
+    } else if arg.starts_with("--fov") {
+      // Command line parameter --fov<f32> sets vertical fov
+      if let Ok(s) = (&arg[5..]).parse::<f32>() {
+        parms.fovy_deg = s;
       }
     } else {
         println!("Unrecognized option: {}", arg);
