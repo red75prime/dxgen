@@ -127,7 +127,7 @@ fn load_skybox_texture(core: &DXCore, downsampler: &Downsampler) -> HResult<(D3D
     
     try!(utils::upload_into_texture(core, &rgbe8_tex, meta.width, meta.height, &data[..]));
 
-    let mipcnt = 8;
+    let mipcnt = 3;
     let tex_desc = D3D12_RESOURCE_DESC {
         MipLevels: mipcnt,
         ..resource_desc_tex2d_nomip(meta.width as u64,

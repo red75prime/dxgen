@@ -13,7 +13,7 @@ void CSTexConvert(uint3 gid : SV_GroupId) {
 	tex[gid.xy] = float4(ex*col.r, ex*col.g, ex*col.b, 1);
 }
 
-#define SBRS "CBV(b0), DescriptorTable(SRV(t0)), StaticSampler(s0, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP, borderColor=STATIC_BORDER_COLOR_TRANSPARENT_BLACK)"
+#define SBRS "CBV(b0), DescriptorTable(SRV(t0)), StaticSampler(s0, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP)"
 
 struct PS_IN {
 	float4 pos : SV_POSITION;
@@ -56,6 +56,5 @@ float4 PSMain(PS_IN dat) : SV_TARGET {
 	float3 r = mul(view, float4(dat.ncrd, 1, 0)).xyz;
 	float2 p = float2(0.5 - atan2(r.x, r.z)/2/pi, 0.5 + atan2(r.y,sqrt(r.x*r.x+r.z*r.z))/pi);
 	//return float4(p.x, p.x, 0, 1);
-	return skytex.SampleLevel(default_sampler, p, 0);
+	return skytex.Sample(default_sampler, p); //Level(default_sampler, p, 0);
 }
-

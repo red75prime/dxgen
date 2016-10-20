@@ -8,7 +8,7 @@ pub struct Camera {
     pub up: Vector3<f32>,
     pub right: Vector3<f32>,
     pub rot: Basis3<f32>,
-    pub vfov_deg: f32,
+    vfov_deg: f32,
     aspect: f32,
     pub near: f32,
     pub far: f32,
@@ -83,6 +83,10 @@ impl Camera {
 
     pub fn set_aspect(&mut self, aspect: f32) {
         self.aspect = aspect;
+    }
+
+    pub fn fov(&self) -> f32 {
+        self.vfov_deg
     }
 
     pub fn set_fov(&mut self, fovy_deg: f32) {

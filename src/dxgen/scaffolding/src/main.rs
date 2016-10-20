@@ -317,6 +317,16 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
                   camera.roty(dy as f32/6.);
               }
           },
+          WM_MOUSEWHEEL => {
+            let dz = (GET_WHEEL_DELTA_WPARAM(msg.wParam) as f32)/(WHEEL_DELTA as f32);
+            let mut data = data.borrow_mut();
+            let camera = data.camera();
+            let mut vfov = camera.fov();
+            vfov -= dz*5.0;
+            vfov = f32::max(vfov, 5.);
+            vfov = f32::min(vfov, 120.);
+            camera.set_fov(vfov);
+          },
           WM_KEYDOWN => {
               keys.set(msg.wParam as i32);
           },
