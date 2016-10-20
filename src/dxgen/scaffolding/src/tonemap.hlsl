@@ -37,7 +37,7 @@ void CSMain(uint3 dtid: SV_DispatchThreadId, uint3 gtid: SV_GroupThreadId, uint3
   uint2 crd = dtid.xy;
   uint w, h;
   dst.GetDimensions(w, h);
-  float3 cl = src[crd].rgb + hvtemp.SampleLevel(linSamp,crd/float2(w-1,h-1), 0).rgb;
+  float3 cl = max(src[crd].rgb , hvtemp.SampleLevel(linSamp, crd/float2(w-1,h-1), 0).rgb);
 
   float3 Yxy = rgb2Yxy(cl);
   Yxy.r *= key;
@@ -109,6 +109,7 @@ void CSHorizontal(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
       float3 cl = tmp1[x + gtx];
       acc = mad(cl, kernel[x + KernelSize], acc);
     }
+    acc *= 0.5;
 
     dst[uint2(gid.x * (HTGroups/2) + (gtx-KernelSize)/2, gid.y)] = float4(acc,1);
   };
