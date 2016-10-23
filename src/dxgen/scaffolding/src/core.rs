@@ -1,24 +1,51 @@
 use create_device::*;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-use winapi::*;
 use dxsafe::*;
 use dxsafe::structwrappers::*;
-use std::ptr;
 use kernel32;
 use std::mem;
+use std::ptr;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use winapi::*;
+
+
+lazy_static!( static ref FENCE_VALUE: AtomicUsize = AtomicUsize::new(1); );
+
+#[cfg(target_pointer_width="64")]
+pub fn next_fence_value() -> u64 {
+    FENCE_VALUE.fetch_add(1, Ordering::SeqCst) as u64
+}
+
+#[cfg(target_pointer_width="32")]
+pub fn next_fence_value() -> u64 {
+    unimplemented!()
+}
+
+pub fn wait_for(queue: &D3D12CommandQueue, fence_value: u64, fence: &D3D12Fence, fence_event: &Event)
+                -> HResult<()> {
+    try!(queue.signal(fence, fence_value));
+    if fence.get_completed_value() < fence_value {
+        try!(fence.set_event_on_completion(fence_value, fence_event.handle()));
+        wait_for_single_object(fence_event, INFINITE);
+    }
+    Ok(())
+}
+
+pub fn wait(queue: &D3D12CommandQueue, fence: &D3D12Fence, event: &Event) -> HResult<()> {
+    wait_for(queue, next_fence_value(), fence, event) 
+}
 
 pub trait DumpOnError {
-    fn dump(self, core: &DXCore) -> Self;
+    fn dump<M:AsRef<str>>(self, core: &DXCore, msg: M) -> Self;
     fn dump_iq(self, core: &D3D12InfoQueue) -> Self;
+    fn msg<M:AsRef<str>>(self, msg: M) -> Self;
 }
 
 impl<T> DumpOnError for HResult<T> {
-    fn dump(self, core: &DXCore) -> Self {
+    fn dump<M: AsRef<str>>(self, core: &DXCore, msg: M) -> Self {
         match self {
             Ok(_) => (),
             Err(_) => {
-                core.dump_info_queue();
+                core.dump_info_queue_tagged(msg.as_ref());
                 ()
             },
         };
@@ -31,6 +58,16 @@ impl<T> DumpOnError for HResult<T> {
             Err(_) => {
                 dump_info_queue(iq);
                 ()
+            },
+        };
+        self
+    }
+
+    fn msg<M:AsRef<str>>(self, msg: M) -> Self {
+        match self {
+            Ok(_) => (),
+            Err(hr) => {
+                error!("{}, err: {:x}", msg.as_ref(), hr);
             },
         };
         self
@@ -72,6 +109,10 @@ pub fn create_event() -> Event {
     Event(event_handle)
 }
 
+pub fn wait_for_single_object(event: &Event, ms: u32) -> u32 {
+    unsafe { kernel32::WaitForSingleObject(event.handle(), ms) }
+}
+
 pub struct DXCore {
     pub dev: D3D12Device,
     pub graphics_queue: D3D12CommandQueue,
@@ -79,15 +120,9 @@ pub struct DXCore {
     pub copy_queue: D3D12CommandQueue,
     pub dxgi_factory: DXGIFactory4,
     pub info_queue: Option<D3D12InfoQueue>,
-    pub fence_value: Arc<AtomicUsize>,
 }
 
 impl DXCore {
-    // Warning! 32-bit build will convert u32 to u64
-    pub fn next_fence_value(&self) -> u64 {
-        self.fence_value.fetch_add(1, Ordering::Relaxed) as u64
-    }
-
     pub fn dump_info_queue(&self) {
         if let Some(ref iq) = self.info_queue {
             dump_info_queue(iq);
@@ -173,7 +208,12 @@ pub fn create_core(dxgi_factory: &DXGIFactory4, adapter: Option<&DXGIAdapter1>,
     let gr_q = try!(dev.create_command_queue(&gqd));
     try!(gr_q.set_name("Graphics command queue"));
 
-    let cqd = D3D12_COMMAND_QUEUE_DESC { Type: D3D12_COMMAND_LIST_TYPE_COMPUTE, ..gqd };
+    let cqd = D3D12_COMMAND_QUEUE_DESC { 
+        Type: D3D12_COMMAND_LIST_TYPE_COMPUTE, 
+        Priority: D3D12_COMMAND_QUEUE_PRIORITY_HIGH.0 as i32, 
+        Flags: D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT, 
+        ..gqd 
+    };
     let cm_q = try!(dev.create_command_queue(&cqd));
     try!(cm_q.set_name("Compute command queue"));
 
@@ -189,7 +229,6 @@ pub fn create_core(dxgi_factory: &DXGIFactory4, adapter: Option<&DXGIAdapter1>,
         copy_queue: cp_q,
         dxgi_factory: factory,
         info_queue: info_queue,
-        fence_value: Arc::new(AtomicUsize::new(1)), /* not zero, as D3D12Fence::get_completed_value() returns zero before fence is reached. */
     })
 }
 

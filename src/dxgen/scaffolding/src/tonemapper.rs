@@ -1,5 +1,5 @@
 use winapi::*;
-use core::*;
+use core::{self, DXCore, Event};
 use create_device::*;
 use utils::*;
 use dxsafe::*;
@@ -285,7 +285,7 @@ impl Tonemapper {
         trace!("Done");
 
         Tonemapper {
-            tb_event: create_event(),
+            tb_event: core::create_event(),
             total_cpso: total_cpso,
             total_rs: total_rs,
             buf_total_cpso: buf_total_cpso,
@@ -320,11 +320,11 @@ impl Tonemapper {
 
         let avg_brightness = 
             if let Some(tb_fence_val) = res.tb_fence_val {
-                try!(wait_for_queue(&core.compute_queue, tb_fence_val, &res.fence, &self.tb_event));
+                try!(core::wait_for(&core.compute_queue, tb_fence_val, &res.fence, &self.tb_event));
                 let total = res.total_brightness();
                 f32::exp(total / cw as f32 / ch as f32 + f32::ln(0.0001))
             } else {
-                0.1
+                0.01
             };
         // TODO: Remove. This is for total brightness calculation bench
         //wait_for_compute_queue(core, &res.fence, &self.tb_event);
@@ -420,7 +420,7 @@ impl Tonemapper {
         core.compute_queue.execute_command_lists(&[clist]);
         core.dump_info_queue_tagged("After execute total brightness");
 
-        let tb_fence_val = core.next_fence_value();
+        let tb_fence_val = core::next_fence_value();
         try!(core.compute_queue.signal(&res.fence, tb_fence_val));
         res.tb_fence_val = Some(tb_fence_val);
 
@@ -528,7 +528,7 @@ impl Tonemapper {
         }));
         core.compute_queue.execute_command_lists(&[clist]);
 
-        let next_fence_val = core.next_fence_value();
+        let next_fence_val = core::next_fence_value();
         try!(core.compute_queue.signal(&res.fence, next_fence_val));
         // Instruct graphics queue to wait for compute queue
         try!(core.graphics_queue.wait(&res.fence, next_fence_val));
@@ -575,7 +575,7 @@ impl Tonemapper {
         core.graphics_queue.execute_command_lists(&[grlist]);
 
 //// Resource barriers should be enough, I guess
-//        let fence_val = core.next_fence_value();
+//        let fence_val = core::next_fence_value();
 //        try!(t_fence.signal(&core.graphics_queue, fence_val));
 
         if da { trace!("dump_info_queue") };

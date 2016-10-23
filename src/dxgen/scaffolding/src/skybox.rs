@@ -12,7 +12,7 @@ use std::ptr;
 use utils;
 use winapi::*;
 
-// Skybox per frame resources to be exact
+// Skybox per frame resources, to be exact
 pub struct SkyboxResources {
 }
 
@@ -27,7 +27,7 @@ impl Skybox {
     pub fn new(core: &DXCore, downsampler: &Downsampler, rt_format: DXGI_FORMAT) -> HResult<Skybox> {
         core.dump_info_queue_tagged("Skybox::new() start. Infoqueue cleanup");
         trace!("load_skybox_texture()");
-        let (tex, srv_desc) = try!(load_skybox_texture(core, downsampler).dump(core));
+        let (tex, srv_desc) = try!(load_skybox_texture(&core.dev, &core.compute_queue, &core.copy_queue, downsampler).dump(core, "load skybox"));
 
         let dheap = try!(DescriptorHeap::new(&core.dev, 1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
 
@@ -41,10 +41,10 @@ impl Skybox {
         try!(cdev::compile_shaders("skybox.hlsl", 
                 &mut[
                     ("SBRS", "rootsig_1_0", &mut root_sig_bc),
-                    ("VSMain", "vs_5_1", &mut v_shader_bc),
-                    ("PSMain", "ps_5_1", &mut p_shader_bc),
+                    ("VSMain", "vs_5_0", &mut v_shader_bc),
+                    ("PSMain", "ps_5_0", &mut p_shader_bc),
                 ], D3DCOMPILE_OPTIMIZATION_LEVEL3)
-            .map_err(|err|{ error!("{}", err) ; DXGI_ERROR_INVALID_CALL }));
+            .map_err(|err|{ error!("{}", err); DXGI_ERROR_INVALID_CALL }));
 
         trace!("create_root_signature()");
         let root_signature = try!(core.dev.create_root_signature(0, &root_sig_bc[..]));
@@ -98,7 +98,8 @@ impl Skybox {
     }
 }
 
-fn load_skybox_texture(core: &DXCore, downsampler: &Downsampler) -> HResult<(D3D12Resource, D3D12_SHADER_RESOURCE_VIEW_DESC)> {
+fn load_skybox_texture(dev: &D3D12Device, comp_queue: &D3D12CommandQueue, copy_queue: &D3D12CommandQueue, downsampler: &Downsampler) 
+                        -> HResult<(D3D12Resource, D3D12_SHADER_RESOURCE_VIEW_DESC)> {
     let f = try!(fs::File::open("assets/skybox.hdr").or(fs::File::open("skybox.hdr"))
             .map_err(|_|{ error!("'skybox.hdr' is not found"); ERROR_FILE_NOT_FOUND as HRESULT }));
     let reader = io::BufReader::new(f);
@@ -116,7 +117,7 @@ fn load_skybox_texture(core: &DXCore, downsampler: &Downsampler) -> HResult<(D3D
                                     DXGI_FORMAT_R32_UINT,
                                     D3D12_RESOURCE_FLAG_NONE);
 
-    let rgbe8_tex = try!(core.dev.create_committed_resource(
+    let rgbe8_tex = try!(dev.create_committed_resource(
                                     &heap_properties_default(),
                                     D3D12_HEAP_FLAG_NONE,
                                     &rgbe8_tex_desc,
@@ -125,58 +126,80 @@ fn load_skybox_texture(core: &DXCore, downsampler: &Downsampler) -> HResult<(D3D
 
     let rgbe8_srv_desc = srv_tex2d_default_slice_mip(rgbe8_tex_desc.Format, 0, 1); 
     
-    try!(utils::upload_into_texture(core, &rgbe8_tex, meta.width, meta.height, &data[..]));
+    try!(utils::upload_into_texture(dev, copy_queue, &rgbe8_tex, meta.width, meta.height, &data[..]));
 
     let mipcnt = 3;
+
+    trace!("Check DXGI_FORMAT_R9G9B9E5_SHAREDEXP support");
+    let shexp_support = try!(dev.check_feature_support_format_support(DXGI_FORMAT_R9G9B9E5_SHAREDEXP));
+
+    let tex_format = 
+        if shexp_support.Support1.0 & D3D12_FORMAT_SUPPORT1_TEXTURE2D.0 == 0
+           || shexp_support.Support1.0 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE.0 == 0
+           || shexp_support.Support2.0 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE.0 == 0 
+        {
+            trace!("Use DXGI_FORMAT_R16G16B16A16_FLOAT");
+            DXGI_FORMAT_R16G16B16A16_FLOAT
+        } else {
+            trace!("Use DXGI_FORMAT_R9G9B9E5_SHAREDEXP");
+            DXGI_FORMAT_R9G9B9E5_SHAREDEXP
+        };
+
     let tex_desc = D3D12_RESOURCE_DESC {
         MipLevels: mipcnt,
         ..resource_desc_tex2d_nomip(meta.width as u64,
                                     meta.height as u32,
-                                    DXGI_FORMAT_R16G16B16A16_FLOAT,
+                                    tex_format,
                                     D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
     };
 
-    let tex = try!(core.dev.create_committed_resource(
+    trace!("create skybox texture");
+    let tex = try!(dev.create_committed_resource(
                                     &heap_properties_default(),
                                     D3D12_HEAP_FLAG_NONE,
                                     &tex_desc,
                                     D3D12_RESOURCE_STATE_COMMON,
                                     None));
+    try!(tex.set_name("Skybox texture"));
 
     let tex_uav_desc = uav_tex2d_desc(tex_desc.Format, 0, 0);
-    try!(convert_to_rgb(core, &rgbe8_tex, &rgbe8_srv_desc, &tex, &tex_uav_desc));
+    try!(convert_to_rgb(dev, comp_queue, &rgbe8_tex, &rgbe8_srv_desc, &tex, &tex_uav_desc));
 
     let tex_srv_desc = srv_tex2d_default_slice_mip(tex_desc.Format, 0, mipcnt as u32);
-    try!(downsampler.generate_mips(&tex, core));
+    try!(downsampler.generate_mips(dev, comp_queue, &tex));
     
     Ok((tex, tex_srv_desc))
 }
 
-fn convert_to_rgb(core: &DXCore, src: &D3D12Resource, src_srv_desc: &D3D12_SHADER_RESOURCE_VIEW_DESC, 
+fn convert_to_rgb(dev: &D3D12Device, cqueue: &D3D12CommandQueue, src: &D3D12Resource, src_srv_desc: &D3D12_SHADER_RESOURCE_VIEW_DESC, 
                     dst: &D3D12Resource, dst_uav_desc: &D3D12_UNORDERED_ACCESS_VIEW_DESC) -> HResult<()> {
     // One time conversion, so I don't keep anything
     let mut root_sig_bc = vec![];
     let mut convert_bc = vec![];
 
+    trace!("convert_to_rgb compile_shaders");
     try!(cdev::compile_shaders("skybox.hlsl", 
             &mut[
                 ("TCRS", "rootsig_1_0", &mut root_sig_bc),
-                ("CSTexConvert", "cs_5_1", &mut convert_bc),
+                ("CSTexConvert", "cs_5_0", &mut convert_bc),
             ], D3DCOMPILE_OPTIMIZATION_LEVEL3)
         .map_err(|err|{ error!("{}", err) ; DXGI_ERROR_INVALID_CALL }));
 
-    let root_sig = try!(core.dev.create_root_signature(0, &root_sig_bc[..]));
+    let root_sig = try!(dev.create_root_signature(0, &root_sig_bc[..]));
 
-    let convert_pso = try!(create_default_cpso(&core.dev, &root_sig, convert_bc));
+    let convert_pso = try!(create_default_cpso(&dev, &root_sig, convert_bc));
 
-    let dheap = try!(DescriptorHeap::new(&core.dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+    trace!("convert_to_rgb create_fence");
+    let fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
 
-    core.dev.create_shader_resource_view(Some(src), Some(src_srv_desc), dheap.cpu_handle(0));
-    core.dev.create_unordered_access_view(Some(dst), None, Some(dst_uav_desc), dheap.cpu_handle(1));
+    let dheap = try!(DescriptorHeap::new(&dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
 
-    let calloc = try!(core.dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COMPUTE));
+    dev.create_shader_resource_view(Some(src), Some(src_srv_desc), dheap.cpu_handle(0));
+    dev.create_unordered_access_view(Some(dst), None, Some(dst_uav_desc), dheap.cpu_handle(1));
+
+    let calloc = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COMPUTE));
     let clist: D3D12GraphicsCommandList =
-        try!(core.dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, &calloc, Some(&convert_pso)));
+        try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, &calloc, Some(&convert_pso)));
     
     clist.set_descriptor_heaps(&[dheap.get()]);
 
@@ -201,15 +224,15 @@ fn convert_to_rgb(core: &DXCore, src: &D3D12Resource, src_srv_desc: &D3D12_SHADE
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
     ]);
 
+    trace!("convert_to_rgb clist.close");
     try!(clist.close());
 
-    core.compute_queue.execute_command_lists(&[&clist]);
+    cqueue.execute_command_lists(&[&clist]);
 
-    let fence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
+    trace!("convert_to_rgb wait");
+    try!(core::wait(cqueue, &fence, &core::create_event()));
 
-    utils::wait_for_compute_queue(core, &fence, &core::create_event());
-
-    core.dump_info_queue_tagged("Dump at the end of convert_to_rgb");
+    // core.dump_info_queue_tagged("Dump at the end of convert_to_rgb");
 
     Ok(())
 }

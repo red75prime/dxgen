@@ -302,9 +302,10 @@ impl CommonResources {
 
         let light_res = try!(LightSourceResources::new(dev!()));
         
+        let skybox = Skybox::new(core, &downsampler, parameters.rt_format).ok();
+
         let draw_text = try!(DrawText::new(core, parameters.debug_layer));
 
-        let skybox = Skybox::new(core, &downsampler, parameters.rt_format).ok();
 
         Ok(CommonResources {
             pipeline_state: pipeline_state,
@@ -530,7 +531,7 @@ impl FrameResources {
 
     // rtvh - render target view descriptor handle
     fn render(&mut self, core: &DXCore, rt: &D3D12Resource, _rtvh: D3D12_CPU_DESCRIPTOR_HANDLE, 
-                cr: &mut CommonResources, st: &State, camera: &Camera, pause: bool, fps: f32)
+                cr: &mut CommonResources, st: &State, camera: &Camera, pause: bool, fps: f32, dt: f32)
                 -> HResult<()> {
         let da = cfg!(debug_assertions);
         if da {trace!("render start");}
@@ -679,21 +680,21 @@ impl FrameResources {
         core.graphics_queue.execute_command_lists(&[glist]);
         ::perf_exec_end();
         ::perf_start("tonemap");
-        let fence_val = core.next_fence_value();
+        let fence_val = core::next_fence_value();
         try!(core.graphics_queue.signal(&self.tm_fence, fence_val));
         try!(core.compute_queue.wait(&self.tm_fence, fence_val));
         let avg_brightness = try!(cr.tonemapper.tonemap(core, &mut self.tonemapper_resources, &self.hdr_render_target, rt, &mut self.fence, cr.avg_brightness_smoothed));
         cr.avg_brightness_smoothed = 
             if avg_brightness < cr.avg_brightness_smoothed {
-                cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.001
+                avg_brightness + (cr.avg_brightness_smoothed - avg_brightness)*f32::exp(-dt/1.)
             } else {
-                cr.avg_brightness_smoothed + (avg_brightness - cr.avg_brightness_smoothed)*0.002
+                avg_brightness + (cr.avg_brightness_smoothed - avg_brightness)*f32::exp(-dt/0.3)
             };
         ::perf_end("tonemap");
         ::perf_start("drawtext");
         try!(self.dtr.render(core, cr.draw_text.as_ref().unwrap(), rt, fps));
         ::perf_end("drawtext");
-        let fence_val = core.next_fence_value();
+        let fence_val = core::next_fence_value();
         try!(self.fence.signal(&core.graphics_queue, fence_val));
 
         Ok(())
@@ -957,11 +958,11 @@ pub fn on_init(wnd: &Window,
                                             hwnd,
                                             None,
                                             None)
-                              .dump(&core));
+                              .dump(&core, "create_swap_chain"));
 
     let (tex_w, tex_h) = (256u32, 256u32);
 
-    let common_resources = try!(CommonResources::new(&core, tex_w, tex_h, parameters).dump(&core));
+    let common_resources = try!(CommonResources::new(&core, tex_w, tex_h, parameters).dump(&core, "common resources"));
 
 
     // Create pattern to set as texture data
@@ -987,7 +988,7 @@ pub fn on_init(wnd: &Window,
     // If you want GPU to wait for signal, call D3D12CommandQueue::wait(),
     // then tell GPU to continue by calling D3D12CommandQueue::signal().
     trace!("fence");
-    let fence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE).dump(&core));
+    let fence = try!(core.dev.create_fence(0, D3D12_FENCE_FLAG_NONE).dump(&core, "AddData fence"));
 
     // fence_event communicates GPU's notification to CPU.
     // Use fence.set_event_on_completion(fence_value, fence_event) to bind fence to fence_event
@@ -1001,9 +1002,10 @@ pub fn on_init(wnd: &Window,
     // utils::upload_into_texture() transfers texdata into upload buffer resource,
     // then executed copy command on core.copy_queue
     trace!("upload_into_texture");
-    try!(utils::upload_into_texture(&core, tex!(), tex_w, tex_h, &texdata[..]).dump(&core));
+    try!(utils::upload_into_texture(&core.dev, &core.copy_queue, tex!(), tex_w, tex_h, &texdata[..]).dump(&core, "upload1"));
+    try!(utils::upload_into_texture(&core.dev, &core.copy_queue, tex!(), tex_w, tex_h, &texdata[..]).dump(&core, "upload2"));
     trace!("Downsampler::generate_mips");
-    try!(common_resources.downsampler.generate_mips(tex!(), &core).dump(&core));
+    try!(common_resources.downsampler.generate_mips(&core.dev, &core.compute_queue, tex!()).dump(&core,"generate_mips"));
 
     // Temporary allocator and command list to transition texture into appropriate state
     trace!("Create calloc");
@@ -1016,7 +1018,7 @@ pub fn on_init(wnd: &Window,
     //glist.resource_barrier(&[*ResourceBarrier::transition(tex!(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE)]);
 
     trace!("Command list Close");
-    try!(glist.close().dump(&core));
+    try!(glist.close().dump(&core,"glist close"));
     trace!("Command queue execute");
     core.graphics_queue.execute_command_lists(&[&glist]);
 
@@ -1025,7 +1027,10 @@ pub fn on_init(wnd: &Window,
 
     let mut frame_resources = vec![];
     for i in 0 .. frame_count {
-        frame_resources.push(try!(FrameResources::new(&core, &common_resources, w, h, swap_chain.render_target(i), DXGI_FORMAT_R8G8B8A8_UNORM, parameters).dump(&core)));
+        frame_resources.push(
+            try!(FrameResources::new(
+                &core, &common_resources, w, h, swap_chain.render_target(i), 
+                DXGI_FORMAT_R8G8B8A8_UNORM, parameters).dump(&core,"frame resources")));
     };
 
     trace!("pack AppData");
@@ -1085,8 +1090,8 @@ pub fn on_render(data: &mut AppData, pause: bool, fps: f32, dt: f32) {
         &mut data.common_resources, 
         &data.state,
         &data.camera,
-        pause, fps,
-    ).dump(&data.core).unwrap();
+        pause, fps, dt,
+    ).dump(&data.core, "frame render").unwrap();
 
     ::perf_present_start();
 
@@ -1161,7 +1166,7 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
     data.common_resources.draw_text = None;
 
     data.swap_chain.resize(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM)
-                   .dump(&data.core)
+                   .dump(&data.core, "swap_chain resize")
                    .expect("swap_chain.resize failed");
 
     data.common_resources.draw_text = 

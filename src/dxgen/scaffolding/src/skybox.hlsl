@@ -56,5 +56,5 @@ float4 PSMain(PS_IN dat) : SV_TARGET {
 	float3 r = mul(view, float4(dat.ncrd, 1, 0)).xyz;
 	float2 p = float2(0.5 - atan2(r.x, r.z)/2/pi, 0.5 + atan2(r.y,sqrt(r.x*r.x+r.z*r.z))/pi);
 	//return float4(p.x, p.x, 0, 1);
-	return skytex.Sample(default_sampler, p); //Level(default_sampler, p, 0);
+	return skytex.Sample(default_sampler, p);
 }

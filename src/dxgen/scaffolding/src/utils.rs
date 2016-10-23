@@ -1,6 +1,15 @@
+use cgmath::*;
+use core::{self, Event, Handle, DXCore, DumpOnError};
+use dxsafe::*;
+use dxsafe::structwrappers::*;
 use std::ffi::OsString;
+use std::mem;
 use std::os::windows::ffi::OsStringExt;
 use std::os::windows::ffi::OsStrExt;
+use std::ptr;
+use std::slice;
+use user32::*;
+use winapi::*;
 
 pub fn wchar_array_to_string_lossy(ws: &[u16]) -> String {
     match ws.iter().position(|c| *c == 0) {
@@ -13,8 +22,6 @@ pub fn str_to_vec_u16(s: &str) -> Vec<u16> {
     let osstr = OsString::from(s);
     osstr.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
 }
-
-use cgmath::*;
 
 pub fn matrix4_to_4x4(m: &Matrix4<f32>) -> [[f32; 4]; 4] {
     [[m.x.x, m.y.x, m.z.x, m.w.x],
@@ -46,15 +53,6 @@ pub fn p3(x: f32, y: f32, z: f32) -> Point3<f32> {
     Point3::new(x, y, z)
 }
 
-use dxsafe::*;
-use winapi::*;
-use core::*;
-use std::mem;
-use std::ptr;
-use std::slice;
-use dxsafe::structwrappers::*;
-use kernel32::*;
-
 pub fn get_required_intermediate_size(res: &D3D12Resource) -> HResult<u64> {
     let desc = res.get_desc();
     let dev: D3D12Device = try!(res.get_device());
@@ -80,7 +78,9 @@ pub fn upload_into_buffer<T>(buf: &D3D12Resource, data: &[T]) -> HResult<()> {
     Ok(())
 }
 
-pub fn upload_into_texture<T: Sized+Clone>(core: &DXCore,
+pub fn upload_into_texture<T: Sized+Clone>(
+                           dev: &D3D12Device,
+                           queue: &D3D12CommandQueue,
                            tex: &D3D12Resource,
                            w: u32,
                            _: u32,
@@ -95,13 +95,11 @@ pub fn upload_into_texture<T: Sized+Clone>(core: &DXCore,
            unsafe { (*(*tex.iptr()).lpVtbl).QueryInterface as usize });
     let desc = tex.get_desc();
     trace!("get_device");
-    let dev = &core.dev;
     let mut num_rows = [0];
     let mut row_size_bytes = [0];
     let mut total_size_bytes = 0;
-    let mut psfp: [D3D12_PLACED_SUBRESOURCE_FOOTPRINT; 1] = [unsafe {
-                                                                 ::std::mem::uninitialized()
-                                                             }];
+    let mut psfp: [D3D12_PLACED_SUBRESOURCE_FOOTPRINT; 1] = 
+                   [unsafe { ::std::mem::uninitialized() }];
     trace!("get_copyable_footprints");
     // Microsoft sample application uses HeapAlloc for footprint and other arguments
     // TODO: investigate
@@ -146,34 +144,36 @@ pub fn upload_into_texture<T: Sized+Clone>(core: &DXCore,
     let dest = texture_copy_location_index(tex, 0);
     let src = texture_copy_location_footprint(&res_buf, &psfp[0]);
 
+    trace!("fence");
+    let fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
+    trace!("fence_event");
+    let fence_event = core::create_event();
+
+    let cq_type = queue.get_desc().Type;
+
     trace!("create_command_allocator");
-    let callocator = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COPY));
+    let callocator = try!(dev.create_command_allocator(cq_type));
     try!(callocator.set_name("upload_into_texture allocator"));
     trace!("create_command_list");
     let clist: D3D12GraphicsCommandList =
-        try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COPY, &callocator, None));
+        try!(dev.create_command_list(0, cq_type, &callocator, None));
     try!(clist.set_name("upload_into_texture command list"));
     clist.resource_barrier(&[*ResourceBarrier::transition(tex,
-                                                              D3D12_RESOURCE_STATE_COMMON,
-                                                              D3D12_RESOURCE_STATE_COPY_DEST)]);
+                                    D3D12_RESOURCE_STATE_COMMON,
+                                    D3D12_RESOURCE_STATE_COPY_DEST)]);
     clist.copy_texture_region(&dest, 0, 0, 0, &src, None);
     clist.resource_barrier(&[*ResourceBarrier::transition(tex,
-                                                              D3D12_RESOURCE_STATE_COPY_DEST,
-                                                              D3D12_RESOURCE_STATE_COMMON)]);
+                                    D3D12_RESOURCE_STATE_COPY_DEST,
+                                    D3D12_RESOURCE_STATE_COMMON)]);
 
     trace!("Command list Close");
     try!(clist.close());
 
     trace!("Command queue execute");
-    core.copy_queue.execute_command_lists(&[&clist]);
-    trace!("fence");
-    let fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
-    trace!("fence_event");
-    let fence_event = create_event();
+    queue.execute_command_lists(&[&clist]);
 
-    let fv = core.next_fence_value();
     trace!("wait for copy queue");
-    try!(wait_for_queue(&core.copy_queue, fv, &fence, &fence_event));
+    try!(core::wait(queue, &fence, &fence_event).msg("upload texture wait error"));
     Ok(())
 }
 
@@ -205,23 +205,9 @@ pub fn create_depth_stencil(dev: &D3D12Device,
     Ok(ds_res)
 }
 
-pub fn wait_for_queue(queue: &D3D12CommandQueue,
-                      fence_value: u64,
-                      fence: &D3D12Fence,
-                      fence_event: &Event)
-                      -> HResult<()> {
-    try!(queue.signal(fence, fence_value));
-    if fence.get_completed_value() < fence_value {
-        try!(fence.set_event_on_completion(fence_value, fence_event.handle()));
-        wait_for_single_object(fence_event, INFINITE);
-    }
-    Ok(())
-}
-
 pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
-    let fence_value = core.next_fence_value();
 
-    match wait_for_queue(&core.graphics_queue, fence_value, fence, fence_event) {
+    match core::wait(&core.graphics_queue, fence, fence_event) {
         Ok(_) => (),
         Err(hr) => {
             core.dump_info_queue_tagged("wait_for_graphics_queue");
@@ -231,9 +217,7 @@ pub fn wait_for_graphics_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &
 }
 
 pub fn wait_for_compute_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
-    let fence_value = core.next_fence_value();
-
-    match wait_for_queue(&core.compute_queue, fence_value, fence, fence_event) {
+    match core::wait(&core.compute_queue, fence, fence_event) {
         Ok(_) => (),
         Err(hr) => {
             core.dump_info_queue_tagged("wait_for_compute_queue");
@@ -243,9 +227,7 @@ pub fn wait_for_compute_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &E
 }
 
 pub fn wait_for_copy_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Event) {
-    let fence_value = core.next_fence_value();
-
-    match wait_for_queue(&core.copy_queue, fence_value, fence, fence_event) {
+    match core::wait(&core.copy_queue, fence, fence_event) {
         Ok(_) => (),
         Err(hr) => {
             core.dump_info_queue_tagged("wait_for_copy_queue");
@@ -253,12 +235,6 @@ pub fn wait_for_copy_queue(core: &DXCore, fence: &D3D12Fence, fence_event: &Even
         }
     }
 }
-
-pub fn wait_for_single_object(event: &Event, ms: u32) -> u32 {
-    unsafe { WaitForSingleObject(event.handle(), ms) }
-}
-
-use user32::*;
 
 pub fn set_capture(hwnd: HWND) -> HWND {
     unsafe { SetCapture(hwnd) }
@@ -281,7 +257,7 @@ impl Fence {
     pub fn new(fence: D3D12Fence) -> Fence {
         Fence {
             dxfence: fence,
-            event: create_event(),
+            event: core::create_event(),
             temp_resources: vec![],
             first_signal: true,
             fence_value: None,
@@ -318,7 +294,7 @@ impl Fence {
         match self.fence_value {
             Some(fence_value) => {
                 try!(self.dxfence.set_event_on_completion(fence_value, self.event.handle()));
-                wait_for_single_object(&self.event, INFINITE);
+                core::wait_for_single_object(&self.event, INFINITE);
                 self.first_signal = true;
                 self.temp_resources.truncate(0);
             }

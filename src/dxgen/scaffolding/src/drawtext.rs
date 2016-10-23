@@ -2,7 +2,6 @@ use core::DXCore;
 use create_device as create;
 use dxsafe::*;
 use dxsafe::structwrappers::*;
-use std::panic;
 use std::ptr;
 use utils;
 use utils::d2d::*;

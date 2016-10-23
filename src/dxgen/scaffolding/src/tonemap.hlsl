@@ -40,7 +40,7 @@ void CSMain(uint3 dtid: SV_DispatchThreadId, uint3 gtid: SV_GroupThreadId, uint3
   float3 cl = max(src[crd].rgb , hvtemp.SampleLevel(linSamp, crd/float2(w-1,h-1), 0).rgb);
 
   float3 Yxy = rgb2Yxy(cl);
-  Yxy.r *= key;
+  Yxy.r *= key*2;
 
   dst[crd] = float4(Yxy2rgb(Yxy), 1);
 
@@ -95,7 +95,7 @@ void CSHorizontal(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
   uint srcx = gid.x * HTGroups + gtid.x - KernelSize;
   uint srcy = gid.y * 2;
   float3 scl = (src[uint2(srcx, srcy)].rgb + src[uint2(srcx, srcy + 1)].rgb);
-  tmp1[gtid.x] = brightness(scl)>avg_brightness*40 ? scl : float3(0, 0, 0);
+  tmp1[gtid.x] = brightness(scl)>avg_brightness*100 ? scl : float3(0, 0, 0);
 
   AllMemoryBarrierWithGroupSync();
 

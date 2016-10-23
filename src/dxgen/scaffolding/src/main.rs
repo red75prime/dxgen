@@ -322,8 +322,8 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
             let mut data = data.borrow_mut();
             let camera = data.camera();
             let mut vfov = camera.fov();
-            vfov -= dz*5.0;
-            vfov = f32::max(vfov, 5.);
+            vfov -= dz*2.0;
+            vfov = f32::max(vfov, 2.);
             vfov = f32::min(vfov, 120.);
             camera.set_fov(vfov);
           },
