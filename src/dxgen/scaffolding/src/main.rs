@@ -313,8 +313,9 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
               if mouse_down {
                   let mut data = data.borrow_mut();
                   let camera = data.camera();
-                  camera.rotx(-dx as f32/6.);
-                  camera.roty(dy as f32/6.);
+                  let fov = camera.fov();
+                  camera.rotx(-dx as f32*fov/200.);
+                  camera.roty(dy as f32*fov/200.);
               }
           },
           WM_MOUSEWHEEL => {
@@ -322,8 +323,12 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
             let mut data = data.borrow_mut();
             let camera = data.camera();
             let mut vfov = camera.fov();
-            vfov -= dz*2.0;
-            vfov = f32::max(vfov, 2.);
+            if vfov < 5.0 {
+              vfov -= dz*0.2;
+            } else {
+              vfov -= dz*2.0;
+            };
+            vfov = f32::max(vfov, 0.2);
             vfov = f32::min(vfov, 120.);
             camera.set_fov(vfov);
           },
