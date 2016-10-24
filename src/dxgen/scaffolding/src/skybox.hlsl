@@ -13,6 +13,21 @@ void CSTexConvert(uint3 gid : SV_GroupId) {
 	tex[gid.xy] = float4(ex*col.r, ex*col.g, ex*col.b, 1);
 }
 
+
+Texture2D<uint> rgbe8_2: register(t0);
+RWTexture2D<uint> tex_shexp: register(u0); 
+
+[RootSignature(TCRS)]
+[numthreads(1, 1, 1)]
+void CSTexConvertShexp(uint3 gid : SV_GroupId) {
+	uint pix = rgbe8_2[gid.xy];
+	uint3 col = uint3(pix & 255, (pix >> 8) & 255, (pix >> 16) & 255);
+	int e = (int)((pix >> 24) & 255) - 128;
+	uint e2 = clamp(e, -15, 16) + 15;
+	tex_shexp[gid.xy] = (col.r << 1) | (col.g << 10) | (col.b << 19) | (e2 << 27);
+}
+
+
 #define SBRS "CBV(b0), DescriptorTable(SRV(t0)), StaticSampler(s0, addressU = TEXTURE_ADDRESS_CLAMP, addressV = TEXTURE_ADDRESS_CLAMP)"
 
 struct PS_IN {

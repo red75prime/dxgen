@@ -128,47 +128,54 @@ fn load_skybox_texture(dev: &D3D12Device, comp_queue: &D3D12CommandQueue, copy_q
     
     try!(utils::upload_into_texture(dev, copy_queue, &rgbe8_tex, meta.width, meta.height, &data[..]));
 
-    let mipcnt = 3;
-
     trace!("Check DXGI_FORMAT_R9G9B9E5_SHAREDEXP support");
     let shexp_support = try!(dev.check_feature_support_format_support(DXGI_FORMAT_R9G9B9E5_SHAREDEXP));
 
-    let tex_format = 
-        if shexp_support.Support1.0 & D3D12_FORMAT_SUPPORT1_TEXTURE2D.0 == 0
-           || shexp_support.Support1.0 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE.0 == 0
-           || shexp_support.Support2.0 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE.0 == 0 
-        {
-            trace!("Use DXGI_FORMAT_R16G16B16A16_FLOAT");
-            DXGI_FORMAT_R16G16B16A16_FLOAT
-        } else {
-            trace!("Use DXGI_FORMAT_R9G9B9E5_SHAREDEXP");
-            DXGI_FORMAT_R9G9B9E5_SHAREDEXP
-        };
+    if shexp_support.Support1.0 & D3D12_FORMAT_SUPPORT1_TEXTURE2D.0 == 0
+        || shexp_support.Support1.0 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE.0 == 0
+        //|| shexp_support.Support2.0 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE.0 == 0 
+    {
+        trace!("Use DXGI_FORMAT_R16G16B16A16_FLOAT");
+        let tex_desc = D3D12_RESOURCE_DESC {
+                MipLevels: 3,
+                ..resource_desc_tex2d_nomip(meta.width as u64,
+                                            meta.height as u32,
+                                            DXGI_FORMAT_R16G16B16A16_FLOAT,
+                                            D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+            };
+        trace!("create skybox texture");
+        let tex = try!(create_resource_default(dev, &tex_desc));
+        try!(tex.set_name("Skybox texture DXGI_FORMAT_R16G16B16A16_FLOAT"));
+        let tex_uav_desc = uav_tex2d_desc(tex_desc.Format, 0, 0);
+        try!(convert_to_rgb(dev, comp_queue, &rgbe8_tex, &rgbe8_srv_desc, &tex, &tex_uav_desc));
+        try!(downsampler.generate_mips(dev, comp_queue, &tex));
+        let tex_srv_desc = srv_tex2d_default_slice_mip(tex_desc.Format, 0, tex_desc.MipLevels as u32);
+        Ok((tex, tex_srv_desc))
+    } else {
+        trace!("Use DXGI_FORMAT_R9G9B9E5_SHAREDEXP");
+        let tex_desc = D3D12_RESOURCE_DESC {
+                MipLevels: 1, // Downsampler will not work with sharedexp
+                ..resource_desc_tex2d_nomip(meta.width as u64,
+                                            meta.height as u32,
+                                            DXGI_FORMAT_R9G9B9E5_SHAREDEXP,
+                                            D3D12_RESOURCE_FLAG_NONE)
+            };
+        trace!("create skybox texture");
+        let tex = try!(create_resource_default(dev, &tex_desc));
+        try!(tex.set_name("Skybox texture DXGI_FORMAT_R9G9B9E5_SHAREDEXP"));
+        try!(convert_to_rgb_sharedexp(dev, comp_queue, &rgbe8_tex, &rgbe8_srv_desc, &tex));
+        let tex_srv_desc = srv_tex2d_default_slice_mip(tex_desc.Format, 0, tex_desc.MipLevels as u32);
+        Ok((tex, tex_srv_desc))
+    }
+}
 
-    let tex_desc = D3D12_RESOURCE_DESC {
-        MipLevels: mipcnt,
-        ..resource_desc_tex2d_nomip(meta.width as u64,
-                                    meta.height as u32,
-                                    tex_format,
-                                    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
-    };
-
-    trace!("create skybox texture");
-    let tex = try!(dev.create_committed_resource(
-                                    &heap_properties_default(),
-                                    D3D12_HEAP_FLAG_NONE,
-                                    &tex_desc,
-                                    D3D12_RESOURCE_STATE_COMMON,
-                                    None));
-    try!(tex.set_name("Skybox texture"));
-
-    let tex_uav_desc = uav_tex2d_desc(tex_desc.Format, 0, 0);
-    try!(convert_to_rgb(dev, comp_queue, &rgbe8_tex, &rgbe8_srv_desc, &tex, &tex_uav_desc));
-
-    let tex_srv_desc = srv_tex2d_default_slice_mip(tex_desc.Format, 0, mipcnt as u32);
-    try!(downsampler.generate_mips(dev, comp_queue, &tex));
-    
-    Ok((tex, tex_srv_desc))
+fn create_resource_default(dev: &D3D12Device, desc: &D3D12_RESOURCE_DESC) -> HResult<D3D12Resource> {
+    dev.create_committed_resource(
+        &heap_properties_default(),
+        D3D12_HEAP_FLAG_NONE,
+        desc,
+        D3D12_RESOURCE_STATE_COMMON,
+        None)
 }
 
 fn convert_to_rgb(dev: &D3D12Device, cqueue: &D3D12CommandQueue, src: &D3D12Resource, src_srv_desc: &D3D12_SHADER_RESOURCE_VIEW_DESC, 
@@ -223,6 +230,93 @@ fn convert_to_rgb(dev: &D3D12Device, cqueue: &D3D12CommandQueue, src: &D3D12Reso
         *ResourceBarrier::transition(dst,
         D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
     ]);
+
+    trace!("convert_to_rgb clist.close");
+    try!(clist.close());
+
+    cqueue.execute_command_lists(&[&clist]);
+
+    trace!("convert_to_rgb wait");
+    try!(core::wait(cqueue, &fence, &core::create_event()));
+
+    // core.dump_info_queue_tagged("Dump at the end of convert_to_rgb");
+
+    Ok(())
+}
+
+fn convert_to_rgb_sharedexp(dev: &D3D12Device, cqueue: &D3D12CommandQueue, src: &D3D12Resource, src_srv_desc: &D3D12_SHADER_RESOURCE_VIEW_DESC, 
+                    dst: &D3D12Resource) -> HResult<()> {
+    // One time conversion, so I don't keep anything
+    let mut root_sig_bc = vec![];
+    let mut convert_bc = vec![];
+
+    trace!("convert_to_rgb compile_shaders");
+    try!(cdev::compile_shaders("skybox.hlsl", 
+            &mut[
+                ("TCRS", "rootsig_1_0", &mut root_sig_bc),
+                ("CSTexConvertShexp", "cs_5_0", &mut convert_bc),
+            ], D3DCOMPILE_OPTIMIZATION_LEVEL3)
+        .map_err(|err|{ error!("{}", err) ; DXGI_ERROR_INVALID_CALL }));
+
+    let root_sig = try!(dev.create_root_signature(0, &root_sig_bc[..]));
+
+    let convert_pso = try!(create_default_cpso(&dev, &root_sig, convert_bc));
+
+    let dst_desc = dst.get_desc();
+    let tex_desc = D3D12_RESOURCE_DESC {
+        MipLevels: dst_desc.MipLevels,
+        ..resource_desc_tex2d_nomip(dst_desc.Width,
+                                    dst_desc.Height,
+                                    DXGI_FORMAT_R32_UINT,
+                                    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+    };
+
+    trace!("create intermediate skybox texture");
+    let tex = try!(dev.create_committed_resource(
+                                    &heap_properties_default(),
+                                    D3D12_HEAP_FLAG_NONE,
+                                    &tex_desc,
+                                    D3D12_RESOURCE_STATE_COMMON,
+                                    None));
+    try!(tex.set_name("intermediate Skybox texture"));
+    let tex_uav_desc = uav_tex2d_desc(tex_desc.Format, 0, 0);
+
+    trace!("convert_to_rgb create_fence");
+    let fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
+
+    let dheap = try!(DescriptorHeap::new(&dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+
+    dev.create_shader_resource_view(Some(src), Some(src_srv_desc), dheap.cpu_handle(0));
+    dev.create_unordered_access_view(Some(&tex), None, Some(&tex_uav_desc), dheap.cpu_handle(1));
+
+    let calloc = try!(dev.create_command_allocator(D3D12_COMMAND_LIST_TYPE_COMPUTE));
+    let clist: D3D12GraphicsCommandList =
+        try!(dev.create_command_list(0, D3D12_COMMAND_LIST_TYPE_COMPUTE, &calloc, Some(&convert_pso)));
+    
+    clist.set_descriptor_heaps(&[dheap.get()]);
+
+    clist.set_compute_root_signature(&root_sig);
+    clist.set_compute_root_descriptor_table(0, dheap.gpu_handle(0));
+
+    clist.resource_barrier(&[
+        *ResourceBarrier::transition(src,
+        D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE),
+        *ResourceBarrier::transition(&tex,
+        D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS),
+    ]);
+
+    let src_desc = src.get_desc();
+
+    clist.dispatch(src_desc.Width as u32, src_desc.Height, 1);
+
+    clist.resource_barrier(&[
+        *ResourceBarrier::transition(src,
+        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
+        *ResourceBarrier::transition(&tex,
+        D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
+    ]);
+
+    clist.copy_resource(dst, &tex);
 
     trace!("convert_to_rgb clist.close");
     try!(clist.close());

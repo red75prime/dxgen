@@ -302,9 +302,9 @@ impl CommonResources {
 
         let light_res = try!(LightSourceResources::new(dev!()));
         
-        let skybox = Skybox::new(core, &downsampler, parameters.rt_format).ok();
+        let skybox = Some(try!(Skybox::new(core, &downsampler, parameters.rt_format)));
 
-        let draw_text = try!(DrawText::new(core, parameters.debug_layer));
+        let draw_text = Some(try!(DrawText::new(core, parameters.debug_layer)));
 
 
         Ok(CommonResources {
@@ -330,7 +330,7 @@ impl CommonResources {
             avg_brightness_smoothed: 0.1,
             light: light,
             light_res: light_res,
-            draw_text: Some(draw_text),
+            draw_text: draw_text,
             skybox: skybox,
         })
     }
@@ -361,7 +361,7 @@ struct FrameResources {
     srv_heap: DescriptorHeap,
     tonemapper_resources: TonemapperResources,
     _object_cnt: u32,
-    dtr: DrawTextResources,
+    dtr: Option<DrawTextResources>,
 }
 
 impl FrameResources {
@@ -501,7 +501,7 @@ impl FrameResources {
             left: 0,
             top: 0,
         };
-        let dtr = try!(DrawTextResources::new(core, cr.draw_text.as_ref().unwrap(), rt, format, parameters.render_trace));
+        let dtr = Some(try!(DrawTextResources::new(core, cr.draw_text.as_ref().unwrap(), rt, format, parameters.render_trace)));
 
         trace!("Create FrameResources done");
         Ok(FrameResources {
@@ -692,7 +692,9 @@ impl FrameResources {
             };
         ::perf_end("tonemap");
         ::perf_start("drawtext");
-        try!(self.dtr.render(core, cr.draw_text.as_ref().unwrap(), rt, fps));
+        if let Some(ref dtr) = self.dtr {
+            try!(dtr.render(core, cr.draw_text.as_ref().unwrap(), rt, fps));
+        }
         ::perf_end("drawtext");
         let fence_val = core::next_fence_value();
         try!(self.fence.signal(&core.graphics_queue, fence_val));
@@ -907,7 +909,6 @@ pub fn on_init(wnd: &Window,
         Err(err) => return Err(err),
         Ok(core) => core,
     };
-
     // Get adapter the device was created on
     let adapter_luid = core.dev.get_adapter_luid();
     if let Ok(adapter) = core.dxgi_factory.enum_adapter_by_luid::<DXGIAdapter3>(adapter_luid) {
@@ -1169,7 +1170,7 @@ pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
                    .dump(&data.core, "swap_chain resize")
                    .expect("swap_chain.resize failed");
 
-    data.common_resources.draw_text = 
+    data.common_resources.draw_text =  
         Some(DrawText::new(&data.core, data.parameters.debug_layer)
              .expect("Cannot create DrawText"));
              
