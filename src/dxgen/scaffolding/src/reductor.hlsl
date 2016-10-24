@@ -97,6 +97,6 @@ void CSBufTotal(uint3 dtid: SV_DispatchThreadId, uint3 localId : SV_GroupThreadI
     {
       comp = orig;
       InterlockedCompareExchange(ui_total[0], comp, asuint(asfloat(orig) + value), orig);
-    } while (orig != comp);
+    } while (orig != comp && asuint(asfloat(comp) + value) != comp );
   };
 }
