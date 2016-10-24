@@ -314,8 +314,8 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
                   let mut data = data.borrow_mut();
                   let camera = data.camera();
                   let fov = camera.fov();
-                  camera.rotx(-dx as f32*fov/200.);
-                  camera.roty(dy as f32*fov/200.);
+                  camera.rotx(-dx as f32*fov/300.);
+                  camera.roty(dy as f32*fov/300.);
               }
           },
           WM_MOUSEWHEEL => {
