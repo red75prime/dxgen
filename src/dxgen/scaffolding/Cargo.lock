@@ -134,7 +134,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "image"
 version = "0.10.3"
-source = "git+https://github.com/PistonDevelopers/image/#0d3b652f6704886a287b3b9eb6e283809b438c04"
+source = "git+https://github.com/PistonDevelopers/image/#6b89cb568e3b4d8637e1c9f9006ff8b1909c3974"
 dependencies = [
  "byteorder 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "enum_primitive 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
