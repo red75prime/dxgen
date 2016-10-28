@@ -327,6 +327,11 @@ fn convert_to_rgb_sharedexp(dev: &D3D12Device, cqueue: &D3D12CommandQueue, src: 
 
     clist.copy_resource(dst, &tex);
 
+    clist.resource_barrier(&[
+        *ResourceBarrier::transition(dst,
+        D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON),
+    ]);
+
     trace!("convert_to_rgb clist.close");
     try!(clist.close());
 
