@@ -159,27 +159,33 @@ struct ShaderIndices {
 }
 
 fn sphere<P: AsRef<Path>>(path: P) -> (Vec<V3>, Vec<V3>, Vec<ShaderIndices>) {
-    let scene = obj::load::<SimplePolygon>(path.as_ref()).expect("3d model load failed");
-    if let Some(obj) = scene.object_iter().next() {
-        if let Some(group) = obj.group_iter().next() {
-          let mut indices = vec![];
-          for p in &group.indices {
-            assert_eq!(p.len(), 3); // Accept only triangles
-            for i in p {
-              match *i {
-                (v, Some(t), Some(n)) => {
-                    indices.push(ShaderIndices{crd: v as u32, nrm: n as u32, tex: t as u32})
-                },
-                _ => panic!("Missing normal or texture coord"),
-              };
+    let paths = ["./", "../../src/"];
+    for &p in &paths {
+        let try_path = Path::new(p).join(path.as_ref()).to_path_buf();
+        if let Ok(scene) = obj::load::<SimplePolygon>(&try_path) {
+            if let Some(obj) = scene.object_iter().next() {
+                if let Some(group) = obj.group_iter().next() {
+                let mut indices = vec![];
+                for p in &group.indices {
+                    assert_eq!(p.len(), 3); // Accept only triangles
+                    for i in p {
+                    match *i {
+                        (v, Some(t), Some(n)) => {
+                            indices.push(ShaderIndices{crd: v as u32, nrm: n as u32, tex: t as u32})
+                        },
+                        _ => panic!("Missing normal or texture coord"),
+                    };
+                    };
+                };
+                let positions = scene.position().iter().map(|&c| utils::v3(c[0],c[1],c[2])).collect();
+                let normals = scene.normal().iter().map(|&n| utils::v3(n[0],n[1],n[2])).collect();
+                return (positions, normals, indices);
+                };
             };
-          };
-          let positions = scene.position().iter().map(|&c| utils::v3(c[0],c[1],c[2])).collect();
-          let normals = scene.normal().iter().map(|&n| utils::v3(n[0],n[1],n[2])).collect();
-          return (positions, normals, indices);
+            panic!("No objects in 'sphere.obj'");
         };
     };
-    panic!("No objects in 'sphere.obj'");
+    panic!("File not found: {:?}", path.as_ref());
 }
 
 #[test]

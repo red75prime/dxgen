@@ -374,18 +374,21 @@ impl From<::std::str::Utf8Error> for ShaderCompileError {
 
 pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static str, &mut Vec<u8>)], flags: u32) 
                         -> Result<(), ShaderCompileError> {
-    let paths = ["","../../src/shaders","./shaders"];
+    let paths = ["./","../../src/shaders/","./shaders/"];
     let mut f = None;
     let mut fpath = Path::new(file_name).to_path_buf();
     for &path in &paths {
         fpath = Path::new(path).join(file_name);
         match File::open(&fpath) {
-            Ok(file) => f = Some(file),
+            Ok(file) => {
+                f = Some(file);
+                break;
+            },
             Err(_) => (),
         };
     };
     let mut f = if let Some(f) = f { f } else {
-        return Err(ShaderCompileError::Io(io::Error::new(io::ErrorKind::NotFound, file_name.to_string())));
+        return Err(ShaderCompileError::Io(io::Error::new(io::ErrorKind::NotFound, format!("File not found: {}", file_name))));
     };
 
     let mut content = vec![];

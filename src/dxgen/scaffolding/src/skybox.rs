@@ -8,6 +8,7 @@ use dxsafe::structwrappers::*;
 use self::image::hdr;
 use std::fs;
 use std::io;
+use std::path::Path;
 use std::ptr;
 use utils;
 use winapi::*;
@@ -107,8 +108,19 @@ impl Skybox {
 
 fn load_skybox_texture(dev: &D3D12Device, comp_queue: &D3D12CommandQueue, copy_queue: &D3D12CommandQueue, downsampler: &Downsampler) 
                         -> HResult<(D3D12Resource, D3D12_SHADER_RESOURCE_VIEW_DESC)> {
-    let f = try!(fs::File::open("assets/skybox.hdr").or(fs::File::open("skybox.hdr"))
-            .map_err(|_|{ error!("'skybox.hdr' is not found"); ERROR_FILE_NOT_FOUND as HRESULT }));
+    let paths = ["./assets","../../src/assets/","./","../../src/"];
+    let mut f = None;
+    for &p in &paths {
+        if let Ok(file) = fs::File::open(&Path::new(p).join("skybox.hdr")) {
+            f = Some(file);
+            break;
+        }
+    }
+    let f = if let Some(file) = f { file } 
+    else {
+        error!("skybox.hrd not found");
+        return Err(ERROR_FILE_NOT_FOUND as HRESULT);
+    };
     let reader = io::BufReader::new(f);
     let decoder = try!(hdr::HDRDecoder::new(reader)
             .map_err(|err|{ error!("Cannot parse 'skybox.hdr': {}", err); ERROR_INVALID_DATA as HRESULT }));

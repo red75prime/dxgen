@@ -1,8 +1,11 @@
 #![allow(dead_code)]
 
-use winapi::{D3D_PRIMITIVE_TOPOLOGY, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST};
 use cgmath::*;
+use obj;
+use obj::SimplePolygon;
+use std::path::Path;
 use utils::v3;
+use winapi::{D3D_PRIMITIVE_TOPOLOGY, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST};
 
 pub trait GenVertex {
     fn new_vertex(p: Vector3<f32>) -> Self;
@@ -65,16 +68,16 @@ pub fn cube_indexed<V: GenVertex>(sz: f32) -> (Vec<V>, Vec<u32>) {
     (ret, idx)
 }
 
-use obj;
-use obj::SimplePolygon;
-use std::path::Path;
-
 #[allow(dead_code)]
 pub fn figurine<V: GenVertex>(path: &Path) -> (Vec<V>, Vec<u32>) {
-    let scene = obj::load::<SimplePolygon>(path).expect("3d model load failed");
-    if let Some(_) = scene.object_iter().next() {
-
-        return (vec![], vec![]);
+    let paths = ["./","../../src/"];
+    for &p in &paths { 
+        let path = Path::new(p).join(path);
+        if let Ok(scene) = obj::load::<SimplePolygon>(&path) {
+            if let Some(_) = scene.object_iter().next() {
+                return (vec![], vec![]);
+            }
+        }
     }
     (vec![], vec![])
 }
