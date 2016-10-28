@@ -1,7 +1,7 @@
 #define RSD "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)," \
             "SRV(t1)," \
             "CBV(b0)," \
-            "DescriptorTable(SRV(t0), SRV(t2))," \
+            "DescriptorTable(SRV(t0), SRV(t2), SRV(t3))," \
             "StaticSampler(s0)," \
             "StaticSampler(s1, filter=FILTER_MIN_MAG_MIP_POINT)," \
             "StaticSampler(s2, filter=FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, ComparisonFunc = COMPARISON_LESS, visibility = SHADER_VISIBILITY_PIXEL)"
@@ -52,6 +52,7 @@ VS_OUTPUT VSMain(VS_INPUT vtx, uint iidx : SV_InstanceID){
 
 Texture2D   testTex : register(t0);
 Texture2DArray shadowMap : register(t2);
+Texture2D skytex : register(t3);
 TextureCube<float> shadowMapCube : register(t2);
 SamplerState  testSamp : register(s0);
 SamplerState  pointSamp : register(s1);
@@ -97,6 +98,8 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   float4 texel = testTex.Sample(testSamp, pv.texc0.xy)*pv.vDiffuse;
   float3 eye_off = eye_pos - pv.w_pos;
   float3 eye_n = normalize(eye_off);
+  float3 eye_r = reflect(eye_n, normalize(pv.norm));
+  float4 env = sample_sphere(skytex, testSamp, eye_r);
   float3 light_off = light_pos - pv.w_pos;
   //float shadowDist = sampleCubemap(shadowMap, -light_off);
   float shdist = k2/(mlen(light_off))+k1;
@@ -110,5 +113,6 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   float3 light_r = reflect(-light_n, normalize(pv.norm));
   float sb=1.-clamp(1.-dot(light_r,eye_n),0,0.0001)/0.0001;
   float l=clamp(dot(light_n,pv.norm),0,1);
-  return (texel*l*0.6*light_invd+sb*float4(10,10,300,1)/(0.1+(length(light_off)+length(eye_off))/1000))*shadowCoverage+ambientTerm;
+  return env*0.2;
+//  return (texel*l*0.6*light_invd+sb*float4(10,10,100,1)/(0.1+(length(light_off)+length(eye_off))/1000))*shadowCoverage+ambientTerm+env*0.2;
 }

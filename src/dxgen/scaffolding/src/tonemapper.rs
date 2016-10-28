@@ -241,6 +241,7 @@ impl Tonemapper {
 
         let total_rs = dev.create_root_signature(0, &total_rs_bc[..])
                           .expect("Cannot create RSDT root signature");
+        total_rs.set_name("total_rs RSDT").unwrap();
 
         let buf_total_cpso = create_default_cpso(dev, &total_rs, buf_total_shader_bc)
                                 .expect("Cannot create buffer reduce compute pipeline state");
@@ -268,10 +269,13 @@ impl Tonemapper {
         trace!("Create root signatures...");
         let hpass_rs = dev.create_root_signature(0, &hpass_rs_bc[..])
                           .expect("Cannot create horisontal pass root signature");
+        hpass_rs.set_name("hpass_rs RSDH").unwrap();
         let vpass_rs = dev.create_root_signature(0, &vpass_rs_bc[..])
                           .expect("Cannot create vertical pass root signature");
+        vpass_rs.set_name("vpass_rs RSDV").unwrap();
         let final_rs = dev.create_root_signature(0, &final_rs_bc[..])
                           .expect("Cannot create root signature");
+        final_rs.set_name("final_rs RSD").unwrap();
         trace!("Done");
 
         trace!("Create pipeline state objects...");

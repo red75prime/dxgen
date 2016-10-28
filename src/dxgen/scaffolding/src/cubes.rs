@@ -189,6 +189,7 @@ impl CommonResources {
 
         trace!("Root signature creation");
         let root_signature = try!(dev!().create_root_signature(0, &root_signature_bc[..]));
+        try!(root_signature.set_name("cubes RSD"));
 
         // Here was initialization of root signature, but I replaced it with root signature embedded into shader source.
         // There also were comments about resource bindings. Please, refer to https://github.com/red75prime/dxgen/blob/17cb52dcb4ca8fdd1dbe0e3993d6da47c195a2e2/src/dxgen/scaffolding/src/cubes.rs#L370
@@ -389,7 +390,7 @@ impl FrameResources {
         trace!("Create tm_fence");
         let tm_fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
 
-        let srv_heap = try!(DescriptorHeap::new(dev, 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
+        let srv_heap = try!(DescriptorHeap::new(dev, 3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
         try!(srv_heap.get().set_name("Cubes SRV descriptor heap"));
 
         let i_buffer_size = mem::size_of::<InstanceData>() * parameters.object_count as usize;
@@ -482,6 +483,13 @@ impl FrameResources {
         debug!("Shadow shader resource view");
         let shadow_srv_desc = srv_texcube_default(DXGI_FORMAT_R32_FLOAT); //srv_tex2darray_default(DXGI_FORMAT_R32_FLOAT, 6);
         dev.create_shader_resource_view(Some(&shadow_map), Some(&shadow_srv_desc), srv_heap.cpu_handle(1));
+        if let Some(ref skybox) = cr.skybox {
+            let (skytex, skydesc) = skybox.texture();
+            dev.create_shader_resource_view(Some(skytex), Some(skydesc), srv_heap.cpu_handle(2));
+        } else {
+            // No skybox. Set empty texture
+            dev.create_shader_resource_view(None, Some(&srv_tex2d_default(DXGI_FORMAT_R16G16B16A16_FLOAT)), srv_heap.cpu_handle(2));
+        };
 
         trace!("Create HDR render target");
         let (hdr_render_target, hdr_rtv_heap, tonemapper_resources) =
@@ -1133,7 +1141,7 @@ pub fn on_render(data: &mut AppData, pause: bool, fps: f32, dt: f32) {
     ::perf_present_end();
     ::perf_start("state_update");
     if let Some(mut future_state) = maybe_future_state {
-        data.state = Arc::new(future_state.get());
+        data.state = future_state.get();
     }
     ::perf_end("state_update");
     data.core.dump_info_queue();

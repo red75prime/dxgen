@@ -1,13 +1,19 @@
-#![allow(dead_code)]
-
-use winapi::*;
-use dxsafe::*;
-use std::ptr;
 //use d3d12_sys::*;
-use dxgi_sys::*;
-use d3dcompiler_sys::*;
+use winapi::*;
 use d2d1_sys::*;
+use d3dcompiler_sys::*;
 use dwrite_sys::*;
+use dxgi_sys::*;
+use dxsafe::*;
+use std::error;
+use std::ffi::OsString;
+use std::fmt;
+use std::fs::File;
+use std::io;
+use std::io::Read;
+use std::os::windows::ffi::OsStrExt;
+use std::path::Path;
+use std::ptr;
 
 pub fn d3d11on12_create_device(dev12: &D3D12Device, flags: D3D11_CREATE_DEVICE_FLAG, cqueue: &D3D12CommandQueue) -> HResult<(D3D11Device, D3D11DeviceContext)> {
     let mut dev11: *mut IUnknown = ptr::null_mut();
@@ -308,9 +314,6 @@ pub fn compile_shader_and_root_signature(text: &str, file_name: &str,
 }
 
 
-use std::ffi::OsString;
-use std::os::windows::ffi::OsStrExt;
-
 fn str_to_vec_u16(s: &str) -> Vec<u16> {
     let osstr = OsString::from(s);
     osstr.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
@@ -322,71 +325,69 @@ pub fn str_to_cstring(s: &str) -> CString {
     CString::new(s).unwrap()
 }
 
-use std::io;
-use std::error;
-use std::fmt;
-use std::fs::File;
-use std::io::Read;
-
 #[derive(Debug)]
-pub enum ShaderInnerError {
+pub enum ShaderCompileError {
     Io(io::Error),
     Utf8(::std::str::Utf8Error),
     Compile(String),
 }
 
-#[derive(Debug)]
-pub struct ShaderCompileError {
-    inner: ShaderInnerError,
-}
-
 impl fmt::Display for ShaderCompileError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.inner {
-            ShaderInnerError::Io(ref err) => write!(f, "IO error: {}", err),
-            ShaderInnerError::Utf8(ref err) => write!(f, "Utf8 error: {}", err),
-            ShaderInnerError::Compile(ref err) => write!(f, "{}", err),
+        match self {
+            &ShaderCompileError::Io(ref err) => write!(f, "IO error: {}", err),
+            &ShaderCompileError::Utf8(ref err) => write!(f, "Utf8 error: {}", err),
+            &ShaderCompileError::Compile(ref err) => write!(f, "{}", err),
         }
     }
 }
 
 impl error::Error for ShaderCompileError {
     fn description(&self) -> &str {
-        match self.inner {
-            ShaderInnerError::Io(ref err) => err.description(),
-            ShaderInnerError::Utf8(ref err) => err.description(),
-            ShaderInnerError::Compile(ref err) => err.as_ref(),
+        match self {
+            &ShaderCompileError::Io(ref err) => err.description(),
+            &ShaderCompileError::Utf8(ref err) => err.description(),
+            &ShaderCompileError::Compile(ref err) => err.as_ref(),
         }
     }
 
     fn cause(&self) -> Option<&error::Error> {
-        match self.inner {
-            ShaderInnerError::Io(ref err) => Some(err),
-            ShaderInnerError::Utf8(ref err) => Some(err),
-            ShaderInnerError::Compile(ref _err) => None,
+        match self {
+            &ShaderCompileError::Io(ref err) => Some(err),
+            &ShaderCompileError::Utf8(ref err) => Some(err),
+            &ShaderCompileError::Compile(ref _err) => None,
         }
     }
 }
 
 impl From<io::Error> for ShaderCompileError {
     fn from(err: io::Error) -> ShaderCompileError {
-        ShaderCompileError {
-            inner: ShaderInnerError::Io(err),
-        }
+        ShaderCompileError::Io(err)
     }
 }
 
 impl From<::std::str::Utf8Error> for ShaderCompileError {
     fn from(err: ::std::str::Utf8Error) -> ShaderCompileError {
-        ShaderCompileError {
-            inner: ShaderInnerError::Utf8(err),
-        }
+        ShaderCompileError::Utf8(err)
     }
 }
 
 pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static str, &mut Vec<u8>)], flags: u32) 
                         -> Result<(), ShaderCompileError> {
-    let mut f = try!(File::open(file_name));
+    let paths = ["","../../src/shaders","./shaders"];
+    let mut f = None;
+    let mut fpath = Path::new(file_name).to_path_buf();
+    for &path in &paths {
+        fpath = Path::new(path).join(file_name);
+        match File::open(&fpath) {
+            Ok(file) => f = Some(file),
+            Err(_) => (),
+        };
+    };
+    let mut f = if let Some(f) = f { f } else {
+        return Err(ShaderCompileError::Io(io::Error::new(io::ErrorKind::NotFound, file_name.to_string())));
+    };
+
     let mut content = vec![];
     try!(f.read_to_end(&mut content));
     let shader = try!(::std::str::from_utf8(&content[..]));
@@ -395,15 +396,14 @@ pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static
         func_names
         .iter_mut()
         .map(|&mut(fname, target, ref mut bytecode)| {
-            match d3d_compile_from_str(shader, file_name, fname, target, flags) {
+            match d3d_compile_from_str(shader, fpath.to_string_lossy().as_ref(), fname, target, flags) {
                 Ok(mut bc) => {
                         bytecode.truncate(0);
                         bytecode.append(&mut bc);
                         Ok(())
                     },
-                Err(err) => Err(ShaderCompileError{ 
-                        inner: ShaderInnerError::Compile(format!("{}: {}", fname, err)),
-                    }),
+                Err(err) => 
+                    Err(ShaderCompileError::Compile(format!("{}: {}", fname, err))),
             }})
         .collect();
     match all_ok {

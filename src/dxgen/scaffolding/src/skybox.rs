@@ -20,6 +20,7 @@ pub struct Skybox {
     root_sig: D3D12RootSignature,
     pso: D3D12PipelineState,
     _skytex: D3D12Resource,
+    skydesc: D3D12_SHADER_RESOURCE_VIEW_DESC,
     dheap: DescriptorHeap,
 }
 
@@ -48,6 +49,7 @@ impl Skybox {
 
         trace!("create_root_signature()");
         let root_signature = try!(core.dev.create_root_signature(0, &root_sig_bc[..]));
+        try!(root_signature.set_name("skybox SBRS"));
 
         let mut pso_desc = D3D12_GRAPHICS_PIPELINE_STATE_DESC {
             pRootSignature: root_signature.iptr() as *mut _,
@@ -77,6 +79,7 @@ impl Skybox {
 
         Ok(Skybox {
             _skytex: tex,
+            skydesc: srv_desc,
             root_sig: root_signature,
             pso: pso,
             dheap: dheap,
@@ -95,6 +98,10 @@ impl Skybox {
 
         glist.draw_instanced(4, 1, 0, 0);
 
+    }
+
+    pub fn texture(&self) -> (&D3D12Resource, &D3D12_SHADER_RESOURCE_VIEW_DESC) {
+        (&self._skytex, &self.skydesc)
     }
 }
 
@@ -193,6 +200,7 @@ fn convert_to_rgb(dev: &D3D12Device, cqueue: &D3D12CommandQueue, src: &D3D12Reso
         .map_err(|err|{ error!("{}", err) ; DXGI_ERROR_INVALID_CALL }));
 
     let root_sig = try!(dev.create_root_signature(0, &root_sig_bc[..]));
+    try!(root_sig.set_name("convert_to_rgb TCRS"));
 
     let convert_pso = try!(create_default_cpso(&dev, &root_sig, convert_bc));
 
@@ -259,6 +267,7 @@ fn convert_to_rgb_sharedexp(dev: &D3D12Device, cqueue: &D3D12CommandQueue, src: 
         .map_err(|err|{ error!("{}", err) ; DXGI_ERROR_INVALID_CALL }));
 
     let root_sig = try!(dev.create_root_signature(0, &root_sig_bc[..]));
+    try!(root_sig.set_name("convert_to_rgb_sharedexp TCRS"));
 
     let convert_pso = try!(create_default_cpso(&dev, &root_sig, convert_bc));
 

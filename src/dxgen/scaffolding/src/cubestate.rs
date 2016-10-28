@@ -19,7 +19,7 @@ pub struct CubeState {
     pub blink: bool,
     pub rot_axis: V3,
     pub rot_spd: f32,
-    pub p_accel: V3,
+    pub p_accel: V3, // acceleration caused by penetration
     pub p_time: f32,
 }
 
@@ -205,6 +205,10 @@ fn time_to_hit(p: V3, v: V3, a: V3, r: f32, (pp, n): (V3, V3)) -> Option<f32> {
     nearest_physical_time(qe_roots(na/2., nv, nd-r))
 }
 
+fn reflect(i: V3, n: V3) -> V3 {
+    i-n*(n.dot(i)*2.)
+}
+
 // dt - time step
 // p - initial position
 // v - initial speed
@@ -219,6 +223,7 @@ fn sphere_planes_collision(cp: &CollisionParms, dt: f32, p: V3, v: V3, a: V3, r:
     if d+TOUCH_TOLERANCE < r {
         // distance to the nearest plane is less than sphere radius
         let pcorr = p + (r - d)*n; // move sphere into allowed volume (possibly), and be done with it for this step
+        let v = if n.dot(v) < 0. { reflect(v, n) } else { v };
         //println!("correction");
         return (dt, pcorr, v, Some((pp, n))); 
     };
@@ -260,7 +265,7 @@ fn sphere_planes_collision(cp: &CollisionParms, dt: f32, p: V3, v: V3, a: V3, r:
             (dt, p+v*dt+a*dt*dt/2., v+a*dt, None)
         } else {
             let v1 = v+a*t; // speed at impact 
-            let vb = (v1-v1.dot(n)*2.*n)*cp.normal_bounciness;  // speed after bounce 
+            let vb = reflect(v1, n)*cp.normal_bounciness;  // speed after bounce 
             (t, p+v*t+a*t*t/2., vb, Some((pp, n)))
         }
     } else {
@@ -454,10 +459,10 @@ use std::thread;
 use std::sync::Arc;
 use std::sync::mpsc::{channel, Receiver, Sender};
 
-fn state_update_agent(thread_cnt: u32, rx: Receiver<(Arc<State>, f32, Point3<f32>)>, tx: Sender<State>) {
+fn state_update_agent(thread_cnt: u32, rx: Receiver<(Arc<State>, f32, Point3<f32>)>, tx: Sender<Arc<State>>) {
     loop {
         if let Ok((state_ref, dt, camera)) = rx.recv() {
-            if let Err(_) = tx.send(state_ref.update(dt, thread_cnt, camera)) {
+            if let Err(_) = tx.send(Arc::new(state_ref.update(dt, thread_cnt, camera))) {
                 return ();
             }
         } else {
@@ -468,7 +473,7 @@ fn state_update_agent(thread_cnt: u32, rx: Receiver<(Arc<State>, f32, Point3<f32
 
 pub struct StateUpdateAgent {
     tx: Sender<(Arc<State>, f32, Point3<f32>)>,
-    rx: Receiver<State>,
+    rx: Receiver<Arc<State>>,
 }
 
 impl StateUpdateAgent {
@@ -497,7 +502,7 @@ pub struct UpdateResult<'a> {
 }
 
 impl<'a> UpdateResult<'a> {
-    pub fn get(&mut self) -> State {
+    pub fn get(&mut self) -> Arc<State> {
         self.result_aquired = true;
         self.agent.rx.recv().unwrap()
     }

@@ -1,6 +1,6 @@
 use winapi::*;
 use core::{self, Event, Handle, DumpOnError};
-use create_device::*;
+use create_device as cdev;
 use utils::*;
 use dxsafe::*;
 use dxsafe::structwrappers::*;
@@ -18,21 +18,21 @@ pub struct Downsampler {
 
 impl Downsampler {
     pub fn new(dev: &D3D12Device) -> Downsampler {
-        let mut f = File::open("downsampler.hlsl").expect("Cannot open tonemapper shader file.");
-        let mut content = vec![];
-        f.read_to_end(&mut content).expect("Cannot read tonemapper shader file.");
-        let shader = str::from_utf8(&content[..])
-                         .expect("Shader file content is not a valid UTF-8");
-
-        let (shader_bytecode, root_sig_bytecode) = compile_shader_and_root_signature(shader.into(), "downsampler.hlsl",
-                                                                                     "CSMain",
-                                                                                     "RSD", 0)
-                                                       .expect("Tonemapper horizontal pass \
-                                                                shader compile error");
-
+        let mut shader_bytecode = vec![];
+        let mut root_sig_bytecode = vec![];
+        trace!("Compile downsampler.hlsl");
+        cdev::compile_shaders("downsampler.hlsl", 
+                &mut[
+                    ("RSD", "rootsig_1_0", &mut root_sig_bytecode),
+                    ("CSMain", "cs_5_0", &mut shader_bytecode),
+                ], D3DCOMPILE_OPTIMIZATION_LEVEL3)
+            .map_err(|err|{ error!("{}", err); err})
+            .unwrap();
+        
         trace!("Root signature");
         let root_sig = dev.create_root_signature(0, &root_sig_bytecode[..])
                           .expect("Cannot create root signature");
+        root_sig.set_name("Downsampler").unwrap();
 
         // It doesn't work.
         // let crs = d3d_get_root_signature_from_str(SHADER, dev).expect("Cannot extract root signature");

@@ -24,7 +24,14 @@ void CSTexConvertShexp(uint3 gid : SV_GroupId) {
 	uint3 col = uint3(pix & 255, (pix >> 8) & 255, (pix >> 16) & 255);
 	int e = (int)((pix >> 24) & 255) - 128;
 	uint e2 = clamp(e, -15, 16) + 15;
-	tex_shexp[gid.xy] = (col.r << 1) | (col.g << 10) | (col.b << 19) | (e2 << 27);
+	col <<= 1;
+	uint dither = (gid.x+gid.y)%2;
+	col += uint3(dither, dither, dither);
+	if (e < -15) {
+		uint shft = clamp(-15-e, 0, 8);
+		col >>= shft;
+	};
+	tex_shexp[gid.xy] = col.r | (col.g << 9) | (col.b << 18) | (e2 << 27);
 }
 
 
@@ -63,13 +70,11 @@ PS_IN VSMain(uint vtx: SV_VertexID) {
 
 Texture2D<float4> skytex: register(t0);
 SamplerState default_sampler: register(s0);
-static const float pi = 3.141592653589;
 
 [RootSignature(SBRS)]
 [earlydepthstencil]
 float4 PSMain(PS_IN dat) : SV_TARGET {
 	float3 r = mul(view, float4(dat.ncrd, 1, 0)).xyz;
-	float2 p = float2(0.5 - atan2(r.x, r.z)/2/pi, 0.5 + atan2(r.y,sqrt(r.x*r.x+r.z*r.z))/pi);
 	//return float4(p.x, p.x, 0, 1);
-	return skytex.Sample(default_sampler, p);
+	return sample_sphere(skytex, default_sampler, r);
 }

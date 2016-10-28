@@ -35,6 +35,7 @@ impl LightSource {
 
         trace!("Root signature creation");
         let root_sig = try!(dev.create_root_signature(0, &rsig_bc[..]));
+        try!(root_sig.set_name("light RSD"));
 
         let cons_raster = {
             let opts = try!(dev.check_feature_support_options());

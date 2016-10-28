@@ -37,6 +37,7 @@ impl<T: VertexFormat> PLShadow<T> {
 
         trace!("Root signature creation");
         let root_sig = try!(dev.create_root_signature(0, &rsig_bc[..]));
+        try!(root_sig.set_name("plshadow RSD"));
 
         let input_elts_desc = T::generate(0);
 
