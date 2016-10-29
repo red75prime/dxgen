@@ -395,7 +395,10 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       match Map.tryFind name annotations.defines with
       |Some(Exclude) -> ()
       |Some(UseType(t)) ->
-        apl <| sprintf "pub const %s: %s = %s;" name t orgs
+        if (t = "f32" || t = "f64") && (not <| orgs.Contains(".")) then
+            apl <| sprintf "pub const %s: %s = %s.;" name t orgs
+        else 
+            apl <| sprintf "pub const %s: %s = %s;" name t orgs
       |None ->
           match mc with
           |MCUInt64(_) -> 
@@ -421,11 +424,14 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
           |_ -> None)
       |> Seq.map
         (fun (name,args,rty,cc,(fname,_,_,_)) ->
-          let rcc=ccToRust cc
-          let text=System.String.Format("    pub fn {0}({1}) -> {2};",name,((List.map funcArgToRust args) |> String.concat(", ")),(tyToRust rty))
+          let rcc=ccToRustNoQuotes cc
+          let sb = new System.Text.StringBuilder()
+          sb.AppendLine(sprintf "EXTERN!{%s fn %s(" rcc name) |> ignore
+          for arg in List.map funcArgToRust args do
+            sb.AppendLine(sprintf "    %s," arg) |> ignore
+          sb.Append(sprintf ") -> %s}" (tyToRust rty)) |> ignore
           let f=(rsfilename fname)
-          let f'=f.Substring(0,f.Length-3)+"_sys.rs"
-          (f',rcc,text))
+          (f, rcc, sb.ToString()))
       |> Seq.groupBy (fun (a,b,c) -> a)
       |> Seq.iter
         (fun (f,txts) ->
@@ -434,10 +440,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
             |> Seq.groupBy (fun (a,b,c) -> b)
             |> Seq.iter 
               (fun (rcc, lines) ->
-                apl <| sprintf "extern %s {" rcc
                 lines |> Seq.iter (fun (_,_,t) -> apl t)
-                apl "}"
-                apl ""
                 ))
     
   let createIIDs()=
