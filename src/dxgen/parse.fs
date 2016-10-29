@@ -280,7 +280,8 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             fields := CStructElem(nm, ty, None) :: !fields
           else
             // Skip implementation
-            printfn "Skipping non pure virtual %s::%s" structName nm
+            //printfn "Skipping non pure virtual %s::%s" structName nm
+            ()
       else if ckind=CursorKind.UnionDecl then
         fields := CStructElem("", parseUnion cursor, None) :: !fields
       else if ckind=CursorKind.UnexposedAttr then

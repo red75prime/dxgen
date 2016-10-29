@@ -100,7 +100,7 @@ let annotations_by_module =
       {interfaces = d2d1_1;
       enums = [("D2D1_PROPERTY", EAEnumHex); ("D2D1_SUBPROPERTY", EAEnumHex);] |> Map.ofList;
       structs = Map.empty;
-      dependencies = [];
+      dependencies = ["d2d1"];
       defines = Map.empty;
     });
     ("d2d1_2",

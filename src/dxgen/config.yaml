@@ -3,13 +3,15 @@ modules:
     - name: d3d12_dxgi
       output-path: ../../dx_dxgi/src/
       include-path: 
-        - .\Include\10.0.10586.0\um\
-        - .\Include\10.0.10586.0\shared\
-        - .\Include\10.0.10586.0\ucrt\
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - name: d3d12.h
           - name: d3d12sdklayers.h
+            uses:
+              - d3dcommon
           - name: d3dcommon.h
           - name: dxgi.h
           - name: dxgi1_2.h
@@ -30,9 +32,9 @@ modules:
     - name: d3d11
       output-path: ../../d3d11on12/src
       include-path: 
-        - .\Include\10.0.10586.0\um\
-        - .\Include\10.0.10586.0\shared\
-        - .\Include\10.0.10586.0\ucrt\
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - name: d3d11.h
@@ -42,9 +44,9 @@ modules:
     - name: d2d1
       output-path: ../../d2d1/src
       include-path: 
-        - .\Include\10.0.10586.0\um\
-        - .\Include\10.0.10586.0\shared\
-        - .\Include\10.0.10586.0\ucrt\
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - name: d2d1effectauthor.h
@@ -76,9 +78,9 @@ modules:
     - name: wincodec
       output-path: ../../d3d11on12/src
       include-path: 
-        - .\Include\10.0.10586.0\um\
-        - .\Include\10.0.10586.0\shared\
-        - .\Include\10.0.10586.0\ucrt\
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - name: DocumentTarget.h
@@ -93,9 +95,9 @@ modules:
     - name: d3d11on12
       output-path: ../../d3d11on12/src
       include-path: 
-        - .\Include\10.0.10586.0\um\
-        - .\Include\10.0.10586.0\shared\
-        - .\Include\10.0.10586.0\ucrt\
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - name: d3d11on12.h
@@ -107,9 +109,9 @@ modules:
     - name: dwrite
       output-path: ../../dwrite/src
       include-path: 
-        - .\Include\10.0.10586.0\um\
-        - .\Include\10.0.10586.0\shared\
-        - .\Include\10.0.10586.0\ucrt\
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - name: dwrite.h
@@ -122,9 +124,9 @@ modules:
     - name: d3d12shader
       output-path: ../../dx_dxgi/src/
       include-path: 
-        - .\Include\10.0.10586.0\um\
-        - .\Include\10.0.10586.0\shared\
-        - .\Include\10.0.10586.0\ucrt\
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - name: d3d12shader.h

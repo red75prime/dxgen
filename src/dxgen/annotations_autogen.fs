@@ -21,6 +21,18 @@ let d3dcommon =
         ("This",AThis);
       ],MANone);
     ]);  
+    ("ID3DDestructionNotifierVtbl",IAManual, "IUnknownVtbl", [
+        ("RegisterDestructionCallback",[
+            ("This",AThis);
+            ("callbackFn",ANone);
+            ("pData",ANone);
+            ("pCallbackID",ANone);
+        ],MANone);
+        ("UnregisterDestructionCallback",[
+            ("This",AThis);
+            ("callbackID",ANone);
+        ],MANone);
+    ]);
     ("ID3DIncludeVtbl",IAManual, "", [
       ("Open",[
         ("This",AThis);
@@ -785,6 +797,39 @@ let dxgi1_4 =
 
 let d3d12sdklayers =
   [
+      ("ID3D12Debug1Vtbl",IAManual, "IUnknownVtbl", [
+        ("EnableDebugLayer",[
+          ("This",AThis);
+        ],MANone);
+        ("SetEnableGPUBasedValidation",[
+          ("This",AThis);
+          ("Enable",ANone);
+        ],MANone);
+        ("SetEnableSynchronizedCommandQueueValidation",[
+          ("This",AThis);
+          ("Enable",ANone);
+        ],MANone);
+      ]);
+      ("ID3D12DebugCommandList1Vtbl",IAManual, "IUnknownVtbl", [
+        ("AssertResourceState",[
+          ("This",AThis);
+          ("pResource",ANone);
+          ("Subresource",ANone);
+          ("State",ANone);
+        ],MANone);
+        ("SetDebugParameter",[
+          ("This",AThis);
+          ("Type",ANone);
+          ("pData",ANone);
+          ("DataSize",ANone);
+        ],MANone);
+        ("GetDebugParameter",[
+          ("This",AThis);
+          ("Type",ANone);
+          ("pData",ANone);
+          ("DataSize",ANone);
+        ],MANone);
+      ]);
     ("ID3D12DebugCommandListVtbl",IAManual, "IUnknownVtbl", [
       ("AssertResourceState",[
         ("This",AThis);
@@ -807,6 +852,24 @@ let d3d12sdklayers =
         ("Subresource",ANone);
         ("State",ANone);
       ],MANone);
+    ]);
+    ("ID3D12DebugDevice1Vtbl",IAManual, "IUnknownVtbl", [
+        ("SetDebugParameter",[
+            ("This",AThis);
+            ("Type",ANone);
+            ("pData",ANone);
+            ("DataSize",ANone);
+        ],MANone);
+        ("GetDebugParameter",[
+            ("This",AThis);
+            ("Type",ANone);
+            ("pData",ANone);
+            ("DataSize",ANone);
+        ],MANone);
+        ("ReportLiveDeviceObjects",[
+            ("This",AThis);
+            ("Flags",ANone);
+        ],MANone);
     ]);
     ("ID3D12DebugDeviceVtbl",IAManual, "IUnknownVtbl", [
       ("SetFeatureMask",[
@@ -1057,6 +1120,29 @@ let d3d12annotations=
           ("__ret_val",OutReturn);
         ],MANone);
       ]);
+      ("ID3D12Device1Vtbl",IAManual, "ID3D12DeviceVtbl", [
+        ("CreatePipelineLibrary",[
+          ("This",AThis);
+          ("pLibraryBlob",ANone);
+          ("BlobLength",ANone);
+          ("riid",ANone);
+          ("ppPipelineLibrary",ANone);
+        ],MANone);
+        ("SetEventOnMultipleFenceCompletion",[
+          ("This",AThis);
+          ("ppFences",ANone);
+          ("pFenceValues",ANone);
+          ("NumFences",ANone);
+          ("Flags",ANone);
+          ("hEvent",ANone);
+        ],MANone);
+        ("SetResidencyPriority",[
+          ("This",AThis);
+          ("NumObjects",ANone);
+          ("ppObjects",ANone);
+          ("pPriorities",ANone);
+        ],MANone);
+      ]);
       ("ID3D12DeviceChildVtbl",IAAutogen(Set.ofList []), "ID3D12ObjectVtbl",  [
         ("GetDevice",[
           ("This",AThis);
@@ -1201,7 +1287,7 @@ let d3d12annotations=
           ("This",AThis);
           ("pHeapProperties",ANone);
           ("HeapFlags",ANone);
-          ("pResourceDesc",ANone);
+          ("pDesc",ANone);
           ("InitialResourceState",ANone);
           ("pOptimizedClearValue",InOptional);
           ("riidResource",ANone);
@@ -1662,6 +1748,35 @@ let d3d12annotations=
         ]
       );
       ("ID3D12PageableVtbl",IAAutogen(Set.ofList []),  "ID3D12DeviceChildVtbl",  []);
+      ("ID3D12PipelineLibraryVtbl",IAManual, "ID3D12DeviceChildVtbl", [
+        ("StorePipeline",[
+          ("This",AThis);
+          ("pName",ANone);
+          ("pPipeline",ANone);
+        ],MANone);
+        ("LoadGraphicsPipeline",[
+          ("This",AThis);
+          ("pName",ANone);
+          ("pDesc",ANone);
+          ("riid",ANone);
+          ("ppPipelineState",ANone);
+        ],MANone);
+        ("LoadComputePipeline",[
+          ("This",AThis);
+          ("pName",ANone);
+          ("pDesc",ANone);
+          ("riid",ANone);
+          ("ppPipelineState",ANone);
+        ],MANone);
+        ("GetSerializedSize",[
+          ("This",AThis);
+        ],MANone);
+        ("Serialize",[
+          ("This",AThis);
+          ("pData",ANone);
+          ("DataSizeInBytes",ANone);
+        ],MANone);
+      ]);
       ("ID3D12PipelineStateVtbl",IAAutogen(Set.ofList [IOSend]), "ID3D12PageableVtbl",  [
         ("GetCachedBlob",[
           ("This",AThis);
@@ -1716,6 +1831,16 @@ let d3d12annotations=
         ],MANone);
       ]);
       ("ID3D12RootSignatureVtbl",IAAutogen(Set.ofList [IOSend]), "ID3D12DeviceChildVtbl",  []);
+      ("ID3D12VersionedRootSignatureDeserializerVtbl",IAManual, "IUnknownVtbl", [
+        ("GetRootSignatureDescAtVersion",[
+          ("This",AThis);
+          ("convertToVersion",ANone);
+          ("ppDesc",ANone);
+        ],MANone);
+        ("GetUnconvertedRootSignatureDesc",[
+          ("This",AThis);
+        ],MANone);
+      ]);  
   ] 
 
 let d3d12enums=
@@ -2800,4 +2925,4 @@ let d3d12shader=[
       ("This",AThis);
     ],MANone);
   ]);
-  ]
+]

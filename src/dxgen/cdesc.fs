@@ -27,11 +27,15 @@ type CCallingConv=
   |StdCall
 
 
-let ccToRust (cc:CallingConv)=
+let ccToRustNoQuotes (cc:CallingConv)=
   match cc with
-  |CallingConv.X86StdCall -> "\"system\""
-  |CallingConv.CXCallingConv_C -> "\"system\""
+  |CallingConv.X86StdCall -> "system"
+  |CallingConv.CXCallingConv_C -> "system"
   |_ -> raise <| new System.Exception(sprintf "Unimplemented calling convention %A in ccToRust" cc)
+
+let ccToRust (cc:CallingConv)=
+    "\"" + (ccToRustNoQuotes cc) + "\""
+
 
 type CodeLocation=System.String*uint32*uint32*uint32
 

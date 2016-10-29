@@ -627,7 +627,7 @@ let d2d1 =
       ("stringLength",ANone);
       ("textFormat",InComPtr);
       ("layoutRect",ANone);
-      ("defaultForegroundBrush",InComPtr);
+      ("defaultFillBrush",InComPtr);
       ("options",ANone);
       ("measuringMode",ANone);
     ],MANone);
@@ -635,7 +635,7 @@ let d2d1 =
       ("This",AThis);
       ("origin",ANone);
       ("textLayout",InComPtr);
-      ("defaultForegroundBrush",InComPtr);
+      ("defaultFillBrush",InComPtr);
       ("options",ANone);
     ],MANone);
     ("DrawGlyphRun",[
