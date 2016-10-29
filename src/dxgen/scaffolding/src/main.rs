@@ -14,7 +14,7 @@ extern crate dxgi as dxgi_sys;
 extern crate kernel32;
 extern crate user32;
 extern crate d3dcompiler as d3dcompiler_sys;
-//extern crate d3d12 as d3d12_sys; // Moved into winapi in my fork, but expected in winapi 0.3
+//extern crate d3d12 as d3d12_sys; // I moved this into winapi in my fork, but it expected to be so in winapi 0.3
 extern crate rand;
 extern crate time;
 extern crate cgmath;
@@ -48,6 +48,7 @@ mod light;
 mod drawtext;
 mod skybox;
 mod seh;
+mod wmtext;
 
 #[cfg(feature = "openal")] mod sound;
 
@@ -290,11 +291,12 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
     // Profiling stuff
     let mut start = time::precise_time_s();
     let mut prev_frame_time = time::precise_time_s();
-    // Window::poll_events() returns non-blocking iterator, that return Option<MSG>
+    // Window::poll_events() returns non-blocking iterator, which returns Option<MSG>
     for mmsg in wnd.poll_events() {
       // "if let Some(msg)" extracts msg from mmsg
       // if mmsg is None, then 'else' branch is taken
       if let Some(msg) = mmsg {
+          //trace!("{:?} {} {:x} {:x}", msg.time, wmtext::wm_str(msg.message), msg.wParam, msg.lParam);
           // Instead of passing messages into cubes module, I process them here
           // It is not well-thought-out design decision, it's just slightly simpler now, and cost of changing it is low.
           match msg.message {
@@ -411,7 +413,6 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
                     };
                     println!("");
                 });
-                //println!("Adapter {} FPS: {:3} clear:{:.2} fill:{:.2} exec:{:.2} present:{:.2} wait:{:.2}  ", id, frames, clear, fill, exec, present, wait);
                 let _ = ::std::io::Write::flush(&mut ::std::io::stdout()); 
                 perf_reset();
                 start = now;

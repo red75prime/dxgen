@@ -109,18 +109,17 @@ impl Skybox {
 fn load_skybox_texture(dev: &D3D12Device, comp_queue: &D3D12CommandQueue, copy_queue: &D3D12CommandQueue, downsampler: &Downsampler) 
                         -> HResult<(D3D12Resource, D3D12_SHADER_RESOURCE_VIEW_DESC)> {
     let paths = ["./assets","../../src/assets/","./","../../src/"];
-    let mut f = None;
-    for &p in &paths {
-        if let Ok(file) = fs::File::open(&Path::new(p).join("skybox.hdr")) {
-            f = Some(file);
-            break;
-        }
-    }
-    let f = if let Some(file) = f { file } 
-    else {
-        error!("skybox.hrd not found");
-        return Err(ERROR_FILE_NOT_FOUND as HRESULT);
-    };
+    let maybe_f = paths
+                    .iter() // Skip all paths, which cannot be opened 
+                    .filter_map(|&p|fs::File::open(&Path::new(p).join("skybox.hdr")).ok())
+                    .next(); // Take first one, which can be opened
+    let f = 
+        if let Some(file) = maybe_f { 
+            file
+        } else {
+            error!("skybox.hdr not found");
+            return Err(ERROR_FILE_NOT_FOUND as HRESULT);
+        };
     let reader = io::BufReader::new(f);
     let decoder = try!(hdr::HDRDecoder::new(reader)
             .map_err(|err|{ error!("Cannot parse 'skybox.hdr': {}", err); ERROR_INVALID_DATA as HRESULT }));
