@@ -35,6 +35,7 @@ itertools = "0.4.6"
 openal-rs = { version = "0.1", optional = true }
 ncollide = "0.10"
 nalgebra = "0.9"
+getopts = "0.2"
 
 [dependencies.image]
 git = "https://github.com/PistonDevelopers/image/"

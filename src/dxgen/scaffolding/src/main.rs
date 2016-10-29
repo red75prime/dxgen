@@ -25,6 +25,7 @@ extern crate d2d1 as d2d1_sys;
 extern crate dwrite as dwrite_sys;
 extern crate ncollide;
 extern crate nalgebra;
+extern crate getopts;
 
 #[macro_use] mod macros;
 mod create_device;
@@ -55,21 +56,28 @@ mod wmtext;
 #[cfg(not(feature = "openal"))] mod nosound;
 #[cfg(not(feature = "openal"))] use nosound as sound;
 
-use winapi::*;
-use dxsafe::*;
 use create_device::*;
+use cubes::CubeParms;
+use dxsafe::*;
+use getopts::Options;
+use itertools::Itertools;
 use std::env;
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::process;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
-use std::collections::HashMap;
-use window::*;
-use utils::*;
-use cubes::CubeParms;
 use std::time::Duration;
-use itertools::Itertools;
+use utils::*;
+use winapi::*;
+use window::*;
 
 const FRAME_COUNT : u32 = 3;
+
+fn print_usage(program: &str, opts: Options) {
+    let brief = format!("Usage: {} [0] [1] [N] [options]", program);
+    print!("{}", opts.usage(&brief));
+}
 
 fn main() {
   // install SEH guard to continue on continuable structured exception 
@@ -88,7 +96,7 @@ fn main() {
         object_count: 2_000,
         backbuffer_count: FRAME_COUNT, 
         speed_mult: 1.0, 
-        concurrent_state_update: true,
+        concurrent_state_update: true, // unused
         debug_layer: cfg!(debug_assertions), 
         rt_format: DXGI_FORMAT_R16G16B16A16_FLOAT,
         enable_srgb: false,
@@ -97,61 +105,121 @@ fn main() {
     };
   let mut adapters_to_test = vec![];
   let mut adapters_info = false;
-  for arg in env::args().skip(1) {
-    if let Ok(n) = arg.parse::<u32>() {
-      // If command line parameter is a number, treat it as a number of graphics adapter.
-      adapters_to_test.push(n);
-    } else if arg == "-i" || arg == "--info" {
-      adapters_info = true;
-    } else if arg == "-f" || arg == "--f32-color" {
-        parms.rt_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    } else if arg == "--seq" {
-        parms.concurrent_state_update = false;
-    } else if arg == "--srgb" {
-        parms.enable_srgb = true;
-    } else if arg == "-d" || arg == "--debug" {
-        parms.debug_layer = true;
-    } else if arg == "--nodebug" {
-        parms.debug_layer = false;
-    } else if arg == "--trace" {
-        parms.render_trace = true;
-    } else if arg.starts_with("-o") {
-      // Command line parameter -o<N> sets number of objects to draw
-      // Note, that 2 in arg[2..] is a number of bytes, not characters. 
-      if let Ok(n) = (&arg[2..]).parse::<u32>() {
-        parms.object_count = n;
-      } else {
-        println!("Object count in -o should be integer: '{}'", arg);
-        ::std::process::exit(1);
-      }
-    } else if arg.starts_with("-t") {
-      // Command line parameter -t<N> sets number of threads and graphics command lists
-      // to use for sending workload to GPU
-      if let Ok(n) = (&arg[2..]).parse::<u32>() {
-        parms.thread_count = n;
-      }
-    } else if arg.starts_with("-b") {
-      // Command line parameter -b<N> sets number of back buffers
-      if let Ok(n) = (&arg[2..]).parse::<u32>() {
-        if n<2 || n>5 {
-          println!("Backbuffer count ignored, falling back to {}", parms.backbuffer_count);
+
+  let program_name = env::args().next().unwrap().clone();
+
+  let mut opts = Options::new();
+  opts.optflag("h", "help", "Usage");
+  opts.optflag("i", "info", "Adapters information");
+  opts.optflag("", "f32-color", "Render using R32G32B32_FLOAT");
+  opts.optflag("d", "debug", "Enable debug layer");
+  opts.optflag("", "nodebug", "Disable debug layer");
+  opts.optflag("", "trace", "Enable logging in render cycle");
+  opts.optflag("", "srgb", "Pretend that backbuffer uses sRGB (doesn't seem to affect anything)");
+  opts.optopt("o", "objects", "Number of cubes", "NUM");
+  opts.optopt("t", "", "Number of state update threads", "NUM");
+  opts.optopt("b", "", "Number of backbuffers", "NUM");
+  opts.optopt("s", "", "Time speed multiplier", "FLOAT");
+  opts.optopt("", "fov", "Vertical FOV", "FLOAT");
+  match opts.parse(env::args().skip(1)) {
+    Ok(ms) => {
+      // help
+      if ms.opt_present("h") {
+        print_usage(&program_name, opts);
+        return;
+      };
+      // adapters to use
+      for anum in &ms.free {
+        if let Ok(n) = anum.parse::<u32>() {
+          // If command line parameter is a number, treat it as a number of a graphics adapter.
+          adapters_to_test.push(n);
         } else {
-          parms.backbuffer_count = n;
+          error!("Unrecognized command line argument '{}'", anum);
+          process::exit(3);
         }
-      }
-    } else if arg.starts_with("-s") {
-      // Command line parameter -s<f32> sets cube speed multiplier
-      if let Ok(s) = (&arg[2..]).parse::<f32>() {
-        parms.speed_mult = s;
-      }
-    } else if arg.starts_with("--fov") {
-      // Command line parameter --fov<f32> sets vertical fov
-      if let Ok(s) = (&arg[5..]).parse::<f32>() {
-        parms.fovy_deg = s;
-      }
-    } else {
-        println!("Unrecognized option: {}", arg);
-        ::std::process::exit(2);
+      };
+      // adapters info
+      if ms.opt_present("i") {
+        adapters_info = true;
+      };
+      // use f32 color
+      if ms.opt_present("f32-color") {
+        parms.rt_format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+      };
+      // enable sRGB
+      if ms.opt_present("srgb") {
+        parms.enable_srgb = true;
+      };
+      if ms.opt_present("d") {
+        parms.debug_layer = true;
+      };
+      if ms.opt_present("nodebug") {
+        parms.debug_layer = false;
+      };
+      if ms.opt_present("trace") {
+        parms.render_trace = true;
+      };
+      // object count
+      if let Some(num) = ms.opt_str("o") {
+        match num.parse::<u32>() {
+          Ok(n) if n>0 => {
+            parms.object_count = n;
+          },
+          _ => {
+            error!("Object count in -o should be positive non-zero integer, not '{}'", num);
+            process::exit(2);
+          },
+        };
+      };
+      if let Some(num) = ms.opt_str("t") {
+        match num.parse::<u32>() {
+          Ok(n) if n>0 => {
+            parms.thread_count = n;
+          },
+          _ => { 
+            error!("Thread count in -t should be positive non-zero integer, not '{}'", num);
+            process::exit(2);
+          },
+        }
+      };
+      if let Some(num) = ms.opt_str("b") {
+        match num.parse::<u32>() {
+          Ok(n) if n>0 => {
+            parms.backbuffer_count = n;
+          },
+          _ => { 
+            error!("Backbuffer count in -b should be positive non-zero integer, not '{}'", num);
+            process::exit(2);
+          },
+        }
+      };
+      if let Some(num) = ms.opt_str("s") {
+        match num.parse::<f32>() {
+          Ok(n) if n>=0. => {
+            parms.speed_mult = n;
+          },
+          _ => { 
+            error!("Time speed multiplier in -s should be non-negative floating number, not '{}'", num);
+            process::exit(2);
+          },
+        }
+      };
+      if let Some(num) = ms.opt_str("fov") {
+        match num.parse::<f32>() {
+          Ok(n) if n>0. && n<180. => {
+            parms.fovy_deg = n;
+          },
+          _ => { 
+            error!("FOV in --fov should be floating number in (0., 180.) range, not '{}'", num);
+            process::exit(2);
+          },
+        }
+      };
+
+    },
+    Err(_) => {
+      print_usage(&program_name, opts);
+      process::exit(1);
     }
   }
 
