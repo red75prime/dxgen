@@ -18,7 +18,6 @@ log = "0.3"
 env_logger = "0.3"
 # gfx = { git = "https://github.com/gfx-rs/gfx/tree/master/src/core" }
 rand = "0.3"
-cgmath = "0.12"
 time = "0.1"
 crossbeam = "0.2"
 obj = "0.4"
@@ -37,11 +36,14 @@ ncollide = "0.10"
 nalgebra = "0.9"
 getopts = "0.2"
 
+[dependencies.cgmath]
+version = "0.12"
+default-features = false
+
 [dependencies.image]
-git = "https://github.com/PistonDevelopers/image/"
+version = "0.10"
 default-features = false
 features = ["hdr"]
-branch = "master"
 
 [dependencies.winapi]
 git = "https://github.com/red75prime/winapi-rs/"
