@@ -35,7 +35,6 @@ mod utils;
 mod shape_gen;
 mod dxsems;
 mod core;
-mod app;
 mod cubes;
 mod camera;
 //mod hvoxel;
@@ -384,8 +383,8 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
                   let mut data = data.borrow_mut();
                   let camera = data.camera();
                   let fov = camera.fov();
-                  camera.rotx(-dx as f32*fov/300.);
                   camera.roty(dy as f32*fov/300.);
+                  camera.rotx(-dx as f32*fov/300.);
               }
           },
           WM_MOUSEWHEEL => {
@@ -437,7 +436,7 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
               // Process WASD keys
               let camera = data.camera();
               
-              camera.restore_up((90.*frame_dt) as f32);
+              camera.restore_up((180.*frame_dt) as f32);
 
               let step = match (keys.pressed(VK_SHIFT), keys.pressed(VK_CONTROL)) {
                 (false, false) => 0.1,
@@ -492,7 +491,7 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
         };
     } // message loop
     // Application should exit fullscreen state before terminating. 
-    data.borrow().set_fullscreen(false).expect("Fullscreen mode isn't supported");
+    data.borrow().set_fullscreen(false).expect("Cannot exit fullscreen mode");
     // wait for all GPU processing to stop
     data.borrow().wait_frame();
     // Save info_queue before final release of resources
