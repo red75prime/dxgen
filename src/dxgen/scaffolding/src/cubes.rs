@@ -573,8 +573,8 @@ impl FrameResources {
                     // memory at inst_ref is write-only. ptr::write ensures that it is not read.
                     // There should be no performance inprovement compared to "*inst_ref =", but somehow there is small speedup.
                     ptr::write(inst_ref as *mut _, InstanceData {
-                        world: utils::rotshift3_to_4x4(&cs.rot, &cs.pos),
-                        n_world: utils::rot3_to_3x3(&cs.rot),
+                        world: utils::rotshift3_to_4x4(cs.rot, cs.pos),
+                        n_world: utils::rot3_to_3x3(cs.rot),
                         color: [cs.color.x, cs.color.y, cs.color.z],
                         blink: if cs.blink { 1 } else { 0 }
                     });

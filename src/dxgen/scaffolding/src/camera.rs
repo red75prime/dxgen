@@ -7,7 +7,7 @@ pub struct Camera {
     pub fwd: Vector3<f32>,
     pub up: Vector3<f32>,
     pub right: Vector3<f32>,
-    pub rot: Basis3<f32>,
+    pub rot: Quaternion<f32>,
     vfov_deg: f32,
     aspect: f32,
     pub near: f32,
@@ -21,7 +21,7 @@ impl Camera {
             fwd: v3(0., 0., -1.),
             up: v3(0., 1., 0.),
             right: v3(1., 0., 0.),
-            rot: <Basis3<f32> as Rotation<_>>::one(),
+            rot: Quaternion::one(),
             vfov_deg: 60.,
             aspect: 1.,
             near: 0.1,
@@ -30,20 +30,20 @@ impl Camera {
     }
 
     pub fn rotx(&mut self, ang: f32) {
-        let rotm = Basis3::from_axis_angle(self.up, deg(ang).into());
-        self.rot = rotm.concat(&self.rot);
+        let rotm = Quaternion::from_axis_angle(self.up, Deg(ang));
+        self.rot = rotm * self.rot;
         self.update_axes(); //TODO: optimize, when it becomes not early optimization.
     }
 
     pub fn roty(&mut self, ang: f32) {
-        let rotm = Basis3::from_axis_angle(self.right, deg(ang).into());
-        self.rot = rotm.concat(&self.rot);
+        let rotm = Quaternion::from_axis_angle(self.right, Deg(ang));
+        self.rot = rotm * self.rot;
         self.update_axes();
     }
 
     pub fn rotz(&mut self, ang: f32) {
-        let rotm = Basis3::from_axis_angle(self.fwd, deg(ang).into());
-        self.rot = rotm.concat(&self.rot);
+        let rotm = Quaternion::from_axis_angle(self.fwd, Deg(ang));
+        self.rot = rotm * self.rot;
         self.update_axes();
     }
 
@@ -78,7 +78,7 @@ impl Camera {
     }
 
     pub fn projection_matrix(&self) -> Matrix4<f32> {
-        perspective(deg(self.vfov_deg), self.aspect, self.near, self.far)
+        perspective(Deg(self.vfov_deg), self.aspect, self.near, self.far)
     }
 
     pub fn set_aspect(&mut self, aspect: f32) {

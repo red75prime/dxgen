@@ -30,16 +30,16 @@ pub fn matrix4_to_4x4(m: &Matrix4<f32>) -> [[f32; 4]; 4] {
      [m.x.w, m.y.w, m.z.w, m.w.w]]
 }
 
-pub fn rotshift3_to_4x4(m: &Basis3<f32>, v: &Vector3<f32>) -> [[f32; 4]; 4] {
-    let m = m.as_ref();
+pub fn rotshift3_to_4x4<T: Into<Matrix3<f32>>>(m: T, v: Vector3<f32>) -> [[f32; 4]; 4] {
+    let m: Matrix3<_> = m.into();
     [[m.x.x, m.y.x, m.z.x, v.x],
      [m.x.y, m.y.y, m.z.y, v.y],
      [m.x.z, m.y.z, m.z.z, v.z],
      [0., 0., 0., 1.]]
 }
 
-pub fn rot3_to_3x3(m: &Basis3<f32>) -> [[f32; 3]; 3] {
-    let m = m.as_ref();
+pub fn rot3_to_3x3<T: Into<Matrix3<f32>>>(m: T) -> [[f32; 3]; 3] {
+    let m: Matrix3<_> = m.into();
     [[m.x.x, m.y.x, m.z.x],
      [m.x.y, m.y.y, m.z.y],
      [m.x.z, m.y.z, m.z.z]]

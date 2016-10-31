@@ -13,7 +13,7 @@ pub type V3 = Vector3<f32>;
 #[derive(Clone)]
 pub struct CubeState {
     pub pos: V3,
-    pub rot: Basis3<f32>,
+    pub rot: Quaternion<f32>,
     pub spd: V3,
     pub color: V3,
     pub blink: bool,
@@ -304,7 +304,7 @@ impl State {
                              (z - 1.) * CUBE_SPAN),
                 color: v3(x, y, z),
                 blink: false,
-                rot: <Basis3<f32> as Rotation<_>>::one(),
+                rot: Quaternion::one(),
                 spd: v3(rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5,
                              rng.next_f32() - 0.5).normalize()*rng.next_f32()*1.,
@@ -358,7 +358,7 @@ impl State {
         CubeState {
             pos: pos,
             spd: spd,
-            rot: Basis3::from_axis_angle(cube.rot_axis, rad(cube.rot_spd * dt).into()).concat(&cube.rot),
+            rot: Quaternion::from_axis_angle(cube.rot_axis, Rad(cube.rot_spd * dt)) * cube.rot,
             blink: false,
             p_accel: v3(0., 0., 0.),
             p_time: 0.,

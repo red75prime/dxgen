@@ -6,9 +6,11 @@ cbuffer cb0 : register(b0) {
   float2 tfov_xy;
 }
 
-float4 sample_sphere(Texture2D<float4> tex, sampler s, float3 r) {
+float2 sphere_coord(float3 r) {
   const float pi = 3.141592653589;
-	float2 p = float2(0.5 - atan2(r.x, r.z)/2/pi, 0.5 + atan2(r.y,sqrt(r.x*r.x+r.z*r.z))/pi);
-	return tex.Sample(s, p);
-} 
+	return float2(0.5 - atan2(r.x, r.z)/2/pi, 0.5 + atan2(r.y,sqrt(r.x*r.x+r.z*r.z))/pi);  
+}
 
+float4 sample_sphere(Texture2D<float4> tex, sampler s, float3 r) {
+	return tex.Sample(s, sphere_coord(r));
+} 

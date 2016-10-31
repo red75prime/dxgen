@@ -18,7 +18,7 @@ log = "0.3"
 env_logger = "0.3"
 # gfx = { git = "https://github.com/gfx-rs/gfx/tree/master/src/core" }
 rand = "0.3"
-cgmath = "0.9"
+cgmath = "0.12"
 time = "0.1"
 crossbeam = "0.2"
 obj = "0.4"
