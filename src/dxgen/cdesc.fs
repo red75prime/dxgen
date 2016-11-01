@@ -29,8 +29,8 @@ type CCallingConv=
 
 let ccToRustNoQuotes (cc:CallingConv)=
   match cc with
-  |CallingConv.X86StdCall -> "system"
-  |CallingConv.CXCallingConv_C -> "system"
+  |CallingConv.X86StdCall -> "stdcall"
+  |CallingConv.CXCallingConv_C -> "cdecl"
   |_ -> raise <| new System.Exception(sprintf "Unimplemented calling convention %A in ccToRust" cc)
 
 let ccToRust (cc:CallingConv)=
@@ -314,26 +314,28 @@ let rec tyToRust (ty:CTypeDesc)=
   |Array(uty,size) -> "["+(tyToRust uty)+";"+size.ToString()+"]"
   |Ptr(Const(uty)) -> "*const "+(tyToRust uty)
   |Ptr(Function(CFuncDesc(args,rty,cc))) ->
-    "extern "+(ccToRust cc)+" fn ("+((List.map funcArgToRust args) |> String.concat(", "))+") -> "+(if rty=Primitive Void then "()" else tyToRust rty)
+    let eol = System.Environment.NewLine
+    "FNTYPE!{"+(ccToRustNoQuotes cc)+" ("+((List.map funcArgToRust args) |> String.concat(","+eol+"    "))+") -> "+(if rty=Primitive Void then "c_void" else tyToRust rty)+"}"
   |Ptr uty -> "*mut " + (tyToRust uty)
   |Const(uty) -> tyToRust uty
   |_ -> "NoRepresentationYet("+(sprintf "%A" ty)+")"
 and
   funcArgToRust(name,ty,_) =
-    match name with
-    |"type" -> "ty"+": "+(tyToRust ty)
-    |"" -> "_ : "+(tyToRust ty)
-    |_ -> 
+    let rty = 
       match ty with
-      |Array(Const(_),_) -> name+": &"+(tyToRust ty)
-      |Array(_,_) -> name+": &mut "+(tyToRust ty)
-      |_ -> name+": "+(tyToRust ty)
+      |Array(Const(_),_) -> "*"+(tyToRust ty)
+      |Array(_,_) -> "*mut "+(tyToRust ty)
+      |_ -> tyToRust ty
+    match name with
+    |"type" -> "ty"+": "+rty
+    |"" -> rty
+    |_ -> name+": "+rty
 
 let rec tyToRustGlobal (ty:CTypeDesc)=
   match ty with
   |Primitive t ->
     match t with
-    |Void -> "::c_void"
+    |Void -> "c_void"
     |UInt16 -> "u16"
     |UInt8 -> "u8"
     |UInt32 -> "u32"
@@ -344,8 +346,8 @@ let rec tyToRustGlobal (ty:CTypeDesc)=
     |Int64 -> "i64"
     |Int8 -> "i8"
     |IntPtr -> "isize"
-    |Float32 -> "::c_float"
-    |Float64 -> "::c_double"
+    |Float32 -> "c_float"
+    |Float64 -> "c_double"
     |Float80 -> "f80"
     |Bool -> "bool"
     |Char8 -> "u8"
@@ -355,28 +357,30 @@ let rec tyToRustGlobal (ty:CTypeDesc)=
   |Typedef uty -> tyToRustGlobal uty
   |TypedefRef tyn-> 
     match tyn with
-    |_ -> "::"+tyn
-  |StructRef tyn -> "::"+tyn
-  |EnumRef tyn -> "::"+tyn
+    |_ -> ""+tyn
+  |StructRef tyn -> ""+tyn
+  |EnumRef tyn -> ""+tyn
   |Array(uty,size) -> "["+(tyToRustGlobal uty)+"; "+size.ToString()+"]"
   |Ptr(Array(Const(uty),size)) -> "*const ["+(tyToRustGlobal uty)+"; "+size.ToString()+"]"
   |Ptr(Array(uty,size)) -> "*mut ["+(tyToRustGlobal uty)+"; "+size.ToString()+"]"
   |Ptr(Const(uty)) -> "*const "+(tyToRustGlobal uty)
   |Ptr(Function(CFuncDesc(args,rty,cc))) ->
-    "extern "+(ccToRust cc)+" fn ("+((List.map funcArgToRustGlobal args) |> String.concat(", "))+") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)
+    let eol = System.Environment.NewLine
+    "FNTYPE!{"+(ccToRustNoQuotes cc)+" ("+((List.map funcArgToRustGlobal args) |> String.concat(","+eol+"    "))+") -> "+(if rty=Primitive Void then "c_void" else tyToRustGlobal rty)+"}"
   |Ptr uty -> "*mut " + (tyToRustGlobal uty)
   |Const(uty) -> tyToRustGlobal uty
   |_ -> "NoRepresentationYet("+(sprintf "%A" ty)+")"
 and
   funcArgToRustGlobal(name,ty,_) =
-    match name with
-    |"type" -> "ty"+": "+(tyToRustGlobal ty)
-    |"" -> "_ : "+(tyToRustGlobal ty)
-    |_ -> 
+    let rty = 
       match ty with
-      |Array(Const(_),_) -> name+": *"+(tyToRustGlobal ty)
-      |Array(_,_) -> name+": *mut "+(tyToRustGlobal ty)
-      |_ -> name+": "+(tyToRustGlobal ty)
+      |Array(Const(_),_) -> "*"+(tyToRust ty)
+      |Array(_,_) -> "*mut "+(tyToRust ty)
+      |_ -> tyToRust ty
+    match name with
+    |"type" -> "ty"+": "+rty
+    |"" -> rty
+    |_ -> name+": "+rty
 
 type MacroConst=
   |MCInt32 of int32
@@ -385,4 +389,21 @@ type MacroConst=
   |MCUInt64 of uint64
   |MCFloat of float
   |MCDouble of double
+
+type IID = 
+    |IID11 of string array
+    |IID1 of string
+
+let iid2array iid =
+    match iid with
+    |IID11 ar -> ar
+    |IID1 s ->
+        // "12345678-1234-1234-1234-123456789012" => [| "0x12345678"; "0x1234"; "0x1234"; "0x12"; "0x34"; "0x12"; "0x34"; "0x56"; "0x78"; "0x90"; "0x12" |]
+        let a = s.Split('-')
+        let b4 = a.[3]
+        let a2 = Array.init 2 (fun i -> b4.Substring(i*2,2))
+        let b5 = a.[4]
+        let a6 = Array.init 6 (fun i -> b5.Substring(i*2, 2))
+        let ar = Array.concat [[| a.[0]; a.[1]; a.[2]; a.[3] |]; a2; a6]
+        Array.map (fun s -> "0x"+s) ar
 

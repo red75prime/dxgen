@@ -3,12 +3,6 @@ open annotations
 open cdesc  
 open custom_impls
 
-let d3d12DefineAnnotations = 
-    [
-        ("__REQUIRED_RPCNDR_H_VERSION__", Exclude);
-        ("__REQUIRED_RPCSAL_H_VERSION__", Exclude);
-    ] |> Map.ofList
-
 let wincodec = annotations_wincodec.wincodec
 
 let d3dcommon = 
@@ -797,7 +791,7 @@ let dxgi1_4 =
 
 let d3d12sdklayers =
   [
-      ("ID3D12Debug1Vtbl",IAManual, "IUnknownVtbl", [
+      ("ID3D12Debug1Vtbl", IAManual, "IUnknownVtbl", [
         ("EnableDebugLayer",[
           ("This",AThis);
         ],MANone);
@@ -810,27 +804,27 @@ let d3d12sdklayers =
           ("Enable",ANone);
         ],MANone);
       ]);
-      ("ID3D12DebugCommandList1Vtbl",IAManual, "IUnknownVtbl", [
+      ("ID3D12DebugCommandList1Vtbl", IAManual, "IUnknownVtbl", [
         ("AssertResourceState",[
           ("This",AThis);
-          ("pResource",ANone);
+          ("pResource", InComPtr);
           ("Subresource",ANone);
           ("State",ANone);
         ],MANone);
         ("SetDebugParameter",[
           ("This",AThis);
           ("Type",ANone);
-          ("pData",ANone);
+          ("pData",InArrayOfSize "DataSize");
           ("DataSize",ANone);
         ],MANone);
         ("GetDebugParameter",[
           ("This",AThis);
           ("Type",ANone);
-          ("pData",ANone);
+          ("pData",OutArrayOfSize "DataSize");
           ("DataSize",ANone);
         ],MANone);
       ]);
-    ("ID3D12DebugCommandListVtbl",IAManual, "IUnknownVtbl", [
+    ("ID3D12DebugCommandListVtbl", IAManual, "IUnknownVtbl", [
       ("AssertResourceState",[
         ("This",AThis);
         ("pResource",ANone);
@@ -1120,18 +1114,18 @@ let d3d12annotations=
           ("__ret_val",OutReturn);
         ],MANone);
       ]);
-      ("ID3D12Device1Vtbl",IAManual, "ID3D12DeviceVtbl", [
+      ("ID3D12Device1Vtbl",IAAutogen Set.empty, "ID3D12DeviceVtbl", [
         ("CreatePipelineLibrary",[
           ("This",AThis);
-          ("pLibraryBlob",ANone);
+          ("pLibraryBlob", InOptionalArrayOfSize "BlobLength");
           ("BlobLength",ANone);
           ("riid",ANone);
-          ("ppPipelineLibrary",ANone);
+          ("ppPipelineLibrary", OutReturnInterface "riid");
         ],MANone);
         ("SetEventOnMultipleFenceCompletion",[
           ("This",AThis);
-          ("ppFences",ANone);
-          ("pFenceValues",ANone);
+          ("ppFences", InComPtrArrayOfSize "NumFences");
+          ("pFenceValues", InArrayOfSize "NumFences");
           ("NumFences",ANone);
           ("Flags",ANone);
           ("hEvent",ANone);
@@ -1139,8 +1133,8 @@ let d3d12annotations=
         ("SetResidencyPriority",[
           ("This",AThis);
           ("NumObjects",ANone);
-          ("ppObjects",ANone);
-          ("pPriorities",ANone);
+          ("ppObjects",InComPtrArrayOfSize "NumObjects");
+          ("pPriorities",InArrayOfSize "NumObjects");
         ],MANone);
       ]);
       ("ID3D12DeviceChildVtbl",IAAutogen(Set.ofList []), "ID3D12ObjectVtbl",  [
@@ -1831,11 +1825,11 @@ let d3d12annotations=
         ],MANone);
       ]);
       ("ID3D12RootSignatureVtbl",IAAutogen(Set.ofList [IOSend]), "ID3D12DeviceChildVtbl",  []);
-      ("ID3D12VersionedRootSignatureDeserializerVtbl",IAManual, "IUnknownVtbl", [
+      ("ID3D12VersionedRootSignatureDeserializerVtbl", IAAutogen Set.empty, "IUnknownVtbl", [
         ("GetRootSignatureDescAtVersion",[
           ("This",AThis);
           ("convertToVersion",ANone);
-          ("ppDesc",ANone);
+          ("ppDesc",OutReturn);
         ],MANone);
         ("GetUnconvertedRootSignatureDesc",[
           ("This",AThis);

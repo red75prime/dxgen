@@ -230,3 +230,8 @@ let populateVtbls annots=
       (fun (iname, annot, pname, vtbl) ->
         (iname, annot, pname, (fullVtbl pname) ++ vtbl))
 
+let disableRPCDefines = 
+    [
+        ("__REQUIRED_RPCNDR_H_VERSION__", Exclude);
+        ("__REQUIRED_RPCSAL_H_VERSION__", Exclude);
+    ] |> Map.ofList

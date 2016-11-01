@@ -94,9 +94,9 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                 enums:Map<string,CTypeDesc*CodeLocation>,
                   structs:Map<string,CTypeDesc*CodeLocation>,
                     funcs:Map<string,CTypeDesc*CodeLocation>, 
-                      iids:Map<string,CodeLocation>,
+                      iids:Map<string,CodeLocation*IID>,
                        defines:Map<string, MacroConst*string*CodeLocation>) 
-                        (annotations: Annotations) : Map<string,System.String>=
+                        (annots: Annotations) : Map<string,System.String>=
   let uncopyableStructs=
     let rec isStructUncopyableByItself (ses : CStructElem list)=
       ses 
@@ -129,7 +129,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
 
   let file2sb=ref Map.empty
 
-  let dxann=annotations.interfaces |> Seq.map (fun (a,b,c,d) -> (a,(b,c,d))) |> Map.ofSeq
+  let dxann=annots.interfaces |> Seq.map (fun (a,b,c,d) -> (a,(b,c,d))) |> Map.ofSeq
 
   let apl (f:System.String) s=
     let sb=
@@ -154,10 +154,10 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
     for (name,uty,vals,(fname,_,_,_)) in enums |> Seq.choose (function |KeyValue(name,(Enum(uty, vals),loc)) -> Some(name,uty,vals,loc) |_ -> None) do
       let f=rsfilename fname
       let apl=apl f
-      let annot=match Map.tryFind name (annotations.enums) with |Some(v) ->v |None -> EAEnum
+      let annot=match Map.tryFind name (annots.enums) with |Some(v) ->v |None -> EAEnum
       let convhex=fun (v:uint64) -> "0x" + v.ToString("X")
       let convdec=fun (v:uint64) -> v.ToString()
-      let (macro,convf)=match annot with |EAEnum->("ENUM!", convdec) |EAEnumHex -> ("ENUM!", convhex) |EAFlags -> ("FLAGS!", convhex)
+      let (macro,convf)=match annot with |EAEnum->("ENUM!", convdec) |EAEnumHex -> ("ENUM!", convhex) |EAFlags -> ("ENUM!", convhex)
       apl (macro+"{ enum "+name+" {")
       for (cname,v) in vals do
         if cname.Contains("_FORCE_DWORD") then
@@ -196,7 +196,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       if Set.contains name libcTypeNames || Map.containsKey (name+"Vtbl") dxann then
         ()
       else
-        let nonInterface=List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields
+        let nonInterface = bas="" && (List.isEmpty sfields || (List.exists (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields))
         if nonInterface then
           let uncopyable=Set.contains name uncopyableStructs
           // check precondition. Unnamed unions within unnamed unions isn't supported
@@ -392,7 +392,14 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
     for KeyValue(name,(mc,orgs,(fname,_,_,_))) in defines do
       let f=rsfilename fname
       let apl=apl f
-      match Map.tryFind name annotations.defines with
+      let defOption = 
+        match Map.tryFind name annots.defines with
+        |Some(_) as opt -> opt
+        |None -> 
+            match Map.tryFind name annotations.disableRPCDefines with
+            |Some(_) as opt -> opt
+            |None -> None
+      match defOption with
       |Some(Exclude) -> ()
       |Some(UseType(t)) ->
         if (t = "f32" || t = "f64") && (not <| orgs.Contains(".")) then
@@ -402,17 +409,17 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       |None ->
           match mc with
           |MCUInt64(_) -> 
-            apl <| sprintf "pub const %s: ::UINT64 = %s;" name orgs
+            apl <| sprintf "pub const %s: UINT64 = %s;" name orgs
           |MCInt64(_) -> 
-            apl <| sprintf "pub const %s: ::INT64 = %s;" name orgs
+            apl <| sprintf "pub const %s: INT64 = %s;" name orgs
           |MCUInt32(_) -> 
-            apl <| sprintf "pub const %s: ::UINT = %s;" name orgs
+            apl <| sprintf "pub const %s: UINT = %s;" name orgs
           |MCInt32(_) -> 
-            apl <| sprintf "pub const %s: ::INT = %s;" name orgs
+            apl <| sprintf "pub const %s: INT = %s;" name orgs
           |MCFloat(_) -> 
-            apl <| sprintf "pub const %s: ::FLOAT = %s;" name orgs
+            apl <| sprintf "pub const %s: FLOAT = %s;" name orgs
           |MCDouble(_) -> 
-            apl <| sprintf "pub const %s: ::DOUBLE = %s;" name orgs
+            apl <| sprintf "pub const %s: DOUBLE = %s;" name orgs
         
 
   let createFunctions()=
@@ -426,9 +433,12 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
         (fun (name,args,rty,cc,(fname,_,_,_)) ->
           let rcc=ccToRustNoQuotes cc
           let sb = new System.Text.StringBuilder()
+          let lib = System.IO.Path.GetFileNameWithoutExtension(fname)
           sb.AppendLine(sprintf "EXTERN!{%s fn %s(" rcc name) |> ignore
-          for arg in List.map funcArgToRust args do
-            sb.AppendLine(sprintf "    %s," arg) |> ignore
+          let parms = List.map (funcArgToRust >> (sprintf "    %s")) args 
+                      |> Seq.ofList 
+                      |> fun sq -> System.String.Join(","+System.Environment.NewLine, sq)
+          sb.AppendLine(parms) |> ignore
           sb.Append(sprintf ") -> %s}" (tyToRust rty)) |> ignore
           let f=(rsfilename fname)
           (f, rcc, sb.ToString()))
@@ -444,19 +454,25 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                 ))
     
   let createIIDs()=
-    let apl=apl "iids.rs"
-    apl "extern {"
-    for KeyValue(iid,_) in iids do
-      apl <| sprintf "  pub static %s: IID;" iid
-    apl "}"
-    apl ""
+    iids 
+        |> Map.toSeq 
+        |> Seq.map (fun (iidname, ((fname,_,_,_), iid)) -> (fname, iidname, iid))
+        |> Seq.groupBy (fun (fname, iidname, iid) -> fname) 
+        |> Seq.iter 
+            (fun (fname, iids) ->
+                let f = rsfilename fname
+                let apl = apl f
+                for (_, iidname, iid) in iids do
+                    apl <| sprintf "DEFINE_GUID!{%s, %s}" iidname (System.String.Join(", ", iid |> iid2array |> Array.toSeq))
+                )
+
   // ----------------------- codeGen ------------------------------------------------
 
   createEnums()
   createStructs()
   createTypes()
-  createIIDs()
   createDefines()
   createFunctions()
+  createIIDs()
   !file2sb |> Map.map (fun  k v -> v.ToString())
   

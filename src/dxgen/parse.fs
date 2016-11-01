@@ -21,6 +21,15 @@ let annotations (cursor:Cursor) =
 
 open annotations
 
+let getLocInfo (cursor: Cursor) = 
+    let mutable curFile = File(0)
+    let mutable curLine=0u
+    let mutable curColumn=0u
+    let mutable curOffset=0u
+    getExpansionLocation( cursor |> getCursorExtent |> getRangeStart, &curFile, &curLine, &curColumn, &curOffset)
+    let curFileName = getFileNameFS curFile
+    (curFileName, curLine, curColumn, curOffset)
+
 let tryParse (s:System.String)=
   let invcul=System.Globalization.CultureInfo.InvariantCulture
   let ignorecase=System.StringComparison.InvariantCultureIgnoreCase
@@ -140,6 +149,20 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
   let funcs=ref Map.empty
   let iids=ref Map.empty
   let defines=ref Map.empty
+  let typedefloc = ref Map.empty
+
+  let rec registerTypeLocation (ctype:Type) = 
+      let tdesc = typeDesc ctype
+      match tdesc with
+      |Ptr(_) -> 
+        registerTypeLocation <| getPointeeType ctype
+      |_ ->
+          match Map.tryFind tdesc !typedefloc with
+          |Some(_) -> ()
+          |None ->
+              let decl = getTypeDeclaration ctype
+              let declLocInfo = getLocInfo decl
+              typedefloc := Map.add tdesc declLocInfo !typedefloc
 
   let parseEnumConsts (cursor:Cursor)=
     let listOfConsts=ref []
@@ -163,7 +186,9 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             |[] -> NoAnnotation
             |[ann] -> parseSAL ann
             |_ -> raise <| new System.Exception("Multiple annotations")
-        let (pname,ptype,pannot)=(getCursorDisplayNameFS cursor |> (fun pname -> if pname="type" then "type_" else pname), getCursorType cursor |> typeDesc, cannot)
+        let ctype = getCursorType cursor
+        registerTypeLocation ctype
+        let (pname,ptype,pannot)=(getCursorDisplayNameFS cursor |> (fun pname -> if pname="type" then "type_" else pname), ctype |> typeDesc, cannot)
         let pdesc=
           match ptype with
           |Array(Const(_),_) as arr -> (pname, Ptr(Const(arr)), pannot)
@@ -179,6 +204,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       if (List.length !args <> nArgs) then
         raise <| System.Exception("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
       let crety = getResultType(fType)
+      registerTypeLocation crety
       let rec getretyname (crety:Type) =
         if crety.kind = TypeKind.Typedef then
           let cretydecl = getTypeDeclaration crety
@@ -206,6 +232,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       let ckind=getCursorKind cursor
       if ckind=CursorKind.FieldDecl then
         let ctype=getCursorType cursor
+        registerTypeLocation ctype
         let nm=getCursorDisplayNameFS cursor
         let pointee=getPointeeType ctype
         let ty=ctype |> typeDesc
@@ -256,6 +283,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             //raise <| new System.Exception("Base specifier is not struct: "+basename)
       if ckind=CursorKind.FieldDecl then
           let ctype=getCursorType cursor
+          registerTypeLocation ctype
           let nm=getCursorDisplayNameFS cursor
           let pointee=getPointeeType ctype
           let nArgs=getNumArgTypes(pointee)
@@ -317,13 +345,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     
   // main parser callback
   let rec childVisitor cursor _ _ =
-    let mutable curFile = File(0)
-    let mutable curLine=0u
-    let mutable curColumn=0u
-    let mutable curOffset=0u
-    getExpansionLocation( cursor |> getCursorExtent |> getRangeStart, &curFile, &curLine, &curColumn, &curOffset)
-    let curFileName = getFileNameFS curFile
-    let locInfo=(curFileName, curLine, curColumn, curOffset)
+    let (curFileName,_,_,_) as locInfo = getLocInfo cursor
 
     if curFileName.EndsWith(headerLocation.Name) then
         let cursorKind=getCursorKind cursor
@@ -346,6 +368,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
               // it is a function pointer
               Ptr(parseFunction cursor pty)
             else
+              registerTypeLocation uty
               uty |> typeDesc
           types := !types |> Map.add (cursor |> getCursorDisplayNameFS) (Typedef(tdesc), locInfo)
           // typedefs can contain other definitions
@@ -372,11 +395,23 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           else
             funcs := !funcs |> Map.add funcName (parseFunction cursor (getCursorType cursor), locInfo)
 
-        if cursorKind=CursorKind.VarDecl then
-          let nm=cursor |> getCursorSpellingFS
-          let tys=cursor |> getCursorType |> getTypeSpellingFS
-          if tys="const IID" then
-            iids := !iids |> Map.add nm locInfo
+        if cursorKind = CursorKind.MacroInstantiation then
+            let tokens = tokenizeFS cursor
+            match tokens with
+            |["DEFINE_GUID"; "("; nm; ","; p1; ","; p2; ","; p3; ","; b1;
+                             ","; b2; ","; b3; ","; b4; ","; b5; ","; b6; ","; b7; ","; b8; ")"; ";"] ->
+                iids := !iids |> Map.add nm (locInfo, IID11 [| p1;p2;p3;b1;b2;b3;b4;b5;b6;b7;b8 |])
+            |["DX_DECLARE_INTERFACE"; "("; iid; ")"; iname] ->
+                iids := !iids |> Map.add ("IID_"+iname) (locInfo, IID1 (iid.Substring(1, iid.Length-2)))
+            |_ -> 
+                // whatever
+                ()
+
+//        if cursorKind=CursorKind.VarDecl then
+//          let nm=cursor |> getCursorSpellingFS
+//          let tys=cursor |> getCursorType |> getTypeSpellingFS
+//          if tys="const IID" then
+//            iids := !iids |> Map.add nm locInfo
 
         if cursorKind=CursorKind.UnexposedDecl then // dip into extern "C"
           visitChildrenFS cursor childVisitor () |> ignore

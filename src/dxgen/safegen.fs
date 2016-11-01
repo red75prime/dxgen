@@ -22,7 +22,7 @@ let o2l xs=
 
 // returns string of f# code that contains empty annotations for all COM interfaces contained in types parameter
 let emptyAnnotationsGen (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,
-                            funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) : string=
+                            funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation*IID>, defines:Map<string, MacroConst*string*CodeLocation>) : string=
   let sb=new System.Text.StringBuilder()
   let apl=appendLine sb
   apl("module annotations_autogen")
@@ -1110,7 +1110,7 @@ use utils::*;
 let joinMaps a b =
   Map.ofSeq (Seq.concat [Map.toSeq a; Map.toSeq b])
 
-let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInterfaces noEnumConversion (types:Map<string,CTypeDesc*CodeLocation>, enums:Map<string,CTypeDesc*CodeLocation>, structs:Map<string,CTypeDesc*CodeLocation>, funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation>, defines:Map<string, MacroConst*string*CodeLocation>) 
+let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInterfaces noEnumConversion (types:Map<string,CTypeDesc*CodeLocation>, enums:Map<string,CTypeDesc*CodeLocation>, structs:Map<string,CTypeDesc*CodeLocation>, funcs:Map<string,CTypeDesc*CodeLocation>, iids:Map<string,CodeLocation*IID>, defines:Map<string, MacroConst*string*CodeLocation>) 
                         (annotations: Annotations) =
   let uses = if uses_CanBeFreakingNull = null then Seq.empty else uses_CanBeFreakingNull
   let dependencies = ref Set.empty

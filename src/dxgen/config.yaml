@@ -8,10 +8,11 @@ modules:
         - .\Include\10.0.14393.0\ucrt\
       precompiled-header: ./PCH/Common_PCH.h
       headers:
+          - name: dxgiformat.h
           - name: d3d12.h
           - name: d3d12sdklayers.h
             uses:
-              - d3dcommon
+              - d3dcommon_safe
           - name: d3dcommon.h
           - name: dxgi.h
           - name: dxgi1_2.h

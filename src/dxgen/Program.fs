@@ -31,7 +31,7 @@ let annotations_by_module =
       enums = d3d12enums;
       structs = d3d12structs;
       dependencies = [];
-      defines = annotations_autogen.d3d12DefineAnnotations;
+      defines = Map.empty;
     });
     ("d3d11on12",
       {interfaces = d3d11on12;
@@ -58,6 +58,13 @@ let annotations_by_module =
       {interfaces = dxgi;
       enums = d3d12enums;
       structs = d3d12structs;
+      dependencies = [];
+      defines = Map.empty;
+    });
+    ("dxgiformat",
+      {interfaces = [];
+      enums = Map.empty;
+      structs = Map.empty;
       dependencies = [];
       defines = Map.empty;
     });
