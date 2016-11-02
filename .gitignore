@@ -168,3 +168,5 @@ $RECYCLE.BIN/
 
 # 
 assets
+dxgen.VC.db
+dxgen.VC.VC.opendb
