@@ -408,7 +408,8 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             else
               registerTypeLocation uty false
               uty |> typeDesc
-          types := !types |> Map.add (cursor |> getCursorDisplayNameFS) (Typedef(tdesc), locInfo)
+          let typedefname = cursor |> getCursorDisplayNameFS
+          types := !types |> Map.add typedefname (Typedef(tdesc), locInfo)
           // typedefs can contain other definitions
           visitChildrenFS cursor childVisitor () |> ignore
 
@@ -477,8 +478,8 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 //      | _ -> ()
 //
     // let's replace all "typedef struct BlaSmth {} Bla;" with "struct Bla {};"
-    // No need to follow C quirks.
-    let typedef2struct=
+    // No need to follow C quirks. Enums too
+    let typedef2struct =
       !types |> filtermapMap
         (fun k v -> 
           match v with 
@@ -486,9 +487,20 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           |_ -> None
           )
 
+    let typedef2enum =
+      !types |> filtermapMap
+        (fun k v -> 
+          match v with 
+          |Typedef (EnumRef s), _ -> Some(s)
+          |_ -> None
+          )
+
+
     let struct2typedef = typedef2struct |> Map.toSeq |> Seq.map swap |> Map.ofSeq
+    let enum2typedef = typedef2enum |> Map.toSeq |> Seq.map swap |> Map.ofSeq
     
     structs := !structs |> Map.toSeq |> Seq.map (fun (k,v) -> match Map.tryFind k struct2typedef with Some(n) -> (n,v) |None -> (k,v) ) |> Map.ofSeq
+    enums := !enums |> Map.toSeq |> Seq.map (fun (k,v) -> match Map.tryFind k enum2typedef with Some(n) -> (n,v) |None -> (k,v) ) |> Map.ofSeq
 
     let removeTypedefStructs m=
         m  |> Map.map 
@@ -498,25 +510,37 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
                       match ty with
                       |Typedef(StructRef s) ->
                         match Map.tryFind s struct2typedef with
-                        |Some(s) ->
-                          Some(StructRef s)
+                        |Some(s) -> Some(StructRef s)
+                        |None -> None
+                      |Typedef(EnumRef s) ->
+                        match Map.tryFind s enum2typedef with
+                        |Some(s) -> Some(EnumRef s)
                         |None -> None
                       |TypedefRef s ->
                         match Map.tryFind s typedef2struct with
                         |Some(_) ->
                           Some(StructRef s)
-                        |None -> None
+                        |None -> match Map.tryFind s typedef2enum with
+                                 |Some(_) ->
+                                   Some(EnumRef s)
+                                 |None -> None
                       |StructRef s ->
                         match Map.tryFind s struct2typedef with
-                        |Some(s) ->
-                          Some(StructRef s)
+                        |Some(s) -> Some(StructRef s)
+                        |None -> None
+                      |EnumRef s ->
+                        match Map.tryFind s enum2typedef with
+                        |Some(s) -> Some(EnumRef s)
                         |None -> None
                       |_ -> None
                   ) |> fun ty -> (ty, loc)
             )
-    types := removeTypedefStructs (!types |> Map.filter (fun n _ -> Map.containsKey n typedef2struct |> not))
+    types := !types |> Map.filter (fun n _ -> Map.containsKey n typedef2struct |> not)
+    types := !types |> Map.filter (fun n _ -> Map.containsKey n typedef2enum |> not)
+    types := removeTypedefStructs !types
 
     structs := removeTypedefStructs !structs
+    enums := removeTypedefStructs !enums
 
     // remove local types
     let curmod = headerLocation.FullName |> filename2module
