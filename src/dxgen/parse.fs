@@ -21,6 +21,20 @@ let annotations (cursor:Cursor) =
 
 open annotations
 
+let filename2module file =
+    match file with
+    |"" -> "ctypes"
+    |_ ->
+        let parts = file.Split([|'/';'\\'|])
+        let len = parts.Length
+        let file = 
+            let file = parts.[len-1]
+            if file.EndsWith(".h") then
+                file.Substring(0, file.Length - 2)
+            else
+                raise <| new System.Exception(sprintf "Wrong header file %s" file)
+        parts.[len-2]+"::"+file
+
 let getLocInfo (cursor: Cursor) = 
     let mutable curFile = File(0)
     let mutable curLine=0u
@@ -149,20 +163,42 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
   let funcs=ref Map.empty
   let iids=ref Map.empty
   let defines=ref Map.empty
-  let typedefloc = ref Map.empty
+  // constant types
+  let typedefloc = ref (Map.ofList [("UINT", "shared::minwindef"); ("INT", "shared::minwindef");
+                                    ("FLOAT", "shared::minwindef"); ("DOUBLE", "shared::ntdef");
+                                    ("UINT64", "shared::basetsd"); ("INT64", "shared::basetsd");
+                                    ("GUID", "shared::guiddef")])
 
-  let rec registerTypeLocation (ctype:Type) = 
-      let tdesc = typeDesc ctype
+  let rec registerTypeLocation (ctype:Type) (isComInterface: bool) = 
+      let tdesc = match typeDesc ctype with
+                  |Const(t) -> t
+                  |StructRef(t) -> TypedefRef(t)
+                  |t -> t
       match tdesc with
+      |Unimplemented _ ->
+        printfn "Warning: cannot register %A" tdesc
       |Ptr(_) -> 
-        registerTypeLocation <| getPointeeType ctype
+        registerTypeLocation (getPointeeType ctype) isComInterface
+      |Array(_,_) -> 
+        registerTypeLocation (getArrayElementType ctype) isComInterface
       |_ ->
-          match Map.tryFind tdesc !typedefloc with
+          let tstr =
+              match tdesc with
+              |StructRef n -> n
+              |TypedefRef n -> n
+              |EnumRef n -> n
+              |Primitive _ -> tyToRust tdesc
+              |_ -> raise <| new System.Exception("Unexpected type")
+          match Map.tryFind tstr !typedefloc with
           |Some(_) -> ()
           |None ->
               let decl = getTypeDeclaration ctype
-              let declLocInfo = getLocInfo decl
-              typedefloc := Map.add tdesc declLocInfo !typedefloc
+              let (file,_,_,_) = getLocInfo decl
+              let modname = filename2module file
+              typedefloc := Map.add tstr modname !typedefloc
+              if isComInterface then
+                typedefloc := Map.add (tstr+"Vtbl") modname !typedefloc
+
 
   let parseEnumConsts (cursor:Cursor)=
     let listOfConsts=ref []
@@ -187,7 +223,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             |[ann] -> parseSAL ann
             |_ -> raise <| new System.Exception("Multiple annotations")
         let ctype = getCursorType cursor
-        registerTypeLocation ctype
+        registerTypeLocation ctype false
         let (pname,ptype,pannot)=(getCursorDisplayNameFS cursor |> (fun pname -> if pname="type" then "type_" else pname), ctype |> typeDesc, cannot)
         let pdesc=
           match ptype with
@@ -204,7 +240,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       if (List.length !args <> nArgs) then
         raise <| System.Exception("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
       let crety = getResultType(fType)
-      registerTypeLocation crety
+      registerTypeLocation crety false
       let rec getretyname (crety:Type) =
         if crety.kind = TypeKind.Typedef then
           let cretydecl = getTypeDeclaration crety
@@ -232,7 +268,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       let ckind=getCursorKind cursor
       if ckind=CursorKind.FieldDecl then
         let ctype=getCursorType cursor
-        registerTypeLocation ctype
+        registerTypeLocation ctype false
         let nm=getCursorDisplayNameFS cursor
         let pointee=getPointeeType ctype
         let ty=ctype |> typeDesc
@@ -274,6 +310,8 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
       //printfn "    %s: %A %s" structName ckind (getCursorDisplayNameFS cursor)
       if ckind=CursorKind.CxxBaseSpecifier then
         itIsAClass := true // crude. TODO: something
+        let ctype = getCursorType cursor
+        registerTypeLocation ctype true
         let basename = getCursorDisplayNameFS cursor
         if basename.StartsWith("struct ") then
           bas := basename.Substring(7)
@@ -283,7 +321,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             //raise <| new System.Exception("Base specifier is not struct: "+basename)
       if ckind=CursorKind.FieldDecl then
           let ctype=getCursorType cursor
-          registerTypeLocation ctype
+          registerTypeLocation ctype false
           let nm=getCursorDisplayNameFS cursor
           let pointee=getPointeeType ctype
           let nArgs=getNumArgTypes(pointee)
@@ -368,7 +406,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
               // it is a function pointer
               Ptr(parseFunction cursor pty)
             else
-              registerTypeLocation uty
+              registerTypeLocation uty false
               uty |> typeDesc
           types := !types |> Map.add (cursor |> getCursorDisplayNameFS) (Typedef(tdesc), locInfo)
           // typedefs can contain other definitions
@@ -480,7 +518,16 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 
     structs := removeTypedefStructs !structs
 
-    (!types, !enums, !structs, !funcs, !iids, !defines)
+    // remove local types
+    let curmod = headerLocation.FullName |> filename2module
+    let typedef =
+        !typedefloc
+        |> Map.filter
+            (fun _ modname ->
+                System.StringComparer.InvariantCultureIgnoreCase.Compare(curmod, modname) <> 0
+            )
+
+    (!types, !enums, !structs, !funcs, !iids, !defines, typedef)
 
   finally
     translationUnit |> disposeTranslationUnit
@@ -525,9 +572,9 @@ let rec combineTargets ty1 ty2 =
 // It parses code as 32-bit then as 64-bit and then it zips results
 // Some unions need different rust representation in 32/64 bits
 let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) =
-  let (types32, enums32, structs32', funcs32, iids32, defines32) as p32=
+  let (types32, enums32, structs32', funcs32, iids32, defines32, typedefloc32) as p32=
     parse headerLocation pchLocation includePaths "i686-pc-win32"
-  let (types64, enums64, structs64', funcs64, iids64, defines64) as p32=
+  let (types64, enums64, structs64', funcs64, iids64, defines64, typedefloc64) as p64=
     parse headerLocation pchLocation includePaths "x86_64-pc-win32"
   // ensure that parse results contain same items
   assert (keys types32 = keys types64)
@@ -536,6 +583,7 @@ let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.F
   assert (keys funcs32 = keys funcs64)
   assert (keys iids32 = keys iids64)
   assert (keys defines32 = keys defines64)
+  assert (keys typedefloc32 = keys typedefloc64)
   let structs32 = 
     structs32' |>
       Map.map (fun _ (ty,locInfo) -> (setTarget ty TargetX86, locInfo))
@@ -550,4 +598,4 @@ let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.F
       (k1, (combineTargets v1 v2, locInfo))
     Seq.map2 combine (Map.toSeq structs32) (Map.toSeq structs64) |> Map.ofSeq
 
-  (types64, enums64, structsCombined, funcs64, iids64, defines64)
+  (types64, enums64, structsCombined, funcs64, iids64, defines64, typedefloc64)

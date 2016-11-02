@@ -90,12 +90,14 @@ let wrapOn items (indent:string) eolAfter maxLineLen=
   lines := List.rev !lines
   !lines  
 
-let winapiGen (types:Map<string,CTypeDesc*CodeLocation>, 
+let winapiGen (headername: string) 
+              (types:Map<string,CTypeDesc*CodeLocation>, 
                 enums:Map<string,CTypeDesc*CodeLocation>,
                   structs:Map<string,CTypeDesc*CodeLocation>,
                     funcs:Map<string,CTypeDesc*CodeLocation>, 
                       iids:Map<string,CodeLocation*IID>,
-                       defines:Map<string, MacroConst*string*CodeLocation>) 
+                       defines:Map<string, MacroConst*string*CodeLocation>,
+                         typedefs) 
                         (annots: Annotations) : Map<string,System.String>=
   let uncopyableStructs=
     let rec isStructUncopyableByItself (ses : CStructElem list)=
@@ -372,8 +374,8 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
           apl ""
 //RIDL!( 
 //294 interface IDXGIFactory1(IDXGIFactory1Vtbl): IDXGIFactory(IDXGIFactoryVtbl) { 
-//295     fn EnumAdapters1(&mut self, Adapter: ::UINT, ppAdapter: *mut *mut IDXGIAdapter1) -> ::HRESULT, 
-//296     fn IsCurrent(&mut self) -> ::BOOL 
+//295     fn EnumAdapters1(&mut self, Adapter: UINT, ppAdapter: *mut *mut IDXGIAdapter1) -> HRESULT, 
+//296     fn IsCurrent(&mut self) -> BOOL 
 //297 }); 
 
 
@@ -402,7 +404,7 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
       match defOption with
       |Some(Exclude) -> ()
       |Some(UseType(t)) ->
-        if (t = "f32" || t = "f64") && (not <| orgs.Contains(".")) then
+        if (t = "FLOAT" || t = "DOUBLE") && (not <| orgs.Contains(".")) then
             apl <| sprintf "pub const %s: %s = %s.;" name t orgs
         else 
             apl <| sprintf "pub const %s: %s = %s;" name t orgs
@@ -466,8 +468,18 @@ let winapiGen (types:Map<string,CTypeDesc*CodeLocation>,
                     apl <| sprintf "DEFINE_GUID!{%s, %s}" iidname (System.String.Join(", ", iid |> iid2array |> Array.toSeq))
                 )
 
+  let createImports() =
+    let apl = apl (headername+".rs")
+    let namedefs =
+        typedefs
+        |> Map.toSeq
+        |> Seq.sortBy snd
+        |> Seq.groupBy snd
+  
+    for (modname, sq) in namedefs do
+        apl <| sprintf "use %s::{%s};" modname (System.String.Join(", ", sq |> Seq.map fst |> Seq.sort))
   // ----------------------- codeGen ------------------------------------------------
-
+  createImports()
   createEnums()
   createStructs()
   createTypes()

@@ -9,6 +9,7 @@ modules:
       precompiled-header: ./PCH/Common_PCH.h
       headers:
           - name: dxgiformat.h
+          - name: dxgitype.h
           - name: d3d12.h
           - name: d3d12sdklayers.h
             uses:

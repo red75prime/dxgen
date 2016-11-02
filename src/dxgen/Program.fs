@@ -68,6 +68,13 @@ let annotations_by_module =
       dependencies = [];
       defines = Map.empty;
     });
+    ("dxgitype",
+      {interfaces = [];
+      enums = Map.empty;
+      structs = Map.empty;
+      dependencies = [];
+      defines = Map.empty;
+    });
     ("dxgi1_2",
       {interfaces = dxgi1_2;
       enums = d3d12enums;
@@ -248,7 +255,7 @@ let main argv =
                   printfn "  Error: no annotations for %s" headerName
                 |Some(annotations) ->
                   if not (codeModule.NoWinapiGen) then
-                    let wapi = sysgen.winapiGen types annotations
+                    let wapi = sysgen.winapiGen headerName types annotations
                     System.IO.Directory.CreateDirectory(@".\winapi") |> ignore //TODO: use Path
                     for KeyValue(f,t) in wapi do
                       use sw=new System.IO.StreamWriter(@".\winapi\"+f)
