@@ -496,9 +496,16 @@ let winapiGen (headername: string)
         |> Map.toSeq
         |> Seq.sortBy snd
         |> Seq.groupBy snd
-  
+    
     for (modname, sq) in namedefs do
-        apl <| sprintf "use %s::{%s};" modname (System.String.Join(", ", sq |> Seq.map fst |> Seq.sort))
+        seq {
+            yield sprintf "use %s::{" modname
+            yield! sq |> Seq.map fst |> utils.seqAppendDelim ","
+            yield "};"
+        }   
+        |> utils.seqToLines 80 " " "    "
+        |> fun sq -> System.String.Join(System.Environment.NewLine, sq)
+        |> apl
   // ----------------------- codeGen ------------------------------------------------
   createImports()
   createEnums()
