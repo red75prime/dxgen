@@ -164,10 +164,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
   let iids=ref Map.empty
   let defines=ref Map.empty
   // constant types
-  let typedefloc = ref (Map.ofList [("UINT", "shared::minwindef"); ("INT", "shared::minwindef");
-                                    ("FLOAT", "shared::minwindef"); ("DOUBLE", "shared::ntdef");
-                                    ("UINT64", "shared::basetsd"); ("INT64", "shared::basetsd");
-                                    ("GUID", "shared::guiddef")])
+  let typedefloc = ref Map.empty;
 
   let rec registerTypeLocation (ctype:Type) (isComInterface: bool) = 
       let tdesc = match typeDesc ctype with

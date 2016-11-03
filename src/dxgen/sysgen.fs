@@ -390,39 +390,42 @@ let winapiGen (headername: string)
       |_ -> 
         apl <| sprintf "pub type %s = %s;" name (tyToRustGlobal ty)
 
-  let createDefines()=
-    for KeyValue(name,(mc,orgs,(fname,_,_,_))) in defines do
-      let f=rsfilename fname
-      let apl=apl f
-      let defOption = 
-        match Map.tryFind name annots.defines with
-        |Some(_) as opt -> opt
-        |None -> 
-            match Map.tryFind name annotations.disableRPCDefines with
+  
+
+  let processDefines()=
+    seq {
+        for KeyValue(name,(mc,orgs,(fname,_,_,_))) in defines do
+          let f=rsfilename fname
+          let defOption = 
+            match Map.tryFind name annots.defines with
             |Some(_) as opt -> opt
-            |None -> None
-      match defOption with
-      |Some(Exclude) -> ()
-      |Some(UseType(t)) ->
-        if (t = "FLOAT" || t = "DOUBLE") && (not <| orgs.Contains(".")) then
-            apl <| sprintf "pub const %s: %s = %s.;" name t orgs
-        else 
-            apl <| sprintf "pub const %s: %s = %s;" name t orgs
-      |None ->
-          match mc with
-          |MCUInt64(_) -> 
-            apl <| sprintf "pub const %s: UINT64 = %s;" name orgs
-          |MCInt64(_) -> 
-            apl <| sprintf "pub const %s: INT64 = %s;" name orgs
-          |MCUInt32(_) -> 
-            apl <| sprintf "pub const %s: UINT = %s;" name orgs
-          |MCInt32(_) -> 
-            apl <| sprintf "pub const %s: INT = %s;" name orgs
-          |MCFloat(_) -> 
-            apl <| sprintf "pub const %s: FLOAT = %s;" name orgs
-          |MCDouble(_) -> 
-            apl <| sprintf "pub const %s: DOUBLE = %s;" name orgs
+            |None -> 
+                match Map.tryFind name annotations.disableRPCDefines with
+                |Some(_) as opt -> opt
+                |None -> None
+          match defOption with
+          |Some(Exclude) -> ()
+          |Some(UseType(t)) ->
+            if (t = "FLOAT" || t = "DOUBLE") && (not <| orgs.Contains(".")) then
+                yield (f, sprintf "pub const %s: %s = %s.;" name t orgs, t)
+            else 
+                yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t)
+          |None ->
+            let t = 
+              match mc with
+              |MCUInt64(_) -> "UINT64"
+              |MCInt64(_) -> "INT64"
+              |MCUInt32(_) -> "UINT"
+              |MCInt32(_) -> "INT"
+              |MCFloat(_) -> "FLOAT"
+              |MCDouble(_) -> "DOUBLE" 
+            yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t)
+    }
         
+  let createDefines()=
+    for (f, text, _) in processDefines() do
+      let apl=apl f
+      apl <| text
 
   let createFunctions()=
     funcs 
@@ -468,8 +471,26 @@ let winapiGen (headername: string)
                     apl <| sprintf "DEFINE_GUID!{%s, %s}" iidname (System.String.Join(", ", iid |> iid2array |> Array.toSeq))
                 )
 
+  let registerAdditionalTypes typedefs =
+    // It's not robust, but I can't find how to get type definition location by type name from libclang
+    let knowntypelocations = 
+        (Map.ofList [("UINT", "shared::minwindef"); ("INT", "shared::minwindef");
+                     ("FLOAT", "shared::minwindef"); ("DOUBLE", "shared::ntdef");
+                     ("UINT64", "shared::basetsd"); ("INT64", "shared::basetsd");
+                     ("GUID", "shared::guiddef")])
+    let addType typedefs ty =
+        match Map.tryFind ty typedefs with
+        |Some(_) -> typedefs
+        |None ->
+            Map.add ty (Map.find ty knowntypelocations) typedefs
+    let typedefs = if Map.isEmpty iids then typedefs else addType typedefs "GUID"
+    let typedefs = Seq.fold (fun tds (_,_,ty) -> addType tds ty) typedefs (processDefines())
+    typedefs
+    
+
   let createImports() =
     let apl = apl (headername+".rs")
+    let typedefs = registerAdditionalTypes typedefs
     let namedefs =
         typedefs
         |> Map.toSeq

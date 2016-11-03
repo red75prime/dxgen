@@ -97,6 +97,7 @@
     <Compile Include="parse.fs" />
     <Compile Include="sysgen.fs" />
     <Compile Include="safegen.fs" />
+    <Compile Include="by_module.fs" />
     <Compile Include="Program.fs" />
     <None Include="PCH\Common_PCH.h">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
