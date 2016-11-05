@@ -84,7 +84,7 @@ let main argv =
                   printfn "  Error: no annotations for %s" headerName
                 |Some(annotations) ->
                   if not (codeModule.NoWinapiGen) then
-                    let wapi = sysgen.winapiGen headerName types annotations
+                    let wapi = sysgen.winapiGen headerName types
                     System.IO.Directory.CreateDirectory(@".\winapi") |> ignore //TODO: use Path
                     for KeyValue(f,t) in wapi do
                       use sw=new System.IO.StreamWriter(@".\winapi\"+f)

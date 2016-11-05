@@ -178,11 +178,6 @@ type MethodAnnotation=
   |MAReturnsInterface
   |MACustom of string // custom implementation
 
-type EnumAnnotation=
-  |EAFlags
-  |EAEnum
-  |EAEnumHex
-
 [<System.FlagsAttribute>]
 type StructFlags=
   |None=0
@@ -201,10 +196,8 @@ type DefineAnnotation =
  
 type Annotations = {
   interfaces: (string*InterfaceAnnotation*string*(string*(string*ParamAnnotation)list*MethodAnnotation)list)list
-  enums: Map<string, EnumAnnotation>
   structs: Map<string, (StructFlags*(string*FieldAnnotation)list)>
   dependencies: string list
-  defines: Map<string, DefineAnnotation> 
 }
 
 let iUnknown=[

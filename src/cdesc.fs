@@ -312,10 +312,12 @@ let rec tyToRust (ty:CTypeDesc)=
   |StructRef tyn -> tyn
   |EnumRef tyn -> tyn
   |Array(uty,size) -> "["+(tyToRust uty)+";"+size.ToString()+"]"
+  |Ptr(Array(Const(uty),size)) -> "*const ["+(tyToRust uty)+"; "+size.ToString()+"]"
+  |Ptr(Array(uty,size)) -> "*mut ["+(tyToRust uty)+"; "+size.ToString()+"]"
   |Ptr(Const(uty)) -> "*const "+(tyToRust uty)
   |Ptr(Function(CFuncDesc(args,rty,cc))) ->
     let eol = System.Environment.NewLine
-    "FNTYPE!{"+(ccToRustNoQuotes cc)+" ("+((List.map funcArgToRust args) |> String.concat(","+eol+"    "))+") -> "+(if rty=Primitive Void then "c_void" else tyToRust rty)+"}"
+    "FNTYPE!{"+(ccToRustNoQuotes cc)+" ("+eol+"    "+((List.map funcArgToRust args) |> String.concat(","+eol+"    "))+eol+"    ) -> "+(if rty=Primitive Void then "c_void" else tyToRust rty)+"}"
   |Ptr uty -> "*mut " + (tyToRust uty)
   |Const(uty) -> tyToRust uty
   |_ -> "NoRepresentationYet("+(sprintf "%A" ty)+")"
@@ -332,55 +334,7 @@ and
     |_ -> name+": "+rty
 
 let rec tyToRustGlobal (ty:CTypeDesc)=
-  match ty with
-  |Primitive t ->
-    match t with
-    |Void -> "c_void"
-    |UInt16 -> "u16"
-    |UInt8 -> "u8"
-    |UInt32 -> "u32"
-    |UInt64 -> "u64"
-    |UIntPtr -> "usize" 
-    |Int16 -> "i16"
-    |Int32 -> "i32"
-    |Int64 -> "i64"
-    |Int8 -> "i8"
-    |IntPtr -> "isize"
-    |Float32 -> "c_float"
-    |Float64 -> "c_double"
-    |Float80 -> "f80"
-    |Bool -> "bool"
-    |Char8 -> "u8"
-    |Char16 -> "u16"
-    |Char32 -> "u32"
-  |Unimplemented v-> "Unimplemented("+v+")"
-  |Typedef uty -> tyToRustGlobal uty
-  |TypedefRef tyn-> 
-    match tyn with
-    |_ -> ""+tyn
-  |StructRef tyn -> ""+tyn
-  |EnumRef tyn -> ""+tyn
-  |Array(uty,size) -> "["+(tyToRustGlobal uty)+"; "+size.ToString()+"]"
-  |Ptr(Array(Const(uty),size)) -> "*const ["+(tyToRustGlobal uty)+"; "+size.ToString()+"]"
-  |Ptr(Array(uty,size)) -> "*mut ["+(tyToRustGlobal uty)+"; "+size.ToString()+"]"
-  |Ptr(Const(uty)) -> "*const "+(tyToRustGlobal uty)
-  |Ptr(Function(CFuncDesc(args,rty,cc))) ->
-    let eol = System.Environment.NewLine
-    "FNTYPE!{"+(ccToRustNoQuotes cc)+" ("+((List.map funcArgToRustGlobal args) |> String.concat(","+eol+"    "))+") -> "+(if rty=Primitive Void then "c_void" else tyToRustGlobal rty)+"}"
-  |Ptr uty -> "*mut " + (tyToRustGlobal uty)
-  |Const(uty) -> tyToRustGlobal uty
-  |_ -> "NoRepresentationYet("+(sprintf "%A" ty)+")"
-and
-  funcArgToRustGlobal(name,ty,_) =
-    let rty = 
-      match ty with
-      |Array(Const(_),_) -> "*"+(tyToRust ty)
-      |Array(_,_) -> "*mut "+(tyToRust ty)
-      |_ -> tyToRust ty
-    match name with
-    |"type" -> "ty"+": "+rty
-    |"" -> rty
-    |_ -> name+": "+rty
+    tyToRust ty
 
 type MacroConst=
   |MCInt32 of int32

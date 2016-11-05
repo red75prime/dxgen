@@ -97,8 +97,11 @@ let winapiGen (headername: string)
                     funcs:Map<string,CTypeDesc*CodeLocation>, 
                       iids:Map<string,CodeLocation*IID>,
                        defines:Map<string, MacroConst*string*CodeLocation>,
-                         typedefs) 
-                        (annots: Annotations) : Map<string,System.String>=
+                         typedefs) =
+  let def_annots = 
+    match Map.tryFind headername defines_annotations.defines with
+    |Some(defs) -> defs
+    |None -> Map.empty
   let uncopyableStructs=
     let rec isStructUncopyableByItself (ses : CStructElem list)=
       ses 
@@ -131,8 +134,6 @@ let winapiGen (headername: string)
 
   let file2sb=ref Map.empty
 
-  let dxann=annots.interfaces |> Seq.map (fun (a,b,c,d) -> (a,(b,c,d))) |> Map.ofSeq
-
   let apl (f:System.String) s=
     let sb=
       match Map.tryFind f !file2sb with
@@ -156,16 +157,11 @@ let winapiGen (headername: string)
     for (name,uty,vals,(fname,_,_,_)) in enums |> Seq.choose (function |KeyValue(name,(Enum(uty, vals),loc)) -> Some(name,uty,vals,loc) |_ -> None) do
       let f=rsfilename fname
       let apl=apl f
-      let annot=match Map.tryFind name (annots.enums) with |Some(v) ->v |None -> EAEnum
       let convhex=fun (v:uint64) -> "0x" + v.ToString("X")
       let convdec=fun (v:uint64) -> v.ToString()
-      let (macro,convf)=match annot with |EAEnum->("ENUM!", convdec) |EAEnumHex -> ("ENUM!", convhex) |EAFlags -> ("ENUM!", convhex)
-      apl (macro+"{ enum "+name+" {")
+      apl ("ENUM!{ enum "+name+" {")
       for (cname,v) in vals do
-        if cname.Contains("_FORCE_DWORD") then
-          apl ("    " + cname + " = " + (convhex v) + ",")
-        else
-          apl ("    " + cname + " = " + (convf v) + ",")
+          apl ("    " + cname + " = " + (convhex v) + ", // "+(convdec v))
       apl "}}"
       apl ""
 
@@ -195,7 +191,7 @@ let winapiGen (headername: string)
     for (name,bas,sfields,(fname,_,_,_)) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields,bas),loc)) -> Some(name,bas,sfields,loc) |_ -> None) do
       let f=rsfilename fname
       let apl=apl f
-      if Set.contains name libcTypeNames || Map.containsKey (name+"Vtbl") dxann then
+      if Set.contains name libcTypeNames then
         ()
       else
         let nonInterface = bas="" && (List.isEmpty sfields || (List.exists (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields))
@@ -306,8 +302,10 @@ let winapiGen (headername: string)
                 apl line
             apl ""
         else
-          let (_,basename,fns)=Map.find name dxann
-          let fnset=fns |> Seq.map (fun (fn,_,_) -> fn) |> Set.ofSeq
+          let basename = 
+                match Map.tryFind name structs with
+                |Some(Struct(_, basename),_) -> basename
+                |_ -> ""
           apl "RIDL!("
           if basename="" then
             apl <| sprintf "interface %s(%s) {" (name.Substring(0,name.Length-4)) name
@@ -319,10 +317,7 @@ let winapiGen (headername: string)
               |> Seq.choose
                 (function 
                   |CStructElem(fname,Ptr(Function(CFuncDesc(parms,rty,_))),_) -> 
-                    if Set.contains fname fnset then
-                      Some(fname,parms,rty)
-                    else
-                      None
+                    Some(fname,parms,rty)
                   |_ -> None
                 )
           
@@ -397,7 +392,7 @@ let winapiGen (headername: string)
         for KeyValue(name,(mc,orgs,(fname,_,_,_))) in defines do
           let f=rsfilename fname
           let defOption = 
-            match Map.tryFind name annots.defines with
+            match Map.tryFind name def_annots with
             |Some(_) as opt -> opt
             |None -> 
                 match Map.tryFind name annotations.disableRPCDefines with
