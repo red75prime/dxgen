@@ -2,8 +2,8 @@
 
 // Returns pairs of sequense elements, except for last element
 let seqPairwise (s:seq<'t>)=
-    let prev = ref None
     seq {
+        let prev = ref None
         for item in s do
             match !prev with
             |None -> prev := Some(item)
