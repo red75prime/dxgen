@@ -343,6 +343,7 @@ type MacroConst=
   |MCUInt64 of uint64
   |MCFloat of float
   |MCDouble of double
+  |MCExpression of string list
 
 type IID = 
     |IID11 of string array

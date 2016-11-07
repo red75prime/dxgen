@@ -1,9 +1,16 @@
 ﻿module defines_annotations 
 open annotations
 
+let d3d12ScmAlwaysBit = "\
+pub const D3D12_SHADER_COMPONENT_MAPPING_ALWAYS_SET_BIT_AVOIDING_ZEROMEM_MISTAKES: UINT = 1<<(D3D12_SHADER_COMPONENT_MAPPING_SHIFT*4);"
+
+let d3d12_defines = [
+        ("D3D12_SHADER_COMPONENT_MAPPING_ALWAYS_SET_BIT_AVOIDING_ZEROMEM_MISTAKES",UseCustom("UINT", d3d12ScmAlwaysBit))
+    ]
+
 let defines: Map<string, Map<string, DefineAnnotation>> =
   [
-    ("d3d12", [] |> Map.ofList );
+    ("d3d12", d3d12_defines |> Map.ofList );
     ("d3d11on12", [] |> Map.ofList );
     ("d3d12sdklayers", [] |> Map.ofList );
     ("d3dcommon", [] |> Map.ofList );

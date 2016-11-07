@@ -193,6 +193,7 @@ type StructAnnotation=StructFlags*((string*FieldAnnotation) list)
 type DefineAnnotation =
     |Exclude
     |UseType of string
+    |UseCustom of string*string // type, statement
  
 type Annotations = {
   interfaces: (string*InterfaceAnnotation*string*(string*(string*ParamAnnotation)list*MethodAnnotation)list)list

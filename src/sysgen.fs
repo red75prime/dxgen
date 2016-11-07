@@ -191,7 +191,7 @@ let winapiGen (headername: string)
     for (name,bas,sfields,(fname,_,_,_)) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields,bas),loc)) -> Some(name,bas,sfields,loc) |_ -> None) do
       let f=rsfilename fname
       let apl=apl f
-      if Set.contains name libcTypeNames then
+      if Set.contains name libcTypeNames || Map.tryFind (name+"Vtbl") structs |> Option.isSome then
         ()
       else
         let nonInterface = bas="" && (List.isEmpty sfields || (List.exists (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields))
@@ -301,7 +301,7 @@ let winapiGen (headername: string)
               for line in lines do
                 apl line
             apl ""
-        else
+        else // ------------------------------- COM-Interface ---------------------------
           let basename = 
                 match Map.tryFind name structs with
                 |Some(Struct(_, basename),_) -> basename
@@ -310,7 +310,7 @@ let winapiGen (headername: string)
           if basename="" then
             apl <| sprintf "interface %s(%s) {" (name.Substring(0,name.Length-4)) name
           else
-            apl <| sprintf "interface %s(%s): %s(%s) {" (name.Substring(0,name.Length-4)) name (basename.Substring(0, basename.Length-4)) basename
+            apl <| sprintf "interface %s(%s): %s(%s) {" (name.Substring(0,name.Length-4)) name basename (basename+"Vtbl")
 
           let fseq=
             sfields 
@@ -383,9 +383,7 @@ let winapiGen (headername: string)
       |Typedef(EnumRef(ename)) when ename=name -> ()
       |Typedef(StructRef(sname)) when sname=name -> ()
       |_ -> 
-        apl <| sprintf "pub type %s = %s;" name (tyToRustGlobal ty)
-
-  
+        apl <| sprintf "pub type %s = %s;" name (tyToRustGlobal ty)  
 
   let processDefines()=
     seq {
@@ -401,10 +399,16 @@ let winapiGen (headername: string)
           match defOption with
           |Some(Exclude) -> ()
           |Some(UseType(t)) ->
-            if (t = "FLOAT" || t = "DOUBLE") && (not <| orgs.Contains(".")) then
-                yield (f, sprintf "pub const %s: %s = %s.;" name t orgs, t)
-            else 
-                yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t)
+            match mc with
+            |MCExpression(_) ->
+                raise <| new System.Exception(sprintf "Macro expression %s cannot be annotated with UseType" name)
+            |_ ->
+                if (t = "FLOAT" || t = "DOUBLE") && (not <| orgs.Contains(".")) then
+                    yield (f, sprintf "pub const %s: %s = %s.;" name t orgs, t)
+                else 
+                    yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t)
+          |Some(UseCustom(t, item)) ->
+            yield (f, item, t)
           |None ->
             let t = 
               match mc with
@@ -414,7 +418,9 @@ let winapiGen (headername: string)
               |MCInt32(_) -> "INT"
               |MCFloat(_) -> "FLOAT"
               |MCDouble(_) -> "DOUBLE" 
-            yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t)
+              |MCExpression(_) -> "" // skip unannotated macro expressions
+            if t <> "" then
+                yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t)
     }
         
   let createDefines()=

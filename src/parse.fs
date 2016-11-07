@@ -370,7 +370,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
           |"(" :: "-" :: value :: ")" :: _ :: [] 
           |"-" :: value :: _ :: [] ->
             tryParse ("-" + value)
-          |_ -> None
+          |_ -> Some(MCExpression(tokens), "")
         match cv with
         |Some(v,orgs) ->
           //printfn "%A %s" v (System.String.Join(" ", tokens))
