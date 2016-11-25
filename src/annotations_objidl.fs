@@ -423,7 +423,7 @@ let objidl=[
       ("grfStatFlag",ANone);
     ],MANone);
   ]);
-  ("IMallocSpyVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
+  ("IMallocSpyVtbl",IAManual, "IUnknownVtbl", [
     ("PreAlloc",[
       ("This",AThis);
       ("cbRequest",ANone);
@@ -924,6 +924,4 @@ let objidl=[
       ("flags",ANone);
     ],MANone);
   ]);
-  ("tagBIND_OPTS2Vtbl",IAAutogen(Set.ofList []), "tagBIND_OPTSVtbl", [  ]);
-  ("tagBIND_OPTS3Vtbl",IAAutogen(Set.ofList []), "tagBIND_OPTS2Vtbl", [  ]);
   ]

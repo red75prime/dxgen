@@ -141,11 +141,13 @@ let winapiGen (headername: string)
         sb
       |None ->
         let sb=new System.Text.StringBuilder()
-        let text=sprintf @"// Copyright © 2016; Dmitry Roschin
-// Licensed under the Apache License, Version 2.0, <LICENSE-APACHE or
-// http://apache.org/licenses/LICENSE-2.0> or the MIT license <LICENSE-MIT or
-// http://opensource.org/licenses/MIT>, at your option. This file may not be
-// copied, modified, or distributed except according to those terms.
+        let text=sprintf "\
+// Copyright © 2016 winapi-rs developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your option.
+// All files in the project carrying such notice may not be copied, modified, or distributed
+// except according to those terms.
 //! Mappings for the content of %s.h" (f.Substring(0,f.Length-3))
         sb.AppendLine(text) |> ignore
         sb.AppendLine() |> ignore
@@ -177,7 +179,16 @@ let winapiGen (headername: string)
 //    else
 //      apl "#[repr(C)] #[derive(Clone, Copy, Debug)]"
     apl <| sprintf "STRUCT!{struct %s {" name
-    for (fname,fty) in ses |> Seq.choose(function |CStructElem(fname,fty,None)->Some(fname,fty) |CStructElem(fname,fty,Some(bw))-> Some(fname, Unimplemented("BitfieldsArentSupported("+(bw.ToString())+")"))) do
+    let nametype = 
+        ses 
+            |> Seq.choose(
+                function 
+                    |CStructElem(fname,fty,None) -> 
+                        Some(fname,fty) 
+                    |CStructElem(fname,fty,Some(bw)) -> 
+                        Some(fname, Unimplemented("bitfield_"+(tyToRustGlobal fty)+"("+(bw.ToString())+")")))
+
+    for (fname,fty) in nametype  do
       apl <| System.String.Format("    {0}: {1},", fname, tyToRustGlobal fty)
     apl "}}"
     apl ""

@@ -163,13 +163,17 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
   let funcs=ref Map.empty
   let iids=ref Map.empty
   let defines=ref Map.empty
-  // constant types
+  // locations of type definitions
   let typedefloc = ref Map.empty;
+  // storage for named union definitions 
+  // TODO: implement parsing standalone unions
+  let namedUnions = ref Map.empty
 
   let rec registerTypeLocation (ctype:Type) (isComInterface: bool) = 
       let tdesc = match typeDesc ctype with
                   |Const(t) -> t
                   |StructRef(t) -> TypedefRef(t)
+                  |UnionRef(t) -> TypedefRef(t)
                   |t -> t
       match tdesc with
       |Unimplemented _ ->
@@ -270,7 +274,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
         let pointee=getPointeeType ctype
         let ty=ctype |> typeDesc
         let sz=ctype |> getSizeOfType
-        let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
+        let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor, getSizeOfType ctype) else None
         fields := (CStructElem(nm, ty, bw), [TargetUnknown, sz]) :: !fields
       else if ckind=CursorKind.StructDecl then
         let ctype=getCursorType cursor
@@ -302,6 +306,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
     let fields=ref []
     let bas = ref ""
     let itIsAClass = ref false
+    let hasDataMembers = ref false
     let parseFieldDecl cursor _ _=
       let ckind=getCursorKind cursor
       //printfn "    %s: %A %s" structName ckind (getCursorDisplayNameFS cursor)
@@ -318,7 +323,6 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             //raise <| new System.Exception("Base specifier is not struct: "+basename)
       if ckind=CursorKind.FieldDecl then
           let ctype=getCursorType cursor
-          registerTypeLocation ctype false
           let nm=getCursorDisplayNameFS cursor
           let pointee=getPointeeType ctype
           let nArgs=getNumArgTypes(pointee)
@@ -327,9 +331,15 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
               // function pointer
               Ptr(parseFunction cursor pointee)
             else
+              hasDataMembers := true
               ctype |> typeDesc
-          let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor) else None
-          fields := CStructElem(nm, ty, bw) :: !fields
+          match ty with
+          |UnionRef(nm) ->
+            fields := CStructElem("", Map.find nm !namedUnions, None) :: !fields
+          |_ ->
+              registerTypeLocation ctype false
+              let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor, getSizeOfType ctype) else None
+              fields := CStructElem(nm, ty, bw) :: !fields
       else if ckind=CursorKind.CxxMethod then
           itIsAClass := true
           let nm=getCursorSpellingFS cursor
@@ -346,7 +356,14 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
             //printfn "Skipping non pure virtual %s::%s" structName nm
             ()
       else if ckind=CursorKind.UnionDecl then
-        fields := CStructElem("", parseUnion cursor, None) :: !fields
+        let nm = getCursorSpellingFS cursor
+        if nm <> "" then
+            // named union definition inside struct
+            namedUnions := Map.add nm (parseUnion cursor) !namedUnions
+            ()
+        else
+            // unnamed union definition inside struct
+            fields := CStructElem("", parseUnion cursor, None) :: !fields
       else if ckind=CursorKind.UnexposedAttr then
         //let tokens = tokenizeFS cursor
         //let what = getCursorSpellingFS cursor
@@ -354,7 +371,7 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
         ()
       ChildVisitResult.Continue
     visitChildrenFS cursor parseFieldDecl () |> ignore
-    (Struct(List.rev !fields, !bas), !itIsAClass)
+    (Struct(List.rev !fields, !bas), !itIsAClass && not <| !hasDataMembers)
   
   let parseMacro (cursor:Cursor) locInfo =
     match tokenizeFS cursor with

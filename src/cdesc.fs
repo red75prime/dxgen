@@ -23,10 +23,6 @@ type CPrimitiveType=
   |Char16
   |Char32
 
-type CCallingConv=
-  |StdCall
-
-
 let ccToRustNoQuotes (cc:CallingConv)=
   match cc with
   |CallingConv.X86StdCall -> "stdcall"
@@ -36,7 +32,7 @@ let ccToRustNoQuotes (cc:CallingConv)=
 let ccToRust (cc:CallingConv)=
     "\"" + (ccToRustNoQuotes cc) + "\""
 
-
+// File path, line, column, 
 type CodeLocation=System.String*uint32*uint32*uint32
 
 type CParamAnnotation=
@@ -119,7 +115,7 @@ type CTypeDesc=
   |UnsizedArray of CTypeDesc
   |Function of CFuncDesc
 and CFuncDesc=CFuncDesc of ((string*CTypeDesc*CParamAnnotation) list)*CTypeDesc*CallingConv
-and CStructElem=CStructElem of name:string*typeDesc:CTypeDesc*bitWidth:Option<int32>
+and CStructElem=CStructElem of name:string*typeDesc:CTypeDesc*bitWidth:Option<int32*int64>
 
 // retuns tuple (list of subtypes, function to generate type from list of subtypes)
 let rec subtypes ty = 
@@ -184,13 +180,17 @@ let isVoidPtr ty=
 // True iff ty is a typedef of struct that has base struct or (contains only function pointers and is not empty)
 let getVtbl (structs:Map<string, CTypeDesc*CodeLocation>) ty=
   let isStructVtbl ses bas=
-    if not(System.String.IsNullOrEmpty bas) then
-      Some(ses,bas)
-    else
-      if (ses <> []) && (List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> true |_ -> false) ses) then
-        Some(ses,bas)
-      else
+    if List.exists (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ -> true) ses then
+        // Struct, which contains data, cannot be interface
         None
+    else 
+        if not(System.String.IsNullOrEmpty bas) then
+          Some(ses,bas)
+        else
+          if (ses <> []) && (List.forall (function |CStructElem(_,Ptr(Function(_)),_) -> true |_ -> false) ses) then
+            Some(ses,bas)
+          else
+            None
 
   match ty with
   |Typedef(StructRef(sname)) |StructRef(sname) -> 
@@ -276,6 +276,7 @@ let rec typeDesc (ty: Type)=
     match getTypeSpellingFS ty with
     | tname when tname.StartsWith("struct ") -> StructRef(tname.Substring("struct ".Length))
     | tname when tname.StartsWith("enum ") -> EnumRef(tname.Substring("enum ".Length))
+    | tname when tname.StartsWith("union ") -> UnionRef(tname.Substring("union ".Length))
     | tname -> Unimplemented(tname)
   |TypeKind.LValueReference ->
     Ptr(getPointeeType ty |> typeDesc)

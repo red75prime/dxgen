@@ -140,8 +140,8 @@ let mergeParameter iname mname parms pname (_,pty,_) (_,pan)=
 let sanityCheck vtbls annotations= 
   isListsMatch fst "Native interfaces" vtbls (fun (name,_,_,_) -> name) "Annotated interfaces" annotations 
     (fun inamevtbl (_, (structElems, bas)) (_, interfaceAnnotation, baseInterface, methodAnnotations) -> 
-      // inamevtbl is in the form I***Vtbl, let's strip 'I' and 'Vtbl'
-      let iname = inamevtbl.Substring(1,inamevtbl.Length-5)
+      // inamevtbl is in the form ***Vtbl, let's strip 'Vtbl'
+      let iname = inamevtbl.Substring(0,inamevtbl.Length-4)
       let bname = if baseInterface="" then "" else baseInterface.Substring(0, baseInterface.Length-4)
       if bname <> bas then
         printfn "Error. Base interface of annotated is %s, but that of native is %s" bname bas
@@ -1122,7 +1122,7 @@ let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInt
   let vtbls=structs |> List.ofSeq |> List.collect (fun (KeyValue(name,(ty,_))) -> getVtbl structs ty |> o2l |> List.map (fun vtbl -> (name,vtbl))) 
   match sanityCheck vtbls (annotations.interfaces) with
   |Some(interfaceAnnotations) ->
-    let iamap' = interfaceAnnotations |> Seq.map (fun (iname, bas, iannot, meths) -> ("I"+iname, (bas, meths, header))) |> Map.ofSeq
+    let iamap' = interfaceAnnotations |> Seq.map (fun (iname, bas, iannot, meths) -> (iname, (bas, meths, header))) |> Map.ofSeq
     let iamap = joinMaps allInterfaces iamap'
     let apl = appendLine sb
     apl autoheader
@@ -1139,15 +1139,15 @@ let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInt
         |None -> 
           if bas<>"IUnknown" && bas<>"" then
             printfn "No header file for base class in %s:%s" iname bas
+        let basTrait = if bas = "" then "" else if bas = "IUnknown" then "TUnknown" else "T"+bas
         // Create trait for interface 
-        if bas <> "" then
-            apl <| "pub trait T"+iname+": T"+(bas.Substring(1))+" {"
+        if basTrait <> "" then
+            apl <| "pub trait T"+iname+": "+basTrait+" {"
         else
             apl <| "pub trait T"+iname+" {"
-        apl <| (generateMethods ("I"+iname) noEnumConversion (methods |> List.map (fun m -> ("I"+iname,m))) |> indentBy "  ")
+        apl <| (generateMethods (iname) noEnumConversion (methods |> List.map (fun m -> (iname,m))) |> indentBy "  ")
         apl <| "}"
         apl <| ""
-        // create structure and implement all applicable traits
         let rec ancTraits bName = 
             match bName with
             |""
@@ -1155,32 +1155,30 @@ let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInt
             |_ -> 
                 match Map.tryFind bName iamap with
                 |Some(bas, _, _) ->
-                    List.concat [ancTraits bas; ["T"+bName.Substring(1)]]
+                    List.concat [ancTraits bas; ["T"+bName]]
                 |None ->
                     let error = sprintf "Error: Generating interface for %s. Base class %s is not defined" iname bName
                     printfn "%s" error
                     raise <| new System.Exception(error)
-        let comCompliant = ref false
-        for tr in ancTraits ("I"+iname) do
-            match tr with
-            |"TUnknown" -> // implement TUnknown, Drop and Clone
-                comCompliant := true
-                apl <| "impl TUnknown for "+iname+" {"
-                apl <| "  fn new(ptr: *mut IUnknown) -> Self {"
-                apl <| "    "+iname+"(ptr as *mut _)"
-                apl <| "  }"
-                apl <| "  fn iptr(&self) -> *mut IUnknown {"
-                apl <| "    self.0 as *mut _"
-                apl <| "  }"
-                apl <| "}"
-                apl <| "impl Drop for "+iname+" {"
-                apl <| "  fn drop(&mut self) { drop_unknown(self) }"
-                apl <| "}"
-                apl <| "impl Clone for "+iname+" {"
-                apl <| "  fn clone(&self) -> Self { clone_unknown(self) }"
-                apl <| "}"
-            |_ -> apl <| "impl "+tr+" for "+iname+" {}";
 
+        let comCompliant = List.contains "TUnknown"  (ancTraits iname)
+        // create structure and implement all applicable traits
+        let implName = 
+            if iname.StartsWith("I") then
+                iname.Substring(1)
+            else if iname.StartsWith("AsyncI") then
+                "Async"+iname.Substring(6)
+            else
+                "T"+iname
+        let derive = 
+            if comCompliant then
+                // COM-compliant no derives
+                ""
+            else
+                // If interface doesn't have base class, then it means it's not COM-compliant
+                // Just copy it
+                "#[derive(Clone)]\r\n"
+        
         let implSend = 
           opts |> Set.fold (
               fun s opt ->
@@ -1188,25 +1186,34 @@ let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInt
                 |IOSend -> "unsafe impl Send for "+iname+" {}\r\n" + s
                 |IOSync -> "unsafe impl Sync for "+iname+" {}\r\n" + s
             ) "" 
-        let derive = 
-            if !comCompliant then
-                // COM-compliant no derives
-                ""
-            else
-                // If interface doesn't have base class, then it means it's not COM-compliant
-                // Just copy it
-                "#[derive(Clone)]\r\n"
-                
+
         apl <| derive 
-        apl <| "pub struct "+iname+"(*mut I"+iname+");"
+        apl <| "pub struct "+implName+"(*mut "+iname+");"
         apl <| implSend
-        apl <| "impl HasIID for "+iname+" {"
-        apl <| "  fn iid() -> REFGUID { &IID_I"+iname+" }"
+        apl <| "impl HasIID for "+implName+" {"
+        apl <| "  fn iid() -> REFGUID { &IID_"+iname+" }"
         apl <| "}"
         apl <| ""
-//        apl <| "impl "+iname+" {"
-//        apl <|   (generateMethods ("I"+iname) noEnumConversion methods1 |> indentBy "  ")
-//        apl <| "}"
+
+        for tr in ancTraits (iname) do
+            match tr with
+            |"TUnknown" -> // implement TUnknown, Drop and Clone
+                apl <| "impl TUnknown for "+implName+" {"
+                apl <| "  fn new(ptr: *mut IUnknown) -> Self {"
+                apl <| "    "+implName+"(ptr as *mut _)"
+                apl <| "  }"
+                apl <| "  fn iptr(&self) -> *mut IUnknown {"
+                apl <| "    self.0 as *mut _"
+                apl <| "  }"
+                apl <| "}"
+                apl <| "impl Drop for "+implName+" {"
+                apl <| "  fn drop(&mut self) { drop_unknown(self) }"
+                apl <| "}"
+                apl <| "impl Clone for "+implName+" {"
+                apl <| "  fn clone(&self) -> Self { clone_unknown(self) }"
+                apl <| "}"
+            |_ -> apl <| "impl "+tr+" for "+implName+" {}";
+
         // end match IAAutogen
     // end for ...
     (sb.ToString(), iamap, !dependencies)

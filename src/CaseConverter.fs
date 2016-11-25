@@ -36,7 +36,7 @@ let public toSnake (ident:string)=
   // Replace some acronyms for better results
   let ident2=ident.Replace("CPU","Cpu").Replace("GPU","Gpu").Replace("OnID","OnId").Replace("IASet","IaSet")
                   .Replace("OMSet","OmSet").Replace("RSSet","RsSet").Replace("SOSet","SoSet").Replace("MemoryDC","MemoryDc")
-                  .Replace("LOGFONT","Logfont")
+                  .Replace("LOGFONT","Logfont").Replace("_On","On")
   let ident1 = if ident2.EndsWith("DC") then ident2.Substring(0, ident2.Length-1)+"c" else ident2
   let mtch=pascalCaseMatcher.Match(ident1) 
   if mtch.Success then

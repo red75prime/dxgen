@@ -1,5 +1,22 @@
 ﻿---
 modules:
+    - name: wincodec
+      output-path: ../../d3d11on12/src
+      include-path: 
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
+      precompiled-header: ./PCH/Common_PCH.h
+      headers:
+          - name: DocumentTarget.h
+          - name: urlmon.h
+          - name: ocidl.h
+          - name: objidlbase.h
+          - name: objidl.h
+          - name: wincodec.h
+      no-winapi-gen: false
+      no-enum-conversion: true
+
     - name: d3d12_dxgi
       output-path: ../../dx_dxgi/src/
       include-path: 
@@ -77,23 +94,6 @@ modules:
       no-winapi-gen: false
       no-enum-conversion: true
       
-    - name: wincodec
-      output-path: ../../d3d11on12/src
-      include-path: 
-        - .\Include\10.0.14393.0\um\
-        - .\Include\10.0.14393.0\shared\
-        - .\Include\10.0.14393.0\ucrt\
-      precompiled-header: ./PCH/Common_PCH.h
-      headers:
-          - name: DocumentTarget.h
-          - name: urlmon.h
-          - name: ocidl.h
-          - name: objidlbase.h
-          - name: objidl.h
-          - name: wincodec.h
-      no-winapi-gen: false
-      no-enum-conversion: true
-
     - name: d3d11on12
       output-path: ../../d3d11on12/src
       include-path: 
