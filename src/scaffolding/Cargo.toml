@@ -13,15 +13,15 @@ openal = ["openal-rs"]
 
 [dependencies]
 libc = "0.2"
-lazy_static = "0.1"
+lazy_static = "0.2"
 log = "0.3"
 env_logger = "0.3"
 # gfx = { git = "https://github.com/gfx-rs/gfx/tree/master/src/core" }
 rand = "0.3"
 time = "0.1"
 crossbeam = "0.2"
-obj = "0.4"
-itertools = "0.4.6"
+obj = "0.5"
+itertools = "0.5"
 #winapi = "0.2"
 #dxgi-sys = "0.2"
 #user32-sys = "0.1"
@@ -31,7 +31,7 @@ itertools = "0.4.6"
 #d3d12-sys = "0.2"
 #d2d1-sys = "0.0"
 #dwrite-sys = "0.2"
-openal-rs = { version = "0.1", optional = true }
+openal-rs = { version = "0.3", optional = true }
 ncollide = "0.10"
 nalgebra = "0.9"
 getopts = "0.2"
