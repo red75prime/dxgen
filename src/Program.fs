@@ -50,6 +50,7 @@ let main argv =
                 if header.Exists then Some(header) else None
 
             for headerInfo in codeModule.Headers do
+                let forwardDeclarations = if headerInfo.ForwardDeclarations = null then Seq.empty else headerInfo.ForwardDeclarations
                 let header = headerInfo.Name
 
                 let headerPath = 
@@ -73,7 +74,7 @@ let main argv =
                   else
                     header.Substring(0, lastpoint)
 
-                let types = parse.combinedParse headerPath precompiledHeader includePaths
+                let types = parse.combinedParse headerPath precompiledHeader includePaths forwardDeclarations
                 let atext = safegen.emptyAnnotationsGen types
                 System.IO.Directory.CreateDirectory(@".\" + headerName) |> ignore 
                 use swa=new System.IO.StreamWriter(@".\" + headerName + @"\annotations_autogen.fs")
@@ -84,7 +85,7 @@ let main argv =
                   printfn "  Error: no annotations for %s" headerName
                 |Some(annotations) ->
                   if not (codeModule.NoWinapiGen) then
-                    let wapi = sysgen.winapiGen headerName types
+                    let wapi = sysgen.winapiGen headerName (headerInfo.ForwardDeclarations) types
                     System.IO.Directory.CreateDirectory(@".\winapi") |> ignore //TODO: use Path
                     for KeyValue(f,t) in wapi do
                       use sw=new System.IO.StreamWriter(@".\winapi\"+f)

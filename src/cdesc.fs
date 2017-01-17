@@ -109,6 +109,7 @@ type CTypeDesc=
   |Const of CTypeDesc
   |Array of CTypeDesc*int64
   |Struct of (CStructElem list)*string // elems + base (for c++)
+  |ForwardDecl of string 
   |StructRef of string
   |Union of (CStructElem*((Target*int64) list)) list // snd is list of (target, elem size)
   |UnionRef of string
@@ -154,6 +155,7 @@ let rec subtypes ty =
   |UnionRef _ -> ([], (fun _ -> ty))
   |UnsizedArray sty -> ([sty], unwrap >> UnsizedArray)
   |Function(fd) -> let (sts, fn) = subtypesFunc fd in (sts, fun sts -> Function(fn sts))
+  |ForwardDecl _ -> ([], (fun _ -> ty))
 
 
 let rec recursiveTransform f ty=
@@ -321,6 +323,7 @@ let rec tyToRust (ty:CTypeDesc)=
     "FNTYPE!{"+(ccToRustNoQuotes cc)+" ("+eol+"    "+((List.map funcArgToRust args) |> String.concat(","+eol+"    "))+eol+"    ) -> "+(if rty=Primitive Void then "c_void" else tyToRust rty)+"}"
   |Ptr uty -> "*mut " + (tyToRust uty)
   |Const(uty) -> tyToRust uty
+  |ForwardDecl uty -> uty
   |_ -> "NoRepresentationYet("+(sprintf "%A" ty)+")"
 and
   funcArgToRust(name,ty,_) =

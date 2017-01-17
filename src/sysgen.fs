@@ -5,6 +5,9 @@ open cdesc
 open rustdesc
 open annotations
 
+let fail s = 
+    raise <| new System.Exception(s)
+
 let reprC: RustAttribute=("Repr",[("C","")])
 
 let makeStruct name ses=
@@ -90,7 +93,7 @@ let wrapOn items (indent:string) eolAfter maxLineLen=
   lines := List.rev !lines
   !lines  
 
-let winapiGen (headername: string) 
+let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclaration seq)
               (types:Map<string,CTypeDesc*CodeLocation>, 
                 enums:Map<string,CTypeDesc*CodeLocation>,
                   structs:Map<string,CTypeDesc*CodeLocation>,
@@ -98,6 +101,7 @@ let winapiGen (headername: string)
                       iids:Map<string,CodeLocation*IID>,
                        defines:Map<string, MacroConst*string*CodeLocation>,
                          typedefs) =
+  
   let def_annots = 
     match Map.tryFind headername defines_annotations.defines with
     |Some(defs) -> defs
@@ -142,7 +146,7 @@ let winapiGen (headername: string)
       |None ->
         let sb=new System.Text.StringBuilder()
         let text=sprintf "\
-// Copyright © 2016 winapi-rs developers
+// Copyright © 2017 Dmitri Roschin
 // Licensed under the Apache License, Version 2.0
 // <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your option.
@@ -173,11 +177,80 @@ let winapiGen (headername: string)
       ;"SECURITY_ATTRIBUTES";"HANDLE";"DWORD";"LPCSTR";"LONG"
       ;"IUnknown"] 
 // ----------------- Create structs ----------------------------------
-  let outputStructDef apl name ses uncopyable=
-//    if uncopyable then
-//      apl "#[repr(C)] #[derive(Copy)]"
-//    else
-//      apl "#[repr(C)] #[derive(Clone, Copy, Debug)]"
+  let outputStructDef apl name ses_in uncopyable=
+    let hasBitfields = ses_in |> List.exists (fun (CStructElem(_, _, bw)) -> Option.isSome bw)
+    // process bitfields
+    // next bitfield goes into the same group if it has the same type and fits into remaining space
+    // bitfield with 0 size is a delimeter
+    // if bitfield doesn't fit into remaining space, bail out
+
+    // state for fold:
+    // (list of struct elems, list of bitfield groups, list of current group's bitfields, 
+    //  , optional (current bitfield type, current bitfield type bit width, current bit position))
+
+    let initialState = 
+        ([], [], [], None)
+
+    let dumpGroup state = 
+        match state with
+        |(ses, gs, [], None) -> // nothing to dump
+            (ses, gs, [], None) 
+        |(ses, gs, _, None) -> 
+            fail "unreachable"
+        |(ses, gs, bs, Some(ty, _, _)) ->
+            let bfGNum = List.length gs
+            let bfGName = "bitfield" + (bfGNum.ToString())
+            ((CStructElem(bfGName, ty, None)) :: ses, ((bfGName, ty, List.rev bs) :: gs), [], None)
+    
+    let foldStep (ses, gs, bs, info) se =
+        let (CStructElem(name, ty, bw)) = se
+        match bw with
+        |None -> // it's not bitfield. just copy to output
+            (se :: ses, gs, bs, info)
+        |Some(fieldwidth, bytewidth) -> 
+            let bytewidth = int32(bytewidth)
+            match info with
+            |Some(cty, bitwidth, bitpos) when cty = ty ->
+                // bitfield group continues
+                assert(bitwidth = bytewidth*8)
+                if fieldwidth = 0 then
+                    // separator. dump current group
+                    let (ses, gs, bs, _) = dumpGroup (ses, gs, bs, info)
+                    // start new group
+                    (ses, gs, bs, Some(cty, bitwidth, 0))
+                else
+                    let bitpos_next = bitpos + fieldwidth
+                    if bitpos_next = bitwidth then
+                        // group is filled. dump it
+                        dumpGroup (ses, gs, (name, bitpos, bitpos_next) :: bs, Some(cty, bitwidth, bitpos_next))
+                    else if bitpos_next > bitwidth then
+                        fail "bitfield crosses type boundary"
+                    else
+                        (ses, gs, (name, bitpos, bitpos_next) :: bs, Some(cty, bitwidth, bitpos_next))
+            |_ -> 
+                let (ses, gs, bs, info) = dumpGroup (ses, gs, bs, info)
+                let bitpos = 0
+                let bitpos_next = fieldwidth
+                if fieldwidth = 0 then
+                    // skip
+                    (ses, gs, bs, info)
+                else
+                    (ses, gs, (name, bitpos, bitpos_next) :: bs, Some(ty, bytewidth*8, bitpos_next)) |>
+                        if bitpos_next > bytewidth*8 then 
+                            (fun _ -> fail "bitfield crosses type boundary") 
+                        elif bitpos_next = bytewidth*8 then 
+                            dumpGroup 
+                        else 
+                            id 
+
+
+    let (ses, gs, _, _) = ses_in |> List.fold foldStep initialState |> dumpGroup
+            
+    let ses = List.rev ses
+    let gs = List.rev gs
+    // -------
+    if hasBitfields then 
+        apl <| "IFDEF!{"
     apl <| sprintf "STRUCT!{struct %s {" name
     let nametype = 
         ses 
@@ -189,14 +262,16 @@ let winapiGen (headername: string)
                         Some(fname, Unimplemented("bitfield_"+(tyToRustGlobal fty)+"("+(bw.ToString())+")")))
 
     for (fname,fty) in nametype  do
-      apl <| System.String.Format("    {0}: {1},", fname, tyToRustGlobal fty)
+        apl <| System.String.Format("    {0}: {1},", fname, tyToRustGlobal fty)
     apl "}}"
+    for (bfname, ty, bfs) in gs do
+        apl <| sprintf "BITFIELD!{%s %s: %s [" name bfname (tyToRustGlobal ty)
+        for (fname, startbit, endbit) in bfs do
+            apl <| sprintf "    %s set_%s[%d..%d]," fname fname startbit endbit
+        apl "]}"
+    if hasBitfields then
+        apl "}"
     apl ""
-//    if uncopyable then
-//      apl <| sprintf "impl Clone for %s {" name
-//      apl "    fn clone(&self) -> Self { *self }"
-//      apl "}"
-//      apl ""
 
   let createStructs()=
     for (name,bas,sfields,(fname,_,_,_)) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields,bas),loc)) -> Some(name,bas,sfields,loc) |_ -> None) do
@@ -341,7 +416,7 @@ let winapiGen (headername: string)
                 let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
                 let parts = 
                   seq {
-                      yield "&mut self"
+                      yield "&self"
                       yield! parms |> Seq.tail |> Seq.map (fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty))
                   } |> utils.seqPairwise |> Seq.map (function |[p;_] -> (p+",") |[p] -> p |_ -> "")
                 let v1=p1+System.String.Join(" ",parts)+pend
@@ -457,7 +532,7 @@ let winapiGen (headername: string)
                       |> fun sq -> System.String.Join(","+System.Environment.NewLine, sq)
           sb.AppendLine(parms) |> ignore
           sb.Append(sprintf ") -> %s}" (tyToRust rty)) |> ignore
-          let f=(rsfilename fname)
+          let f = (rsfilename fname)
           (f, rcc, sb.ToString()))
       |> Seq.groupBy (fun (a,b,c) -> a)
       |> Seq.iter
@@ -489,7 +564,7 @@ let winapiGen (headername: string)
         (Map.ofList [("UINT", "shared::minwindef"); ("INT", "shared::minwindef");
                      ("FLOAT", "shared::minwindef"); ("DOUBLE", "shared::ntdef");
                      ("UINT64", "shared::basetsd"); ("INT64", "shared::basetsd");
-                     ("GUID", "shared::guiddef")])
+                     ("GUID", "shared::guiddef") ])
     let addType typedefs ty =
         match Map.tryFind ty typedefs with
         |Some(_) -> typedefs

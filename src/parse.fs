@@ -123,7 +123,7 @@ let tryParse (s:System.String)=
 let keys m=
   m |> Map.toSeq |> Seq.map fst |> Set.ofSeq
 
-let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) (target:string)=
+let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) (target:string) (forwardDecls: Configuration.ForwardDeclaration seq)=
   let options = 
     seq {
        yield "-x"
@@ -168,6 +168,9 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
   // storage for named union definitions 
   // TODO: implement parsing standalone unions
   let namedUnions = ref Map.empty
+
+  let registerForwardDeclLocation typeName modName =
+    typedefloc := Map.add typeName modName !typedefloc
 
   let rec registerTypeLocation (ctype:Type) (isComInterface: bool) = 
       let tdesc = match typeDesc ctype with
@@ -420,8 +423,14 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
               // it is a function pointer
               Ptr(parseFunction cursor pty)
             else
-              registerTypeLocation uty false
-              uty |> typeDesc
+                let uts = getTypeSpellingFS uty
+                match Seq.tryFind (fun (f:Configuration.ForwardDeclaration) -> f.TypeName = uts) forwardDecls with
+                |Some(f) ->
+                    registerForwardDeclLocation uts f.Path
+                    ForwardDecl uts
+                |None ->
+                    registerTypeLocation uty false
+                    uty |> typeDesc
           let typedefname = cursor |> getCursorDisplayNameFS
           types := !types |> Map.add typedefname (Typedef(tdesc), locInfo)
           // typedefs can contain other definitions
@@ -429,17 +438,20 @@ let parse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo 
 
         if cursorKind=CursorKind.StructDecl then
           let structName=cursor |> getCursorDisplayNameFS
-          match parseStruct cursor structName with
-          |(Struct(ses, bas) as strct, itIsAClass) ->
-              if itIsAClass then
-                // Transform class into struct and vtable
-                let vtblName = structName+"Vtbl"
+          match Seq.tryFind (fun (f:Configuration.ForwardDeclaration) -> f.TypeName = structName) forwardDecls with
+          |None ->
+              match parseStruct cursor structName with
+              |(Struct(ses, bas) as strct, itIsAClass) ->
+                  if itIsAClass then
+                    // Transform class into struct and vtable
+                    let vtblName = structName+"Vtbl"
 
-                structs := !structs |> Map.add vtblName (strct, locInfo)
-                structs := !structs |> Map.add (structName) (Struct([CStructElem("pVtbl", Ptr(StructRef vtblName), None)], ""), locInfo)
-              else
-                structs := !structs |> Map.add structName (strct, locInfo)
-          |_ -> raise <| new System.Exception("unreachable")
+                    structs := !structs |> Map.add vtblName (strct, locInfo)
+                    structs := !structs |> Map.add (structName) (Struct([CStructElem("pVtbl", Ptr(StructRef vtblName), None)], ""), locInfo)
+                  else
+                    structs := !structs |> Map.add structName (strct, locInfo)
+              |_ -> raise <| new System.Exception("unreachable")
+          |Some(_) -> () // forward decl
 
         if cursorKind=CursorKind.FunctionDecl then
           let funcName = cursor |> getCursorSpellingFS
@@ -609,11 +621,11 @@ let rec combineTargets ty1 ty2 =
 
 // It parses code as 32-bit then as 64-bit and then it zips results
 // Some unions need different rust representation in 32/64 bits
-let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) =
+let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) (forwardDecls: Configuration.ForwardDeclaration seq) =
   let (types32, enums32, structs32', funcs32, iids32, defines32, typedefloc32) as p32=
-    parse headerLocation pchLocation includePaths "i686-pc-win32"
+    parse headerLocation pchLocation includePaths "i686-pc-win32" forwardDecls
   let (types64, enums64, structs64', funcs64, iids64, defines64, typedefloc64) as p64=
-    parse headerLocation pchLocation includePaths "x86_64-pc-win32"
+    parse headerLocation pchLocation includePaths "x86_64-pc-win32" forwardDecls
   // ensure that parse results contain same items
   assert (keys types32 = keys types64)
   assert (keys enums32 = keys enums64)
