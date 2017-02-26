@@ -1,5 +1,17 @@
 ﻿---
 modules:
+    - name: d3d12shader
+      output-path: ../../dx_dxgi/src/
+      include-path: 
+        - Include\10.0.14393.0\um\
+        - Include\10.0.14393.0\shared\
+        - Include\10.0.14393.0\ucrt\
+      precompiled-header: ./PCH/Common_PCH.h
+      headers:
+          - name: d3d12shader.h
+      no-winapi-gen: false
+      no-enum-conversion: false
+
     - name: dwrite
       output-path: ../../dwrite/src
       include-path: 
@@ -126,14 +138,3 @@ modules:
       no-winapi-gen: false
       no-enum-conversion: true
 
-    - name: d3d12shader
-      output-path: ../../dx_dxgi/src/
-      include-path: 
-        - .\Include\10.0.14393.0\um\
-        - .\Include\10.0.14393.0\shared\
-        - .\Include\10.0.14393.0\ucrt\
-      precompiled-header: ./PCH/Common_PCH.h
-      headers:
-          - name: d3d12shader.h
-      no-winapi-gen: false
-      no-enum-conversion: false

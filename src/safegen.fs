@@ -939,7 +939,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
         let nrty=
           match List.last parms with
           |("__ret_val",OutReturn,Ptr(_)) ->
-            // Artefact of brocken C-interface
+            // Artefact of broken C-interface
             Primitive Void
           |_ -> rty
         // For multiple return values combine them into tuple

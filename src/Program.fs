@@ -74,22 +74,24 @@ let main argv =
                   else
                     header.Substring(0, lastpoint)
 
+                printfn "Processing header %s" headerPath.FullName
                 let types = parse.combinedParse headerPath precompiledHeader includePaths forwardDeclarations
                 let atext = safegen.emptyAnnotationsGen types
                 System.IO.Directory.CreateDirectory(@".\" + headerName) |> ignore 
                 use swa=new System.IO.StreamWriter(@".\" + headerName + @"\annotations_autogen.fs")
                 swa.Write(atext)
 
+                if not (codeModule.NoWinapiGen) then
+                    let wapi = sysgen.winapiGen headerName (headerInfo.ForwardDeclarations) types
+                    System.IO.Directory.CreateDirectory(@".\winapi") |> ignore //TODO: use Path
+                    for KeyValue(f,t) in wapi do
+                        use sw=new System.IO.StreamWriter(@".\winapi\"+f)
+                        sw.Write(t)
+
                 match Map.tryFind (headerName) annotations_by_module with
                 |None ->
                   printfn "  Error: no annotations for %s" headerName
                 |Some(annotations) ->
-                  if not (codeModule.NoWinapiGen) then
-                    let wapi = sysgen.winapiGen headerName (headerInfo.ForwardDeclarations) types
-                    System.IO.Directory.CreateDirectory(@".\winapi") |> ignore //TODO: use Path
-                    for KeyValue(f,t) in wapi do
-                      use sw=new System.IO.StreamWriter(@".\winapi\"+f)
-                      sw.Write(t)
                   let (rtext, interfaces, deps)=safegen.safeInterfaceGen headerName (headerInfo.Uses) (!allInterfaces) (codeModule.NoEnumConversion) types annotations
                   allInterfaces := interfaces
                   let moduleName = headerName+"_safe"
@@ -99,7 +101,6 @@ let main argv =
 //                    swsi.WriteLine("use "+modl+"_safe::*;")
                   swsi.Write(rtext)
                   modules := moduleName :: !modules
-                  printfn "Processing header %s" headerPath.FullName
 
             //safegen.whatDoWeHaveP()
 

@@ -299,6 +299,17 @@ type CXErrorCode =
     | InvalidArguments = 3
     | ASTReadError = 4
 
+[<Literal>]
+let TypeLayoutError_Invalid = -1L
+[<Literal>]
+let TypeLayoutError_Incomplete = -2L
+[<Literal>]
+let TypeLayoutError_Dependent = -3L
+[<Literal>]
+let TypeLayoutError_NotConstantSize = -4L
+[<Literal>]
+let TypeLayoutError_InvalidFieldName = -5L
+
 #nowarn "9"
 [<StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)>]
 type UnsavedFile =
@@ -402,6 +413,9 @@ extern void disposeIndex(Index translationUnit)
 [<DllImport("libclang", EntryPoint = "clang_parseTranslationUnit", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern TranslationUnit parseTranslationUnit(Index index, string fileName, string[] args, int numArgs, UnsavedFile[] unsavedFiles, uint32 numUnsavedFiles, TranslationUnitFlags flags)
 
+let parseTranslationUnitFS (index: Index) (fileName: string) (args: string[]) (unsavedFiles: UnsavedFile[]) (flags: TranslationUnitFlags) =
+    parseTranslationUnit(index, fileName, args, Array.length args, unsavedFiles, Array.length unsavedFiles |> uint32, flags)
+
 [<DllImport("libclang", EntryPoint = "clang_disposeTranslationUnit", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern void disposeTranslationUnit(TranslationUnit translationUnit)
 
@@ -473,6 +487,12 @@ extern int getNumArgTypes(Type ty)
 
 [<DllImport("libclang", EntryPoint = "clang_getArgType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern Type getArgType(Type ty, uint32 i)
+
+[<DllImport("libclang", EntryPoint = "clang_equalTypes", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern uint32 equalTypes(Type tya, Type tyb)
+
+let equalTypesFs tya tyb =
+    equalTypes(tya, tyb) <> 0u
 
 [<DllImport("libclang", EntryPoint = "clang_getArrayElementType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern Type getArrayElementType(Type ty)

@@ -40,7 +40,7 @@ let convertToRust (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTy
                 fun (ename, eVal) ->
                   RustItem(ename, REConst(RType name, sprintf "%s(%d)" name eVal, eVal),RAPublic, [])
                 ))
-          |_ -> raise <| new System.Exception("Unexpected type of enum "+name)
+          |_ -> fail ("Unexpected type of enum "+name)
       )
   let rstructs=
     let makeStructOrInterface (KeyValue(name,(ty,_))) =
@@ -52,7 +52,7 @@ let convertToRust (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTy
         // Struct
         match ty with
         |Struct (ses,bas) -> makeStruct name ses
-        |_ -> raise <| new System.Exception("Unexpected type")
+        |_ -> fail ("Unexpected type")
     structs |> List.ofSeq |>
       List.collect makeStructOrInterface
   let rfuncs=[]
@@ -287,7 +287,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           let checkPrecond ty=
             let rec secondLevel ty=
               match ty with
-              |Union(_) -> raise <| new System.Exception("Unnamed unions within unnamed unions isn't supported")
+              |Union(_) -> fail ("Unnamed unions within unnamed unions isn't supported")
               |_ -> let (stys, _) = subtypes ty in List.iter secondLevel stys
             let rec firstLevel ty=
               let nextfn=
@@ -375,7 +375,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                 |TargetX64 -> 
                   apl @"#[cfg(target_pointer_width = ""64"")]"
                 |TargetUnknown ->
-                  raise <| new System.Exception("TagetUnknown shouldn't be here")  
+                  fail ("TagetUnknown shouldn't be here")  
                 outputStructDef apl name sfs uncopyable
                 
           match !unions with
@@ -410,7 +410,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           // Format code according to winapi-rs rules
           for twofield in fseq |> utils.seqPairwise do
             match twofield with
-            |[] -> raise <| new System.Exception("unreachable")
+            |[] -> fail ("unreachable")
             |(fname,parms,rty)::next ->
                 let p1 = "    fn "+fname+"("
                 let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
@@ -487,7 +487,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           |Some(UseType(t)) ->
             match mc with
             |MCExpression(_) ->
-                raise <| new System.Exception(sprintf "Macro expression %s cannot be annotated with UseType" name)
+                fail (sprintf "Macro expression %s cannot be annotated with UseType" name)
             |_ ->
                 if (t = "FLOAT" || t = "DOUBLE") && (not <| orgs.Contains(".")) then
                     yield (f, sprintf "pub const %s: %s = %s.;" name t orgs, t)

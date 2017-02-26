@@ -2635,9 +2635,6 @@ let d3d12shader=[
     ],MAReturnsInterface);
   ]);
   ("ID3D12LibraryReflectionVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
     ("GetDesc",[
       ("This",AThis);
       ("pDesc",ANone);
@@ -2721,9 +2718,6 @@ let d3d12shader=[
     ],MANone);
   ]);
   ("ID3D12ShaderReflectionVtbl",IAAutogen(Set.ofList []), "IUnknownVtbl", [
-    ("QueryInterface",[],MAIUnknown);
-    ("AddRef",[],MAIUnknown);
-    ("Release",[],MAIUnknown);
     ("GetDesc",[
       ("This",AThis);
       ("pDesc",ANone);
