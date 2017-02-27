@@ -978,6 +978,9 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
         |Ptr(StructRef retInterface) when mannot = MAReturnsInterface ->
             let rustInterfaceName = retInterface.Substring(1)
             (rustInterfaceName+"::new(_hr as *mut _)", RType rustInterfaceName)
+        |Ptr(TypedefRef retInterface) when mannot = MAReturnsInterface ->
+            let rustInterfaceName = retInterface.Substring(1)
+            (rustInterfaceName+"::new(_hr as *mut _)", RType rustInterfaceName)
         |_ -> raise <| new System.Exception("Unexpected return type in "+clname+"::"+mname)
 
       let transformedNativeParms = 

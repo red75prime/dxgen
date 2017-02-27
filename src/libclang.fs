@@ -286,6 +286,7 @@ type TypeKind =
     | DependentSizedArray = 116
     | MemberPointer = 117
     | Auto = 118
+    | Elaborated = 119
 
 type ChildVisitResult =
     | Break = 0
@@ -550,6 +551,9 @@ extern int32 getFieldDeclBitWidth(Cursor c)
 
 [<DllImport("libclang", EntryPoint = "clang_Type_getOffsetOf", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern int64 getOffsetOfInBits(Type t, String s)
+
+[<DllImport("libclang", EntryPoint = "clang_Type_getNamedType", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern Type getNamedType(Type t)
 
 
 let tokenizeFS cursor=

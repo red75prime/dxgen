@@ -221,7 +221,12 @@ let enumCType cursor=
   |8L -> UInt64
   | _ -> Void
 
-let rec typeDesc (ty: Type)=
+let rec typeDesc (ty0: Type)=
+  let ty = 
+    if ty0.kind = TypeKind.Elaborated then
+        getNamedType ty0
+    else
+        ty0
   match ty.kind with
   |TypeKind.Void ->   
     if isConstQualifiedTypeFS ty then
@@ -256,7 +261,19 @@ let rec typeDesc (ty: Type)=
   |TypeKind.Enum -> 
     EnumRef (getTypeSpellingFS ty)
   |TypeKind.Record ->
-    let ts = getTypeSpellingFS ty
+    let ts0 = getTypeSpellingFS ty
+    let ts = 
+        if ts0.Contains("::") then
+            ts0.Split([|" "|], System.StringSplitOptions.RemoveEmptyEntries) 
+                |> Array.map(
+                    fun (s:string) -> 
+                        let li = s.LastIndexOf("::")
+                        if li = -1 then s else s.Substring(li+2) 
+                    )
+                |> fun sa -> System.String.Join(" ", sa)
+        else
+            ts0
+        
     let cnst = "const "
     if ts.StartsWith(cnst) then
       Const(StructRef (ts.Substring(cnst.Length)))
@@ -282,6 +299,8 @@ let rec typeDesc (ty: Type)=
     | tname -> Unimplemented(tname)
   |TypeKind.LValueReference ->
     Ptr(getPointeeType ty |> typeDesc)
+  |TypeKind.Elaborated ->
+    failwith "unreachable"
   |_ -> Unimplemented(getTypeSpellingFS ty)
   
 

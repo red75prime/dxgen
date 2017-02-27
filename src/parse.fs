@@ -383,14 +383,14 @@ let parse   (headerLocation: System.IO.FileInfo)
                         ctype |> typeDesc
                 match ty with
                 |UnionRef(nm) ->
-                    fields := CStructElem("", Map.find nm !namedUnions, None) :: !fields
+                    fields := CStructElem("", Map.find nm !structs |> fst, None) :: !fields
                 |_ ->
                     registerTypeLocation ctype false
                     let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor, getSizeOfType ctype) else None
                     fields := CStructElem(nm, ty, bw) :: !fields
             |CursorKind.CxxMethod ->
                 itIsAClass := true
-                let nm=getCursorSpellingFS cursor
+                let nm = getCursorSpellingFS cursor
                 if isPureVirtualFS cursor then
                     let ctype = getCursorType cursor
                     let canonicalType = getCanonicalType ctype
@@ -417,7 +417,7 @@ let parse   (headerLocation: System.IO.FileInfo)
                 let nm = getCursorSpellingFS cursor
                 if nm <> "" then
                     // named union definition inside struct
-                    namedUnions := Map.add nm (parseUnion cursor) !namedUnions
+                    structs := Map.add nm (parseUnion cursor, getLocInfo cursor) !structs
                     ()
                 else
                     // unnamed union definition inside struct
