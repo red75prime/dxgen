@@ -5,9 +5,6 @@ open cdesc
 open rustdesc
 open annotations
 
-let fail s = 
-    raise <| new System.Exception(s)
-
 let reprC: RustAttribute=("Repr",[("C","")])
 
 let makeStruct name ses=
@@ -40,7 +37,7 @@ let convertToRust (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTy
                 fun (ename, eVal) ->
                   RustItem(ename, REConst(RType name, sprintf "%s(%d)" name eVal, eVal),RAPublic, [])
                 ))
-          |_ -> fail ("Unexpected type of enum "+name)
+          |_ -> failwith ("Unexpected type of enum "+name)
       )
   let rstructs=
     let makeStructOrInterface (KeyValue(name,(ty,_))) =
@@ -52,7 +49,7 @@ let convertToRust (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTy
         // Struct
         match ty with
         |Struct (ses,bas) -> makeStruct name ses
-        |_ -> fail ("Unexpected type")
+        |_ -> failwith ("Unexpected type")
     structs |> List.ofSeq |>
       List.collect makeStructOrInterface
   let rfuncs=[]
@@ -196,7 +193,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
         |(ses, gs, [], None) -> // nothing to dump
             (ses, gs, [], None) 
         |(ses, gs, _, None) -> 
-            fail "unreachable"
+            failwith "unreachable"
         |(ses, gs, bs, Some(ty, _, _)) ->
             let bfGNum = List.length gs
             let bfGName = "bitfield" + (bfGNum.ToString())
@@ -224,7 +221,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                         // group is filled. dump it
                         dumpGroup (ses, gs, (name, bitpos, bitpos_next) :: bs, Some(cty, bitwidth, bitpos_next))
                     else if bitpos_next > bitwidth then
-                        fail "bitfield crosses type boundary"
+                        failwith "bitfield crosses type boundary"
                     else
                         (ses, gs, (name, bitpos, bitpos_next) :: bs, Some(cty, bitwidth, bitpos_next))
             |_ -> 
@@ -237,7 +234,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                 else
                     (ses, gs, (name, bitpos, bitpos_next) :: bs, Some(ty, bytewidth*8, bitpos_next)) |>
                         if bitpos_next > bytewidth*8 then 
-                            (fun _ -> fail "bitfield crosses type boundary") 
+                            (fun _ -> failwith "bitfield crosses type boundary") 
                         elif bitpos_next = bytewidth*8 then 
                             dumpGroup 
                         else 
@@ -274,7 +271,12 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
     apl ""
 
   let createStructs()=
-    for (name,bas,sfields,(fname,_,_,_)) in structs |> Seq.choose(function |KeyValue(name, (Struct(sfields,bas),loc)) -> Some(name,bas,sfields,loc) |_ -> None) do
+    let filter (KeyValue(name, (ty, loc))) = 
+        match ty with
+        |Struct(sfields,bas) -> Some(name,bas,sfields,loc)
+        |Union(ufields) -> Some(name, "", [CStructElem("u", ty, None)], loc)
+        |_ -> None
+    for (name,bas,sfields,(fname,_,_,_)) in structs |> Seq.choose filter do
       let f=rsfilename fname
       let apl=apl f
       if Set.contains name libcTypeNames || Map.tryFind (name+"Vtbl") structs |> Option.isSome then
@@ -283,11 +285,11 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
         let nonInterface = bas="" && (List.isEmpty sfields || (List.exists (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields))
         if nonInterface then
           let uncopyable=Set.contains name uncopyableStructs
-          // check precondition. Unnamed unions within unnamed unions isn't supported
+          // check precondition. Unnamed unions within unnamed unions aren't supported
           let checkPrecond ty=
             let rec secondLevel ty=
               match ty with
-              |Union(_) -> fail ("Unnamed unions within unnamed unions isn't supported")
+              |Union(_) -> failwith "Unnamed unions within unnamed unions isn't supported"
               |_ -> let (stys, _) = subtypes ty in List.iter secondLevel stys
             let rec firstLevel ty=
               let nextfn=
@@ -375,7 +377,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                 |TargetX64 -> 
                   apl @"#[cfg(target_pointer_width = ""64"")]"
                 |TargetUnknown ->
-                  fail ("TagetUnknown shouldn't be here")  
+                  failwith "TagetUnknown shouldn't be here"
                 outputStructDef apl name sfs uncopyable
                 
           match !unions with
@@ -410,7 +412,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           // Format code according to winapi-rs rules
           for twofield in fseq |> utils.seqPairwise do
             match twofield with
-            |[] -> fail ("unreachable")
+            |[] -> failwith "unreachable"
             |(fname,parms,rty)::next ->
                 let p1 = "    fn "+fname+"("
                 let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
@@ -487,7 +489,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           |Some(UseType(t)) ->
             match mc with
             |MCExpression(_) ->
-                fail (sprintf "Macro expression %s cannot be annotated with UseType" name)
+                failwithf "Macro expression %s cannot be annotated with UseType" name
             |_ ->
                 if (t = "FLOAT" || t = "DOUBLE") && (not <| orgs.Contains(".")) then
                     yield (f, sprintf "pub const %s: %s = %s.;" name t orgs, t)

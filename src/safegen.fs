@@ -172,7 +172,7 @@ let sanityCheck vtbls annotations=
                     match mergedParms with
                     |Some(mp) -> Some(mname, methodAnnotation, mp, rty)
                     |None -> None
-                |_ -> raise <| new System.Exception("Unreachable")
+                |_ -> failwith "Unreachable"
                 )
           match mergedMethods with
           |Some(mm) -> Some(iname, bas, interfaceAnnotation, mm)
@@ -187,7 +187,7 @@ open rustdesc
 let native2rustName parms name=
   match List.find (function |(nname,_,_,RustParameter _) when nname=name -> true |_ -> false ) parms with
   |(_,_,_,RustParameter(rname,_)) -> rname
-  |_ -> raise <| new System.Exception("Unreachable")
+  |_ -> failwith "Unreachable"
 
 let deKeyword name=
   match name with
@@ -215,7 +215,7 @@ let derefCType pty=
   match pty with
   |Ptr(Const(ty)) -> ty
   |Ptr(ty) -> ty
-  |_ -> raise <| new System.Exception("Type isn't a pointer")
+  |_ -> failwith "Type isn't a pointer"
 
 let rec convertTypeToRustNoArray ty pannot=
   match ty with
@@ -225,7 +225,7 @@ let rec convertTypeToRustNoArray ty pannot=
     RArray((convertTypeToRustNoArray uty pannot),sz)
   |TypedefRef typename |StructRef typename |EnumRef typename->
     if isOptional pannot then
-      raise <| new System.Exception("Typedef, struct, enum cannot be made optional")
+      failwith "Typedef, struct, enum cannot be made optional"
     else
       RType typename // struct or enum or something that is already defined in libc or in d3d12_sys.rs
   |Const(TypedefRef typename) ->
@@ -245,7 +245,7 @@ let rec convertTypeToRustNoArray ty pannot=
     |_ -> RMutBorrow (convertTypeToRustNoArray uty pannot)
   |Primitive _ -> RType(tyToRust ty)
   |_ ->
-    raise <| new System.Exception(sprintf "convertToRustTypeNoArray: unsupported type %A" ty)
+    failwithf "convertToRustTypeNoArray: unsupported type %A" ty
 
 
 let generateMethodFromRouting 
@@ -510,7 +510,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
                             Choice1Of2 (fun m -> (Map.find pname m)+".as_ref().map(|a|a.len())")
                           |(pname, InArrayOfSize _,_) |(pname, OutArrayOfSize _,_) |(pname, InComPtrArrayOfSize _,_) ->  
                             Choice2Of2 (fun m -> (Map.find pname m)+".len()")
-                          |_ -> raise <| new System.Exception("Unreachable")
+                          |_ -> failwith "Unreachable"
                         )
           let init=
             fun m -> 
@@ -570,7 +570,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             |InOutOptional |InOptional |OutOptional -> 
               addSafeParm safeParmName (ROption(RMutBorrow(convertTypeToRustNoArray cty ANone)))
               addNativeParm pname (Some(safeParmName)) ("opt_as_mut_ptr(&"+safeParmName+")")
-            |_ -> raise <| new System.Exception("Unreachable")
+            |_ -> failwith "Unreachable"
           |Array(cty,num) ->
             // C array in function parameters means pointer to first element of array
             match pannot with 
@@ -580,7 +580,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
             |InOutOptional |InOptional |OutOptional -> 
               addSafeParm safeParmName (ROption((RMutBorrow(RArray(convertTypeToRustNoArray cty pannot,num)))))
               addNativeParm pname (Some(safeParmName)) ("opt_as_mut_ptr(&"+safeParmName+")")
-            |_ -> raise <| new System.Exception("Unreachable")
+            |_ -> failwith "Unreachable"
           |_ -> 
             match (pannot, pty) with
             |(InOptional, TypedefRef "HDC") -> // TODO: make this more general
@@ -608,7 +608,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
                           |(pname, InComPtrArrayOfSize _,_) ->  
                             Choice2Of2 (fun m -> (Map.find pname m)+".len()")
                           |_ -> 
-                            raise <| new System.Exception("Unreachable")
+                            failwith "Unreachable"
                         )
           let init=
             fun m -> 
@@ -926,7 +926,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
         |_ ->
           addError (sprintf "%s parameter: OutReturnKnownInterface shouldn't have references. But references are %A" pname refs)
 // -----------------------------------------------------------------------------------------------------------------------------------------
-      |_ -> raise <| new System.Exception("Unimplemented")
+      |_ -> failwith "Unimplemented"
   
     if not <| List.isEmpty !errors then
       ([],!errors)
@@ -981,7 +981,7 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
         |Ptr(TypedefRef retInterface) when mannot = MAReturnsInterface ->
             let rustInterfaceName = retInterface.Substring(1)
             (rustInterfaceName+"::new(_hr as *mut _)", RType rustInterfaceName)
-        |_ -> raise <| new System.Exception("Unexpected return type in "+clname+"::"+mname)
+        |_ -> failwith ("Unexpected return type in "+clname+"::"+mname)
 
       let transformedNativeParms = 
         !nativeParms |> Map.map (fun k (_,f) -> (k, f np2sp))
@@ -1056,7 +1056,7 @@ let preGenerateMethod clname noEnumConversion (implclass, (mname, mannot, parms,
               let gparms=(clname, rustName+suffix, mname, mannot,parms1,rty)
               generateRouting gparms noEnumConversion implclass)
       |Some(_) ->
-        raise <| new System.Exception("Unreachable")
+        failwith "Unreachable"
       |None ->
         [generateRouting (clname, rustName, mname, mannot, parms, rty) noEnumConversion implclass]
     let sb=new System.Text.StringBuilder()
@@ -1162,7 +1162,7 @@ let safeInterfaceGen (header:string) (uses_CanBeFreakingNull: string seq) allInt
                 |None ->
                     let error = sprintf "Error: Generating interface for %s. Base class %s is not defined" iname bName
                     printfn "%s" error
-                    raise <| new System.Exception(error)
+                    failwith error
 
         let comCompliant = List.contains "TUnknown"  (ancTraits iname)
         // create structure and implement all applicable traits

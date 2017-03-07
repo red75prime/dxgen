@@ -27,7 +27,7 @@ let ccToRustNoQuotes (cc:CallingConv)=
     match cc with
     |CallingConv.X86StdCall -> "stdcall"
     |CallingConv.CXCallingConv_C -> "cdecl"
-    |_ -> raise <| new System.Exception(sprintf "Unimplemented calling convention %A in ccToRust" cc)
+    |_ -> failwithf "Unimplemented calling convention %A in ccToRust" cc
 
 let ccToRust (cc:CallingConv)=
     "\"" + (ccToRustNoQuotes cc) + "\""
@@ -87,7 +87,7 @@ let removeOpt pa=
     |OutptrOptResultBytebuffer -> OutptrResultBytebuffer
     |COMOutptrOpt -> COMOutptr
     |COMOutptrOptResultMayBeNull | OutptrOptResultMayBeNull -> 
-        raise <| new System.Exception("Cannot removeOpt on COMOutptrOptResultMayBeNull")
+        failwith "Cannot removeOpt on COMOutptrOptResultMayBeNull"
 
     |NoAnnotation |In |InZ |Out |InOut |InReads _ |InReadsBytes _ 
     |InOutUpdatesBytes _ |OutWrites _ |OutWritesBytes _ | OutWritesTo _ 
@@ -132,13 +132,13 @@ let rec subtypes ty =
         let elems = rety :: (plist |> List.map (fun (_,ty,_) -> ty))
         let gen list =
             match list with
-            |[] -> raise <| new System.Exception("Unreachable")
+            |[] -> failwith "Unreachable"
             |rety :: sts -> CFuncDesc(List.map2 (fun (pname, _ , pannot) ty -> (pname, ty, pannot)) plist sts,rety,cc)
         (elems, gen)
     let unwrap sts=
         match sts with
         |[ty] -> ty
-        |_ -> raise <| new System.Exception ("Error in type processing")
+        |_ -> failwith "Error in type processing"
     match ty with
     |Primitive _ -> ([], (fun _ -> ty))
     |Unimplemented _ -> ([], (fun _ -> ty))
@@ -179,7 +179,7 @@ let isVoidPtr ty=
         |_ -> false
     isVoidPtrRec (removeConst ty)
 
-// True iff ty is a typedef of struct that has base struct or (contains only function pointers and is not empty)
+// returns Some(ses) iff ty is a typedef of struct that has base struct or (contains only function pointers and is not empty)
 let getVtbl (structs:Map<string, CTypeDesc*CodeLocation>) ty=
     let isStructVtbl ses bas=
         if List.exists (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ -> true) ses then

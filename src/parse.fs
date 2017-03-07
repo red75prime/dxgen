@@ -5,11 +5,9 @@ open libclang
 open cdesc
 open salparser
 
-let fail s = raise <| new System.Exception(s)
-
 let filtermapMap (f: 'k -> 'v -> Option<'v1>) (m: Map<'k,'v>)=
     m |> Map.filter (fun k v -> Option.isSome(f k v)) 
-      |> Map.map (fun k v -> match f k v with Some(v1) -> v1 |_ -> fail "Unreachable")
+      |> Map.map (fun k v -> match f k v with Some(v1) -> v1 |_ -> failwith "Unreachable")
 
 let annotations (cursor:Cursor) =
     let annots=ref []
@@ -34,7 +32,7 @@ let filename2module file =
             if file.EndsWith(".h") then
                 file.Substring(0, file.Length - 2).ToLowerInvariant()
             else
-                fail (sprintf "Wrong header file %s" file)
+                failwithf "Wrong header file %s" file
         parts.[len-2]+"::"+file
 
 let getLocInfo (cursor: Cursor) = 
@@ -53,21 +51,21 @@ let tryParse (s:System.String)=
         if s.EndsWith("ULL", ignorecase) then
             let s'=s.Substring(2,s.Length-5)
             try Some(MCUInt64(System.Convert.ToUInt64(s',16)), "0x"+s') with
-            |_ -> fail (sprintf "%s should be UInt64, but it isn't" s)
+            |_ -> failwithf "%s should be UInt64, but it isn't" s
         else if s.EndsWith("LL", ignorecase) then
             let s'=s.Substring(2,s.Length-4)
             try Some(MCInt64(System.Convert.ToInt64(s',16)), "0x"+s') with
-            |_ -> fail (sprintf "%s should be Int64, but it isn't" s)
+            |_ -> failwithf "%s should be Int64, but it isn't" s
         else if s.EndsWith("UL", ignorecase) then
             let s'=s.Substring(2,s.Length-4)
             try Some(MCUInt32(System.Convert.ToUInt32(s',16)), "0x"+s') with
-            |_ -> fail(sprintf "%s should be UInt32, but it isn't" s)
+            |_ -> failwithf "%s should be UInt32, but it isn't" s
         else if s.EndsWith("L", ignorecase) then
             let s'=s.Substring(2,s.Length-3)
             try Some(MCUInt32(System.Convert.ToUInt32(s',16)), "0x"+s') with
             |_ ->
                 try Some(MCInt32(System.Convert.ToInt32(s',16)), "0x"+s') with
-                |_ -> fail (sprintf "%s should be Int32, but it isn't" s)
+                |_ -> failwithf "%s should be Int32, but it isn't" s
         else 
             let s'=s.Substring(2)
             try Some(MCUInt32(System.Convert.ToUInt32(s',16)), "0x"+s') with
@@ -89,11 +87,11 @@ let tryParse (s:System.String)=
             else if s.EndsWith("ULL", ignorecase) then
                 let s'=s.Substring(0,s.Length-3)
                 try Some(MCUInt64(System.Convert.ToUInt64(s',10)), s') with
-                |_ -> fail (sprintf "%s should be UInt64, but it isn't" s)
+                |_ -> failwithf "%s should be UInt64, but it isn't" s
             else if s.EndsWith("LL", ignorecase) then
                 let s'=s.Substring(0,s.Length-2)
                 try Some(MCInt64(System.Convert.ToInt64(s', 10)), s') with
-                |_ -> fail(sprintf "%s should be Int64, but it isn't" s)
+                |_ -> failwithf "%s should be Int64, but it isn't" s
             else if s.EndsWith("UL", ignorecase) then
                 let s'=s.Substring(0,s.Length-2)
                 try Some(MCUInt32(System.Convert.ToUInt32(s', 10)), s') with
@@ -128,7 +126,7 @@ let keys m=
 let rec getMethodList (ccur: Cursor) =
     let ct = getCanonicalType <| getCursorType ccur
     if getSizeOfType ct = TypeLayoutError_Incomplete then
-        fail "Cannot get method list on incomplete type"
+        failwith "Cannot get method list on incomplete type"
     let typedecl = getTypeDeclaration ct
     let name = getTypeSpellingFS ct
     let locinfo = getLocInfo typedecl
@@ -139,7 +137,7 @@ let rec getMethodList (ccur: Cursor) =
         match ckind with
         |CursorKind.CxxBaseSpecifier ->
             if not <| List.isEmpty !baselist then
-                fail "Multiple inheritance isn't supported"
+                failwith "Multiple inheritance isn't supported"
             baselist := getMethodList cursor
         |CursorKind.CxxMethod ->
             let mname = getCursorSpellingFS cursor
@@ -225,7 +223,7 @@ let parse   (headerLocation: System.IO.FileInfo)
                 |TypedefRef n -> n
                 |EnumRef n -> n
                 |Primitive _ -> tyToRust tdesc
-                |_ -> fail("Unexpected type")
+                |_ -> failwith "Unexpected type"
             match Map.tryFind tstr !typedefloc with
             |Some(_) -> ()
             |None ->
@@ -258,7 +256,7 @@ let parse   (headerLocation: System.IO.FileInfo)
                     match annotations cursor with
                     |[] -> NoAnnotation
                     |[ann] -> parseSAL ann
-                    |_ -> fail("Multiple annotations")
+                    |_ -> failwith "Multiple annotations"
                 let ctype = getCursorType cursor
                 registerTypeLocation ctype false
                 let (pname,ptype,pannot) =
@@ -276,7 +274,7 @@ let parse   (headerLocation: System.IO.FileInfo)
             TypedefRef td
         |None ->
             if (List.length !args <> nArgs) then
-                fail("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
+                failwith ("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
             let crety = getResultType(fType)
             registerTypeLocation crety false
             let rec getretyname (crety:Type) =
@@ -333,7 +331,7 @@ let parse   (headerLocation: System.IO.FileInfo)
                             None
                         |[se] ->
                             Some(se)
-                        |_ -> fail("unreachable")
+                        |_ -> failwith "unreachable"
                     )
         Union(List.ofSeq fields)
     and parseStruct (cursor:Cursor) (structName: string) : (CTypeDesc*bool)=
@@ -350,7 +348,7 @@ let parse   (headerLocation: System.IO.FileInfo)
             match ckind with
             |CursorKind.CxxBaseSpecifier ->
                 if !itIsAClass then
-                    fail "Multiple inheritance isn't supported"
+                    failwith "Multiple inheritance isn't supported"
                 itIsAClass := true // crude. TODO: something
                 let ctype = getCursorType cursor
                 let cxxbasevisitor (cur:Cursor) _ _ =
@@ -405,7 +403,7 @@ let parse   (headerLocation: System.IO.FileInfo)
                             match parseFunction cursor ctype with
                             |Function(CFuncDesc(parms, rty, cc)) ->
                                 Ptr(Function(CFuncDesc(("This", (Ptr(StructRef structName)), NoAnnotation)::parms, rty, cc)))
-                            |_ -> fail("Unreachable")
+                            |_ -> failwith "Unreachable"
                         fields := CStructElem(nm, ty, None) :: !fields
                     else 
                         ()
@@ -434,7 +432,7 @@ let parse   (headerLocation: System.IO.FileInfo)
   
     let parseMacro (cursor:Cursor) locInfo =
         match tokenizeFS cursor with
-        |[] -> fail("unreachable")
+        |[] -> failwith "unreachable"
         |mname :: tokens ->
             // rudimentary parsing of macro defined constants
             // expressions aren't supported
@@ -509,7 +507,7 @@ let parse   (headerLocation: System.IO.FileInfo)
                             structs := !structs |> Map.add (structName) (Struct([CStructElem("pVtbl", Ptr(StructRef vtblName), None)], ""), locInfo)
                         else
                             structs := !structs |> Map.add structName (strct, locInfo)
-                    |_ -> fail("unreachable")
+                    |_ -> failwith "unreachable"
 
             if cursorKind=CursorKind.FunctionDecl then
                 let funcName = cursor |> getCursorSpellingFS
