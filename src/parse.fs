@@ -123,6 +123,34 @@ let tryParse (s:System.String)=
 let keys m=
   m |> Map.toSeq |> Seq.map fst |> Set.ofSeq
 
+
+let rec getFieldsList (ccur: Cursor) =
+    let ct = getCanonicalType <| getCursorType ccur
+    if getSizeOfType ct = TypeLayoutError_Incomplete then
+        failwith "Cannot get method list on incomplete type"
+    let typedecl = getTypeDeclaration ct
+    let name = getTypeSpellingFS ct
+    let locinfo = getLocInfo typedecl
+    let fieldslist = ref []
+    let baselist = ref []
+    let visitor cursor _ _ =
+        let ckind = getCursorKind cursor
+        match ckind with
+        |CursorKind.CxxBaseSpecifier ->
+            if not <| List.isEmpty !baselist then
+                failwith "Multiple inheritance isn't supported"
+            baselist := getFieldsList cursor
+        |CursorKind.FieldDecl->
+            let mname = getCursorSpellingFS cursor
+            let mtype = getCanonicalType <| getCursorType cursor
+            let ty = typeDesc <| getCursorType cursor
+            let bw = if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor, getSizeOfType mtype) else None
+            fieldslist := CStructElem(mname, ty, bw) :: !fieldslist
+        |_ -> ()
+        ChildVisitResult.Continue
+    ignore <| visitChildrenFS typedecl visitor ()
+    List.concat [!baselist; List.rev !fieldslist]
+
 let rec getMethodList (ccur: Cursor) =
     let ct = getCanonicalType <| getCursorType ccur
     if getSizeOfType ct = TypeLayoutError_Incomplete then
@@ -296,23 +324,23 @@ let parse   (headerLocation: System.IO.FileInfo)
                 Function(CFuncDesc(List.rev !args, rety, cc))
 
     let rec parseUnion (cursor:Cursor)=
-        let tokens=tokenizeFS cursor
+        let tokens = tokenizeFS cursor
         //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
-        let fields=ref []
+        let fields = ref []
         let parseFieldDecl cursor _ _=
-            let ckind=getCursorKind cursor
-            if ckind=CursorKind.FieldDecl then
-                let ctype=getCursorType cursor
+            let ckind = getCursorKind cursor
+            if ckind = CursorKind.FieldDecl then
+                let ctype = getCursorType cursor
                 registerTypeLocation ctype false
-                let nm=getCursorDisplayNameFS cursor
-                let pointee=getPointeeType ctype
-                let ty=ctype |> typeDesc
-                let sz=ctype |> getSizeOfType
-                let bw=if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor, getSizeOfType ctype) else None
+                let nm = getCursorDisplayNameFS cursor
+                let pointee = getPointeeType ctype
+                let ty = ctype |> typeDesc
+                let sz = ctype |> getSizeOfType
+                let bw = if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor, getSizeOfType ctype) else None
                 fields := (CStructElem(nm, ty, bw), [TargetUnknown, sz]) :: !fields
-            else if ckind=CursorKind.StructDecl then
-                let ctype=getCursorType cursor
-                let sz=ctype |> getSizeOfType
+            else if ckind = CursorKind.StructDecl then
+                let ctype = getCursorType cursor
+                let sz = ctype |> getSizeOfType
                 fields := (CStructElem("", parseStruct cursor "" |> fst, None), [TargetUnknown, sz]) :: !fields
             ChildVisitResult.Continue
         visitChildrenFS cursor parseFieldDecl () |> ignore
@@ -335,13 +363,15 @@ let parse   (headerLocation: System.IO.FileInfo)
                     )
         Union(List.ofSeq fields)
     and parseStruct (cursor:Cursor) (structName: string) : (CTypeDesc*bool)=
-        let tokens=tokenizeFS cursor
+        let tokens = tokenizeFS cursor
         //printfn "%A %s %s" cursor.kind (cursor |> getCursorSpellingFS) (String.concat " " tokens)
-        let fields=ref []
+        let fields = ref []
         let bas = ref ""
         let itIsAClass = ref false
         let hasDataMembers = ref false
         let inheritedMethods = ref []
+        let inheritedFields = ref []
+        let baseType = ref None
         let parseFieldDecl cursor _ _=
             let ckind=getCursorKind cursor
             //printfn "    %s: %A %s" structName ckind (getCursorDisplayNameFS cursor)
@@ -354,12 +384,12 @@ let parse   (headerLocation: System.IO.FileInfo)
                 let cxxbasevisitor (cur:Cursor) _ _ =
                     if cur.kind = CursorKind.TypeRef then
                         inheritedMethods := getMethodList cur
+                        inheritedFields := getFieldsList cur
                         ChildVisitResult.Break
                     else
                         ChildVisitResult.Continue
                 visitChildrenFS cursor cxxbasevisitor () |> ignore
-                
-                registerTypeLocation ctype true
+                baseType := Some(ctype)
                 let basename = getCursorDisplayNameFS cursor
                 if basename.StartsWith("struct ") then
                     bas := basename.Substring(7)
@@ -368,10 +398,10 @@ let parse   (headerLocation: System.IO.FileInfo)
                     bas := basename
                     //fail("Base specifier is not struct: "+basename)
             |CursorKind.FieldDecl ->
-                let ctype=getCursorType cursor
-                let nm=getCursorDisplayNameFS cursor
-                let pointee=getPointeeType ctype
-                let nArgs=getNumArgTypes(pointee)
+                let ctype = getCursorType cursor
+                let nm = getCursorDisplayNameFS cursor
+                let pointee = getPointeeType ctype
+                let nArgs = getNumArgTypes(pointee)
                 let ty=
                     if nArgs<> -1 then
                         // function pointer
@@ -392,7 +422,7 @@ let parse   (headerLocation: System.IO.FileInfo)
                 if isPureVirtualFS cursor then
                     let ctype = getCursorType cursor
                     let canonicalType = getCanonicalType ctype
-                    // Sometimes Microsoft adds inherited pure virtual methods to derived class
+                    // Sometimes Microsoft adds inherited pure virtual methods to the derived class
                     // Let's get rid of them
                     let isInherited (mname, mtype) =
                         mname = nm && equalTypesFs mtype canonicalType
@@ -428,7 +458,15 @@ let parse   (headerLocation: System.IO.FileInfo)
             |_ -> ()
             ChildVisitResult.Continue
         visitChildrenFS cursor parseFieldDecl () |> ignore
-        (Struct(List.rev !fields, !bas), !itIsAClass && not <| !hasDataMembers)
+        if !bas <> "" && !hasDataMembers then
+            // struct, which inherits another struct
+            (Struct(List.concat [!inheritedFields; List.rev !fields], ""), false)
+        else
+            match !baseType with
+            |Some(ctype) ->
+                registerTypeLocation ctype (!itIsAClass && not !hasDataMembers)
+            |None -> ()
+            (Struct(List.rev !fields, !bas), !itIsAClass && not !hasDataMembers)
   
     let parseMacro (cursor:Cursor) locInfo =
         match tokenizeFS cursor with
@@ -436,7 +474,7 @@ let parse   (headerLocation: System.IO.FileInfo)
         |mname :: tokens ->
             // rudimentary parsing of macro defined constants
             // expressions aren't supported
-            let cv=
+            let cv =
                 match tokens with
                 |"(" :: value :: ")" :: _ :: [] // last token doesn't belong to macro. libclang bug?
                 |value :: _ :: [] ->
