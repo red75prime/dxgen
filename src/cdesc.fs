@@ -98,6 +98,9 @@ type Target =
     |TargetX86
     |TargetX64
 
+type Attribute =
+    |AttrUuid of string
+
 type CTypeDesc=
     |Primitive of CPrimitiveType
     |Unimplemented of string
@@ -108,7 +111,7 @@ type CTypeDesc=
     |Ptr of CTypeDesc
     |Const of CTypeDesc
     |Array of CTypeDesc*int64
-    |Struct of (CStructElem list)*string // elems + base (for c++)
+    |Struct of (CStructElem list)*string*(Attribute list) // elems + base (for c++)
     |ForwardDecl of string 
     |StructRef of string
     |Union of (CStructElem*((Target*int64) list)) list // snd is list of (target, elem size)
@@ -149,7 +152,7 @@ let rec subtypes ty =
     |Ptr sty -> ([sty], unwrap >> Ptr)
     |Const sty -> ([sty], unwrap >> Const)
     |Array(sty, num) -> ([sty], unwrap >> (fun ty -> Array(ty, num)))
-    |Struct (ses,bas) -> let (sts, fn) = subtypesStruct ses in (sts, fun sts -> Struct(fn sts, bas))
+    |Struct (ses,bas,attrs) -> let (sts, fn) = subtypesStruct ses in (sts, fun sts -> Struct(fn sts, bas, attrs))
     |StructRef _ -> ([], (fun _ -> ty))
     |Union ues -> let (sts, fn) = subtypesUnion ues in (sts, fun sts -> Union(fn sts))
     |UnionRef _ -> ([], (fun _ -> ty))
@@ -197,9 +200,9 @@ let getVtbl (structs:Map<string, CTypeDesc*CodeLocation>) ty=
     match ty with
     |Typedef(StructRef(sname)) |StructRef(sname) -> 
         match Map.find sname structs with
-        |Struct(ses, bas), _ -> isStructVtbl ses bas
+        |Struct(ses, bas, _), _ -> isStructVtbl ses bas
         |_ -> None
-    |Struct(ses, bas) ->
+    |Struct(ses, bas, _) ->
         isStructVtbl ses bas
     |_-> None
 

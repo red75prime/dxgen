@@ -35,14 +35,45 @@ let filename2module file =
                 failwithf "Wrong header file %s" file
         parts.[len-2]+"::"+file
 
-let getLocInfo (cursor: Cursor) = 
+let getSLInfo (sl: SourceLocation) = 
     let mutable curFile = File(0)
     let mutable curLine=0u
     let mutable curColumn=0u
     let mutable curOffset=0u
-    getExpansionLocation( cursor |> getCursorExtent |> getRangeStart, &curFile, &curLine, &curColumn, &curOffset)
+    getExpansionLocation( sl, &curFile, &curLine, &curColumn, &curOffset)
     let curFileName = getFileNameFS curFile
     (curFileName, curLine, curColumn, curOffset)
+
+
+let getLocInfo (cursor: Cursor) = 
+    cursor |> getCursorExtent |> getRangeStart |> getSLInfo
+
+let uuidRegexp = System.Text.RegularExpressions.Regex("\"([0-9a-fA-F]{8})-([0-9a-fA-F]{4})-([0-9a-fA-F]{4})-([0-9a-fA-F]{2})([0-9a-fA-F]{2})-([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})\"")
+
+let readFromSource (sr: SourceRange) =
+    let (fileName, _, _, startOffset) = getRangeStart sr |> getSLInfo
+    let (_, _, _, endOffset) = getRangeEnd sr |> getSLInfo
+    if System.String.IsNullOrEmpty fileName then
+        ""
+    else
+        let fs = new System.IO.FileStream(fileName, System.IO.FileMode.Open, System.IO.FileAccess.Read)
+        let pos = fs.Seek(int64(startOffset), System.IO.SeekOrigin.Begin) 
+        assert(pos = int64(startOffset))
+        let tr = new System.IO.StreamReader(fs, System.Text.Encoding.UTF8)
+        let len = int(endOffset - startOffset)
+        let buf = Array.init len (fun _ -> ' ')
+        let rlen = tr.Read(buf, 0, len)
+        assert(len = rlen)
+        System.String buf        
+
+let parseUuid (s: string) =
+    let m = uuidRegexp.Match(s)
+    if m.Success then
+        let gs = m.Groups |> Seq.cast<System.Text.RegularExpressions.Group> |> Seq.skip 1 
+                          |> Seq.map(fun g -> "0x" + g.Value.ToLowerInvariant())
+        Some("#[uuid("+System.String.Join(", ", gs)+")]")
+    else
+        None
 
 let tryParse (s:System.String)=
     let invcul=System.Globalization.CultureInfo.InvariantCulture
@@ -226,6 +257,13 @@ let parse   (headerLocation: System.IO.FileInfo)
     // storage for named union definitions 
     // TODO: implement parsing standalone unions
     let namedUnions = ref Map.empty
+    // Attributes of structs
+    let attribs = ref Map.empty
+
+    let registerAttribute name atts =
+        match Map.tryFind name !attribs with
+        |Some(atts') -> attribs := Map.add name (List.concat [atts'; atts]) !attribs
+        |None -> attribs := Map.add name atts !attribs
 
     let registerForwardDeclLocation typeName modName =
         typedefloc := Map.add typeName modName !typedefloc
@@ -454,19 +492,29 @@ let parse   (headerLocation: System.IO.FileInfo)
                 //let tokens = tokenizeFS cursor
                 //let what = getCursorSpellingFS cursor
                 //printfn "      Attribute: %s %A" what tokens
+                let sl = getCursorExtent cursor
+                let text = readFromSource sl
+                match (parseUuid text) with
+                |Some(uuid) -> registerAttribute structName [Attribute.AttrUuid uuid] 
+                |None -> ()
+            |_ -> 
                 ()
-            |_ -> ()
             ChildVisitResult.Continue
         visitChildrenFS cursor parseFieldDecl () |> ignore
         if !bas <> "" && !hasDataMembers then
             // struct, which inherits another struct
-            (Struct(List.concat [!inheritedFields; List.rev !fields], ""), false)
+            (Struct(List.concat [!inheritedFields; List.rev !fields], "", []), false)
         else
             match !baseType with
             |Some(ctype) ->
                 registerTypeLocation ctype (!itIsAClass && not !hasDataMembers)
             |None -> ()
-            (Struct(List.rev !fields, !bas), !itIsAClass && not !hasDataMembers)
+            let attrs = 
+                match Map.tryFind structName !attribs with
+                |Some(attrs) -> attrs
+                |None -> []
+
+            (Struct(List.rev !fields, !bas, attrs), !itIsAClass && not !hasDataMembers)
   
     let parseMacro (cursor:Cursor) locInfo =
         match tokenizeFS cursor with
@@ -536,13 +584,13 @@ let parse   (headerLocation: System.IO.FileInfo)
                     structs := !structs |> Map.add structName (ForwardDecl structName, locInfo)
                 else
                     match parseStruct cursor structName with
-                    |(Struct(ses, bas) as strct, itIsAClass) ->
+                    |(Struct(ses, bas, attrs) as strct, itIsAClass) ->
                         if itIsAClass then
                             // Transform class into struct and vtable
                             let vtblName = structName+"Vtbl"
 
                             structs := !structs |> Map.add vtblName (strct, locInfo)
-                            structs := !structs |> Map.add (structName) (Struct([CStructElem("pVtbl", Ptr(StructRef vtblName), None)], ""), locInfo)
+                            structs := !structs |> Map.add (structName) (Struct([CStructElem("pVtbl", Ptr(StructRef vtblName), None)], "", attrs), locInfo)
                         else
                             structs := !structs |> Map.add structName (strct, locInfo)
                     |_ -> failwith "unreachable"

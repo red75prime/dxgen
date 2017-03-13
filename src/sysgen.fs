@@ -48,7 +48,7 @@ let convertToRust (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTy
       |None ->
         // Struct
         match ty with
-        |Struct (ses,bas) -> makeStruct name ses
+        |Struct (ses, bas, _) -> makeStruct name ses
         |_ -> failwith ("Unexpected type")
     structs |> List.ofSeq |>
       List.collect makeStructOrInterface
@@ -109,12 +109,12 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
         |> List.exists 
           (function 
             |CStructElem(_,Array(_,n),_) when n>32L -> true 
-            |CStructElem(_,Struct(ses,bas),_) -> isStructUncopyableByItself ses
+            |CStructElem(_,Struct(ses,bas, _),_) -> isStructUncopyableByItself ses
             |CStructElem(_,Union(ues),_) -> ues |> List.map fst |> isStructUncopyableByItself
             |_ -> false)
     let rec isStructUncopyable s=
       match s with
-      |Struct(ses, bas) ->
+      |Struct(ses, bas, _) ->
         (isStructUncopyableByItself ses) || 
           ses |> List.exists (
             function 
@@ -122,10 +122,10 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                 match Map.find sname structs with 
                 |(Struct(_) as s,_) -> isStructUncopyable s
                 |_ -> false
-              |CStructElem(_,(Struct(ses,bas) as sub),_) -> 
+              |CStructElem(_,(Struct(ses,bas,_) as sub),_) -> 
                 isStructUncopyable sub
               |CStructElem(_,(Union(ues) as sub),_) -> 
-                ues |> List.map fst |> fun ses -> Struct (ses, "") |> isStructUncopyable
+                ues |> List.map fst |> fun ses -> Struct (ses, "", []) |> isStructUncopyable
               |_ -> false)
       |_ -> false
     structs |> Map.toSeq |> Seq.filter (snd >> fst >> isStructUncopyable) |> Seq.map fst |> Set.ofSeq
@@ -273,10 +273,10 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
   let createStructs()=
     let filter (KeyValue(name, (ty, loc))) = 
         match ty with
-        |Struct(sfields,bas) -> Some(name,bas,sfields,loc)
-        |Union(ufields) -> Some(name, "", [CStructElem("u", ty, None)], loc)
+        |Struct(sfields, bas, attrs) -> Some(name, bas, sfields, attrs, loc)
+        |Union(ufields) -> Some(name, "", [CStructElem("u", ty, None)], [], loc)
         |_ -> None
-    for (name,bas,sfields,(fname,_,_,_)) in structs |> Seq.choose filter do
+    for (name, bas, sfields, attrs, (fname,_,_,_)) in structs |> Seq.choose filter do
       let f=rsfilename fname
       let apl=apl f
       if Set.contains name libcTypeNames || Map.tryFind (name+"Vtbl") structs |> Option.isSome then
@@ -299,7 +299,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
               let (stys, _) = subtypes ty
               List.iter nextfn stys
             firstLevel ty
-          checkPrecond (Struct(sfields,""))
+          checkPrecond (Struct(sfields, "", []))
           // let's create proxies for unnamed structs in unions
           let unions=ref []
           let sfields' =
@@ -314,7 +314,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                       ues |> List.map
                        (fun ((CStructElem(sname, stype, bw), sz) as ue) ->
                           match stype with
-                          |Struct(ses,bas) ->
+                          |Struct(ses, bas, _) ->
                             // anonymous struct in union. create proxy.
                             let proxyname=name+"_"+sname;
                             outputStructDef apl proxyname ses uncopyable
@@ -392,9 +392,15 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
         else // ------------------------------- COM-Interface ---------------------------
           let basename = 
                 match Map.tryFind name structs with
-                |Some(Struct(_, basename),_) -> basename
+                |Some(Struct(_, basename, _),_) -> basename
                 |_ -> ""
-          apl "RIDL!("
+          
+          let uuid =
+            match List.tryFind (function |Attribute.AttrUuid _ -> true |_ -> false) attrs with
+            |Some(Attribute.AttrUuid uuid) -> uuid
+            |_ -> ""
+            
+          apl <| "RIDL!("+uuid
           if basename="" then
             apl <| sprintf "interface %s(%s) {" (name.Substring(0,name.Length-4)) name
           else

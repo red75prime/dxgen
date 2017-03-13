@@ -462,6 +462,9 @@ extern SourceRange getCursorExtent(Cursor cursor)
 [<DllImport("libclang", EntryPoint = "clang_getRangeStart", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern SourceLocation getRangeStart(SourceRange range)
 
+[<DllImport("libclang", EntryPoint = "clang_getRangeEnd", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
+extern SourceLocation getRangeEnd(SourceRange range)
+
 [<DllImport("libclang", EntryPoint = "clang_getExpansionLocation", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)>]
 extern void getExpansionLocation(SourceLocation source, File& file, uint32& line, uint32& column, uint32& offset)
 
@@ -564,7 +567,10 @@ let tokenizeFS cursor=
 
   tokenize(translationUnit, range, &tokens, &tokenCount)
   try
-      [0.. int(tokenCount)-1] |> List.map (fun idx -> getTokenSpelling(translationUnit, Microsoft.FSharp.NativeInterop.NativePtr.get tokens idx) |> toString)
+      [0.. int(tokenCount)-1] |> 
+        List.map (fun idx -> 
+            let tokenSpelling = getTokenSpelling(translationUnit, Microsoft.FSharp.NativeInterop.NativePtr.get tokens idx) |> toString
+            tokenSpelling )
   finally
       disposeTokens(translationUnit, tokens, tokenCount)
 
