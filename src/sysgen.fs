@@ -18,7 +18,12 @@ let makeStruct name ses=
 let makeInterface annotations name ses=
   [] //RustItem(name, REInterface ,RAPublic, [reprC])
 
-let convertToRust (types:Map<string,CTypeDesc*CodeLocation>,enums:Map<string,CTypeDesc*CodeLocation>,structs:Map<string,CTypeDesc*CodeLocation>,funcs:Map<string,CTypeDesc*CodeLocation>, iids:Set<string>, annotations)=
+let convertToRust (types:Map<string,CTypeDesc*CodeLocation>,
+                   enums:Map<string,CTypeDesc*CodeLocation>,
+                   structs:Map<string,CTypeDesc*CodeLocation>,
+                   funcs:Map<string,CTypeDesc*CodeLocation>,
+                   iids:Set<string>,
+                   annotations)=
   let rtypes=
     types |> List.ofSeq |> 
       List.map (
@@ -103,7 +108,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
     match Map.tryFind headername defines_annotations.defines with
     |Some(defs) -> defs
     |None -> Map.empty
-  let uncopyableStructs=
+  let uncopyableStructs =
     let rec isStructUncopyableByItself (ses : CStructElem list)=
       ses 
         |> List.exists 
@@ -119,6 +124,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           ses |> List.exists (
             function 
               |CStructElem(_,StructRef sname,_) -> 
+                let sname = sname
                 match Map.find sname structs with 
                 |(Struct(_) as s,_) -> isStructUncopyable s
                 |_ -> false
@@ -133,15 +139,25 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
   let rsfilename s=
     (System.IO.Path.GetFileNameWithoutExtension s)+".rs"
 
-  let file2sb=ref Map.empty
+  let file2sb: Map<string, System.Collections.Generic.SortedDictionary<uint32, System.Text.StringBuilder>> ref = ref Map.empty
 
-  let apl (f:System.String) s=
-    let sb=
-      match Map.tryFind f !file2sb with
-      |Some(sb:System.Text.StringBuilder) -> 
+  let getSbForLine (sd:System.Collections.Generic.SortedDictionary<uint32, System.Text.StringBuilder>) line =
+    let sb = ref null
+    if sd.TryGetValue(line, sb) then
+        !sb
+    else
+        let sb = new System.Text.StringBuilder()
+        sd.Add(line, sb)
         sb
+    
+  let apl (f:System.String) (line:uint32) s=
+    let sb =
+      match Map.tryFind f !file2sb with
+      |Some(sd) -> 
+        getSbForLine sd line
       |None ->
-        let sb=new System.Text.StringBuilder()
+        let sd = new System.Collections.Generic.SortedDictionary<uint32, System.Text.StringBuilder>()
+        file2sb := Map.add f sd !file2sb
         let text=sprintf "\
 // Copyright © 2017 Dmitri Roschin
 // Licensed under the Apache License, Version 2.0
@@ -150,16 +166,17 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
 // All files in the project carrying such notice may not be copied, modified, or distributed
 // except according to those terms.
 //! Mappings for the content of %s.h" (f.Substring(0,f.Length-3))
-        sb.AppendLine(text) |> ignore
-        sb.AppendLine() |> ignore
-        file2sb := Map.add f sb !file2sb
-        sb
+        let sb = new System.Text.StringBuilder(text)
+        sb.AppendLine("") |> ignore
+        sb.AppendLine("") |> ignore
+        sd.Add(0u, sb)
+        getSbForLine sd line
     sb.AppendLine(s) |> ignore
 
   let createEnums()=
-    for (name,uty,vals,(fname,_,_,_)) in enums |> Seq.choose (function |KeyValue(name,(Enum(uty, vals),loc)) -> Some(name,uty,vals,loc) |_ -> None) do
+    for (name,uty,vals,(fname,linenum,_,_)) in enums |> Seq.choose (function |KeyValue(name,(Enum(uty, vals),loc)) -> Some(name,uty,vals,loc) |_ -> None) do
       let f=rsfilename fname
-      let apl=apl f
+      let apl=apl f linenum
       let convhex=fun (v:uint64) -> "0x" + v.ToString("X")
       let convdec=fun (v:uint64) -> v.ToString()
       apl ("ENUM!{ enum "+name+" {")
@@ -273,12 +290,16 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
   let createStructs()=
     let filter (KeyValue(name, (ty, loc))) = 
         match ty with
+        |Struct([], "", _) -> 
+            utils.coloredText System.ConsoleColor.Red (fun () -> 
+                printfn "  Warning! Skipping empty struct %s" name)
+            None
         |Struct(sfields, bas, attrs) -> Some(name, bas, sfields, attrs, loc)
         |Union(ufields) -> Some(name, "", [CStructElem("u", ty, None)], [], loc)
         |_ -> None
-    for (name, bas, sfields, attrs, (fname,_,_,_)) in structs |> Seq.choose filter do
+    for (name, bas, sfields, attrs, (fname, linenum,_,_)) in structs |> Seq.choose filter do
       let f=rsfilename fname
-      let apl=apl f
+      let apl=apl f linenum
       if Set.contains name libcTypeNames || Map.tryFind (name+"Vtbl") structs |> Option.isSome then
         ()
       else
@@ -302,10 +323,16 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           checkPrecond (Struct(sfields, "", []))
           // let's create proxies for unnamed structs in unions
           let unions=ref []
+          let uunum = ref 1
           let sfields' =
             sfields |> List.map
               (fun (CStructElem(fname, fty, bw)) ->
-                let fname' = if fname="" then "u" else fname
+                let fname' = 
+                    if fname="" then 
+                        let fname = "u" + (!uunum).ToString()
+                        uunum := !uunum + 1
+                        fname
+                    else fname
                 let fty' =
                   match fty with
                   |Union(ues) ->
@@ -383,7 +410,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           match !unions with
           |[] -> ()
           |_ ->
-            for (name, fname, sname, sname_mut, ty) in !unions do
+            for (name, fname, sname, sname_mut, ty) in List.rev !unions do
               let items=["UNION!("+name+","; fname+","; sname+","; sname_mut+","; ty+");"]
               let lines=wrapOn items "    " eolAfter maxLineLen
               for line in lines do
@@ -398,9 +425,12 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           let uuid =
             match List.tryFind (function |Attribute.AttrUuid _ -> true |_ -> false) attrs with
             |Some(Attribute.AttrUuid uuid) -> uuid
-            |_ -> ""
+            |_ -> 
+                utils.coloredText System.ConsoleColor.Red (fun () ->
+                    printfn "  Warning! %s has no uuid." name)
+                "#[uuid(0x00000000, 0x0000, 0x0000, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)]"
             
-          apl <| "RIDL!("+uuid
+          apl <| "RIDL!{"+uuid
           if basename="" then
             apl <| sprintf "interface %s(%s) {" (name.Substring(0,name.Length-4)) name
           else
@@ -421,10 +451,10 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
             |[] -> failwith "unreachable"
             |(fname,parms,rty)::next ->
                 let p1 = "    fn "+fname+"("
-                let pend = ") -> "+(if rty=Primitive Void then "()" else tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
+                let pend = ") -> "+(tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
                 let parts = 
                   seq {
-                      yield "&self"
+                      //yield "&self"
                       yield! parms |> Seq.tail |> Seq.map (fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty))
                   } |> utils.seqPairwise |> Seq.map (function |[p;_] -> (p+",") |[p] -> p |_ -> "")
                 let v1=p1+System.String.Join(" ",parts)+pend
@@ -459,7 +489,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                 else
                   apl v1
 
-          apl "});"
+          apl "}}"
           apl ""
 //RIDL!( 
 //294 interface IDXGIFactory1(IDXGIFactory1Vtbl): IDXGIFactory(IDXGIFactoryVtbl) { 
@@ -470,9 +500,9 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
 
             
   let createTypes()=
-    for KeyValue(name,(ty,(fname,_,_,_))) in types do
+    for KeyValue(name,(ty,(fname, linenum,_,_))) in types do
       let f=rsfilename fname
-      let apl=apl f
+      let apl=apl f linenum
       match ty with
       |Typedef(EnumRef(ename)) when ename=name -> ()
       |Typedef(StructRef(sname)) when sname=name -> ()
@@ -481,7 +511,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
 
   let processDefines()=
     seq {
-        for KeyValue(name,(mc,orgs,(fname,_,_,_))) in defines do
+        for KeyValue(name,(mc,orgs,(fname, linenum,_,_))) in defines do
           let f=rsfilename fname
           let defOption = 
             match Map.tryFind name def_annots with
@@ -498,11 +528,11 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                 failwithf "Macro expression %s cannot be annotated with UseType" name
             |_ ->
                 if (t = "FLOAT" || t = "DOUBLE") && (not <| orgs.Contains(".")) then
-                    yield (f, sprintf "pub const %s: %s = %s.;" name t orgs, t)
+                    yield (f, sprintf "pub const %s: %s = %s.;" name t orgs, t, linenum)
                 else 
-                    yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t)
+                    yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t, linenum)
           |Some(UseCustom(t, item)) ->
-            yield (f, item, t)
+            yield (f, item, t, linenum)
           |None ->
             let t = 
               match mc with
@@ -514,12 +544,12 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
               |MCDouble(_) -> "DOUBLE" 
               |MCExpression(_) -> "" // skip unannotated macro expressions
             if t <> "" then
-                yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t)
+                yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t, linenum)
     }
         
   let createDefines()=
-    for (f, text, _) in processDefines() do
-      let apl=apl f
+    for (f, text, _, linenum) in processDefines() do
+      let apl=apl f linenum
       apl <| text
 
   let createFunctions()=
@@ -530,7 +560,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
             Some(name,args,rty,cc,loc)
           |_ -> None)
       |> Seq.map
-        (fun (name,args,rty,cc,(fname,_,_,_)) ->
+        (fun (name,args,rty,cc,(fname, linenum,_,_)) ->
           let rcc=ccToRustNoQuotes cc
           let sb = new System.Text.StringBuilder()
           let lib = System.IO.Path.GetFileNameWithoutExtension(fname)
@@ -541,29 +571,29 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           sb.AppendLine(parms) |> ignore
           sb.Append(sprintf ") -> %s}" (tyToRust rty)) |> ignore
           let f = (rsfilename fname)
-          (f, rcc, sb.ToString()))
-      |> Seq.groupBy (fun (a,b,c) -> a)
+          (f, rcc, sb.ToString(), linenum))
+      |> Seq.groupBy (fun (a,b,c,d) -> a)
       |> Seq.iter
-        (fun (f,txts) ->
-          let apl=apl f
-          txts 
-            |> Seq.groupBy (fun (a,b,c) -> b)
-            |> Seq.iter 
-              (fun (rcc, lines) ->
-                lines |> Seq.iter (fun (_,_,t) -> apl t)
-                ))
+            (fun (f,txts) ->
+              let apl=apl f
+              txts 
+                |> Seq.groupBy (fun (a,b,c,d) -> b)
+                |> Seq.iter 
+                  (fun (rcc, lines) ->
+                    lines |> Seq.iter (fun (_,_,t, linenum) -> apl linenum t)
+                    ))
     
   let createIIDs()=
     iids 
         |> Map.toSeq 
-        |> Seq.map (fun (iidname, ((fname,_,_,_), iid)) -> (fname, iidname, iid))
-        |> Seq.groupBy (fun (fname, iidname, iid) -> fname) 
+        |> Seq.map (fun (iidname, ((fname, linenum,_,_), iid)) -> (fname, iidname, iid, linenum))
+        |> Seq.groupBy (fun (fname, iidname, iid, linenum) -> fname) 
         |> Seq.iter 
             (fun (fname, iids) ->
                 let f = rsfilename fname
                 let apl = apl f
-                for (_, iidname, iid) in iids do
-                    apl <| sprintf "DEFINE_GUID!{%s, %s}" iidname (System.String.Join(", ", iid |> iid2array |> Array.toSeq))
+                for (_, iidname, iid, linenum) in iids do
+                    apl linenum <| sprintf "DEFINE_GUID!{%s, %s}" iidname (System.String.Join(", ", iid |> iid2array |> Array.toSeq))
                 )
 
   let registerAdditionalTypes typedefs =
@@ -578,13 +608,13 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
         |Some(_) -> typedefs
         |None ->
             Map.add ty (Map.find ty knowntypelocations) typedefs
-    let typedefs = if Map.isEmpty iids then typedefs else addType typedefs "GUID"
-    let typedefs = Seq.fold (fun tds (_,_,ty) -> addType tds ty) typedefs (processDefines())
+    //let typedefs = if Map.isEmpty iids then typedefs else addType typedefs "GUID"
+    let typedefs = Seq.fold (fun tds (_,_,ty,_) -> addType tds ty) typedefs (processDefines())
     typedefs
     
 
   let createImports() =
-    let apl = apl (headername+".rs")
+    let apl = apl (headername+".rs") 1u
     let typedefs = registerAdditionalTypes typedefs
     let namedefs =
         typedefs
@@ -601,6 +631,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
         |> utils.seqToLines 80 " " "    "
         |> fun sq -> System.String.Join(System.Environment.NewLine, sq)
         |> apl
+    apl ""
   // ----------------------- codeGen ------------------------------------------------
   createImports()
   createEnums()
@@ -609,5 +640,5 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
   createDefines()
   createFunctions()
   createIIDs()
-  !file2sb |> Map.map (fun  k v -> v.ToString())
+  !file2sb |> Map.map (fun  k v -> System.String.Join("", v.Values))
   

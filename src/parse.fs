@@ -277,11 +277,15 @@ let parse   (headerLocation: System.IO.FileInfo)
             |t -> t
         match tdesc with
         |Unimplemented _ ->
-            printfn "Warning: cannot register %A" tdesc
+            utils.coloredText System.ConsoleColor.Red (fun () -> 
+                printfn "Warning: cannot register %A" tdesc)
         |Ptr(_) -> 
             registerTypeLocation (getPointeeType ctype) isComInterface
         |Array(_,_) -> 
             registerTypeLocation (getArrayElementType ctype) isComInterface
+        |Primitive CPrimitiveType.Char8 
+        |Primitive CPrimitiveType.Int32 ->
+            ()
         |_ ->
             let tstr =
                 match tdesc with
@@ -290,15 +294,12 @@ let parse   (headerLocation: System.IO.FileInfo)
                 |EnumRef n -> n
                 |Primitive _ -> tyToRust tdesc
                 |_ -> failwith "Unexpected type"
-            match Map.tryFind tstr !typedefloc with
-            |Some(_) -> ()
-            |None ->
-                let decl = getTypeDeclaration ctype
-                let (file,_,_,_) = getLocInfo decl
-                let modname = filename2module file
-                typedefloc := Map.add tstr modname !typedefloc
-                if isComInterface then
-                    typedefloc := Map.add (tstr+"Vtbl") modname !typedefloc
+            let decl = getTypeDeclaration ctype
+            let (file,_,_,_) = getLocInfo decl
+            let modname = filename2module file
+            typedefloc := Map.add tstr modname !typedefloc
+            if isComInterface then
+                typedefloc := Map.add (tstr+"Vtbl") modname !typedefloc
 
 
     let parseEnumConsts (cursor:Cursor)=
@@ -314,6 +315,7 @@ let parse   (headerLocation: System.IO.FileInfo)
         let nArgs=getNumArgTypes(fType)
         let cc=getFunctionTypeCallingConv(fType)
         let rety=getResultType(fType) |> typeDesc
+        registerTypeLocation (getResultType fType) false
         let typedef = ref None
         let args=ref []
         let argsVisitor (cursor:Cursor) _ _=
@@ -377,9 +379,22 @@ let parse   (headerLocation: System.IO.FileInfo)
                 let bw = if isBitFieldFS cursor then Some(getFieldDeclBitWidth cursor, getSizeOfType ctype) else None
                 fields := (CStructElem(nm, ty, bw), [TargetUnknown, sz]) :: !fields
             else if ckind = CursorKind.StructDecl then
+                let nm = getCursorDisplayNameFS cursor
                 let ctype = getCursorType cursor
                 let sz = ctype |> getSizeOfType
-                fields := (CStructElem("", parseStruct cursor "" |> fst, None), [TargetUnknown, sz]) :: !fields
+                if System.String.IsNullOrEmpty nm then
+                    // unnamed struct inside union
+                    fields := (CStructElem("", parseStruct cursor "" |> fst, None), [TargetUnknown, sz]) :: !fields
+                else
+                    // named struct defined inside union
+                    let (s, isAClass) = parseStruct cursor nm
+                    assert(isAClass = false)
+                    structs := Map.add nm (s, getLocInfo cursor) !structs
+            else
+                utils.coloredText System.ConsoleColor.Red (fun () ->
+                    printfn "  Warning! Unexpected cursor kind '%A' in union" ckind)
+                printfn "  Location: %A" (getLocInfo cursor)
+                printfn "  Text: %s" (readFromSource <| getCursorExtent cursor)
             ChildVisitResult.Continue
         visitChildrenFS cursor parseFieldDecl () |> ignore
         let fields = 
@@ -539,7 +554,7 @@ let parse   (headerLocation: System.IO.FileInfo)
                 ()
     
       // main parser callback
-    let rec childVisitor cursor _ _ =
+    let rec childVisitor cursor parentCursor _ =
         let (curFileName,_,_,_) as locInfo = getLocInfo cursor
 
         if curFileName.EndsWith(headerLocation.Name) then
@@ -595,12 +610,36 @@ let parse   (headerLocation: System.IO.FileInfo)
                             structs := !structs |> Map.add structName (strct, locInfo)
                     |_ -> failwith "unreachable"
 
+            if cursorKind = CursorKind.UnionDecl then
+                let unionName = cursor |> getCursorDisplayNameFS
+                let typesz = cursor |> getCursorType |> getSizeOfType
+                if typesz = TypeLayoutError_Incomplete then
+                    structs := !structs |> Map.add unionName (ForwardDecl unionName, locInfo)
+                else
+                    match parseUnion cursor with
+                    |Union(ses) ->
+                        structs := !structs |> Map.add unionName (Struct([CStructElem("", Union(ses), None)], "", []), locInfo)
+                    |_ -> failwith "unreachable"
+
+
             if cursorKind=CursorKind.FunctionDecl then
                 let funcName = cursor |> getCursorSpellingFS
                 if funcName.StartsWith("operator") then
                     ()
                 else
-                    funcs := !funcs |> Map.add funcName (parseFunction cursor (getCursorType cursor), locInfo)
+                    match getCursorKind parentCursor with
+                    |CursorKind.TranslationUnit ->
+                        // function is not defined inside 'extern "C"' block. Skip it
+                        utils.coloredText System.ConsoleColor.Red (fun () -> 
+                            printfn "  Warning! Skipping non-extern-c function %s" funcName)
+                        ()
+                    |CursorKind.UnexposedDecl ->
+                        let text = readFromSource <| getCursorExtent parentCursor
+                        let func = parseFunction cursor (getCursorType cursor)
+                        funcs := !funcs |> Map.add funcName (func, locInfo)
+                    |ck ->
+                        utils.coloredText System.ConsoleColor.Red (fun () -> 
+                            printfn "  Warning! Unexpected parent cursor kind %A for function %s" ck funcName)
 
             if cursorKind = CursorKind.MacroInstantiation then
                 let tokens = tokenizeFS cursor

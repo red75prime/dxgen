@@ -341,9 +341,9 @@ let rec tyToRust (ty:CTypeDesc)=
     |Ptr(Const(uty)) -> "*const "+(tyToRust uty)
     |Ptr(Function(CFuncDesc(args,rty,cc))) ->
         let eol = System.Environment.NewLine
-        "FNTYPE!{" + (ccToRustNoQuotes cc) + " (" + eol + "    " + 
+        "Option<unsafe extern \"system\" fn(" + eol + "    " + 
             ((List.map funcArgToRust args) |> String.concat(","+eol+"    ")) + eol + 
-            "    ) -> " + (if rty = Primitive Void then "c_void" else tyToRust rty) + "}"
+            "    ) -> " + (if rty = Primitive Void then "c_void" else tyToRust rty) + ">"
     |Ptr uty -> "*mut " + (tyToRust uty)
     |Const(uty) -> tyToRust uty
     |ForwardDecl uty -> uty

@@ -32,3 +32,11 @@ let seqToLines maxLineLen (delim: string) (indent:string) sq =
                 curLine := line
         yield !curLine
     }
+
+let coloredText texCol f =
+    let oldColor = System.Console.ForegroundColor
+    try
+        System.Console.ForegroundColor <- texCol
+        f()
+    finally
+        System.Console.ForegroundColor <- oldColor
