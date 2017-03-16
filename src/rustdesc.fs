@@ -158,6 +158,7 @@ let rec tyToRty (ty:CTypeDesc)=
     |Char8 -> RType "u8"
     |Char16 -> RType "u16"
     |Char32 -> RType "u32"
+    |WChar -> RType "wchar_t"
   |Unimplemented v-> RType ("Unimplemented("+v+")")
   |Typedef uty -> tyToRty uty
   |TypedefRef tyn-> RType tyn

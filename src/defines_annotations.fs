@@ -34,7 +34,7 @@ let defines: Map<string, Map<string, DefineAnnotation>> =
     ("d3d12sdklayers", [] |> Map.ofList );
     ("d3dcommon", [] |> Map.ofList );
     ("dxgi", [] |> Map.ofList );
-    ("dxgiformat", [] |> Map.ofList );
+    ("dxgiformat", [("DXGI_FORMAT_DEFINED", DefineAnnotation.Exclude)] |> Map.ofList );
     ("dxgitype", [] |> Map.ofList );
     ("dxgi1_2", [] |> Map.ofList );
     ("dxgi1_3", [] |> Map.ofList );

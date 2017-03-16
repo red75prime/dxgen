@@ -24,6 +24,13 @@ with
 open annotations
 open annotations_autogen
 open by_module
+
+let textAfterLast (delim:string) (text:string) =
+    let lpos = text.LastIndexOf(delim) 
+    if lpos = -1 then
+        text
+    else
+        text.Substring(lpos + delim.Length)
         
 [<EntryPoint>]
 let main argv = 
@@ -37,6 +44,8 @@ let main argv =
 
         let allInterfaces = ref Map.empty
         let modules = ref []
+
+        use buildrs = new System.IO.StreamWriter("./build.rs")
 
         for codeModule in config.Modules do
             printfn "Processing module %s:" codeModule.Name
@@ -82,7 +91,13 @@ let main argv =
                 swa.Write(atext)
 
                 if not (codeModule.NoWinapiGen) then
-                    let wapi = sysgen.winapiGen headerName (headerInfo.ForwardDeclarations) types
+                    let (wapi, typedefs) = sysgen.winapiGen headerName (headerInfo.ForwardDeclarations) types
+                    // write dependencies
+                    let deps = typedefs |> Map.toSeq |> Seq.map snd |> Seq.distinct
+                                |> Seq.map (fun s -> "\"" + (textAfterLast "::" s) + "\"")
+                    buildrs.WriteLine(sprintf "    (\"%s\", &[%s], &[])," headerName (System.String.Join(", ", deps)))
+                    buildrs.Flush()
+                    // write winapi modules
                     System.IO.Directory.CreateDirectory(@".\winapi") |> ignore //TODO: use Path
                     for KeyValue(f,t) in wapi do
                         use sw=new System.IO.StreamWriter(@".\winapi\"+f)

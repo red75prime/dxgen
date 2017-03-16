@@ -22,6 +22,7 @@ type CPrimitiveType=
     |Char8
     |Char16
     |Char32
+    |WChar
 
 let ccToRustNoQuotes (cc:CallingConv)=
     match cc with
@@ -304,6 +305,8 @@ let rec typeDesc (ty0: Type)=
         Ptr(getPointeeType ty |> typeDesc)
     |TypeKind.Elaborated ->
         failwith "unreachable"
+    |TypeKind.WChar ->
+        Primitive CPrimitiveType.WChar
     |_ -> Unimplemented(getTypeSpellingFS ty)
 
 let rec tyToRust (ty:CTypeDesc)=
@@ -328,6 +331,7 @@ let rec tyToRust (ty:CTypeDesc)=
         |Char8 -> "u8"
         |Char16 -> "u16"
         |Char32 -> "u32"
+        |WChar -> "wchar_t"
     |Unimplemented v-> "Unimplemented("+v+")"
     |Typedef uty -> tyToRust uty
     |TypedefRef tyn-> 
@@ -335,7 +339,7 @@ let rec tyToRust (ty:CTypeDesc)=
         |_ -> tyn
     |StructRef tyn -> tyn
     |EnumRef tyn -> tyn
-    |Array(uty,size) -> "["+(tyToRust uty)+";"+size.ToString()+"]"
+    |Array(uty,size) -> "["+(tyToRust uty)+"; "+size.ToString()+"]"
     |Ptr(Array(Const(uty),size)) -> "*const ["+(tyToRust uty)+"; "+size.ToString()+"]"
     |Ptr(Array(uty,size)) -> "*mut ["+(tyToRust uty)+"; "+size.ToString()+"]"
     |Ptr(Const(uty)) -> "*const "+(tyToRust uty)

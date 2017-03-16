@@ -108,33 +108,6 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
     match Map.tryFind headername defines_annotations.defines with
     |Some(defs) -> defs
     |None -> Map.empty
-  let uncopyableStructs =
-    let rec isStructUncopyableByItself (ses : CStructElem list)=
-      ses 
-        |> List.exists 
-          (function 
-            |CStructElem(_,Array(_,n),_) when n>32L -> true 
-            |CStructElem(_,Struct(ses,bas, _),_) -> isStructUncopyableByItself ses
-            |CStructElem(_,Union(ues),_) -> ues |> List.map fst |> isStructUncopyableByItself
-            |_ -> false)
-    let rec isStructUncopyable s=
-      match s with
-      |Struct(ses, bas, _) ->
-        (isStructUncopyableByItself ses) || 
-          ses |> List.exists (
-            function 
-              |CStructElem(_,StructRef sname,_) -> 
-                let sname = sname
-                match Map.find sname structs with 
-                |(Struct(_) as s,_) -> isStructUncopyable s
-                |_ -> false
-              |CStructElem(_,(Struct(ses,bas,_) as sub),_) -> 
-                isStructUncopyable sub
-              |CStructElem(_,(Union(ues) as sub),_) -> 
-                ues |> List.map fst |> fun ses -> Struct (ses, "", []) |> isStructUncopyable
-              |_ -> false)
-      |_ -> false
-    structs |> Map.toSeq |> Seq.filter (snd >> fst >> isStructUncopyable) |> Seq.map fst |> Set.ofSeq
 
   let rsfilename s=
     (System.IO.Path.GetFileNameWithoutExtension s)+".rs"
@@ -150,6 +123,104 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
         sd.Add(line, sb)
         sb
     
+  let processDefines()=
+    seq {
+        for KeyValue(name,(mc,orgs,(fname, linenum,_,_))) in defines do
+          let f=rsfilename fname
+          let defOption = 
+            match Map.tryFind name def_annots with
+            |Some(_) as opt -> opt
+            |None -> 
+                match Map.tryFind name annotations.disableRPCDefines with
+                |Some(_) as opt -> opt
+                |None -> None
+          match defOption with
+          |Some(Exclude) -> ()
+          |Some(UseType(t)) ->
+            match mc with
+            |MCExpression(_) ->
+                failwithf "Macro expression %s cannot be annotated with UseType" name
+            |_ ->
+                if (t = "FLOAT" || t = "DOUBLE") && (not <| orgs.Contains(".")) then
+                    yield (f, sprintf "pub const %s: %s = %s.;" name t orgs, t, linenum)
+                else 
+                    yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t, linenum)
+          |Some(UseCustom(t, item)) ->
+            yield (f, item, t, linenum)
+          |None ->
+            let t = 
+              match mc with
+              |MCUInt64(_) -> Choice1Of2 "UINT64"
+              |MCInt64(_) -> Choice1Of2("INT64")
+              |MCUInt32(_) -> Choice1Of2("UINT")
+              |MCInt32(_) -> Choice1Of2("INT")
+              |MCFloat(_) -> Choice1Of2("FLOAT")
+              |MCDouble(_) -> Choice1Of2("DOUBLE")
+              |MCExpression(tokens) -> Choice2Of2(tokens)
+            match t with
+            |Choice1Of2(t) -> yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t, linenum)
+            |Choice2Of2(tokens) ->
+                match tokens with
+                |"(" :: _ ->
+                    let lines = 
+                        (name :: tokens) |> utils.seqToLines 80 " " ""
+                            |> Seq.map (fun line -> "// " + line)
+                    // Add todo for unannotated macro
+                    let todo = "// TODO: Implement macro\r\n"+System.String.Join("\r\n", lines)+"\r\n"
+                    yield(f, todo, "", linenum)
+                |_ -> ()
+                
+                
+    }
+        
+  let registerAdditionalTypes typedefs =
+    // It's not robust, but I can't find how to get type definition location by type name from libclang
+    let knowntypelocations = 
+        (Map.ofList [("UINT", "shared::minwindef"); ("INT", "shared::minwindef");
+                     ("FLOAT", "shared::minwindef"); ("DOUBLE", "shared::ntdef");
+                     ("UINT64", "shared::basetsd"); ("INT64", "shared::basetsd");
+                     ("GUID", "shared::guiddef") ])
+    let addType typedefs ty =
+        if ty = "" then
+            typedefs
+        else
+            match Map.tryFind ty typedefs with
+            |Some(_) -> typedefs
+            |None ->
+                Map.add ty (Map.find ty knowntypelocations) typedefs
+    //let typedefs = if Map.isEmpty iids then typedefs else addType typedefs "GUID"
+    let typedefs = Seq.fold (fun tds (_,_,ty,_) -> addType tds ty) typedefs (processDefines())
+    typedefs
+
+  let typedefs = registerAdditionalTypes typedefs
+//  let uncopyableStructs =
+//    let rec isStructUncopyableByItself (ses : CStructElem list)=
+//      ses 
+//        |> List.exists 
+//          (function 
+//            |CStructElem(_,Array(_,n),_) when n>32L -> true 
+//            |CStructElem(_,Struct(ses,bas, _),_) -> isStructUncopyableByItself ses
+//            |CStructElem(_,Union(ues),_) -> ues |> List.map fst |> isStructUncopyableByItself
+//            |_ -> false)
+//    let rec isStructUncopyable s=
+//      match s with
+//      |Struct(ses, bas, _) ->
+//        (isStructUncopyableByItself ses) || 
+//          ses |> List.exists (
+//            function 
+//              |CStructElem(_,StructRef sname,_) -> 
+//                let sname = sname
+//                match Map.find sname structs with 
+//                |(Struct(_) as s,_) -> isStructUncopyable s
+//                |_ -> false
+//              |CStructElem(_,(Struct(ses,bas,_) as sub),_) -> 
+//                isStructUncopyable sub
+//              |CStructElem(_,(Union(ues) as sub),_) -> 
+//                ues |> List.map fst |> fun ses -> Struct (ses, "", []) |> isStructUncopyable
+//              |_ -> false)
+//      |_ -> false
+//    structs |> Map.toSeq |> Seq.filter (snd >> fst >> isStructUncopyable) |> Seq.map fst |> Set.ofSeq
+//
   let apl (f:System.String) (line:uint32) s=
     let sb =
       match Map.tryFind f !file2sb with
@@ -297,7 +368,15 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
         |Struct(sfields, bas, attrs) -> Some(name, bas, sfields, attrs, loc)
         |Union(ufields) -> Some(name, "", [CStructElem("u", ty, None)], [], loc)
         |_ -> None
-    for (name, bas, sfields, attrs, (fname, linenum,_,_)) in structs |> Seq.choose filter do
+    for (name, bas, sfields0, attrs, (fname, linenum,_,_)) in structs |> Seq.choose filter do
+      // eliminate single element unnamed union
+      let sfields = 
+        sfields0 |> List.map (
+            function
+            |CStructElem("", Union([(se,_)]), None) ->
+                se
+            |se -> se)
+
       let f=rsfilename fname
       let apl=apl f linenum
       if Set.contains name libcTypeNames || Map.tryFind (name+"Vtbl") structs |> Option.isSome then
@@ -305,7 +384,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
       else
         let nonInterface = bas="" && (List.isEmpty sfields || (List.exists (function |CStructElem(_,Ptr(Function(_)),_) -> false |_ ->true) sfields))
         if nonInterface then
-          let uncopyable=Set.contains name uncopyableStructs
+          let uncopyable = false //Set.contains name uncopyableStructs
           // check precondition. Unnamed unions within unnamed unions aren't supported
           let checkPrecond ty=
             let rec secondLevel ty=
@@ -434,7 +513,11 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           if basename="" then
             apl <| sprintf "interface %s(%s) {" (name.Substring(0,name.Length-4)) name
           else
-            apl <| sprintf "interface %s(%s): %s(%s) {" (name.Substring(0,name.Length-4)) name basename (basename+"Vtbl")
+            let line = sprintf "interface %s(%s): %s(%s) {" (name.Substring(0,name.Length-4)) name basename (basename+"Vtbl")
+            if line.Length >= eolAfter then
+                apl <| sprintf "interface %s(%s): \r\n    %s(%s) {" (name.Substring(0,name.Length-4)) name basename (basename+"Vtbl")
+            else
+                apl line
 
           let fseq=
             sfields 
@@ -509,44 +592,6 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
       |_ -> 
         apl <| sprintf "pub type %s = %s;" name (tyToRustGlobal ty)  
 
-  let processDefines()=
-    seq {
-        for KeyValue(name,(mc,orgs,(fname, linenum,_,_))) in defines do
-          let f=rsfilename fname
-          let defOption = 
-            match Map.tryFind name def_annots with
-            |Some(_) as opt -> opt
-            |None -> 
-                match Map.tryFind name annotations.disableRPCDefines with
-                |Some(_) as opt -> opt
-                |None -> None
-          match defOption with
-          |Some(Exclude) -> ()
-          |Some(UseType(t)) ->
-            match mc with
-            |MCExpression(_) ->
-                failwithf "Macro expression %s cannot be annotated with UseType" name
-            |_ ->
-                if (t = "FLOAT" || t = "DOUBLE") && (not <| orgs.Contains(".")) then
-                    yield (f, sprintf "pub const %s: %s = %s.;" name t orgs, t, linenum)
-                else 
-                    yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t, linenum)
-          |Some(UseCustom(t, item)) ->
-            yield (f, item, t, linenum)
-          |None ->
-            let t = 
-              match mc with
-              |MCUInt64(_) -> "UINT64"
-              |MCInt64(_) -> "INT64"
-              |MCUInt32(_) -> "UINT"
-              |MCInt32(_) -> "INT"
-              |MCFloat(_) -> "FLOAT"
-              |MCDouble(_) -> "DOUBLE" 
-              |MCExpression(_) -> "" // skip unannotated macro expressions
-            if t <> "" then
-                yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t, linenum)
-    }
-        
   let createDefines()=
     for (f, text, _, linenum) in processDefines() do
       let apl=apl f linenum
@@ -561,7 +606,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           |_ -> None)
       |> Seq.map
         (fun (name,args,rty,cc,(fname, linenum,_,_)) ->
-          let rcc=ccToRustNoQuotes cc
+          let rcc = "system" //ccToRustNoQuotes cc
           let sb = new System.Text.StringBuilder()
           let lib = System.IO.Path.GetFileNameWithoutExtension(fname)
           sb.AppendLine(sprintf "EXTERN!{%s fn %s(" rcc name) |> ignore
@@ -593,29 +638,11 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                 let f = rsfilename fname
                 let apl = apl f
                 for (_, iidname, iid, linenum) in iids do
-                    apl linenum <| sprintf "DEFINE_GUID!{%s, %s}" iidname (System.String.Join(", ", iid |> iid2array |> Array.toSeq))
-                )
-
-  let registerAdditionalTypes typedefs =
-    // It's not robust, but I can't find how to get type definition location by type name from libclang
-    let knowntypelocations = 
-        (Map.ofList [("UINT", "shared::minwindef"); ("INT", "shared::minwindef");
-                     ("FLOAT", "shared::minwindef"); ("DOUBLE", "shared::ntdef");
-                     ("UINT64", "shared::basetsd"); ("INT64", "shared::basetsd");
-                     ("GUID", "shared::guiddef") ])
-    let addType typedefs ty =
-        match Map.tryFind ty typedefs with
-        |Some(_) -> typedefs
-        |None ->
-            Map.add ty (Map.find ty knowntypelocations) typedefs
-    //let typedefs = if Map.isEmpty iids then typedefs else addType typedefs "GUID"
-    let typedefs = Seq.fold (fun tds (_,_,ty,_) -> addType tds ty) typedefs (processDefines())
-    typedefs
-    
+                    apl linenum <| sprintf "DEFINE_GUID!{%s,\r\n    %s}" iidname (System.String.Join(", ", iid |> iid2array |> Array.toSeq))
+                )    
 
   let createImports() =
     let apl = apl (headername+".rs") 1u
-    let typedefs = registerAdditionalTypes typedefs
     let namedefs =
         typedefs
         |> Map.toSeq
@@ -640,5 +667,5 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
   createDefines()
   createFunctions()
   createIIDs()
-  !file2sb |> Map.map (fun  k v -> System.String.Join("", v.Values))
-  
+  (!file2sb |> Map.map (fun  k v -> System.String.Join("", v.Values)), typedefs)
+
