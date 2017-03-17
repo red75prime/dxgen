@@ -106,6 +106,9 @@
     <None Include="PCH\DXGI_PCH.h">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="PCH\dwrite_pch.h">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="App.config" />
     <None Include="packages.config" />
     <None Include="config.yaml">

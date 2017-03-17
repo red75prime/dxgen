@@ -4,15 +4,6 @@ open SharpYaml.Serialization
 
 
 [<CLIMutable>][<NoComparison>]
-type ForwardDeclaration = {
-    [<YamlMember("t")>]
-    TypeName: string
-
-    [<YamlMember("p")>]
-    Path: string
-}
-
-[<CLIMutable>][<NoComparison>]
 type Header = {
     [<YamlMember("name")>]
     Name: string
@@ -20,8 +11,6 @@ type Header = {
     [<YamlMember("uses")>]
     Uses : string seq
 
-    [<YamlMember("forward-declarations")>]
-    ForwardDeclarations: ForwardDeclaration seq
 }
 
 [<CLIMutable>][<NoComparison>]

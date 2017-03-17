@@ -5,6 +5,11 @@ open cdesc
 open rustdesc
 open annotations
 
+let forwardDecls = 
+    [
+        ("ID2D1SimplifiedGeometrySink", "um::d2d1");
+    ] |> Map.ofList
+
 let reprC: RustAttribute=("Repr",[("C","")])
 
 let makeStruct name ses=
@@ -95,7 +100,7 @@ let wrapOn items (indent:string) eolAfter maxLineLen=
   lines := List.rev !lines
   !lines  
 
-let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclaration seq)
+let winapiGen (headername: string)
               (types:Map<string,CTypeDesc*CodeLocation>, 
                 enums:Map<string,CTypeDesc*CodeLocation>,
                   structs:Map<string,CTypeDesc*CodeLocation>,
@@ -169,8 +174,6 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                     let todo = "// TODO: Implement macro\r\n"+System.String.Join("\r\n", lines)+"\r\n"
                     yield(f, todo, "", linenum)
                 |_ -> ()
-                
-                
     }
         
   let registerAdditionalTypes typedefs =
@@ -190,6 +193,13 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                 Map.add ty (Map.find ty knowntypelocations) typedefs
     //let typedefs = if Map.isEmpty iids then typedefs else addType typedefs "GUID"
     let typedefs = Seq.fold (fun tds (_,_,ty,_) -> addType tds ty) typedefs (processDefines())
+    let addForwardDecl typedefs typename = 
+        match Map.tryFind typename forwardDecls with
+        |Some(modname) -> Map.add typename modname typedefs
+        |None -> typedefs
+    let typedefs = 
+        structs |> Seq.choose(function |KeyValue(name, (ForwardDecl _, _ )) -> Some(name) |_ -> None) 
+            |> Seq.fold addForwardDecl typedefs
     typedefs
 
   let typedefs = registerAdditionalTypes typedefs
@@ -230,7 +240,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
         let sd = new System.Collections.Generic.SortedDictionary<uint32, System.Text.StringBuilder>()
         file2sb := Map.add f sd !file2sb
         let text=sprintf "\
-// Copyright © 2017 Dmitri Roschin
+// Copyright © 2017 winapi-rs developers
 // Licensed under the Apache License, Version 2.0
 // <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your option.
@@ -496,6 +506,16 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
                 apl line
             apl ""
         else // ------------------------------- COM-Interface ---------------------------
+          // rename overloaded functions
+          let renameOverloads (out, prev) (CStructElem(name, ty, bw) as se) =
+            match Map.tryFind name prev with
+            |None ->
+                (se :: out, Map.add name 1 prev)
+            |Some(n) ->
+                (CStructElem(name + n.ToString(), ty, bw) :: out, Map.add name (n+1) prev)
+            
+          let sfields = 
+            sfields |> List.fold renameOverloads ([], Map.empty) |> fst |> List.rev
           let basename = 
                 match Map.tryFind name structs with
                 |Some(Struct(_, basename, _),_) -> basename
@@ -606,7 +626,7 @@ let winapiGen (headername: string) (forwardDecls: Configuration.ForwardDeclarati
           |_ -> None)
       |> Seq.map
         (fun (name,args,rty,cc,(fname, linenum,_,_)) ->
-          let rcc = "system" //ccToRustNoQuotes cc
+          let rcc = ccToRustNoQuotes cc
           let sb = new System.Text.StringBuilder()
           let lib = System.IO.Path.GetFileNameWithoutExtension(fname)
           sb.AppendLine(sprintf "EXTERN!{%s fn %s(" rcc name) |> ignore

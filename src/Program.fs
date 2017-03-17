@@ -59,7 +59,6 @@ let main argv =
                 if header.Exists then Some(header) else None
 
             for headerInfo in codeModule.Headers do
-                let forwardDeclarations = if headerInfo.ForwardDeclarations = null then Seq.empty else headerInfo.ForwardDeclarations
                 let header = headerInfo.Name
 
                 let headerPath = 
@@ -84,17 +83,19 @@ let main argv =
                     header.Substring(0, lastpoint)
 
                 printfn "Processing header %s" headerPath.FullName
-                let types = parse.combinedParse headerPath precompiledHeader includePaths forwardDeclarations
+                let types = parse.combinedParse headerPath precompiledHeader includePaths
                 let atext = safegen.emptyAnnotationsGen types
                 System.IO.Directory.CreateDirectory(@".\" + headerName) |> ignore 
                 use swa=new System.IO.StreamWriter(@".\" + headerName + @"\annotations_autogen.fs")
                 swa.Write(atext)
 
                 if not (codeModule.NoWinapiGen) then
-                    let (wapi, typedefs) = sysgen.winapiGen headerName (headerInfo.ForwardDeclarations) types
+                    let (wapi, typedefs) = sysgen.winapiGen headerName types
                     // write dependencies
                     let deps = typedefs |> Map.toSeq |> Seq.map snd |> Seq.distinct
+                                |> Seq.filter ((<>) "ctypes")
                                 |> Seq.map (fun s -> "\"" + (textAfterLast "::" s) + "\"")
+                                |> Seq.sort
                     buildrs.WriteLine(sprintf "    (\"%s\", &[%s], &[])," headerName (System.String.Join(", ", deps)))
                     buildrs.Flush()
                     // write winapi modules

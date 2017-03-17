@@ -210,8 +210,7 @@ let rec getMethodList (ccur: Cursor) =
 
 let parse   (headerLocation: System.IO.FileInfo) 
             (pchLocation: System.IO.FileInfo option) 
-            (includePaths: string seq) (target: string) 
-            (forwardDecls: Configuration.ForwardDeclaration seq) =
+            (includePaths: string seq) (target: string) =
     let options = 
         seq {
             yield "-x"
@@ -793,11 +792,11 @@ let rec combineTargets ty1 ty2 =
 
 // It parses code as 32-bit then as 64-bit and then it zips results
 // Some unions need different rust representation in 32/64 bits
-let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) (forwardDecls: Configuration.ForwardDeclaration seq) =
+let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) =
     let (types32, enums32, structs32', funcs32, iids32, defines32, typedefloc32) as p32=
-        parse headerLocation pchLocation includePaths "i686-pc-win32" forwardDecls
+        parse headerLocation pchLocation includePaths "i686-pc-win32"
     let (types64, enums64, structs64', funcs64, iids64, defines64, typedefloc64) as p64=
-        parse headerLocation pchLocation includePaths "x86_64-pc-win32" forwardDecls
+        parse headerLocation pchLocation includePaths "x86_64-pc-win32"
     // ensure that parse results contain same items
     assert (keys types32 = keys types64)
     assert (keys enums32 = keys enums64)
@@ -819,5 +818,5 @@ let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.F
             assert(k1=k2)
             (k1, (combineTargets v1 v2, locInfo))
         Seq.map2 combine (Map.toSeq structs32) (Map.toSeq structs64) |> Map.ofSeq
-
-    (types64, enums64, structsCombined, funcs64, iids64, defines64, typedefloc64)
+    // all extern funcs for 64-bit build seem to have cdecl cc, so I use funcs32
+    (types64, enums64, structsCombined, funcs32, iids64, defines64, typedefloc64)
