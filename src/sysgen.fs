@@ -168,11 +168,14 @@ let winapiGen (headername: string)
                 match tokens with
                 |"(" :: _ ->
                     let lines = 
-                        (name :: tokens) |> utils.seqToLines 80 " " ""
+                        (name :: tokens) 
+                            |> Seq.map (fun (t:string) -> t.Replace("\r\n", " ").Replace("\n", " ")) 
+                            |> utils.seqToLines 80 " " ""
                             |> Seq.map (fun line -> "// " + line)
                     // Add todo for unannotated macro
                     let todo = "// TODO: Implement macro\r\n"+System.String.Join("\r\n", lines)+"\r\n"
                     yield(f, todo, "", linenum)
+                // TODO: something with aliases, like #define LONGNAME_A EVENLONGERNAME_B
                 |_ -> ()
     }
         
@@ -272,7 +275,7 @@ let winapiGen (headername: string)
       ;"SECURITY_ATTRIBUTES";"HANDLE";"DWORD";"LPCSTR";"LONG"
       ;"IUnknown"] 
 // ----------------- Create structs ----------------------------------
-  let outputStructDef apl name ses_in uncopyable=
+  let outputStructDef apl name ses_in uncopyable encloseInIfDef =
     let hasBitfields = ses_in |> List.exists (fun (CStructElem(_, _, bw)) -> Option.isSome bw)
     // process bitfields
     // next bitfield goes into the same group if it has the same type and fits into remaining space
@@ -344,7 +347,7 @@ let winapiGen (headername: string)
     let ses = List.rev ses
     let gs = List.rev gs
     // -------
-    if hasBitfields then 
+    if encloseInIfDef then 
         apl <| "IFDEF!{"
     apl <| sprintf "STRUCT!{struct %s {" name
     let nametype = 
@@ -364,7 +367,7 @@ let winapiGen (headername: string)
         for (fname, startbit, endbit) in bfs do
             apl <| sprintf "    %s set_%s[%d..%d]," fname fname startbit endbit
         apl "]}"
-    if hasBitfields then
+    if encloseInIfDef then
         apl "}"
     apl ""
 
@@ -432,8 +435,10 @@ let winapiGen (headername: string)
                           match stype with
                           |Struct(ses, bas, _) ->
                             // anonymous struct in union. create proxy.
+                            // TODO: something with nameless structures in unions
+                            let sname = if sname = "" then "u" else sname
                             let proxyname=name+"_"+sname;
-                            outputStructDef apl proxyname ses uncopyable
+                            outputStructDef apl proxyname ses uncopyable false
                             unions := (name, fname', sname, sname+"_mut", proxyname) :: !unions
                             (CStructElem(sname, StructRef proxyname, bw), sz)
                           |_ ->
@@ -449,7 +454,7 @@ let winapiGen (headername: string)
             sfields' |> List.collect (function |CStructElem(_,Union(ues),_) -> List.collect (snd >> (List.map fst)) ues  |_ -> []) |> Set.ofList |> List.ofSeq
           if List.isEmpty compileTargets then
             //no unions
-            outputStructDef apl name sfields' uncopyable
+            outputStructDef apl name sfields' uncopyable false
           else
             // split by compile targets
             let variants=
@@ -484,7 +489,7 @@ let winapiGen (headername: string)
                             List.forall2 (fun (CStructElem(_, ty1, _)) (CStructElem(_, ty2, _)) -> ty1=ty2) sfs1 sfs2
                         ) 
                 ) then
-              outputStructDef apl name (variants |> List.head |> snd) uncopyable
+              outputStructDef apl name (variants |> List.head |> snd) uncopyable false
             else
               for (ct, sfs) in variants do
                 match ct with
@@ -494,7 +499,7 @@ let winapiGen (headername: string)
                   apl @"#[cfg(target_pointer_width = ""64"")]"
                 |TargetUnknown ->
                   failwith "TagetUnknown shouldn't be here"
-                outputStructDef apl name sfs uncopyable
+                outputStructDef apl name sfs uncopyable true
                 
           match !unions with
           |[] -> ()
@@ -554,7 +559,11 @@ let winapiGen (headername: string)
             |[] -> failwith "unreachable"
             |(fname,parms,rty)::next ->
                 let p1 = "    fn "+fname+"("
-                let pend = ") -> "+(tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
+                let pend = 
+                    if rty = Primitive Void then
+                        ") -> ()" + (if List.isEmpty next then "" else ",")
+                    else
+                        ") -> "+(tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
                 let parts = 
                   seq {
                       //yield "&self"
@@ -609,6 +618,9 @@ let winapiGen (headername: string)
       match ty with
       |Typedef(EnumRef(ename)) when ename=name -> ()
       |Typedef(StructRef(sname)) when sname=name -> ()
+      |Typedef(Ptr(Function(CFuncDesc(_, _, cc))) as ty) ->
+        //TODO: cc is always "cdecl". Find out why clang does this.
+        apl <| sprintf "FN!{%s %s%s}" "stdcall" name (tyToRustGlobal ty)
       |_ -> 
         apl <| sprintf "pub type %s = %s;" name (tyToRustGlobal ty)  
 
@@ -634,7 +646,10 @@ let winapiGen (headername: string)
                       |> Seq.ofList 
                       |> fun sq -> System.String.Join(","+System.Environment.NewLine, sq)
           sb.AppendLine(parms) |> ignore
-          sb.Append(sprintf ") -> %s}" (tyToRust rty)) |> ignore
+          if rty = Primitive Void then
+            sb.Append(")}") |> ignore
+          else
+            sb.Append(sprintf ") -> %s}" (tyToRust rty)) |> ignore
           let f = (rsfilename fname)
           (f, rcc, sb.ToString(), linenum))
       |> Seq.groupBy (fun (a,b,c,d) -> a)

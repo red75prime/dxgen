@@ -1,5 +1,73 @@
 ﻿---
 modules:
+    - name: dwrite
+      output-path: ../../dwrite/src
+      include-path: 
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
+      precompiled-header: ./PCH/dwrite_pch.h
+      headers:
+          - name: d3d9types.h
+          - name: dwrite.h
+          - name: dwrite_1.h
+            uses:
+              - dwrite_safe
+          - name: dwrite_2.h
+          - name: dwrite_3.h
+      no-winapi-gen: false
+      no-enum-conversion: true
+
+    - name: d3d11on12
+      output-path: ../../d3d11on12/src
+      include-path: 
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
+      precompiled-header: ./PCH/Common_PCH.h
+      headers:
+          - name: d3d11on12.h
+            uses:
+              - d3d11_safe
+      no-winapi-gen: false
+      no-enum-conversion: true
+
+    - name: psapi
+      output-path: ../../d3d11on12/src
+      include-path: 
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
+      precompiled-header: ./PCH/dxva2api_PCH.h
+      headers:
+          - name: Psapi.h
+      no-winapi-gen: false
+      no-enum-conversion: true
+
+    - name: dxva2api
+      output-path: ../../d3d11on12/src
+      include-path: 
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
+      precompiled-header: ./PCH/dxva2api_PCH.h
+      headers:
+          - name: dxva2api.h
+      no-winapi-gen: false
+      no-enum-conversion: true
+
+    - name: synchapi
+      output-path: ../../d3d11on12/src
+      include-path: 
+        - .\Include\10.0.14393.0\um\
+        - .\Include\10.0.14393.0\shared\
+        - .\Include\10.0.14393.0\ucrt\
+      precompiled-header: ./PCH/Common_PCH.h
+      headers:
+          - name: synchapi.h
+      no-winapi-gen: false
+      no-enum-conversion: true
+
     - name: d3d11
       output-path: ../../d3d11on12/src
       include-path: 
@@ -46,20 +114,6 @@ modules:
       no-winapi-gen: false
       no-enum-conversion: true
       
-    - name: d3d11on12
-      output-path: ../../d3d11on12/src
-      include-path: 
-        - .\Include\10.0.14393.0\um\
-        - .\Include\10.0.14393.0\shared\
-        - .\Include\10.0.14393.0\ucrt\
-      precompiled-header: ./PCH/Common_PCH.h
-      headers:
-          - name: d3d11on12.h
-            uses:
-              - d3d11_safe
-      no-winapi-gen: false
-      no-enum-conversion: true
-
     - name: d3d12_dxgi
       output-path: ../../dx_dxgi/src/
       include-path: 
@@ -103,23 +157,6 @@ modules:
           - name: d3d12shader.h
       no-winapi-gen: false
       no-enum-conversion: false
-
-    - name: dwrite
-      output-path: ../../dwrite/src
-      include-path: 
-        - .\Include\10.0.14393.0\um\
-        - .\Include\10.0.14393.0\shared\
-        - .\Include\10.0.14393.0\ucrt\
-      precompiled-header: ./PCH/dwrite_pch.h
-      headers:
-          - name: dwrite.h
-          - name: dwrite_1.h
-            uses:
-              - dwrite_safe
-          - name: dwrite_2.h
-          - name: dwrite_3.h
-      no-winapi-gen: false
-      no-enum-conversion: true
 
     - name: wincodec
       output-path: ../../d3d11on12/src

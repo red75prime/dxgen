@@ -311,10 +311,9 @@ let parse   (headerLocation: System.IO.FileInfo)
         List.rev !listOfConsts
 
     let parseFunction (cursor:Cursor) (fType:Type)=
-        let nArgs=getNumArgTypes(fType)
-        let cc=getFunctionTypeCallingConv(fType)
-        let rety=getResultType(fType) |> typeDesc
-        registerTypeLocation (getResultType fType) false
+        let nArgs = getNumArgTypes(fType)
+        let cc = getFunctionTypeCallingConv(fType)
+        let rety = getResultType(fType) |> typeDesc
         let typedef = ref None
         let args=ref []
         let argsVisitor (cursor:Cursor) _ _=
@@ -343,7 +342,8 @@ let parse   (headerLocation: System.IO.FileInfo)
             if (List.length !args <> nArgs) then
                 failwith ("Number of parmDecls doesn't match number of arguments. " :: tokenizeFS cursor |> String.concat " ")
             let crety = getResultType(fType)
-            registerTypeLocation crety false
+            if rety <> Primitive Void then
+                registerTypeLocation crety false
             let rec getretyname (crety:Type) =
                 if crety.kind = TypeKind.Typedef then
                     let cretydecl = getTypeDeclaration crety
@@ -793,6 +793,7 @@ let rec combineTargets ty1 ty2 =
 // It parses code as 32-bit then as 64-bit and then it zips results
 // Some unions need different rust representation in 32/64 bits
 let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.FileInfo option) (includePaths : string seq) =
+    // TODO: calling convention for function pointers is always C. Fix it.
     let (types32, enums32, structs32', funcs32, iids32, defines32, typedefloc32) as p32=
         parse headerLocation pchLocation includePaths "i686-pc-win32"
     let (types64, enums64, structs64', funcs64, iids64, defines64, typedefloc64) as p64=
@@ -819,4 +820,4 @@ let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.F
             (k1, (combineTargets v1 v2, locInfo))
         Seq.map2 combine (Map.toSeq structs32) (Map.toSeq structs64) |> Map.ofSeq
     // all extern funcs for 64-bit build seem to have cdecl cc, so I use funcs32
-    (types64, enums64, structsCombined, funcs32, iids64, defines64, typedefloc64)
+    (types32, enums64, structsCombined, funcs32, iids64, defines64, typedefloc64)
