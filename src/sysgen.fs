@@ -70,7 +70,7 @@ let isOnlyOneBitSet (v:uint64)=
   v<>0UL && (v &&& (v-1UL))=0UL
 
 let maxLineLen=99
-let eolAfter=80
+let eolAfter=90
 
 let wrapOn items (indent:string) eolAfter maxLineLen=
   let lines = ref []
@@ -263,7 +263,7 @@ let winapiGen (headername: string)
       let apl=apl f linenum
       let convhex=fun (v:uint64) -> "0x" + v.ToString("X")
       let convdec=fun (v:uint64) -> v.ToString()
-      apl ("ENUM!{ enum "+name+" {")
+      apl ("ENUM!{enum "+name+" {")
       for (cname,v) in vals do
           apl ("    " + cname + " = " + (convhex v) + ", // "+(convdec v))
       apl "}}"
@@ -552,54 +552,85 @@ let winapiGen (headername: string)
                     Some(fname,parms,rty)
                   |_ -> None
                 )
-          
-          // Format code according to winapi-rs rules
-          for twofield in fseq |> utils.seqPairwise do
-            match twofield with
-            |[] -> failwith "unreachable"
-            |(fname,parms,rty)::next ->
-                let p1 = "    fn "+fname+"("
-                let pend = 
-                    if rty = Primitive Void then
-                        ") -> ()" + (if List.isEmpty next then "" else ",")
-                    else
-                        ") -> "+(tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
-                let parts = 
-                  seq {
-                      //yield "&self"
-                      yield! parms |> Seq.tail |> Seq.map (fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty))
-                  } |> utils.seqPairwise |> Seq.map (function |[p;_] -> (p+",") |[p] -> p |_ -> "")
-                let v1=p1+System.String.Join(" ",parts)+pend
-                if v1.Length > eolAfter then
-                  let indent = "        "
-                  let indentm1="       "
-                  apl p1
-                  let ll=
-                    parts |> Seq.fold
-                      (fun cl p ->
-                        if cl="" then
-                          let c = indent+p
-                          if c.Length>eolAfter then
-                            apl c
-                            ""
-                          else
-                            c
-                        else
-                          let c=cl+" "+p
-                          if c.Length>maxLineLen then
-                            apl cl
-                            indent+p
-                          else if c.Length>eolAfter then
-                            apl c
-                            ""
-                          else
-                            c
-                      ) ""
-                  if ll<>"" then
-                    apl ll
-                  apl ("    "+pend)
-                else
-                  apl v1
+          //Format code according to new winapi-rs rules
+          for pair  in fseq |> utils.seqPairwise do
+            let ((fname, parms, rty), last) =
+                match pair with
+                |[] -> failwith "unreachable"
+                |[lastfun] -> (lastfun, true)
+                |fn :: _ -> (fn, false)
+            let parms = List.tail parms
+            let parmToStr (pname, ty, _) = 
+                sprintf "%s: %s" pname (tyToRustGlobal ty)
+            let retTy = 
+                match rty with
+                |Primitive Void -> "()"
+                |_ -> tyToRustGlobal rty
+            let retTy = if last then retTy else retTy + ","
+            match parms with
+            |[] ->
+                apl <| "    fn " + fname + "() -> " + retTy
+            |[parm] ->
+                apl <| sprintf "    fn %s(%s) -> %s" fname (parmToStr parm) retTy
+            |_ ->
+                apl <| sprintf "    fn %s(" fname
+                for pair in parms |> utils.seqPairwise do
+                    match pair with
+                    |[] -> failwith "unreachable"
+                    |[parm] -> 
+                        apl <| sprintf "        %s" (parmToStr parm)
+                    |parm :: _ ->
+                        apl <| sprintf "        %s," (parmToStr parm)
+                apl <| "    ) -> " + retTy
+                    
+
+//          // Format code according to winapi-rs rules
+//          for twofield in fseq |> utils.seqPairwise do
+//            match twofield with
+//            |[] -> failwith "unreachable"
+//            |(fname,parms,rty)::next ->
+//                let p1 = "    fn "+fname+"("
+//                let pend = 
+//                    if rty = Primitive Void then
+//                        ") -> ()" + (if List.isEmpty next then "" else ",")
+//                    else
+//                        ") -> "+(tyToRustGlobal rty)+(if List.isEmpty next then "" else ",")
+//                let parts = 
+//                  seq {
+//                      //yield "&self"
+//                      yield! parms |> Seq.tail |> Seq.map (fun (pname, pty, _) -> pname+": "+(tyToRustGlobal pty))
+//                  } |> utils.seqPairwise |> Seq.map (function |[p;_] -> (p+",") |[p] -> p |_ -> "")
+//                let v1=p1+System.String.Join(" ",parts)+pend
+//                if v1.Length > eolAfter then
+//                  let indent = "        "
+//                  let indentm1="       "
+//                  apl p1
+//                  let ll=
+//                    parts |> Seq.fold
+//                      (fun cl p ->
+//                        if cl="" then
+//                          let c = indent+p
+//                          if c.Length>eolAfter then
+//                            apl c
+//                            ""
+//                          else
+//                            c
+//                        else
+//                          let c=cl+" "+p
+//                          if c.Length>maxLineLen then
+//                            apl cl
+//                            indent+p
+//                          else if c.Length>eolAfter then
+//                            apl c
+//                            ""
+//                          else
+//                            c
+//                      ) ""
+//                  if ll<>"" then
+//                    apl ll
+//                  apl ("    "+pend)
+//                else
+//                  apl v1
 
           apl "}}"
           apl ""
@@ -685,14 +716,7 @@ let winapiGen (headername: string)
         |> Seq.groupBy snd
     
     for (modname, sq) in namedefs do
-        seq {
-            yield sprintf "use %s::{" modname
-            yield! sq |> Seq.map fst |> utils.seqAppendDelim ","
-            yield "};"
-        }   
-        |> utils.seqToLines 80 " " "    "
-        |> fun sq -> System.String.Join(System.Environment.NewLine, sq)
-        |> apl
+        apl <| utils.formatUse 99 modname (sq |> Seq.map fst)
     apl ""
   // ----------------------- codeGen ------------------------------------------------
   createImports()
