@@ -566,19 +566,19 @@ let winapiGen (headername: string)
                 match rty with
                 |Primitive Void -> "()"
                 |_ -> tyToRustGlobal rty
-            let retTy = if last then retTy else retTy + ","
+            let retTy = if last then retTy + "," else retTy + ","
             match parms with
             |[] ->
                 apl <| "    fn " + fname + "() -> " + retTy
             |[parm] ->
-                apl <| sprintf "    fn %s(%s) -> %s" fname (parmToStr parm) retTy
+                apl <| sprintf "    fn %s(%s,) -> %s" fname (parmToStr parm) retTy
             |_ ->
                 apl <| sprintf "    fn %s(" fname
                 for pair in parms |> utils.seqPairwise do
                     match pair with
                     |[] -> failwith "unreachable"
                     |[parm] -> 
-                        apl <| sprintf "        %s" (parmToStr parm)
+                        apl <| sprintf "        %s," (parmToStr parm)
                     |parm :: _ ->
                         apl <| sprintf "        %s," (parmToStr parm)
                 apl <| "    ) -> " + retTy
@@ -672,15 +672,15 @@ let winapiGen (headername: string)
           let rcc = ccToRustNoQuotes cc
           let sb = new System.Text.StringBuilder()
           let lib = System.IO.Path.GetFileNameWithoutExtension(fname)
-          sb.AppendLine(sprintf "EXTERN!{%s fn %s(" rcc name) |> ignore
-          let parms = List.map (funcArgToRust >> (sprintf "    %s")) args 
+          sb.AppendLine(sprintf "    pub fn %s(" name) |> ignore
+          let parms = List.map (funcArgToRust >> (sprintf "        %s")) args 
                       |> Seq.ofList 
                       |> fun sq -> System.String.Join(","+System.Environment.NewLine, sq)
           sb.AppendLine(parms) |> ignore
           if rty = Primitive Void then
-            sb.Append(")}") |> ignore
+            sb.Append("    ) -> ();") |> ignore
           else
-            sb.Append(sprintf ") -> %s}" (tyToRust rty)) |> ignore
+            sb.Append(sprintf "    ) -> %s;" (tyToRust rty)) |> ignore
           let f = (rsfilename fname)
           (f, rcc, sb.ToString(), linenum))
       |> Seq.groupBy (fun (a,b,c,d) -> a)
@@ -691,7 +691,13 @@ let winapiGen (headername: string)
                 |> Seq.groupBy (fun (a,b,c,d) -> b)
                 |> Seq.iter 
                   (fun (rcc, lines) ->
-                    lines |> Seq.iter (fun (_,_,t, linenum) -> apl linenum t)
+                    if rcc <> "stdcall" then
+                        failwith "Unexpected calling convention"
+                    let lastline = lines |> Seq.map (fun (_, _, _, linenum) -> linenum) |> Seq.max
+                    let apl = apl lastline
+                    apl "extern \"system\"{"
+                    lines |> Seq.iter (fun (_,_,t,_) -> apl t)
+                    apl "}"
                     ))
     
   let createIIDs()=

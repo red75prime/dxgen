@@ -346,8 +346,8 @@ let rec tyToRust (ty:CTypeDesc)=
     |Ptr(Function(CFuncDesc(args,rty,cc))) ->
         let eol = System.Environment.NewLine
         "(" + eol + "    " + 
-            ((List.map (fun (_, ty, pa) -> funcArgToRust("", ty, pa)) args) |> String.concat(","+eol+"    ")) + eol + 
-            "    )" + (if rty = Primitive Void then " -> ()" else " -> " + (tyToRust rty))
+            ((List.map (fun (_, ty, pa) -> funcArgToRust("", ty, pa) + ",") args) |> String.concat(eol+"    ")) + eol + 
+            ")" + (if rty = Primitive Void then " -> ()" else " -> " + (tyToRust rty))
     |Ptr uty -> "*mut " + (tyToRust uty)
     |Const(uty) -> tyToRust uty
     |ForwardDecl uty -> uty
