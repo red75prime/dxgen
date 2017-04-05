@@ -133,7 +133,7 @@ let winapiGen (headername: string)
         for KeyValue(name,(mc,orgs,(fname, linenum,_,_))) in defines do
           let f=rsfilename fname
           let defOption = 
-            match Map.tryFind name def_annots with
+            match Map.tryFind (name, hash mc) def_annots with
             |Some(_) as opt -> opt
             |None -> 
                 match Map.tryFind name annotations.disableRPCDefines with
@@ -166,17 +166,17 @@ let winapiGen (headername: string)
             |Choice1Of2(t) -> yield (f, sprintf "pub const %s: %s = %s;" name t orgs, t, linenum)
             |Choice2Of2(tokens) ->
                 match tokens with
-                |"(" :: _ ->
+                |_ :: _ :: _ ->
                     let lines = 
                         (name :: tokens) 
                             |> Seq.map (fun (t:string) -> t.Replace("\r\n", " ").Replace("\n", " ")) 
                             |> utils.seqToLines 80 " " ""
                             |> Seq.map (fun line -> "// " + line)
                     // Add todo for unannotated macro
-                    let todo = "// TODO: Implement macro\r\n"+System.String.Join("\r\n", lines)+"\r\n"
+                    let todo = "// TODO: Implement macro. makeCustom \"" + name + "\" " + System.String.Format("0x{0:x}", hash mc) + " \"type\" \"\";"
+                                + "\r\n"+System.String.Join("\r\n", lines) + "\r\n"
                     yield(f, todo, "", linenum)
-                // TODO: something with aliases, like #define LONGNAME_A EVENLONGERNAME_B
-                |_ -> ()
+                |_ -> () // macros without content 
     }
         
   let registerAdditionalTypes typedefs =
@@ -347,6 +347,7 @@ let winapiGen (headername: string)
     let ses = List.rev ses
     let gs = List.rev gs
     // -------
+    let encloseInIfDef = encloseInIfDef && hasBitfields
     if encloseInIfDef then 
         apl <| "IFDEF!{"
     apl <| sprintf "STRUCT!{struct %s {" name
