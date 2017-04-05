@@ -231,39 +231,38 @@ let rec typeDesc (ty0: Type)=
             getNamedType ty0
         else
             ty0
-    match ty.kind with
-    |TypeKind.Void ->   
+    let makeConst = 
         if isConstQualifiedTypeFS ty then
-            Const(Primitive Void)
+            fun ty -> Const(ty)
         else
-            Primitive Void
-    |TypeKind.Bool ->   Primitive Bool
-    |TypeKind.Char16 -> Primitive Char16
-    |TypeKind.Char32 -> Primitive Char32
-    |TypeKind.Char_S -> Primitive Char8
-    |TypeKind.Char_U -> Primitive Char16
-    |TypeKind.Double -> Primitive Float64
-    |TypeKind.Float ->  Primitive Float32
-    |TypeKind.Int ->    
-        let ts=getTypeSpellingFS ty
-        Primitive Int32
-    |TypeKind.Long ->   Primitive Int32
-    |TypeKind.LongDouble -> Primitive Float64 
-    |TypeKind.LongLong -> Primitive Int64
-    |TypeKind.SChar -> Primitive Int8
-    |TypeKind.Short -> Primitive Int16
-    |TypeKind.UChar -> Primitive UInt8
-    |TypeKind.UInt -> Primitive UInt32
-    |TypeKind.ULong -> Primitive UInt32
-    |TypeKind.ULongLong -> Primitive UInt64
-    |TypeKind.UShort -> Primitive UInt16
+            id
+    match ty.kind with
+    |TypeKind.Void ->   makeConst <| Primitive Void
+    |TypeKind.Bool ->   makeConst <| Primitive Bool
+    |TypeKind.Char16 -> makeConst <| Primitive Char16
+    |TypeKind.Char32 -> makeConst <| Primitive Char32
+    |TypeKind.Char_S -> makeConst <| Primitive Char8
+    |TypeKind.Char_U -> makeConst <| Primitive Char16
+    |TypeKind.Double -> makeConst <| Primitive Float64
+    |TypeKind.Float ->  makeConst <| Primitive Float32
+    |TypeKind.Int ->    makeConst <| Primitive Int32
+    |TypeKind.Long ->   makeConst <| Primitive Int32
+    |TypeKind.LongDouble -> makeConst <| Primitive Float64 
+    |TypeKind.LongLong -> makeConst <| Primitive Int64
+    |TypeKind.SChar -> makeConst <| Primitive Int8
+    |TypeKind.Short -> makeConst <| Primitive Int16
+    |TypeKind.UChar -> makeConst <| Primitive UInt8
+    |TypeKind.UInt -> makeConst <| Primitive UInt32
+    |TypeKind.ULong -> makeConst <| Primitive UInt32
+    |TypeKind.ULongLong -> makeConst <| Primitive UInt64
+    |TypeKind.UShort -> makeConst <| Primitive UInt16
     |TypeKind.ConstantArray ->
         if isConstQualifiedTypeFS (getArrayElementType ty) then
             Array(Const(getArrayElementType ty |> typeDesc), getArraySize ty)
         else
             Array(getArrayElementType ty |> typeDesc, getArraySize ty)
     |TypeKind.Enum -> 
-        EnumRef (getTypeSpellingFS ty)
+        makeConst <| EnumRef (getTypeSpellingFS ty)
     |TypeKind.Record ->
         let ts0 = getTypeSpellingFS ty
         let ts = 
@@ -294,7 +293,9 @@ let rec typeDesc (ty0: Type)=
             Const(TypedefRef(ts.Substring(String.length("const "))))
         else
             TypedefRef(ts)
-    |TypeKind.Pointer -> Ptr(getPointeeType ty |> typeDesc)
+    |TypeKind.Pointer -> 
+        let pty = getPointeeType ty
+        Ptr(pty |> typeDesc)
     |TypeKind.Unexposed ->
         match getTypeSpellingFS ty with
         | tname when tname.StartsWith("struct ") -> StructRef(tname.Substring("struct ".Length))
@@ -306,7 +307,7 @@ let rec typeDesc (ty0: Type)=
     |TypeKind.Elaborated ->
         failwith "unreachable"
     |TypeKind.WChar ->
-        Primitive CPrimitiveType.WChar
+        makeConst <| Primitive CPrimitiveType.WChar
     |_ -> Unimplemented(getTypeSpellingFS ty)
 
 let rec tyToRust (ty:CTypeDesc)=

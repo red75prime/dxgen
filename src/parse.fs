@@ -819,5 +819,6 @@ let combinedParse (headerLocation: System.IO.FileInfo) (pchLocation: System.IO.F
             assert(k1=k2)
             (k1, (combineTargets v1 v2, locInfo))
         Seq.map2 combine (Map.toSeq structs32) (Map.toSeq structs64) |> Map.ofSeq
+    let debugSC = structsCombined |> Array.ofSeq
     // all extern funcs for 64-bit build seem to have cdecl cc, so I use funcs32
     (types32, enums64, structsCombined, funcs32, iids64, defines64, typedefloc64)
