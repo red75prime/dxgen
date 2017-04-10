@@ -95,18 +95,14 @@ pub fn D3D12_DECODE_IS_ANISOTROPIC_FILTER(
     && D3D12_DECODE_MIP_FILTER(filter) == D3D12_FILTER_TYPE_LINEAR
 }"
 
-// TODO: Implement macro. makeCustom "D3D12_DECODE_IS_ANISOTROPIC_FILTER" 0x960e2fe1 "type" "";
-// D3D12_DECODE_IS_ANISOTROPIC_FILTER ( D3D12Filter ) ( ( ( D3D12Filter ) &
-// D3D12_ANISOTROPIC_FILTERING_BIT ) && ( D3D12_FILTER_TYPE_LINEAR ==
-// D3D12_DECODE_MIN_FILTER ( D3D12Filter ) ) && ( D3D12_FILTER_TYPE_LINEAR ==
-// D3D12_DECODE_MAG_FILTER ( D3D12Filter ) ) && ( D3D12_FILTER_TYPE_LINEAR ==
-// D3D12_DECODE_MIP_FILTER ( D3D12Filter ) ) ) typedef
-
 let makeConst def hash ty vl =
     ((def, hash), UseCustom(ty, "pub const "+def+": "+ty+" = "+vl+";"))
 
 let makeCustom def hash ty vl =
     ((def, hash), UseCustom(ty, vl))
+
+let makeType def ty =
+    ((def, 0), UseType(ty))
 
 let d3d12_defines = [
         makeConst  "D3D12_SHADER_COMPONENT_MAPPING_ALWAYS_SET_BIT_AVOIDING_ZEROMEM_MISTAKES" 0xf63eb4c8 "UINT" "1<<(D3D12_SHADER_COMPONENT_MAPPING_SHIFT*4)";
@@ -121,6 +117,13 @@ let d3d12_defines = [
         makeCustom "D3D12_DECODE_FILTER_REDUCTION" 0xfbb2cf55 "" d3d12DecodeReduction;
         makeCustom "D3D12_DECODE_IS_COMPARISON_FILTER" 0xc4790483 "" d3d12DecodeIsComparison;
         makeCustom "D3D12_DECODE_IS_ANISOTROPIC_FILTER" 0x960e2fe1 "" d3d12DecodeIsAnyso;
+        makeType   "D3D12_COMMONSHADER_TEXCOORD_RANGE_REDUCTION_MAX" "INT";
+        makeType   "D3D12_COMMONSHADER_TEXEL_OFFSET_MAX_POSITIVE" "INT";
+        makeType   "D3D12_VIEWPORT_BOUNDS_MAX" "INT";
+        makeType   "D3D12_DEFAULT_SCISSOR_ENDX" "LONG";
+        makeType   "D3D12_DEFAULT_SCISSOR_ENDY" "LONG";
+        makeType   "D3D12_DEFAULT_SCISSOR_STARTX" "LONG";
+        makeType   "D3D12_DEFAULT_SCISSOR_STARTY" "LONG";
     ]
 
 let defines: Map<string, Map<string*int, DefineAnnotation>> =

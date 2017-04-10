@@ -1,8 +1,6 @@
 ﻿module sysgen
 
-open libclang
 open cdesc
-open rustdesc
 open annotations
 
 let forwardDecls = 
@@ -10,61 +8,6 @@ let forwardDecls =
         ("ID2D1SimplifiedGeometrySink", "um::d2d1");
     ] |> Map.ofList
 
-let reprC: RustAttribute=("Repr",[("C","")])
-
-let makeStruct name ses=
-  let rs=
-    ses |> List.map (
-      fun (CStructElem(ename, ty, bw)) ->
-        (ename, tyToRty ty, RAPublic)
-    )
-  [RustItem(name, REStruct rs,RAPublic, [reprC])]
-
-let makeInterface annotations name ses=
-  [] //RustItem(name, REInterface ,RAPublic, [reprC])
-
-let convertToRust (types:Map<string,CTypeDesc*CodeLocation>,
-                   enums:Map<string,CTypeDesc*CodeLocation>,
-                   structs:Map<string,CTypeDesc*CodeLocation>,
-                   funcs:Map<string,CTypeDesc*CodeLocation>,
-                   iids:Set<string>,
-                   annotations)=
-  let rtypes=
-    types |> List.ofSeq |> 
-      List.map (
-        fun (KeyValue(name, (ty, _))) ->
-          let rty=tyToRty ty
-          RustItem (name, RETypeDef rty, RAPublic, [reprC])
-        )
-  let renums=
-    enums |> List.ofSeq |> 
-      List.collect (
-        fun (KeyValue(name, ty)) ->
-          match ty with
-          |Enum(underlyingType=ut; values=vals), _ ->
-            RustItem (name, RETypeDef(RTupleStruct([tyToRty (Primitive ut)])),RAPublic,[reprC]) :: 
-              (vals |> List.map (
-                fun (ename, eVal) ->
-                  RustItem(ename, REConst(RType name, sprintf "%s(%d)" name eVal, eVal),RAPublic, [])
-                ))
-          |_ -> failwith ("Unexpected type of enum "+name)
-      )
-  let rstructs=
-    let makeStructOrInterface (KeyValue(name,(ty,_))) =
-      match getVtbl structs ty with
-      |Some vtbl ->
-        // Interface
-        makeInterface annotations name vtbl
-      |None ->
-        // Struct
-        match ty with
-        |Struct (ses, bas, _) -> makeStruct name ses
-        |_ -> failwith ("Unexpected type")
-    structs |> List.ofSeq |>
-      List.collect makeStructOrInterface
-  let rfuncs=[]
-  let riids=[]
-  List.concat [rtypes; renums; rstructs; rfuncs; riids]
 
 let isOnlyOneBitSet (v:uint64)=
   v<>0UL && (v &&& (v-1UL))=0UL
@@ -136,9 +79,12 @@ let winapiGen (headername: string)
             match Map.tryFind (name, hash mc) def_annots with
             |Some(_) as opt -> opt
             |None -> 
-                match Map.tryFind name annotations.disableRPCDefines with
-                |Some(_) as opt -> opt
-                |None -> None
+                match Map.tryFind (name, 0) def_annots with
+                |Some(_) as opt-> opt
+                |None -> 
+                    match Map.tryFind name annotations.disableRPCDefines with
+                    |Some(_) as opt -> opt
+                    |None -> None
           match defOption with
           |Some(Exclude) -> ()
           |Some(UseType(t)) ->
@@ -185,7 +131,7 @@ let winapiGen (headername: string)
         (Map.ofList [("UINT", "shared::minwindef"); ("INT", "shared::minwindef");
                      ("FLOAT", "shared::minwindef"); ("DOUBLE", "shared::ntdef");
                      ("UINT64", "shared::basetsd"); ("INT64", "shared::basetsd");
-                     ("GUID", "shared::guiddef") ])
+                     ("GUID", "shared::guiddef"); ("LONG", "um::winnt") ])
     let addType typedefs ty =
         if ty = "" then
             typedefs
