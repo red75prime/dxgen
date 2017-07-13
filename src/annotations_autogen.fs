@@ -1266,16 +1266,16 @@ let d3d12annotations=
         ],MANone);
         ("GetResourceAllocationInfo",[
           ("This",AThis);
+          ("__ret_val",OutReturn);
           ("visibleMask",ANone);
           ("numResourceDescs",ANone);
           ("pResourceDescs",InArrayOfSize "numResourceDescs");
-          ("__ret_val",OutReturn);
         ],MANone);
         ("GetCustomHeapProperties",[
           ("This",AThis);
+          ("__ret_val",OutReturn);
           ("nodeMask",ANone);
           ("heapType",ANone);
-          ("__ret_val",OutReturn);
         ],MANone);
         ("CreateCommittedResource",[
           ("This",AThis);

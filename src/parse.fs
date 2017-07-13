@@ -355,10 +355,12 @@ let parse   (headerLocation: System.IO.FileInfo)
                 else
                     getTypeSpellingFS(crety)
             let retyname = getretyname crety
-            if (retyname.StartsWith("struct ") || retyname.Contains(" struct ")) && (retyname.Contains("*")=false) then
-                // C returns those structs thru EAX:EDX, C++ thru reference
-                args := ("__ret_val",Ptr(rety), Out) :: !args
-                Function(CFuncDesc(List.rev !args, Ptr(rety), cc))
+            if cursor.kind = CursorKind.CxxMethod then
+                if (retyname.StartsWith("struct ") || retyname.Contains(" struct ")) && (retyname.Contains("*")=false) then
+                    // C returns those structs thru EAX:EDX, C++ thru reference
+                    Function(CFuncDesc(("__ret_val",Ptr(rety), Out) :: List.rev !args, Ptr(rety), cc))
+                else
+                    Function(CFuncDesc(List.rev !args, rety, cc))
             else
                 Function(CFuncDesc(List.rev !args, rety, cc))
 

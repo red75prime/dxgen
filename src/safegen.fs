@@ -937,11 +937,11 @@ let generateRouting (clname, mname, nname, mannot, parms, rty) (noEnumConversion
       let (returnVal,returnType)=
         // nrty - normalized return type
         let nrty=
-          match List.last parms with
-          |("__ret_val",OutReturn,Ptr(_)) ->
+          if List.exists (function |("__ret_val",OutReturn,Ptr(_)) -> true |_ -> false) parms then
             // Artefact of broken C-interface
             Primitive Void
-          |_ -> rty
+          else
+            rty
         // For multiple return values combine them into tuple
         // Function return tuple (return expression : string, type of return expression : RustType)
         let mrv2tuple mrv=

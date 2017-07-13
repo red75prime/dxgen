@@ -474,7 +474,7 @@ let winapiGen (headername: string)
                 |_ -> ""
           
           let uuid =
-            match List.tryFind (function |Attribute.AttrUuid _ -> true |_ -> false) attrs with
+            match List.tryFind (function |Attribute.AttrUuid _ -> true) attrs with
             |Some(Attribute.AttrUuid uuid) -> uuid
             |_ -> 
                 utils.coloredText System.ConsoleColor.Red (fun () ->
