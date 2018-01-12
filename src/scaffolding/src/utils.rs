@@ -10,6 +10,7 @@ use std::ptr;
 use std::slice;
 use user32::*;
 use winapi::*;
+use kernel32 as k32;
 
 pub fn wchar_array_to_string_lossy(ws: &[u16]) -> String {
     match ws.iter().position(|c| *c == 0) {
@@ -304,6 +305,27 @@ impl Fence {
         }
         Ok(())
     }
+}
+
+pub fn hr2msg(hr: HRESULT) -> String {
+    const N: usize = 1024;
+    let mut buf = [0u16;N];
+
+	let ret = unsafe { k32::FormatMessageW(  
+			FORMAT_MESSAGE_FROM_SYSTEM | // System wide message.
+			FORMAT_MESSAGE_IGNORE_INSERTS, // No inserts.
+            ptr::null(), // Message is not in a module.
+			hr as u32, // Message identifier.
+			0, // Default language.
+			&mut buf as *mut _ as LPWSTR, // Buffer to hold the text string.
+			N as u32, // The function will allocate at least this much for pBuffer.
+            ptr::null_mut() // No inserts.
+    )};
+    if ret == 0 {
+        String::new()
+    } else {
+        wchar_array_to_string_lossy(&buf[..ret as usize])
+    }    
 }
 
 pub mod d2d {

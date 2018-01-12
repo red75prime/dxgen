@@ -120,7 +120,7 @@ impl DrawTextResources {
 
         let tformat = try!(dt.factorydw.create_text_format("Lucida Sans Unicode", 
                                 None, DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE_NORMAL, 
-                                DWRITE_FONT_STRETCH_NORMAL, 20., "en-GB"));
+                                DWRITE_FONT_STRETCH_NORMAL, 12., "en-GB"));
         
         Ok(DrawTextResources {
             d11context: dt.devcontext11.clone(),
@@ -164,7 +164,7 @@ impl DrawTextResources {
 
         if da { trace!("create_text_layout"); }
         let tla = try!(dt.factorydw.create_text_layout(&hello_vec[..], &self.tformat, 265., 95.));
-        try!(tla.set_font_size(40., text_range(0, 4)));
+        try!(tla.set_font_size(20., text_range(0, 4)));
 
         if da { trace!("draw_text"); }
         let d = 1.0f32;

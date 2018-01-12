@@ -150,7 +150,7 @@ fn load_skybox_texture(dev: &D3D12Device, comp_queue: &D3D12CommandQueue, copy_q
     let shexp_support = try!(dev.check_feature_support_format_support(DXGI_FORMAT_R9G9B9E5_SHAREDEXP));
 
     if shexp_support.Support1.0 & D3D12_FORMAT_SUPPORT1_TEXTURE2D.0 == 0
-        || shexp_support.Support1.0 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE.0 == 0
+        //|| shexp_support.Support1.0 & D3D12_FORMAT_SUPPORT1_SHADER_SAMPLE.0 == 0
         //|| shexp_support.Support2.0 & D3D12_FORMAT_SUPPORT2_UAV_TYPED_STORE.0 == 0 
     {
         trace!("Use DXGI_FORMAT_R16G16B16A16_FLOAT");
@@ -159,11 +159,13 @@ fn load_skybox_texture(dev: &D3D12Device, comp_queue: &D3D12CommandQueue, copy_q
                 ..resource_desc_tex2d_nomip(meta.width as u64,
                                             meta.height as u32,
                                             DXGI_FORMAT_R16G16B16A16_FLOAT,
+                                            //DXGI_FORMAT_R32G32B32A32_FLOAT,
                                             D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
             };
         trace!("create skybox texture");
         let tex = try!(create_resource_default(dev, &tex_desc));
-        try!(tex.set_name("Skybox texture DXGI_FORMAT_R16G16B16A16_FLOAT"));
+        tex.set_name("Skybox texture DXGI_FORMAT_R16G16B16A16_FLOAT")?;
+        trace!("texture created");
         let tex_uav_desc = uav_tex2d_desc(tex_desc.Format, 0, 0);
         try!(convert_to_rgb(dev, comp_queue, &rgbe8_tex, &rgbe8_srv_desc, &tex, &tex_uav_desc));
         try!(downsampler.generate_mips(dev, comp_queue, &tex));
@@ -201,19 +203,28 @@ fn convert_to_rgb(dev: &D3D12Device, cqueue: &D3D12CommandQueue, src: &D3D12Reso
     // One time conversion, so I don't keep anything
     let mut root_sig_bc = vec![];
     let mut convert_bc = vec![];
+    let mut smooth_bc = vec![];
+
+    if dev.check_feature_support_options()?.TypedUAVLoadAdditionalFormats == 0 {
+        error!("Device doesn't support additional formats in typed UAV load");
+        return Err(DXGI_ERROR_INVALID_CALL);
+    };
 
     trace!("convert_to_rgb compile_shaders");
-    try!(cdev::compile_shaders("skybox.hlsl", 
+    cdev::compile_shaders("skybox.hlsl", 
             &mut[
                 ("TCRS", "rootsig_1_0", &mut root_sig_bc),
                 ("CSTexConvert", "cs_5_0", &mut convert_bc),
+                ("CSSmooth", "cs_5_0", &mut smooth_bc),
             ], D3DCOMPILE_OPTIMIZATION_LEVEL3)
-        .map_err(|err|{ error!("{}", err) ; DXGI_ERROR_INVALID_CALL }));
+        .map_err(|err|{ error!("{}", err) ; DXGI_ERROR_INVALID_CALL })?;
 
-    let root_sig = try!(dev.create_root_signature(0, &root_sig_bc[..]));
+    trace!("convert_to_rgb create root signature");
+    let root_sig = dev.create_root_signature(0, &root_sig_bc[..])?;
     try!(root_sig.set_name("convert_to_rgb TCRS"));
 
     let convert_pso = try!(create_default_cpso(&dev, &root_sig, convert_bc));
+    let smooth_pso = try!(create_default_cpso(&dev, &root_sig, smooth_bc));
 
     trace!("convert_to_rgb create_fence");
     let fence = try!(dev.create_fence(0, D3D12_FENCE_FLAG_NONE));
@@ -243,17 +254,40 @@ fn convert_to_rgb(dev: &D3D12Device, cqueue: &D3D12CommandQueue, src: &D3D12Reso
 
     clist.dispatch(src_desc.Width as u32, src_desc.Height, 1);
 
-    clist.resource_barrier(&[
-        *ResourceBarrier::transition(src,
-        D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
-        *ResourceBarrier::transition(dst,
-        D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
-    ]);
-
-    trace!("convert_to_rgb clist.close");
+    trace!("convert_to_rgb clist.close 1");
     try!(clist.close());
 
     cqueue.execute_command_lists(&[&clist]);
+    
+
+    for i in 0..10 {
+        trace!("convert_to_rgb clist.reset smooth {}", i);
+        clist.reset(&calloc, Some(&smooth_pso))?;
+        clist.set_descriptor_heaps(&[dheap.get()]);
+
+        clist.set_compute_root_signature(&root_sig);
+        clist.set_compute_root_descriptor_table(0, dheap.gpu_handle(0));
+        //clist.resource_barrier(&[*ResourceBarrier::uav(dst)]);
+        let groups = 8;
+        clist.dispatch(src_desc.Width as u32/groups, src_desc.Height/groups, 1);
+        trace!("convert_to_rgb clist.close smooth {}", i);
+        clist.close()?;
+        cqueue.execute_command_lists(&[&clist]);
+    };
+
+    // clist.reset(&calloc, None)?;
+
+    // clist.resource_barrier(&[
+    //     *ResourceBarrier::transition(src,
+    //     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COMMON),
+    //     *ResourceBarrier::transition(dst,
+    //     D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON),
+    // ]);
+
+    // trace!("convert_to_rgb clist.close");
+    // try!(clist.close());
+
+    // cqueue.execute_command_lists(&[&clist]);
 
     trace!("convert_to_rgb wait");
     try!(core::wait(cqueue, &fence, &core::create_event()));

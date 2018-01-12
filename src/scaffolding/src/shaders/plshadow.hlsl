@@ -56,7 +56,7 @@ int cube_face(float3 v) {
 [maxvertexcount(18)]
 void GSMain(triangle VS_OUTPUT input[3], inout TriangleStream<PS_IN> outstream) {
   // Ok. We have triangle in light-centric coordinates. 
-  // Let's replicate them onto appropriate cube sides.
+  // Let's replicate it onto appropriate cube sides.
   int3 faces = int3(cube_face(input[0].pos.xyz),cube_face(input[1].pos.xyz),cube_face(input[2].pos.xyz));
   int oneface = 6;
   if (all(faces == int3(0, 0, 0))) {

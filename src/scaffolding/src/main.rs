@@ -49,6 +49,7 @@ mod drawtext;
 mod skybox;
 mod seh;
 mod wmtext;
+mod ws;
 
 #[cfg(feature = "openal")] mod sound;
 
@@ -101,6 +102,7 @@ fn main() {
         enable_srgb: false,
         render_trace: false,
         fovy_deg: 60.,
+        render_text: true,
     };
   let mut adapters_to_test = vec![];
   let mut adapters_info = false;
@@ -113,6 +115,7 @@ fn main() {
   opts.optflag("", "f32-color", "Render using R32G32B32_FLOAT");
   opts.optflag("d", "debug", "Enable debug layer");
   opts.optflag("", "nodebug", "Disable debug layer");
+  opts.optflag("", "notext", "Disable DWrite text output");
   opts.optflag("", "trace", "Enable logging in render cycle");
   opts.optflag("", "srgb", "Pretend that backbuffer uses sRGB (doesn't seem to affect anything)");
   opts.optopt("o", "objects", "Number of cubes", "NUM");
@@ -154,6 +157,9 @@ fn main() {
       };
       if ms.opt_present("nodebug") {
         parms.debug_layer = false;
+      };
+      if ms.opt_present("notext") {
+        parms.render_text = false;
       };
       if ms.opt_present("trace") {
         parms.render_trace = true;
@@ -270,6 +276,7 @@ fn main() {
       });
     };
   });
+  seh::uninstall_ctrl_c_handler();
 }
 
 fn print_adapter_info(adapter: &DXGIAdapter1) {
@@ -280,6 +287,21 @@ fn print_adapter_info(adapter: &DXGIAdapter1) {
     if let Ok(data) = dev.check_feature_support_options() {
       println!("   {:#?}", data);
     }
+
+    let rdesc = D3D12_RESOURCE_DESC {
+      Dimension: D3D12_RESOURCE_DIMENSION_TEXTURE1D,
+      Alignment: 1024,
+      Width: 1024,
+      Height: 1,
+      DepthOrArraySize: 1,
+      MipLevels: 10,
+      Format: DXGI_FORMAT_R32G32B32A32_FLOAT,
+      SampleDesc: DXGI_SAMPLE_DESC{ Count: 1, Quality: 0, },
+      Layout: D3D12_TEXTURE_LAYOUT_UNKNOWN,
+      Flags: D3D12_RESOURCE_FLAG_NONE,
+    };
+    let rai = dev.get_resource_allocation_info(0, &[rdesc]);
+    println!("   {:#?}", rai);
   }
 }
 
@@ -342,6 +364,7 @@ fn main_prime(id: usize, dxgi_factory: DXGIFactory4, adapter: DXGIAdapter1, _mut
         },
         Err(err) => {
             error!("AppData creation failed with error code 0x{:x}", err);
+            error!("{}", utils::hr2msg(err));
             return ();
         },
     };

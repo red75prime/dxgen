@@ -95,6 +95,7 @@ pub struct CubeParms {
     pub render_trace: bool,
     pub enable_srgb: bool,
     pub fovy_deg: f32,
+    pub render_text: bool,
 }
 
 static CLEAR_COLOR: [f32; 4] = [0.01, 0.01, 0.02, 1.0];
@@ -173,12 +174,19 @@ impl CommonResources {
         alias!(dev, &core.dev);
         let mut vshader_bc = vec![];
         let mut pshader_bc = vec![];
+        let mut vline_bc = vec![];
+        let mut pline_bc = vec![];
+
         let mut root_signature_bc = vec![];
+        let mut rsline_bc = vec![];
         trace!("Compiling 'shaders.hlsl'");
         match compile_shaders("shaders.hlsl", &mut [
                     ("VSMain", "vs_5_0", &mut vshader_bc),
                     ("PSMain", "ps_5_0", &mut pshader_bc),
                     ("RSD", "rootsig_1_0", &mut root_signature_bc),
+                    ("VSLine", "vs_5_0", &mut vline_bc),
+                    ("PSLine", "ps_5_0", &mut pline_bc),
+                    ("RSL", "rootsig_1_0", &mut rsline_bc),
                 ], D3DCOMPILE_OPTIMIZATION_LEVEL3) {
             Err(err) => {
                 error!("File 'shaders.hlsl'. {}", err);
@@ -305,7 +313,13 @@ impl CommonResources {
         
         let skybox = Some(try!(Skybox::new(core, &downsampler, parameters.rt_format)));
 
-        let draw_text = Some(try!(DrawText::new(core, parameters.debug_layer)));
+        
+        let draw_text = 
+            if parameters.render_text {
+                Some(try!(DrawText::new(core, parameters.debug_layer)))
+            } else {
+                None
+            };
 
 
         Ok(CommonResources {
@@ -509,7 +523,13 @@ impl FrameResources {
             left: 0,
             top: 0,
         };
-        let dtr = Some(try!(DrawTextResources::new(core, cr.draw_text.as_ref().unwrap(), rt, format, parameters.render_trace)));
+
+        let dtr = 
+            if parameters.render_text {
+                Some(try!(DrawTextResources::new(core, cr.draw_text.as_ref().unwrap(), rt, format, parameters.render_trace)))
+            } else {
+                None
+            };
 
         trace!("Create FrameResources done");
         Ok(FrameResources {
@@ -702,7 +722,7 @@ impl FrameResources {
         ::perf_start("drawtext");
         if let Some(ref dtr) = self.dtr {
             try!(dtr.render(core, cr.draw_text.as_ref().unwrap(), rt, fps));
-        }
+        };
         ::perf_end("drawtext");
         let fence_val = core::next_fence_value();
         try!(self.fence.signal(&core.graphics_queue, fence_val));
@@ -762,8 +782,49 @@ impl AppData {
 
     // Allows rendering module to change backbuffers'/depth-stencil buffer's size when window size is changed
     // Also it sets AppData::minimized field
+    // This function gets called by message loop, when WM_SIZE message arrives.
+    // Normally WM_SIZE goes to window procedure, but I found that this can happen
+    // inside DXGISwapchain::present() call I do in on_render() function.
+    // It causes panic, because in window procedure I borrow RefCell<AppData>, which was
+    // already borrowed for on_render().
+    // So I tweaked window procedure and window::PollEventIterator to
+    // insert WM_SIZE into message queue.
+    // TODO: return status.
     pub fn on_resize(&mut self, w: u32, h: u32, c: u32) {
-        on_resize(self, w, h, c)
+        debug!("Resize to {},{},{}.", w, h, c);
+        if w == 0 || h == 0 {
+            self.minimized = true;
+            return;
+        };
+        self.minimized = false;
+        // Before we can resize back buffers, we need to make sure that GPU
+        // no longer draws on them.
+        utils::wait_for_graphics_queue(&self.core, &self.fence, &self.fence_event);
+        utils::wait_for_compute_queue(&self.core, &self.fence, &self.fence_event);
+        utils::wait_for_copy_queue(&self.core, &self.fence, &self.fence_event);
+
+        self.frame_resources.truncate(0);
+        self.common_resources.draw_text = None;
+
+        self.swap_chain.resize(&self.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM)
+                    .dump(&self.core, "swap_chain resize")
+                    .expect("swap_chain.resize failed");
+
+        self.common_resources.draw_text =  
+            if self.parameters.render_text {
+                Some(DrawText::new(&self.core, self.parameters.debug_layer)
+                    .expect("Cannot create DrawText"))
+            } else { None };
+                
+        self.camera().set_aspect((w as f32) / (h as f32));
+
+        for i in 0 .. self.frame_count {
+            self.frame_resources.push(
+                FrameResources::new(&self.core, &self.common_resources, w, h, 
+                        self.swap_chain.render_target(i), DXGI_FORMAT_R8G8B8A8_UNORM, &self.parameters)
+                .unwrap());
+        }
+
     }
 
     // renders and presents scene
@@ -816,10 +877,9 @@ fn get_display_mode_list1(output: &DXGIOutput4,
         match output.get_display_mode_list1(format, flags, None) {
             Ok(mode_count) => {
                 let mut modes = unsafe {
+                    // DXGI_MODE_DESC1 is POD. Uninitialized content will be overwritten immediately
                     utils::uninitialized_vec(mode_count as usize)
                 };
-                // DXGI_MODE_DESC1 is POD. Uninitialized content will be overwritten immediately
-                // So it's safe to set_len here
                 match output.get_display_mode_list1(format, flags, Some(&mut modes[..])) {
                     Ok(mode_count_actual) => {
                         assert!(mode_count == mode_count_actual);
@@ -891,6 +951,7 @@ pub fn create_static_sampler_gps<T: VertexFormat>(dev: &D3D12Device,
     Ok(ps)
 }
 
+#[inline]
 fn clamp(x: f32, l:f32, h:f32) -> u32 {
     if x<=l { 0 } 
     else if x>=h { h as u32 }
@@ -1145,52 +1206,5 @@ pub fn on_render(data: &mut AppData, pause: bool, fps: f32, dt: f32) {
     }
     ::perf_end("state_update");
     data.core.dump_info_queue();
-}
-
-
-// ---------------------------
-
-// This function gets called by message loop, when WM_SIZE message arrives.
-// Normally WM_SIZE goes to window procedure, but I found that this can happen
-// inside DXGISwapchain::present() call I do in on_render() function.
-// It causes panic, because in window procedure I borrow RefCell<AppData>, which was
-// already borrowed for on_render().
-// So I tweaked window procedure and window::PollEventIterator to
-// insert WM_SIZE into message queue.
-// TODO: return status.
-pub fn on_resize(data: &mut AppData, w: u32, h: u32, c: u32) {
-    debug!("Resize to {},{},{}.", w, h, c);
-    if w == 0 || h == 0 {
-        data.minimized = true;
-        return;
-    };
-    data.minimized = false;
-    // Before we can resize back buffers, we need to make sure that GPU
-    // no longer draws on them.
-    utils::wait_for_graphics_queue(&data.core, &data.fence, &data.fence_event);
-    utils::wait_for_compute_queue(&data.core, &data.fence, &data.fence_event);
-    utils::wait_for_copy_queue(&data.core, &data.fence, &data.fence_event);
-
-    data.frame_resources.truncate(0);
-    data.common_resources.draw_text = None;
-
-    data.swap_chain.resize(&data.core.dev, w, h, DXGI_FORMAT_R8G8B8A8_UNORM)
-                   .dump(&data.core, "swap_chain resize")
-                   .expect("swap_chain.resize failed");
-
-    data.common_resources.draw_text =  
-        Some(DrawText::new(&data.core, data.parameters.debug_layer)
-             .expect("Cannot create DrawText"));
-             
-    data.camera().set_aspect((w as f32) / (h as f32));
-
-    for i in 0 .. data.frame_count {
-        data.frame_resources.push(
-            FrameResources::new(&data.core, &data.common_resources, w, h, 
-                    data.swap_chain.render_target(i), DXGI_FORMAT_R8G8B8A8_UNORM, &data.parameters)
-            .unwrap());
-    }
-
-    // on_render(data, 1, 1);
 }
 

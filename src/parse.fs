@@ -358,6 +358,7 @@ let parse   (headerLocation: System.IO.FileInfo)
             if cursor.kind = CursorKind.CxxMethod then
                 if (retyname.StartsWith("struct ") || retyname.Contains(" struct ")) && (retyname.Contains("*")=false) then
                     // C returns those structs thru EAX:EDX, C++ thru reference
+                    // order of parameters for C call: this, pointer to return value, rest of parameters
                     Function(CFuncDesc(("__ret_val",Ptr(rety), Out) :: List.rev !args, Ptr(rety), cc))
                 else
                     Function(CFuncDesc(List.rev !args, rety, cc))

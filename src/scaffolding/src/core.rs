@@ -210,7 +210,7 @@ pub fn create_core(dxgi_factory: &DXGIFactory4, adapter: Option<&DXGIAdapter1>,
 
     let cqd = D3D12_COMMAND_QUEUE_DESC { 
         Type: D3D12_COMMAND_LIST_TYPE_COMPUTE, 
-        Priority: D3D12_COMMAND_QUEUE_PRIORITY_HIGH.0 as i32, 
+        Priority: 0, 
         Flags: D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT, 
         ..gqd 
     };
@@ -300,7 +300,7 @@ pub fn create_swap_chain(core: &DXCore,
                                                                 restrict_to_output))
                 .query_interface());
     let frame_count = desc.BufferCount;
-    
+
     trace!("Create DescriptorHeap");
     let rtvheap = try!(DescriptorHeap::new(&core.dev,
                                            frame_count,

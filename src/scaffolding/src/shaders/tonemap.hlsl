@@ -31,18 +31,33 @@ float brightness(float3 cl) {
   return dot(float3(0.2126, 0.7152, 0.0722), cl.rgb);
 }
 
+static const float gr = 1./256.;
+static const float dith[3][3] = {{0,gr/9,5*gr/9},{2*gr/9,6*gr/9,8*gr/9},{7*gr/9,3*gr/9, 4*gr/9}};
+
 [RootSignature(RSD)]
 [numthreads(CombineGroups, CombineGroups, 1)]
 void CSMain(uint3 dtid: SV_DispatchThreadId, uint3 gtid: SV_GroupThreadId, uint3 gid: SV_GroupId) {
   uint2 crd = dtid.xy;
   uint w, h;
   dst.GetDimensions(w, h);
-  float3 cl = max(src[crd].rgb , hvtemp.SampleLevel(linSamp, crd/float2(w-1,h-1), 0).rgb);
+  float3 hv = hvtemp.SampleLevel(linSamp, crd/float2(w-1,h-1), 0).rgb;
+  float3 cl = src[crd].rgb;//max(src[crd].rgb , hv);
+
+  float3 hvYxy = rgb2Yxy(hv);
+  hvYxy.r *= key*2;
+  float x0 = 0.27;
+  float y0 = 0.35;
+  hvYxy.g = x0;
+  hvYxy.b = y0;
+  hv = Yxy2rgb(hvYxy);
 
   float3 Yxy = rgb2Yxy(cl);
-  Yxy.r *= key*2;
+  float v = clamp(Yxy.r*Yxy.r*100, 0.0, 1);
+  Yxy.r *= key*4;
+  float3 c = Yxy2rgb(Yxy);
+  float d = dith[(crd.x/1)%3][(crd.y/1)%3];
 
-  dst[crd] = float4(Yxy2rgb(Yxy), 1);
+  dst[crd] = float4(c+float3(d,d,d), 1);//float4(lerp(hv, Yxy2rgb(Yxy), v), 1);
 
 }
 
@@ -95,7 +110,7 @@ void CSHorizontal(uint3 gtid: SV_GroupThreadId, uint3 gid : SV_GroupId) {
   uint srcx = gid.x * HTGroups + gtid.x - KernelSize;
   uint srcy = gid.y * 2;
   float3 scl = (src[uint2(srcx, srcy)].rgb + src[uint2(srcx, srcy + 1)].rgb);
-  tmp1[gtid.x] = brightness(scl)>avg_brightness*100 ? scl : float3(0, 0, 0);
+  tmp1[gtid.x] = brightness(scl)>0.1?float3(0,0.1,0):scl;//scl; //brightness(scl)>avg_brightness*100 ? scl : float3(0, 0, 0);
 
   AllMemoryBarrierWithGroupSync();
 

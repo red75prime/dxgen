@@ -116,3 +116,15 @@ float4 PSMain(VS_OUTPUT pv) : SV_Target {
   return env*0.2;
 //  return (texel*l*0.6*light_invd+sb*float4(10,10,100,1)/(0.1+(length(light_off)+length(eye_off))/1000))*shadowCoverage+ambientTerm+env*0.2;
 }
+
+#define RSL "RootFlags(ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT), CBV(b0)"
+
+[RootSignature(RSL)]
+float4 VSLine(float3 pnt: POSITION): SV_Position{
+  return mul(float4(pnt, 1), viewproj);
+}
+
+[RootSignature(RSL)]
+float4 PSLine(float4 pnt: SV_Position): SV_Target {
+  return float4(1,1,1,1);
+}

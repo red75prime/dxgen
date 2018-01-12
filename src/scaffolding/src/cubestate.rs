@@ -187,7 +187,7 @@ static EPS: f32 = 0.000001;
 // r - sphere radius
 // (pp, n) - point on plane, normal pointing into allowed volume
 fn time_to_hit(p: V3, v: V3, a: V3, r: f32, (pp, n): (V3, V3)) -> Option<f32> {
-    // we care only about motion along normal, so let't project everything onto it.
+    // we care only about motion along normal, so let's project everything onto it.
     let nd = (p-pp).dot(n); // distance from center of sphere to the plane
     let nv = v.dot(n); // speed along nornal (positive - into allowed space)
     if (nd-r).abs() < TOUCH_TOLERANCE && nv < EPS {
