@@ -2,6 +2,7 @@ use cgmath::*;
 use core::{self, Event, Handle, DXCore, DumpOnError};
 use dxsafe::*;
 use dxsafe::structwrappers::*;
+use std::borrow::Cow;
 use std::ffi::OsString;
 use std::mem;
 use std::os::windows::ffi::OsStringExt;
@@ -326,6 +327,21 @@ pub fn hr2msg(hr: HRESULT) -> String {
     } else {
         wchar_array_to_string_lossy(&buf[..ret as usize])
     }    
+}
+
+pub fn feature_level_desc(fl: D3D_FEATURE_LEVEL) -> Cow<'static, str> {
+    match fl {
+        D3D_FEATURE_LEVEL_9_1 => "9.1",
+        D3D_FEATURE_LEVEL_9_2 => "9.2",
+        D3D_FEATURE_LEVEL_9_3 => "9.3",
+        D3D_FEATURE_LEVEL_10_0 => "10.0",
+        D3D_FEATURE_LEVEL_10_1 => "10.1",
+        D3D_FEATURE_LEVEL_11_0 => "11.0",
+        D3D_FEATURE_LEVEL_11_1 => "11.1",
+        D3D_FEATURE_LEVEL_12_0 => "12.0",
+        D3D_FEATURE_LEVEL_12_1 => "12.1",
+        _ => return format!("Unknown feature level: 0x{:x}", fl.0).into(),
+      }.into()
 }
 
 pub mod d2d {

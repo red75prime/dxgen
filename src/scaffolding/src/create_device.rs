@@ -15,38 +15,50 @@ use std::os::windows::ffi::OsStrExt;
 use std::path::Path;
 use std::ptr;
 
-pub fn d3d11on12_create_device(dev12: &D3D12Device, flags: D3D11_CREATE_DEVICE_FLAG, cqueue: &D3D12CommandQueue) -> HResult<(D3D11Device, D3D11DeviceContext)> {
+pub fn d3d11on12_create_device(
+    dev12: &D3D12Device,
+    flags: D3D11_CREATE_DEVICE_FLAG,
+    cqueue: &D3D12CommandQueue,
+) -> HResult<(D3D11Device, D3D11DeviceContext)> {
     let mut dev11: *mut IUnknown = ptr::null_mut();
     let mut devcontext11: *mut IUnknown = ptr::null_mut();
     let mut cqptr = cqueue.iptr();
-    let hr = unsafe { D3D11On12CreateDevice(
-                dev12.iptr() as *mut _,
-		        flags.0, // D3D11_CREATE_DEVICE_FLAG
-                ptr::null(), // feature levels array (optional)
-		        0, // length of above array
-		        &mut cqptr as *mut *mut _ as *mut *mut _, // queues array 
-		        1, // length of above array
-		        0, // Node mask
-		        &mut dev11 as *mut *mut _ as *mut *mut _,
-		        &mut devcontext11 as *mut *mut _ as *mut *mut _,
-		        ptr::null_mut() // out feature level (optional)
-            )};
+    let hr = unsafe {
+        D3D11On12CreateDevice(
+            dev12.iptr() as *mut _,
+            flags.0,                                  // D3D11_CREATE_DEVICE_FLAG
+            ptr::null(),                              // feature levels array (optional)
+            0,                                        // length of above array
+            &mut cqptr as *mut *mut _ as *mut *mut _, // queues array
+            1,                                        // length of above array
+            0,                                        // Node mask
+            &mut dev11 as *mut *mut _ as *mut *mut _,
+            &mut devcontext11 as *mut *mut _ as *mut *mut _,
+            ptr::null_mut(), // out feature level (optional)
+        )
+    };
     if SUCCEEDED(hr) {
-        Ok((D3D11Device::new(dev11), D3D11DeviceContext::new(devcontext11)))
+        Ok((
+            D3D11Device::new(dev11),
+            D3D11DeviceContext::new(devcontext11),
+        ))
     } else {
         Err(hr)
     }
 }
 
-pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>,
-                           min_feat_level: D3D_FEATURE_LEVEL)
-                           -> HResult<D3D12Device> {
+pub fn d3d12_create_device(
+    adapter: Option<&DXGIAdapter1>,
+    min_feat_level: D3D_FEATURE_LEVEL,
+) -> HResult<D3D12Device> {
     let mut p_dev: *mut IUnknown = ptr::null_mut();
     let hr = unsafe {
-        D3D12CreateDevice(adapter.map(|p| p.iptr()).unwrap_or(ptr::null_mut()),
-                          min_feat_level,
-                          &IID_ID3D12Device,
-                          &mut p_dev as *mut *mut _ as *mut *mut c_void)
+        D3D12CreateDevice(
+            adapter.map(|p| p.iptr()).unwrap_or(ptr::null_mut()),
+            min_feat_level,
+            &IID_ID3D12Device,
+            &mut p_dev as *mut *mut _ as *mut *mut c_void,
+        )
     };
     if SUCCEEDED(hr) {
         Ok(D3D12Device::new(p_dev))
@@ -55,14 +67,18 @@ pub fn d3d12_create_device(adapter: Option<&DXGIAdapter1>,
     }
 }
 
-pub fn d3d12_test_create_device(adapter: Option<&DXGIAdapter1>,
-                           min_feat_level: D3D_FEATURE_LEVEL)
-                           -> HResult<()> {
+#[allow(unused)]
+pub fn d3d12_test_create_device(
+    adapter: Option<&DXGIAdapter1>,
+    min_feat_level: D3D_FEATURE_LEVEL,
+) -> HResult<()> {
     let hr = unsafe {
-        D3D12CreateDevice(adapter.map(|p| p.iptr()).unwrap_or(ptr::null_mut()),
-                          min_feat_level,
-                          &IID_ID3D12Device,
-                          ptr::null_mut())
+        D3D12CreateDevice(
+            adapter.map(|p| p.iptr()).unwrap_or(ptr::null_mut()),
+            min_feat_level,
+            &IID_ID3D12Device,
+            ptr::null_mut(),
+        )
     };
     if SUCCEEDED(hr) {
         Ok(())
@@ -71,16 +87,14 @@ pub fn d3d12_test_create_device(adapter: Option<&DXGIAdapter1>,
     }
 }
 
-pub fn create_dxgi_factory2<T: HasIID+TUnknown>(debug: bool) -> HResult<T> {
+pub fn create_dxgi_factory2<T: HasIID + TUnknown>(debug: bool) -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
     let hr = unsafe {
-        CreateDXGIFactory2(if debug {
-                               DXGI_CREATE_FACTORY_DEBUG
-                           } else {
-                               0
-                           },
-                           T::iid(),
-                           &mut p_fac as *mut *mut _ as *mut *mut _)
+        CreateDXGIFactory2(
+            if debug { DXGI_CREATE_FACTORY_DEBUG } else { 0 },
+            T::iid(),
+            &mut p_fac as *mut *mut _ as *mut *mut _,
+        )
     };
     if SUCCEEDED(hr) {
         Ok(T::new(p_fac))
@@ -89,10 +103,29 @@ pub fn create_dxgi_factory2<T: HasIID+TUnknown>(debug: bool) -> HResult<T> {
     }
 }
 
-pub fn create_dxgi_factory1<T: HasIID+TUnknown>() -> HResult<T> {
+#[allow(unused)]
+pub fn create_dxgi_factory1<T: HasIID + TUnknown>() -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
+    let hr = unsafe { CreateDXGIFactory1(T::iid(), &mut p_fac as *mut *mut _ as *mut *mut _) };
+    if SUCCEEDED(hr) {
+        Ok(T::new(p_fac))
+    } else {
+        Err(hr)
+    }
+}
+
+pub fn create_d2d1_factory_single_threaded<T: HasIID + TUnknown>() -> HResult<T> {
+    let mut p_fac: *mut IUnknown = ptr::null_mut();
+    let opts = D2D1_FACTORY_OPTIONS {
+        debugLevel: D2D1_DEBUG_LEVEL_INFORMATION,
+    };
     let hr = unsafe {
-        CreateDXGIFactory1(T::iid(), &mut p_fac as *mut *mut _ as *mut *mut _)
+        D2D1CreateFactory(
+            D2D1_FACTORY_TYPE_SINGLE_THREADED,
+            T::iid(),
+            &opts as *const _,
+            &mut p_fac as *mut *mut _ as *mut *mut _,
+        )
     };
     if SUCCEEDED(hr) {
         Ok(T::new(p_fac))
@@ -101,11 +134,19 @@ pub fn create_dxgi_factory1<T: HasIID+TUnknown>() -> HResult<T> {
     }
 }
 
-pub fn create_d2d1_factory_single_threaded<T: HasIID+TUnknown>() -> HResult<T> {
+#[allow(unused)]
+pub fn create_d2d1_factory_multi_threaded<T: HasIID + TUnknown>() -> HResult<T> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
-    let opts = D2D1_FACTORY_OPTIONS { debugLevel: D2D1_DEBUG_LEVEL_INFORMATION };
+    let opts = D2D1_FACTORY_OPTIONS {
+        debugLevel: D2D1_DEBUG_LEVEL_INFORMATION,
+    };
     let hr = unsafe {
-        D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, T::iid(), &opts as *const _, &mut p_fac as *mut *mut _ as *mut *mut _)
+        D2D1CreateFactory(
+            D2D1_FACTORY_TYPE_MULTI_THREADED,
+            T::iid(),
+            &opts as *const _,
+            &mut p_fac as *mut *mut _ as *mut *mut _,
+        )
     };
     if SUCCEEDED(hr) {
         Ok(T::new(p_fac))
@@ -113,25 +154,15 @@ pub fn create_d2d1_factory_single_threaded<T: HasIID+TUnknown>() -> HResult<T> {
         Err(hr)
     }
 }
-
-pub fn create_d2d1_factory_multi_threaded<T: HasIID+TUnknown>() -> HResult<T> {
-    let mut p_fac: *mut IUnknown = ptr::null_mut();
-    let opts = D2D1_FACTORY_OPTIONS { debugLevel: D2D1_DEBUG_LEVEL_INFORMATION };
-    let hr = unsafe {
-        D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, T::iid(), &opts as *const _, &mut p_fac as *mut *mut _ as *mut *mut _)
-    };
-    if SUCCEEDED(hr) {
-        Ok(T::new(p_fac))
-    } else {
-        Err(hr)
-    }
-}
-
 
 pub fn create_dwrite_factory_shared() -> HResult<DWriteFactory> {
     let mut p_fac: *mut IUnknown = ptr::null_mut();
     let hr = unsafe {
-        DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, DWriteFactory::iid(), &mut p_fac as *mut *mut _ as *mut *mut _)
+        DWriteCreateFactory(
+            DWRITE_FACTORY_TYPE_SHARED,
+            DWriteFactory::iid(),
+            &mut p_fac as *mut *mut _ as *mut *mut _,
+        )
     };
     if SUCCEEDED(hr) {
         Ok(DWriteFactory::new(p_fac))
@@ -157,8 +188,10 @@ pub fn blob_to_string(blob: &D3D10Blob) -> String {
         "".into()
     } else {
         let blob_slice: &[u8] = unsafe {
-            ::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8,
-                                         blob.get_buffer_size() as usize)
+            ::std::slice::from_raw_parts(
+                blob.get_buffer_pointer() as *mut u8,
+                blob.get_buffer_size() as usize,
+            )
         };
         let mut ret = vec![];
         ret.extend_from_slice(blob_slice);
@@ -171,8 +204,10 @@ pub fn blob_as_slice(blob: &D3D10Blob) -> &[u8] {
         &[]
     } else {
         unsafe {
-            ::std::slice::from_raw_parts(blob.get_buffer_pointer() as *mut u8,
-                                         blob.get_buffer_size() as usize)
+            ::std::slice::from_raw_parts(
+                blob.get_buffer_pointer() as *mut u8,
+                blob.get_buffer_size() as usize,
+            )
         }
     }
 }
@@ -181,16 +216,20 @@ pub fn blob_to_vec(blob: &D3DBlob) -> Vec<u8> {
     blob_as_slice(blob).to_vec()
 }
 
-pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC,
-                                      ver: D3D_ROOT_SIGNATURE_VERSION)
-                                      -> HResult<D3D10Blob> {
+#[allow(unused)]
+pub fn d3d12_serialize_root_signature(
+    root_signature: &D3D12_ROOT_SIGNATURE_DESC,
+    ver: D3D_ROOT_SIGNATURE_VERSION,
+) -> HResult<D3D10Blob> {
     let mut p_blob: *mut IUnknown = ptr::null_mut();
     let mut p_err: *mut IUnknown = ptr::null_mut();
     let hr = unsafe {
-        D3D12SerializeRootSignature(root_signature,
-                                    ver,
-                                    &mut p_blob as *mut *mut _ as *mut *mut _,
-                                    &mut p_err as *mut *mut _ as *mut *mut _)
+        D3D12SerializeRootSignature(
+            root_signature,
+            ver,
+            &mut p_blob as *mut *mut _ as *mut *mut _,
+            &mut p_err as *mut *mut _ as *mut *mut _,
+        )
     };
     if SUCCEEDED(hr) {
         Ok(D3D10Blob::new(p_blob))
@@ -202,30 +241,34 @@ pub fn d3d12_serialize_root_signature(root_signature: &D3D12_ROOT_SIGNATURE_DESC
     }
 }
 
-pub fn d3d_compile_from_str(shader_text: &str, shader_name: &str,
-                            entry: &str,
-                            target: &str,
-                            flags: u32)
-                            -> Result<Vec<u8>, String> {
+pub fn d3d_compile_from_str(
+    shader_text: &str,
+    shader_name: &str,
+    entry: &str,
+    target: &str,
+    flags: u32,
+) -> Result<Vec<u8>, String> {
     let cstr_entry = str_to_cstring(entry);
     let cstr_target = str_to_cstring(target);
     let mut code_blob: *mut ID3DBlob = ptr::null_mut();
     let mut error_blob: *mut ID3DBlob = ptr::null_mut();
     let hr = unsafe {
-        D3DCompile2(shader_text.as_ptr() as *const _,
-                    shader_text.len() as SIZE_T,
-                    str_to_cstring(shader_name).as_ptr(),
-                    ptr::null(),
-                    D3D_COMPILE_STANDARD_FILE_INCLUDE,
-                    cstr_entry.as_ptr(),
-                    cstr_target.as_ptr(),
-                    flags,
-                    0,
-                    0,
-                    ptr::null(),
-                    0,
-                    &mut code_blob,
-                    &mut error_blob)
+        D3DCompile2(
+            shader_text.as_ptr() as *const _,
+            shader_text.len() as SIZE_T,
+            str_to_cstring(shader_name).as_ptr(),
+            ptr::null(),
+            D3D_COMPILE_STANDARD_FILE_INCLUDE,
+            cstr_entry.as_ptr(),
+            cstr_target.as_ptr(),
+            flags,
+            0,
+            0,
+            ptr::null(),
+            0,
+            &mut code_blob,
+            &mut error_blob,
+        )
     };
     if SUCCEEDED(hr) {
         if !error_blob.is_null() {
@@ -239,84 +282,26 @@ pub fn d3d_compile_from_str(shader_text: &str, shader_name: &str,
     }
 }
 
-pub fn d3d_get_root_signature_from_str(shader_text: &str,
-                                       dev: &D3D12Device)
-                                       -> Result<D3D12RootSignature, HRESULT> {
+#[allow(unused)]
+pub fn d3d_get_root_signature_from_str(
+    shader_text: &str,
+    dev: &D3D12Device,
+) -> Result<D3D12RootSignature, HRESULT> {
     let mut root_sign_blob: *mut ID3DBlob = ptr::null_mut();
     let hr = unsafe {
-        D3DGetBlobPart(shader_text.as_ptr() as *mut _,
-                       shader_text.len() as SIZE_T,
-                       D3D_BLOB_ROOT_SIGNATURE,
-                       0,
-                       &mut root_sign_blob)
+        D3DGetBlobPart(
+            shader_text.as_ptr() as *mut _,
+            shader_text.len() as SIZE_T,
+            D3D_BLOB_ROOT_SIGNATURE,
+            0,
+            &mut root_sign_blob,
+        )
     };
     if SUCCEEDED(hr) {
         dev.create_root_signature(0, blob_as_slice(&D3DBlob::new(root_sign_blob as *mut _)))
     } else {
         Err(hr)
     }
-}
-
-pub fn d3d_compile_from_file(file_name: &str,
-                             entry: &str,
-                             target: &str,
-                             flags: UINT)
-                             -> Result<Vec<u8>, String> {
-    let w_file_name = str_to_vec_u16(file_name);
-    let w_entry = str_to_cstring(entry);
-    let w_target = str_to_cstring(target);
-    let mut blob1: *mut ID3D10Blob = ptr::null_mut();
-    let mut blob2: *mut ID3D10Blob = ptr::null_mut();
-    let hr = unsafe {
-        D3DCompileFromFile(w_file_name.as_ptr(),
-                           ptr::null_mut(),
-                           ptr::null_mut(),
-                           w_entry.as_ptr(),
-                           w_target.as_ptr(),
-                           flags,
-                           0,
-                           &mut blob1,
-                           &mut blob2)
-    };
-    if !blob2.is_null() {
-        let blob = D3D10Blob::new(blob2 as *mut _);
-        Err(blob_to_string(&blob))
-    } else if hr == 0 {
-        assert!(!blob1.is_null());
-        let blob = D3D10Blob::new(blob1 as *mut _);
-        Ok(blob_to_vec(&blob))
-    } else {
-        Err("".into())
-    }
-}
-
-
-pub fn compile_shader_and_root_signature(text: &str, file_name: &str,
-                                         fname: &str,
-                                         rsname: &str,
-                                         flags: u32)
-                                         -> Result<(Vec<u8>, Vec<u8>), ()> {
-    let shader_bytecode = match d3d_compile_from_str(text, file_name, fname, "cs_5_1", flags) {
-        Ok(sbc) => sbc,
-        Err(err) => {
-            error!("Shader '{}' compile error: {}", fname, err);
-            return Err(());
-        }
-    };
-    let root_sig_bytecode = match d3d_compile_from_str(text, file_name, rsname, "rootsig_1_0", flags) {
-        Ok(sbc) => sbc,
-        Err(err) => {
-            error!("Root signature '{}' compile error: {}", rsname, err);
-            return Err(());
-        }
-    };
-    Ok((shader_bytecode, root_sig_bytecode))
-}
-
-
-fn str_to_vec_u16(s: &str) -> Vec<u16> {
-    let osstr = OsString::from(s);
-    osstr.encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
 }
 
 use std::ffi::CString;
@@ -372,9 +357,12 @@ impl From<::std::str::Utf8Error> for ShaderCompileError {
     }
 }
 
-pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static str, &mut Vec<u8>)], flags: u32) 
-                        -> Result<(), ShaderCompileError> {
-    let paths = ["./","../../src/shaders/","./shaders/"];
+pub fn compile_shaders(
+    file_name: &str,
+    func_names: &mut [(&'static str, &'static str, &mut Vec<u8>)],
+    flags: u32,
+) -> Result<(), ShaderCompileError> {
+    let paths = ["./", "../../src/shaders/", "./shaders/"];
     let mut f = None;
     let mut fpath = Path::new(file_name).to_path_buf();
     for &path in &paths {
@@ -383,34 +371,42 @@ pub fn compile_shaders(file_name: &str, func_names: &mut[(&'static str, &'static
             Ok(file) => {
                 f = Some(file);
                 break;
-            },
+            }
             Err(_) => (),
         };
-    };
-    let mut f = if let Some(f) = f { f } else {
-        return Err(ShaderCompileError::Io(io::Error::new(io::ErrorKind::NotFound, format!("File not found: {}", file_name))));
+    }
+    let mut f = if let Some(f) = f {
+        f
+    } else {
+        return Err(ShaderCompileError::Io(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("File not found: {}", file_name),
+        )));
     };
 
     let mut content = vec![];
     try!(f.read_to_end(&mut content));
     let shader = try!(::std::str::from_utf8(&content[..]));
 
-    let all_ok: Result<Vec<_>,_> = 
-        func_names
+    let all_ok: Result<Vec<_>, _> = func_names
         .iter_mut()
-        .map(|&mut(fname, target, ref mut bytecode)| {
-            match d3d_compile_from_str(shader, fpath.to_string_lossy().as_ref(), fname, target, flags) {
+        .map(|&mut (fname, target, ref mut bytecode)| {
+            match d3d_compile_from_str(
+                shader,
+                fpath.to_string_lossy().as_ref(),
+                fname,
+                target,
+                flags,
+            ) {
                 Ok(mut bc) => {
-                        bytecode.truncate(0);
-                        bytecode.append(&mut bc);
-                        Ok(())
-                    },
-                Err(err) => 
-                    Err(ShaderCompileError::Compile(format!("{}: {}", fname, err))),
-            }})
+                    bytecode.truncate(0);
+                    bytecode.append(&mut bc);
+                    Ok(())
+                }
+                Err(err) => Err(ShaderCompileError::Compile(format!("{}: {}", fname, err))),
+            }
+        })
         .collect();
-    match all_ok {
-        Ok(_) => Ok(()),
-        Err(e) => Err(e),
-    }
-}    
+    all_ok?;
+    Ok(())
+}

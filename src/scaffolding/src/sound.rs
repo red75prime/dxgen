@@ -21,11 +21,13 @@ pub fn initr() -> Result<(), Box<Error>> {
   let device = alto.open(None)?;
   let ctxt = device.new_context(None)?;
   let b_len = 2048;
+  let pi = ::std::f32::consts::PI;
+  let sin = f32::sin;
   let snd: Vec<i16> = 
     (0..b_len)
       .map(|i: usize| {
           let fi = (i as f32)/(b_len as f32);
-          ((f32::sin(fi*200.*2.*3.14159265)*1000.) + (f32::sin(fi*210.*2.*3.14159265)*2000.)) as i16
+          ((sin(fi*200.*2.*pi)*1000.) + (sin(fi*210.*2.*pi)*2000.)) as i16
         })
       .collect();
   let buf = Arc::new(ctxt.new_buffer::<Mono<i16>, _>(snd, 22010)?);

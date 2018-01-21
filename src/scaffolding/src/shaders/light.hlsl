@@ -27,7 +27,8 @@ VS_OUTPUT VSMain(uint vtx: SV_VertexID) {
   // Instancing isn't used for now. Number of instances is 1.
   ret.pos = float4(coords[indices[vtx].crd]/10 + light_pos, 1);
   ret.pos = mul(ret.pos, viewproj);
-  ret.col = float4(100, 100, 100, 1);
+  float l = 1e30;
+  ret.col = float4(l, l, l, 1);
   return ret;
 }
 

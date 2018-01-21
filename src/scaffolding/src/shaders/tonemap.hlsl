@@ -41,7 +41,7 @@ void CSMain(uint3 dtid: SV_DispatchThreadId, uint3 gtid: SV_GroupThreadId, uint3
   uint w, h;
   dst.GetDimensions(w, h);
   float3 hv = hvtemp.SampleLevel(linSamp, crd/float2(w-1,h-1), 0).rgb;
-  float3 cl = src[crd].rgb;//max(src[crd].rgb , hv);
+  float3 cl = max(src[crd].rgb , hv);
 
   float3 hvYxy = rgb2Yxy(hv);
   hvYxy.r *= key*2;
@@ -57,7 +57,7 @@ void CSMain(uint3 dtid: SV_DispatchThreadId, uint3 gtid: SV_GroupThreadId, uint3
   float3 c = Yxy2rgb(Yxy);
   float d = dith[(crd.x/1)%3][(crd.y/1)%3];
 
-  dst[crd] = float4(c+float3(d,d,d), 1);//float4(lerp(hv, Yxy2rgb(Yxy), v), 1);
+  dst[crd] = float4(lerp(hv, Yxy2rgb(Yxy), v), 1); // float4(c+float3(d,d,d), 1);
 
 }
 

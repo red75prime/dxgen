@@ -14,6 +14,7 @@ use utils;
 use winapi::*;
 
 // Skybox per frame resources, to be exact
+#[allow(unused)]
 pub struct SkyboxResources {
 }
 
@@ -29,7 +30,7 @@ impl Skybox {
     pub fn new(core: &DXCore, downsampler: &Downsampler, rt_format: DXGI_FORMAT) -> HResult<Skybox> {
         core.dump_info_queue_tagged("Skybox::new() start. Infoqueue cleanup");
         trace!("load_skybox_texture()");
-        let (tex, srv_desc) = try!(load_skybox_texture(&core.dev, &core.compute_queue, &core.copy_queue, downsampler).dump(core, "load skybox"));
+        let (tex, srv_desc) = load_skybox_texture(&core.dev, &core.compute_queue, &core.copy_queue, downsampler).dump(core, "load skybox")?;
 
         let dheap = try!(DescriptorHeap::new(&core.dev, 1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true, 0));
 
